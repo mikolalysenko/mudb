@@ -88,6 +88,10 @@ export default function <ValueState, ValueDelta> (ValueModel:Model<ValueState, V
 
     return < Model<DictState, DictDelta> >{
         identity: {},
+        _delta: {
+            remove: [],
+            patch: {}
+        },
         alloc,
         free,
         clone,

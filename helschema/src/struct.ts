@@ -1,6 +1,7 @@
 import Model from './model';
+import HelNumber from './number';
 
-function createStruct <StructSpec extends Model<any, any,any>> (spec:StructSpec, overrides?:{
+export default function createStruct <StructSpec extends { [prop:string]:Model<any,any> } > (spec:StructSpec, overrides?:{
     identity?:any,
     create?:any,
     clone?:any,
@@ -18,7 +19,7 @@ function createStruct <StructSpec extends Model<any, any,any>> (spec:StructSpec,
     };
 
     type StructDelta = {
-        [P in keyof StructSpec]: StructSpec[P]["_delta"];
+        [P in keyof StructSpec]?: StructSpec[P]["_delta"];
     };
 
     type StructModel = Model<StructState, StructDelta>;

@@ -47,9 +47,12 @@ require('helclient')({
         if (!client) {
             return alert(err)
         }
+
         client.onTick(model.game.tick)
 
-
+        function render () {
+            client.
+        }
     }
 })
 ```
