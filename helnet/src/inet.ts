@@ -3,7 +3,7 @@ export type NetSessionData = any;
 
 export type NetData = any;
 
-export type NetMessageHandler = (client:INetClient, data:NetData) => void;
+export type NetMessageHandler = (data:NetData, client:INetClient) => void;
 export type NetCloseHandler = (error?:any) => void;
 
 export type NetConnectionHandler = (
@@ -38,7 +38,5 @@ export interface INetServer {
 
     configure(spec:NetServerSpec);
 
-    broadcast(data:any);
-    broadcastUnreliable(data:any);
     close();
 }

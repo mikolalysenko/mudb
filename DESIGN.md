@@ -104,7 +104,114 @@ Replication types:
 
 Declare feeds up front
 
-#### `schema.js`
+
+#### `single-file.js`
+
+```javascript
+const HelNumber = require('helschema/number')
+const HelString = require('helschema/string')
+const HelStruct = require('helschema/struct')
+const HelDictionary = require('helschema/dictionary')
+
+const EntitySchema = HelStruct({
+    x: HelNumber,
+    y: HelNumber,
+    color: HelString
+})
+
+const protocol = {
+    client: {
+        state: EntitySchema
+    },
+    server: {
+        state: HelDictionary(EntitySchema),
+        events: { 
+            splat: EntitySchema
+        }
+    }
+}
+
+function clientMain () {
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+    const context = canvas.getContext('2d')
+
+    const client = require('heldb/client')({
+        protocol,
+        net: require('helnet/client')()
+    })
+
+    function randColor () {
+        return `rgb(${Math.random() * 256},${Math.random() * 256},${Math.random() * 256})`
+    }
+
+    client.start({
+        ready(err) {
+            const player = client.state.head
+            player.x = 0.5
+            player.y = 0.5
+            player.color = randColor()
+            client.state.commit()
+
+            canvas.addEventListener('mousemove', ({clientX, clientY}) => {
+                player.x = clientX / canvas.width
+                player.y = clientY / canvas.height
+                client.state.commit()
+            })
+
+            canvas.addEventListener('click', ({clientX, clientY}) => {
+                client.actions.splat({
+                    x: clientX / canvas.width,
+                    y: clientY / canvas.height,
+                    color: randColor()
+                })
+            })
+
+            function render () {
+                client.peers.forEach((peer) => {
+                    const {x, y, color} = peer.state.head
+                    context.fillStyle = color
+                    context.fillRect(canvas.width * x - 10, canvas.height * y - 10, 20, 20)
+                })
+                window.requestAnimationFrame(render)
+            }
+            render()
+        }
+    })
+}
+
+function serverMain () {
+    const server = require('heldb/server')({
+        model: require('./schema'),
+        net: require('helnet/server')({
+            client: __filename,
+            live: true,
+            debug: true
+        })
+    })
+    
+    let splatCount = 0
+
+    server.start({
+        event: {
+            splat (splat) {
+                server.state.head[++splatCount] = EntitySchema.clone(splat)
+                server.state.commit()
+            }
+        }
+    })
+}
+
+if (process.env.HEL_CLIENT) {
+    clientMain()
+} else {
+    serverMain()
+}
+```
+
+
+
+#### `protocol.js`
 
 ```javascript
 const HelNumber = require('helschema/number')
@@ -146,7 +253,7 @@ module.exports = {
 }
 ```
 
-#### `client.js`
+#### `protocol.js`
 
 ```javascript
 const canvas = document.createElement('canvas')

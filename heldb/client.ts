@@ -4,7 +4,32 @@ type FreeModel = HelModel<any, any>
 type RPCType = { 0: FreeModel, 1: FreeModel } | [FreeModel, FreeModel]
 type MessageType = FreeModel
 
-class HelClient {
+class HelClient<
+    ClientRPCInterface, 
+    ClientMessageInterface, 
+    ServerRPCInterface, 
+    ServerMessageInterface> {
+
+    public state:Timeline<ClientModel>;
+
+    public readonly message:ServerMessageInterface;
+    public readonly rpc:ServerRPCInterface;
+
+    public peers:HelRemote[];
+
+    constructor(spec : {
+        message:ServerMessageInterface,
+        rpc:ServerRPCInterface,
+    }) {
+    }
+
+    public start (spec : {
+        rpc:ClientRPCInterface,
+        message:ClientMessageInterface,
+        tick: () => void,
+        ready: (err?:any) => void
+    }) {
+    }
 }
 
 function createClient<
