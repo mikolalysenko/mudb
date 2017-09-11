@@ -10,10 +10,6 @@ export default function createStruct <StructSpec extends { [prop:string]:Model<a
     patch?:any,
     interpolate?:any,
 }) {
-    type StructConfig = {
-        [P in keyof StructSpec]: any;
-    };
-
     type StructState = {
         [P in keyof StructSpec]: StructSpec[P]["identity"];
     };

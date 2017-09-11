@@ -2,7 +2,7 @@ import { INetServer } from './inet';
 import { LocalServerConfig, createLocalServer } from './local';
 
 export type ServerConfig = {
-    local?: LocalServerConfig;
+    local?:LocalServerConfig;
 };
 
 export function createServer (config?:ServerConfig) : INetServer {

@@ -138,7 +138,7 @@ function clientMain () {
 
     const client = require('heldb/client')({
         protocol,
-        net: require('helnet/client')()
+        socket: require('helnet/socket')()
     })
 
     function randColor () {
@@ -183,7 +183,7 @@ function clientMain () {
 function serverMain () {
     const server = require('heldb/server')({
         model: require('./schema'),
-        net: require('helnet/server')({
+        server: require('helnet/server')({
             client: __filename,
             live: true,
             debug: true

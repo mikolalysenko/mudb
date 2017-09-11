@@ -7,7 +7,7 @@ export type NetClientConfig = {
     local?:LocalClientConfig;
 };
 
-export function createNetClient (config:ClientConfig) : INetClient|null {
+export function createNetClient (config:NetClientConfig) : INetClient|null {
     if (config.local) {
         return createLocalClient(config.local);
     }

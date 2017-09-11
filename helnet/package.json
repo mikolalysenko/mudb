@@ -1,0 +1,29 @@
+{
+  "name": "helnet",
+  "version": "1.0.0",
+  "description": "Network transport layer for heldb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "heldb",
+    "network",
+    "multiplayer",
+    "game",
+    "the",
+    "future"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^14.4.0",
+    "budo": "^10.0.4",
+    "ts-node": "^3.3.0",
+    "tsify": "^3.0.3",
+    "tslint": "^5.7.0",
+    "tslint-language-service": "^0.9.6",
+    "typescript": "^2.5.2",
+    "ws": "^3.1.0"
+  }
+}

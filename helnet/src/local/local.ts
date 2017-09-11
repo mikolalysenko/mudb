@@ -1,18 +1,32 @@
-import { INetClient, INetServer, NetData, NetMessageHandler, NetCloseHandler, NetClientSpec } from './inet';
+import { 
+    HelSocket, 
+    HelServer,
+    HelSessionId,
+    HelSessionData,
+    HelData,
+    HelMessageHandler,
+    HelCloseHandler,
+    HelSocketSpec
+} from '../net';
 
 function noop () {};
 
-export class LocalClient implements INetClient {
-    public sessionId:string;
+function connectDuplexPair (a:HelLocalSocket, b:HelLocalSocket) {
+    a._duplex = b
+    b._duplex = a
+}
+
+export class HelLocalSocket implements HelSocket {
+    public sessionId:HelSessionId
 
     private _server:LocalServer;
-    public _clientPair:LocalClient = null;
 
-    public onMessage:NetMessageHandler = noop;
-    public onUnreliableMessage:NetMessageHandler = noop;
-    public onClose:NetCloseHandler = noop;
+    public _duplex:HelLocalSocket = null;
+    public _onMessage:HelMessageHandler = noop;
+    public _onUnreliableMessage:HelMessageHandler = noop;
+    public _onClose:HelCloseHandler = noop;
 
-    private _configured:boolean = false;
+    private _started:boolean = false;
     private _closed:boolean = false;
     
     constructor (sessionId:string, server:LocalServer) {
@@ -20,17 +34,20 @@ export class LocalClient implements INetClient {
         this._server = server;
     }
 
-    public configure (spec:NetClientSpec) {
-        if (this._configured) {
-            throw new Error('attempt to configure client twice');
+    public start (spec:HelSocketSpec) {
+        if (this._started) {
+            spec.onReady.call(this, 'socket already started');
+            return
         }
-        this.onMessage = spec.onMessage;
-        this.onUnreliableMessage = spec.onUnreliableMessage
-        this.onClose = spec.onClose;
-        this._configured = true;
+        this._onMessage = spec.onMessage;
+        this._onUnreliableMessage = spec.onUnreliableMessage
+        this._onClose = spec.onClose;
+        this._started = true;
+
+        spec.onReady.call(this);
     }
 
-    private _pendingMessages:NetData[] = [];
+    private _pendingMessages:HelData[] = [];
     private _pendingDrainTimeout = 0;
     private _handleDrain = () => {
         this._pendingDrainTimeout = 0;
@@ -38,10 +55,9 @@ export class LocalClient implements INetClient {
             if (this._closed) {
                 return;
             }
-
             const message = this._pendingMessages[i];
             try {
-                this._clientPair.onMessage(this._clientPair, message);
+                this._duplex._onMessage(message);
             } catch (e) { }
         }
         this._pendingMessages.length = 0;
@@ -80,6 +96,7 @@ export class LocalClient implements INetClient {
         this.onClose();
     }
 }
+
 
 export class LocalServer implements INetServer {
     public clients:LocalClientConnection[];
