@@ -36,20 +36,20 @@ export class HelLocalSocket implements HelSocket {
         setTimeout(
             () => {
                 if (this._closed) {
-                    spec.onReady.call(this, 'socket closed');
+                    spec.ready.call(this, 'socket closed');
                     return;
                 }
                 if (this._started) {
-                    spec.onReady.call(this, 'socket already started');
+                    spec.ready.call(this, 'socket already started');
                     return;
                 }
-                this._onMessage = spec.onMessage;
-                this._onUnreliableMessage = spec.onUnreliableMessage;
-                this._onClose = spec.onClose;
+                this._onMessage = spec.message;
+                this._onUnreliableMessage = spec.unreliableMessage;
+                this._onClose = spec.close;
                 this._started = true;
                 this.open = true;
 
-                spec.onReady.call(this);
+                spec.ready.call(this);
             },
             0);
     }
@@ -145,12 +145,12 @@ export class HelLocalServer implements HelServer {
         setTimeout(
             () => {
                 if (this._started) {
-                    return spec.onReady.call(this, 'server already started');
+                    return spec.ready.call(this, 'server already started');
                 }
-                this._onConnection = spec.onConnection;
+                this._onConnection = spec.connection;
                 this._started = true;
                 this.open = true;
-                spec.onReady.call(this);
+                spec.ready.call(this);
 
                 while (this._pendingSockets.length > 0) {
                     const socket = this._pendingSockets.pop();

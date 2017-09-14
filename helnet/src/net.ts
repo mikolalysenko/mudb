@@ -9,10 +9,10 @@ export type HelCloseHandler = (error?:any) => void;
 export type HelConnectionHandler = (socket:HelSocket) => void;
 
 export type HelSocketSpec = {
-    onReady:HelReadyHandler;
-    onMessage:HelMessageHandler;
-    onUnreliableMessage:HelMessageHandler;
-    onClose:HelCloseHandler;
+    ready:HelReadyHandler;
+    message:HelMessageHandler;
+    unreliableMessage:HelMessageHandler;
+    close:HelCloseHandler;
 };
 
 export interface HelSocket {
@@ -27,8 +27,8 @@ export interface HelSocket {
 }
 
 export type HelServerSpec = {
-    onReady:HelReadyHandler;
-    onConnection:HelConnectionHandler;
+    ready:HelReadyHandler;
+    connection:HelConnectionHandler;
 };
 
 export interface HelServer {

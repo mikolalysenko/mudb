@@ -4,9 +4,9 @@ import { HelLocalServerSpec, createLocalServer } from './local/local';
 
 export default function createServer (spec:{
     local?:HelLocalServerSpec,
-}) : HelServer | null {
+}) : HelServer {
     if (spec.local) {
         return createLocalServer(spec.local);
     }
-    return null;
+    throw new Error('invalid server configuration');
 }

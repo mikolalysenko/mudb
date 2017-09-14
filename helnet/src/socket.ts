@@ -5,9 +5,9 @@ import { createLocalClient, HelLocalSocketSpec } from './local/local';
 export default function connectToServer (spec:{
     sessionId:HelSessionId,
     local?:HelLocalSocketSpec,
-}) : HelSocket | null {
+}) : HelSocket {
     if (spec.local) {
         return createLocalClient(spec.sessionId, spec.local);
     }
-    return null;
+    throw new Error('invalid socket configuration');
 }

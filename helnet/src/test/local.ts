@@ -46,32 +46,32 @@ function createLogServer () {
     const events:DBEvent[] = [];
 
     server.start({
-        onReady (err?:any) {
+        ready (err?:any) {
             events.push(new DBEvent('ready', {err}));
         },
-        onConnection (socket) {
+        connection (socket) {
             events.push(new DBEvent('connection', {socket}));
 
             socket.start({
-                onReady(err?:any) {
+                ready(err?:any) {
                     events.push(new DBEvent('socket ready', {
                         err,
                         socket,
                     }));
                 },
-                onMessage(message) {
+                message(message) {
                     events.push(new DBEvent('message', {
                         message,
                         socket,
                     }));
                 },
-                onUnreliableMessage(message) {
+                unreliableMessage(message) {
                     events.push(new DBEvent('~message', {
                         message,
                         socket,
                     }));
                 },
-                onClose(err?:any) {
+                close(err?:any) {
                     events.push(new DBEvent('close', {
                         err,
                         socket,
@@ -89,25 +89,25 @@ function createLogServer () {
         const clientEvents:DBEvent[] = [];
 
         socket.start({
-            onReady(err?:any) {
+            ready(err?:any) {
                 clientEvents.push(new DBEvent('socket ready', {
                     socket,
                     err,
                 }));
             },
-            onMessage(message) {
+            message(message) {
                 clientEvents.push(new DBEvent('message', {
                     message,
                     socket,
                 }));
             },
-            onUnreliableMessage(message) {
+            unreliableMessage(message) {
                 clientEvents.push(new DBEvent('~message', {
                     message,
                     socket,
                 }));
             },
-            onClose(err?:any) {
+            close(err?:any) {
                 clientEvents.push(new DBEvent('close', {
                     err,
                     socket,
