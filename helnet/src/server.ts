@@ -1,3 +1,4 @@
+/*
 import { INetServer } from './inet';
 import { LocalServerConfig, createLocalServer } from './local';
 
@@ -13,3 +14,4 @@ export function createServer (config?:ServerConfig) : INetServer {
     }
     return createLocalServer();
 }
+*/

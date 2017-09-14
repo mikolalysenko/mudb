@@ -1,3 +1,4 @@
+/*
 import { INetClient } from './inet';
 import { LocalClientConfig, createLocalClient } from './local';
 
@@ -13,3 +14,4 @@ export function createNetClient (config:NetClientConfig) : INetClient|null {
     }
     return null;
 }
+*/

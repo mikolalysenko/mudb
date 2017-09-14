@@ -1,7 +1,7 @@
 export type HelSessionId = string;
 export type HelSessionData = any;
 
-export type HelData = Uint8Array;
+export type HelData = Uint8Array | string;
 
 export type HelReadyHandler = (error?:any) => void;
 export type HelMessageHandler = (data:HelData) => void;
@@ -33,6 +33,7 @@ export type HelServerSpec = {
 
 export interface HelServer {
     clients:HelSocket[];
+    open:boolean;
 
     start(spec:HelServerSpec);
 

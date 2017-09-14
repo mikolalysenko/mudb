@@ -1,54 +1,61 @@
-import { 
-    HelSocket, 
+import {
+    HelSocket,
     HelServer,
+    HelServerSpec,
     HelSessionId,
     HelSessionData,
     HelData,
     HelMessageHandler,
     HelCloseHandler,
-    HelSocketSpec
+    HelSocketSpec,
+    HelConnectionHandler,
 } from '../net';
 
-function noop () {};
-
-function connectDuplexPair (a:HelLocalSocket, b:HelLocalSocket) {
-    a._duplex = b
-    b._duplex = a
-}
+function noop () {}
 
 export class HelLocalSocket implements HelSocket {
-    public sessionId:HelSessionId
+    public sessionId:HelSessionId;
 
-    private _server:LocalServer;
+    private _server:HelLocalServer;
 
-    public _duplex:HelLocalSocket = null;
+    public _duplex:HelLocalSocket;
     public _onMessage:HelMessageHandler = noop;
     public _onUnreliableMessage:HelMessageHandler = noop;
     public _onClose:HelCloseHandler = noop;
 
     private _started:boolean = false;
-    private _closed:boolean = false;
-    
-    constructor (sessionId:string, server:LocalServer) {
+    public _closed:boolean = false;
+    public open:boolean = false;
+
+    constructor (sessionId:string, server:HelLocalServer) {
         this.sessionId = sessionId;
         this._server = server;
     }
 
     public start (spec:HelSocketSpec) {
-        if (this._started) {
-            spec.onReady.call(this, 'socket already started');
-            return
-        }
-        this._onMessage = spec.onMessage;
-        this._onUnreliableMessage = spec.onUnreliableMessage
-        this._onClose = spec.onClose;
-        this._started = true;
+        setTimeout(
+            () => {
+                if (this._closed) {
+                    spec.onReady.call(this, 'socket closed');
+                    return;
+                }
+                if (this._started) {
+                    spec.onReady.call(this, 'socket already started');
+                    return;
+                }
+                this._onMessage = spec.onMessage;
+                this._onUnreliableMessage = spec.onUnreliableMessage;
+                this._onClose = spec.onClose;
+                this._started = true;
+                this.open = true;
 
-        spec.onReady.call(this);
+                spec.onReady.call(this);
+            },
+            0);
     }
 
     private _pendingMessages:HelData[] = [];
-    private _pendingDrainTimeout = 0;
+    private _pendingDrainTimeout;
     private _handleDrain = () => {
         this._pendingDrainTimeout = 0;
         for (let i = 0; i < this._pendingMessages.length; ++i) {
@@ -76,14 +83,14 @@ export class HelLocalSocket implements HelSocket {
             return;
         }
         const message = this._pendingUnreliableMessages.pop();
-        this._clientPair.onMessage(this._clientPair, message);
+        this._duplex._onMessage(message);
     }
 
     public sendUnreliable (data:any) {
         if (this._closed) {
             return;
         }
-        this._pendingUnreliableMessages.push(data)
+        this._pendingUnreliableMessages.push(data);
         setTimeout(this._handleUnreliableDrain, 0);
     }
 
@@ -92,54 +99,90 @@ export class HelLocalSocket implements HelSocket {
             return;
         }
         this._closed = true;
-        // remove from serve client connections
-        this.onClose();
+        this.open = false;
+        this._server._removeSocket(this);
+        this._onClose();
+        this._duplex.close();
     }
 }
 
-
-export class LocalServer implements INetServer {
-    public clients:LocalClientConnection[];
-
-    private _handleConnection:(sessionData:any, connection:INetClient, next:(error) => void)  => void;
-
-    public onReady (handler:(error?:any) => void) {
-        setTimeout(handler, 0);
+function removeIfExists (array, element) {
+    const idx = array.indexOf(element);
+    if (idx >= 0) {
+        array[idx] = array[array.length - 1];
+        array.pop();
     }
+}
 
-    public onConnection(handler:(sessionData:any, connection:INetClient, next:(error) => void)  => void) {
-        this._handleConnection = handler;
-    }
+export class HelLocalServer implements HelServer {
+    public clients:HelSocket[] = [];
 
-    public broadcast(data:any) {
-        for (const client of this.clients) {
-            client.send(data);
+    public _pendingSockets:HelSocket[] = [];
+
+    private _started:boolean = false;
+    private _closed:boolean = false;
+    public open:boolean = false;
+
+    private _onConnection:HelConnectionHandler;
+
+    public _handleConnection (socket) {
+        if (this.open) {
+            this.clients.push(socket);
+            this._onConnection(socket);
+        } else if (this._closed) {
+            socket.close();
+        } else {
+            this._pendingSockets.push(socket);
         }
     }
 
+    public _removeSocket (socket) {
+        removeIfExists(this.clients, socket);
+        removeIfExists(this._pendingSockets, socket);
+    }
+
+    public start (spec:HelServerSpec) {
+        setTimeout(
+            () => {
+                if (this._started) {
+                    return spec.onReady.call(this, 'server already started');
+                }
+                this._onConnection = spec.onConnection;
+                this._started = true;
+                this.open = true;
+                spec.onReady.call(this);
+
+                while (this._pendingSockets.length > 0) {
+                    const socket = this._pendingSockets.pop();
+                    this._handleConnection(socket);
+                }
+            },
+            0);
+    }
+
     public close() {
+        if (this._started || this._closed) {
+            return;
+        }
+        this.open = false;
         for (let i = this.clients.length - 1; i >= 0; --i) {
             this.clients[i].close();
         }
     }
 }
 
-export type LocalServerConfig = {
-    // TODO: Add latency simulation
-};
-
-export function createLocalServer (config?:LocalServerConfig) : LocalServer {
-    const server = new LocalServer();
-    return server;
+export function createLocalServer (config:{}) : HelLocalServer {
+    return new HelLocalServer();
 }
 
-export type LocalClientConfig = {
-    // TODO: Add latency simulation
-    server:LocalServer;
-};
-
-export function createLocalClient (config:LocalClientConfig, onReady:NetClientHandler) : LocalClient {
-    const client = new LocalClient();
-    client._connectToServer(config.server);
-    return client;
+export function createLocalClient (config:{
+    sessionId:HelSessionId;
+    server:HelLocalServer;
+}) : HelLocalSocket {
+    const clientSocket = new HelLocalSocket(config.sessionId, config.server);
+    const serverSocket = new HelLocalSocket(clientSocket.sessionId, config.server);
+    clientSocket._duplex = serverSocket;
+    serverSocket._duplex = clientSocket;
+    config.server._handleConnection(serverSocket);
+    return clientSocket;
 }
