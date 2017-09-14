@@ -102,8 +102,6 @@ require('helserver')({
 
 ## helschema
 
-## helrpc
-
 ## helnet
 
 ## helserver

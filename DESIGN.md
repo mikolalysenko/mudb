@@ -182,7 +182,7 @@ function clientMain () {
 
 function serverMain () {
     const server = require('heldb/server')({
-        model: require('./schema'),
+        protocol,
         server: require('helnet/server')({
             client: __filename,
             live: true,
