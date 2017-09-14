@@ -83,10 +83,9 @@ function createLogServer () {
     });
 
     function connect (sessionId:string) {
-        const socket = createLocalClient({
+        const socket = createLocalClient(
             sessionId,
-            server,
-        });
+            { server });
         const clientEvents:DBEvent[] = [];
 
         socket.start({

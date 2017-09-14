@@ -171,18 +171,22 @@ export class HelLocalServer implements HelServer {
     }
 }
 
-export function createLocalServer (config:{}) : HelLocalServer {
+export type HelLocalServerSpec = {
+};
+
+export function createLocalServer (config:HelLocalServerSpec) : HelLocalServer {
     return new HelLocalServer();
 }
 
-export function createLocalClient (config:{
-    sessionId:HelSessionId;
+export type HelLocalSocketSpec = {
     server:HelLocalServer;
-}) : HelLocalSocket {
-    const clientSocket = new HelLocalSocket(config.sessionId, config.server);
-    const serverSocket = new HelLocalSocket(clientSocket.sessionId, config.server);
+};
+
+export function createLocalClient (sessionId:HelSessionId, spec:HelLocalSocketSpec) : HelLocalSocket {
+    const clientSocket = new HelLocalSocket(sessionId, spec.server);
+    const serverSocket = new HelLocalSocket(clientSocket.sessionId, spec.server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
-    config.server._handleConnection(serverSocket);
+    spec.server._handleConnection(serverSocket);
     return clientSocket;
 }

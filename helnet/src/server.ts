@@ -1,17 +1,12 @@
-/*
-import { INetServer } from './inet';
-import { LocalServerConfig, createLocalServer } from './local';
+import { HelServer } from './net';
 
-export type ServerConfig = {
-    local?:LocalServerConfig;
-};
+import { HelLocalServerSpec, createLocalServer } from './local/local';
 
-export function createServer (config?:ServerConfig) : INetServer {
-    if (config) {
-        if (config.local) {
-            return createLocalServer(config.local);
-        }
+export default function createServer (spec:{
+    local?:HelLocalServerSpec,
+}) : HelServer | null {
+    if (spec.local) {
+        return createLocalServer(spec.local);
     }
-    return createLocalServer();
+    return null;
 }
-*/
