@@ -1,16 +1,16 @@
-export default interface HelModel<State, Delta> {
+export default interface HelModel<State> {
     // Identity state
     readonly identity:State;
-
-    // Empty delta
-    readonly _delta:Delta;
     
+    // hel type
+    readonly _helType:string;
+
     // Memory pool
     alloc ():State;
     free (state:State):void;
     clone (state:State):State;
     
     // Patching
-    diff (base:State, target:State):(Delta | undefined);
-    patch (base:State, patch:Delta):State;
+    diff (base:State, target:State):any;
+    patch (base:State, patch:any):State;
 };

@@ -1,0 +1,22 @@
+{
+  "name": "helschema",
+  "version": "1.0.0",
+  "description": "Schema definition utilities for heldb",
+  "main": "index.js",
+  "scripts": {
+    "test": "ts-node src/test/index.js"
+  },
+  "keywords": [
+    "heldb",
+    "schema",
+    "diff",
+    "patch"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "devDependencies": {
+    "tape": "^4.8.0",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.5.2"
+  }
+}

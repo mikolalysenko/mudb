@@ -1,37 +1,74 @@
-import Model from './model';
+import HelModel from './model';
 
-export default function <ValueState, ValueDelta> (ValueModel:Model<ValueState, ValueDelta>) {
+class DictCacheEntry {
+    public valueModel;
+    public dictionaryModel;
+
+    constructor (value, dict) {
+        this.valueModel = value;
+        this.dictionaryModel = dict;
+    }
+}
+
+const dictionaryCache:DictCacheEntry[] = [];
+
+function searchCache (valueModel) {
+    for (let i = 0; i < dictionaryCache.length; ++i) {
+        if (dictionaryCache[i].valueModel == valueModel) {
+            return dictionaryCache[i].dictionaryModel;
+        }
+    }
+    return null;
+}
+
+function insertCache (valueModel, dictionaryModel) {
+    dictionaryCache.push(new DictCacheEntry(valueModel, dictionaryModel));
+    return dictionaryModel;
+}
+
+export default function <ValueState> (
+    valueModel:HelModel<ValueState>,
+    identity?:{ [prop:string]:ValueState }) {
     type DictState = { [key:string]:ValueState };
-    type DictDelta = {
-        remove: string[];
-        patch: { [key:string]:ValueDelta };
-    };
+    type DictModel = HelModel<DictState>;
 
-    function alloc () {
-        return {};
+    if (!identity) {
+        const cachedEntry = searchCache(valueModel);
+        if (cachedEntry) {
+            return <DictModel>cachedEntry;
+        }
+    }
+
+    let alloc = function () { return {} };
+
+    if (identity) {
+        alloc = function () { return clone(identity) };
     }
 
     function free(x:DictState) {
         Object.keys(x).forEach((prop) => {
-            ValueModel.free(x[prop]);        
+            valueModel.free(x[prop]);        
         })
     };
 
     function clone(state:DictState) {
         const result = <DictState>{};
         Object.keys(state).forEach((prop) => {
-            result[prop] = ValueModel.clone(state[prop]);
+            result[prop] = valueModel.clone(state[prop]);
         });
         return result;
     }
     
     function diff(base:DictState, target:DictState) {
         const remove:string[] = [];
-        const patch:{ [prop:string]:ValueDelta } = {};
+        const patch:{ [prop:string]:any } = {};
     
         Object.keys(base).forEach((prop) => {
             if (prop in target) {
-
+                const delta = valueModel.diff(base[prop], target[prop]);
+                if (delta !== undefined) {
+                    patch[prop] = delta;
+                }
             } else {
                 remove.push(prop);
             }
@@ -39,7 +76,7 @@ export default function <ValueState, ValueDelta> (ValueModel:Model<ValueState, V
     
         Object.keys(target).forEach((prop) => {
             if (!(prop in base)) {
-                const d = ValueModel.diff(ValueModel.identity, target[prop]);
+                const d = valueModel.diff(valueModel.identity, target[prop]);
                 if (d) {
                     patch[prop] = d;
                 }
@@ -50,54 +87,42 @@ export default function <ValueState, ValueDelta> (ValueModel:Model<ValueState, V
             return;
         }
     
-        return <DictDelta>{
+        return {
             remove,
             patch,
         };
     }
     
-    function patch(base:DictState, patch:DictDelta) : DictState {
+    function patch(base:DictState, delta:any) : DictState {
+        const remove:string[] = delta.remove;
+        const patch:{[prop:string]:any} = delta.patch;
+
         const result = {}
         Object.keys(base).forEach((prop) => {
             if (patch.remove.indexOf(prop) < 0) {
                 if (patch.patch[prop]) {
-                    result[prop] = ValueModel.patch(base[prop], patch.patch[prop]);
+                    result[prop] = valueModel.patch(base[prop], patch.patch[prop]);
                 } else {
-                    result[prop] = ValueModel.clone(base[prop]);
+                    result[prop] = valueModel.clone(base[prop]);
                 }
             }
         })
         return result;
     }
-    
-    
-    function interpolate(s0:DictState, t0:number, s1:DictState, t1:number, t:number) : DictState {
-        const tf = (t - t0) / (t1 - t0);
-        const result = {};
 
-        if (tf < 0) {
-
-        } else if (tf > 1) {
-            
-        } else {
-
-        }
-
-        return result;
-    }    
-
-    return < Model<DictState, DictDelta> >{
-        identity: {},
-        _delta: {
-            remove: [],
-            patch: {}
-        },
+    const result = <DictModel>{
+        identity: identity || {},
+        _helType: `dictionary<${valueModel._helType}>`,
         alloc,
-        free,
         clone,
+        free,
         diff,
         patch,
-        interpolate,
     };
+
+    if (!identity) {
+        insertCache(valueModel, result);
+    }
+    return result;
 };
 
