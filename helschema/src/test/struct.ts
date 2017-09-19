@@ -28,11 +28,19 @@ tape('struct', function (t) {
     t.equals(simpleStruct.identity.y, false);
     t.equals(simpleStruct.identity.str, 'foo');
 
+    const structA = simpleStruct.alloc();
+    const structB = simpleStruct.alloc();
+
+    structA.x = 1000;
+    console.log('a=', structA, 'b=', structB, 'patch =', simpleStruct.diff(structB, structA));
+
+
     const recursiveStruct = HelStruct({
         a: simpleStruct,
         b: simpleStruct,
         q: HelInt8(11),
     });
+
 
     t.end();
 });

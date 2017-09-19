@@ -1,8 +1,5 @@
 # helschema
-A collection of tools for building efficiently serializable schemas.  Features:
-
-* Fast diff/patch based state serialization
-* 
+A collection of tools for specifying network protocols in heldb.
 
 # example
 
@@ -17,7 +14,7 @@ const Entity = HelStruct({
     x: HelFloat(),
     y: HelFloat(),
     dx: HelFloat(),
-    dz: HelFloat(),
+    dy: HelFloat(),
     hp: HelInt(10),
     name: HelString('entity')
 })

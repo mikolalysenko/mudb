@@ -326,5 +326,7 @@ export default function createStruct <StructSpec extends { [prop:string]:HelMode
 
     args.push(prelude.toString());
     const proc = Function.apply(null, args);
+
+    // console.log(args)
     return <StructModel>insertCache(structProps, structTypes, proc.apply(null, props));
 };
