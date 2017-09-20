@@ -125,7 +125,7 @@ const protocol = {
     },
     server: {
         state: HelDictionary(EntitySchema),
-        events: { 
+        message: { 
             splat: EntitySchema
         }
     }
