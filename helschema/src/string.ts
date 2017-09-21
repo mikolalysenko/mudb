@@ -26,7 +26,7 @@ function createStringSchema (value:string) : HelModel<string> {
 
 const schemaCache:{[key:string]:HelModel<string>} = {};
 
-export default function getStringSchema (value?:string) {
+export = function getStringSchema (value?:string) {
     const defaultValue = value || '';
     if (defaultValue in schemaCache) {
         return schemaCache[defaultValue];

@@ -24,7 +24,7 @@ function createBooleanSchema (value:boolean) : HelModel<boolean> {
 const falseSchema = createBooleanSchema(false);
 const trueSchema = createBooleanSchema(true);
 
-export default function getBooleanSchema (value?:boolean) : HelModel<boolean> {
+export = function getBooleanSchema (value?:boolean) : HelModel<boolean> {
     if (value) {
         return trueSchema;
     }

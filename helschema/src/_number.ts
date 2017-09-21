@@ -20,7 +20,7 @@ function createNumberSchema (_helType:string, value:number) : HelModel<number> {
 
 const schemaCache:{ [helType:string]:{[defautlValue:number]:HelModel<number>} } = {};
 
-export default function getNumberSchema(helType:string, value?:number) : HelModel<number> {
+export = function getNumberSchema(helType:string, value?:number) : HelModel<number> {
     let table = schemaCache[helType];
     if (!table) {
         table = schemaCache[helType] = {};

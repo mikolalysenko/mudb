@@ -1,5 +1,6 @@
 import { HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
+import HelUnion from 'helschema/union';
 import { HelStateSet, pushState, updateStateSet, mostRecentCommonState } from './lib/state-set';
 import { HelStatistic } from './lib/statistic';
 
@@ -201,7 +202,7 @@ class HelClient<
     }
 }
 
-function createHelClient<
+export default function createHelClient<
     ClientModelType extends FreeModel, 
     ClientRPCTable extends { [method:string]:RPCType },
     ClientMessageTable extends { [event:string]:MessageType },

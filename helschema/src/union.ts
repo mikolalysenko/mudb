@@ -1,8 +1,11 @@
 import HelModel from './model';
 
-export default function createUnionType<SubTypes extends {[key:string]:HelModel<any>}> (subtypes:SubTypes, defaultType?:keyof SubTypes) {
+export = function createUnionType<SubTypes extends {[key:string]:HelModel<any>}> (subtypes:SubTypes, defaultType?:keyof SubTypes) {
     type TypeKey = keyof SubTypes;
-    type TypeValue = SubTypes[TypeKey];
+    type RawTypes = {
+        [key in TypeKey]:SubTypes[key]['identity'];
+    };
+    type TypeValue = RawTypes[TypeKey];
 
     type UnionType = {
         type:TypeKey,
