@@ -1,21 +1,21 @@
 import tape = require('tape');
 
-import HelStruct from '../struct';
+import HelStruct = require('../struct');
 
-import HelInt8 from '../int8';
-import HelInt16 from '../int16';
-import HelInt32 from '../int32';
+import HelInt8 = require('../int8');
+import HelInt16 = require('../int16');
+import HelInt32 = require('../int32');
 
-import HelUint8 from '../uint8';
-import HelUint16 from '../uint16';
-import HelUint32 from '../uint32';
+import HelUint8 = require('../uint8');
+import HelUint16 = require('../uint16');
+import HelUint32 = require('../uint32');
 
-import HelFloat32 from '../float32';
-import HelFloat64 from '../float64';
+import HelFloat32 = require('../float32');
+import HelFloat64 = require('../float64');
 
-import HelBoolean from '../boolean';
+import HelBoolean = require('../boolean');
 
-import HelString from '../string';
+import HelString = require('../string');
 
 tape('struct', function (t) {
     const simpleStruct = HelStruct({

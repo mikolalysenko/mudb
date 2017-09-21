@@ -1,26 +1,26 @@
-import HelModel from './model';
+import HelModel = require('./model');
 
-import HelInt8 from './int8';
-import HelInt16 from './int16';
-import HelInt32 from './int32';
+import HelInt8 = require('./int8');
+import HelInt16 = require('./int16');
+import HelInt32 = require('./int32');
 
-import HelUint8 from './uint8';
-import HelUint16 from './uint16';
-import HelUint32 from './uint32';
+import HelUint8 = require('./uint8');
+import HelUint16 = require('./uint16');
+import HelUint32 = require('./uint32');
 
-import HelFloat32 from './float32';
-import HelFloat64 from './float64';
+import HelFloat32 = require('./float32');
+import HelFloat64 = require('./float64');
 
-import HelString from './string';
+import HelString = require('./string');
 
-import HelBoolean from './boolean';
+import HelBoolean = require('./boolean');
 
-import HelStruct from './struct';
-import HelUnion from './union';
+import HelStruct = require('./struct');
+import HelUnion = require('./union');
 
-import HelDictionary from './dictionary';
+import HelDictionary = require('./dictionary');
 
-export default {
+export = {
     HelInt8,
     HelInt16,
     HelInt32,

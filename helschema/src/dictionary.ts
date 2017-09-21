@@ -26,7 +26,7 @@ function insertCache (valueModel, dictionaryModel) {
     return dictionaryModel;
 }
 
-export default function <ValueState> (
+export = function <ValueState> (
     valueModel:HelModel<ValueState>,
     identity?:{ [prop:string]:ValueState }) {
     type DictState = { [key:string]:ValueState };

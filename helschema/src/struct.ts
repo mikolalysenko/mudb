@@ -48,7 +48,7 @@ function insertCache (props:string[], types:any[], model:any) {
     return model;
 }
 
-export default function createStruct <StructSpec extends { [prop:string]:HelModel<any> } > (spec:StructSpec) {
+export = function createStruct <StructSpec extends { [prop:string]:HelModel<any> } > (spec:StructSpec) {
     type StructState = {
         [P in keyof StructSpec]: StructSpec[P]["identity"];
     };
