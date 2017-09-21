@@ -1,4 +1,4 @@
-import { HelSocket, HelServer } from './net';
+import { HelSocket, HelSocketServer } from './net';
 
 import { HelLocalServer } from './local/local';
 

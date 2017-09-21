@@ -26,16 +26,16 @@ export interface HelSocket {
     close();
 }
 
-export type HelServerSpec = {
+export type HelSocketServerSpec = {
     ready:HelReadyHandler;
     connection:HelConnectionHandler;
 };
 
-export interface HelServer {
+export interface HelSocketServer {
     clients:HelSocket[];
     open:boolean;
 
-    start(spec:HelServerSpec);
+    start(spec:HelSocketServerSpec);
 
     close();
 }

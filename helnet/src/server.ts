@@ -1,10 +1,10 @@
-import { HelServer } from './net';
+import { HelSocketServer } from './net';
 
 import { HelLocalServerSpec, createLocalServer } from './local/local';
 
 export = function createServer (spec:{
     local?:HelLocalServerSpec,
-}) : HelServer {
+}) : HelSocketServer {
     if (spec.local) {
         return createLocalServer(spec.local);
     }
