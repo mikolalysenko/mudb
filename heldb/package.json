@@ -1,0 +1,33 @@
+{
+  "name": "heldb",
+  "version": "1.0.0",
+  "description": "Realtime database for multiplayer games",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "copy-files": "rm -rf node_modules/* && npm install && cp -r ../helnet/build/* node_modules/helnet/ && cp -r ../helschema/build/* node_modules/helschema/"
+  },
+  "keywords": [
+    "heldb",
+    "multiplayer",
+    "game",
+    "network"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^8.0.28",
+    "browserify": "^14.4.0",
+    "budo": "^10.0.4",
+    "tape": "^4.8.0",
+    "ts-node": "^3.3.0",
+    "tsify": "^3.0.3",
+    "tslint": "^5.7.0",
+    "tslint-language-service": "^0.9.6",
+    "typescript": "^2.5.2"
+  },
+  "dependencies": {
+    "helnet": "^1.0.0",
+    "helschema": "^1.0.0"
+  }
+}

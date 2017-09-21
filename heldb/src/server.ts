@@ -1,5 +1,6 @@
-import { HelSocket, HelSocketServer } from 'helnet/net';
+import { HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
+
 import { HelStateSet, mostRecentCommonState, pushState } from './lib/state-set';
 import { HelStatistic, pushSample } from './lib/statistic';
 import { PacketType } from './lib/packet';
@@ -79,7 +80,6 @@ class HelServer<
         this._started = true;
 
         const handleMessage = (client:Client, data) => {
-
         };
 
         const handleRPC = (client:Client, data, responseId:number) => {

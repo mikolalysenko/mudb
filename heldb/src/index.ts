@@ -3,5 +3,5 @@ import createServer from './server';
 
 export default {
     createClient,
-    createServer
+    createServer,
 };

@@ -1,18 +1,16 @@
-import tape = require('tape');
-
 import {} from 'helschema';
-import { createSocketServer, createSocket } from 'helnet';
+import { createSocketServer, createSocket } = require('helnet');
 import { createClient, createServer } from '../index';
 
 const protocol = {};
 
 const socketServer = createSocketServer({
-    local: true
+    local: {},
 });
 
 const server = createServer({
     protocol,
-    socketServer
+    socketServer,
 });
 
 server.start({
@@ -21,19 +19,19 @@ server.start({
     tick() {
     },
     connect() {
-    }
-})
+    },
+});
 
 function createClient () {
     const socket = createSocket({
         local: {
-            socketServer
-        }
+            socketServer,
+        },
     });
 
     const client = createClient({
         protocol,
-        socket
+        socket,
     });
 
     client.start({
