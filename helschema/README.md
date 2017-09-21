@@ -77,6 +77,8 @@ JS string data type
 
 #### `require('helschema/struct')(schema[,identity])`
 
+#### `require('helschema/union')(subtypes[,identity])`
+
 ## data structures
 
 #### `require('helschema/dictionary')([identity])`
@@ -95,7 +97,6 @@ JS string data type
 ## more types
 
 * fixed point numbers
-* discriminated unions
 * enums
 * tuples
 * fixed size vectors

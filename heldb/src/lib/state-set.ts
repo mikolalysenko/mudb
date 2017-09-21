@@ -1,6 +1,19 @@
 import HelModel from 'helschema/model';
 
 export function pushState<State> (stateSet:HelStateSet<State>, tick:number, state:State) {
+    const {ticks, states} = stateSet;
+    ticks.push(tick);
+    states.push(state);
+    let ptr = ticks.length - 2;
+    for (; ptr >= 1; --ptr) {
+        if (ticks[ptr] <= tick) {
+            break;
+        }
+        ticks[ptr + 1] = ticks[ptr];
+        states[ptr + 1] = states[ptr];
+    }
+    ticks[ptr + 1] = tick;
+    states[ptr + 1] = state;
 }
 
 export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:HelStateSet<State>) {
@@ -50,5 +63,42 @@ export class HelStateSet<State> {
             }
         }
         return -1;
+    }
+}
+
+export function updateStateSet (states:number[], add:number[], drop:number[]) {
+    // add states
+
+    // remove states
+}
+
+const _pointers:number[] = [];
+const _heads:number[] = [];
+export function mostRecentCommonState (states:number[][]) : number {
+    _pointers.length = states.length;
+    _heads.length = states.length;
+    for (let i = 0; i < states.length; ++i) {
+        _pointers[i] = states[i].length - 1;
+        _heads[i] = states[i][states[i].length - 1];
+    }
+
+    while (true) {
+        let largestIndex = 0;
+        let largestValue = _heads[0];
+        let allEqual = true;
+        for (let i = 1; i < states.length; ++i) {
+            const v = _heads[i];
+            allEqual = allEqual && (v === largestValue);
+            if (v > largestValue) {
+                largestIndex = i;
+                largestValue = v;
+            }
+        }
+
+        if (allEqual) {
+            return largestValue;
+        }
+
+        _heads[largestIndex] = states[largestIndex][--_pointers[largestIndex]];
     }
 }

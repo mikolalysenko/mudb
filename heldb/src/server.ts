@@ -79,6 +79,13 @@ class HelServer<
         }
         this._started = true;
         this.socketServer.start({
+            ready (err?:any) {
+                if (err) {
+                    return;
+                }
+            },
+            connect() {
+            }
         });
     }
 
@@ -86,8 +93,12 @@ class HelServer<
     public commit () {
     }
 
-    // destr
+    // destroy everything
     public close () {
+        if (!this.running) {
+            return;
+        }
+        this.socketServer.close();
     }
 }
 
