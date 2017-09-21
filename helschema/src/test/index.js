@@ -3,4 +3,5 @@
 // require('./string');
 // require('./struct');
 
-require('./struct2');
+// require('./struct2');
+require('./union');

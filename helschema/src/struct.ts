@@ -181,7 +181,7 @@ export default function createStruct <StructSpec extends { [prop:string]:HelMode
     });
 
     // alloc subroutine
-    methods.alloc.push(`result=_alloc();`);
+    methods.alloc.push(`var result=_alloc();`);
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         switch(type._helType) {
