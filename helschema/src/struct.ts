@@ -181,7 +181,7 @@ export default function createStruct <StructSpec extends { [prop:string]:HelMode
     });
 
     // alloc subroutine
-    methods.alloc.push(`result=_alloc();`);
+    methods.alloc.push(`var result=_alloc();`);
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         switch(type._helType) {
@@ -226,7 +226,7 @@ export default function createStruct <StructSpec extends { [prop:string]:HelMode
     });
 
     // clone subroutine
-    methods.clone.push(`const result = _alloc();`)
+    methods.clone.push(`var result = _alloc();`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         switch(type._helType) {
@@ -267,14 +267,14 @@ export default function createStruct <StructSpec extends { [prop:string]:HelMode
                 return methods.diff.def(`${typeRefs[i]}.diff(x["${name}"],y["${name}"])`)
         }
     });
-    methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&')}) return;const result = {};`);
+    methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&')}) return;var result = {};`);
     structProps.map((name, i) => {
         methods.diff.push(`if(${diffReqdRefs[i]}!==void 0){result["${name}"]=${diffReqdRefs[i]};}`);
     });
     methods.diff.push('return result;');
 
     // patch subroutine
-    methods.patch.push(`if (!p) { return clone(x); } const result=_alloc();`)
+    methods.patch.push(`if (!p) { return clone(x); } var result=_alloc();`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         methods.patch.push(`if("${name}" in p){`);
