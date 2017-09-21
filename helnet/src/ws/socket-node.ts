@@ -1,3 +1,4 @@
+/*
 import {
     HelSocket,
     HelSocketSpec,
@@ -340,3 +341,4 @@ export function createWebSocketServer (spec:{
 }) {
     return new HelWebSocketServer(spec.server);
 }
+*/

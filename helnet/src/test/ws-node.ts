@@ -1,3 +1,4 @@
+/*
 import { createWebSocketServer } from '../ws/socket-node';
 import tape = require('tape');
 import WebSocket = require('ws');
@@ -68,3 +69,4 @@ tape('start connection', (t) => {
         t.end();
     });
 });
+*/

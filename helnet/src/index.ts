@@ -1,7 +1,11 @@
-import createSocketServer from './server';
-import createSocket from './socket';
+import { HelSocket, HelServer } from './net';
 
-export default {
+import { HelLocalServer } from './local/local';
+
+import createSocketServer = require('./server');
+import createSocket = require('./socket');
+
+export = {
     createSocket,
     createSocketServer,
 };
