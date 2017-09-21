@@ -41,6 +41,5 @@ tape('struct', function (t) {
         q: HelInt8(11),
     });
 
-
     t.end();
 });
