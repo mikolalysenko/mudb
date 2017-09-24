@@ -1,33 +1,23 @@
 import HelModel from './model';
 
-function createNumberSchema (_helType:string, value:number) : HelModel<number> {
-    return {
-        identity: value,
-        alloc () { return value },
-        free (x:number) { },
-        clone (x:number) { return x; },
-        diff (s:number, t:number) {
-            if (s !== t) {
-                return t; 
-            }
-            return;
-        },
-        patch(s:number, p:number) { return p; },
-        _helType
-    };
-}
+export class HelNumber implements HelModel<number> {
+    public readonly identity:number;
+    public readonly helType:string;
 
-
-const schemaCache:{ [helType:string]:{[defautlValue:number]:HelModel<number>} } = {};
-
-export = function getNumberSchema(helType:string, value?:number) : HelModel<number> {
-    let table = schemaCache[helType];
-    if (!table) {
-        table = schemaCache[helType] = {};
+    constructor (helType:string, value:number) {
+        this.helType = helType;
+        this.identity = value;
     }
-    const defaultValue = value === void 0 ? 0 : value;
-    if (defaultValue in table) {
-        return table[defaultValue];
+
+    alloc () { return this.identity }
+    free (x:number) { }
+    clone (x:number) { return x; }
+
+    diff (s:number, t:number) {
+        if (s !== t) {
+            return t; 
+        }
+        return;
     }
-    return table[defaultValue] = createNumberSchema(helType, defaultValue);
+    patch(s:number, p:number) { return p; }
 }

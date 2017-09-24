@@ -1,3 +1,2 @@
-import HelModel from './model';
-import HelNumber = require('./_number');
-export = (x?:number) => HelNumber('uint8', x);
+import {HelNumber} from './_number';
+export = (x?:number) => new HelNumber('uint8', x || 0);

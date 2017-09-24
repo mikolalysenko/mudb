@@ -2,8 +2,9 @@ export default interface HelModel<State> {
     // Identity state
     readonly identity:State;
     
-    // hel type
-    readonly _helType:string;
+    // Runtime type info
+    readonly helType:string;
+    readonly helData?:any;
 
     // Memory pool
     alloc ():State;

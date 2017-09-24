@@ -136,7 +136,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     prelude.push('function HelStruct(){');
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -162,7 +162,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     const identityRef = prelude.def('_alloc()');
     structProps.forEach((propName, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -184,7 +184,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     methods.alloc.push(`var result=_alloc();`);
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -207,7 +207,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     methods.free.push(`${poolRef}.push(x);`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -229,7 +229,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     methods.clone.push(`var result = _alloc();`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -252,7 +252,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     // diff subroutine
     const diffReqdRefs = structProps.map((name, i) => {
         const type = structTypes[i];
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -278,7 +278,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         methods.patch.push(`if("${name}" in p){`);
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -295,7 +295,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelModel<any>
                 break;
         }
         methods.patch.push(`}else{`)
-        switch(type._helType) {
+        switch(type.helType) {
             case 'int8':
             case 'int16':
             case 'int32':
