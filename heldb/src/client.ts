@@ -1,18 +1,18 @@
 import { HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
-import HelUnion from 'helschema/union';
+import HelUnion = require('helschema/union');
 import { HelStateSet, pushState, updateStateSet, mostRecentCommonState } from './lib/state-set';
 import { HelStatistic } from './lib/statistic';
 
 import { PacketType } from './lib/packet';
 
 type FreeModel = HelModel<any>;
-type RPCType = { 0: FreeModel, 1: FreeModel } | [FreeModel, FreeModel];
+type RPCType = { 0:FreeModel, 1:FreeModel } | [FreeModel, FreeModel];
 type MessageType = FreeModel;
 
 class HelRemoteServer<
     ServerState,
-    ServerModel extends FreeModel,
+    ServerModel extends HelModel<ServerState>,
     ServerRPCInterface,
     ServerMessageInterface> {
     public past:HelStateSet<ServerState>;
@@ -20,19 +20,17 @@ class HelRemoteServer<
 
     public readonly message:ServerMessageInterface;
     public readonly rpc:ServerRPCInterface;
-};
+}
 
 class HelClient<
     ClientState,
-    ClientModel extends FreeModel,
+    ClientModel extends HelModel<ClientState>,
     ClientRPCInterface,
-    ClientMessageInterface, 
-    ClientMessageSchema extends HelModel<any>,
+    ClientMessageInterface,
     ServerState,
-    ServerModel extends FreeModel,
-    ServerRPCInterface, 
-    ServerMessageInterface,
-    RemoteServer extends HelRemoteServer<ServerState, ServerModel, ServerRPCInterface, ServerMessageInterface>> {
+    ServerModel extends HelModel<ServerState>,
+    ServerRPCInterface,
+    ServerMessageInterface> {
     public readonly sessionId:string;
 
     public past:HelStateSet<ClientState>;
@@ -43,7 +41,7 @@ class HelClient<
 
     public tick:number;
 
-    public server:RemoteServer;
+    public server:HelRemoteServer<ServerState, ServerModel, ServerRPCInterface, ServerMessageInterface>;
     private _serverStates:number[] = [0];
 
     public running:boolean = false;
@@ -203,61 +201,58 @@ class HelClient<
 }
 
 export default function createHelClient<
-    ClientModelType extends FreeModel, 
+    ClientState,
+    ClientModel extends HelModel<ClientState>,
     ClientRPCTable extends { [method:string]:RPCType },
     ClientMessageTable extends { [event:string]:MessageType },
-    ServerModelType extends FreeModel,
+    ServerState,
+    ServerModelType extends HelModel<ServerState>,
     ServerRPCTable extends { [method:string]:RPCType },
     ServerMessageTable extends { [event:string]:MessageType } > (
-    { protocol, socket } : {
-        protocol : {
-            client: {
-                state: ClientModelType,
-                rpc: ClientRPCTable,
-                message: ClientMessageTable
+    { protocol, socket }:{
+        protocol:{
+            client:{
+                state:ClientModel,
+                rpc:ClientRPCTable,
+                message:ClientMessageTable,
             },
-            server: {
-                state: ServerModelType,
-                rpc: ServerRPCTable,
-                message: ServerMessageTable
-            }
+            server:{
+                state:ServerModelType,
+                rpc:ServerRPCTable,
+                message:ServerMessageTable,
+            },
         },
-        socket : HelSocket
+        socket:HelSocket,
     }) {
     type ClientRPCInterface = {
         [method in keyof ClientRPCTable]: (
-            args:ClientRPCTable[method]["0"]["identity"], 
-            cb:(err:any, result?:ClientRPCTable[method]["1"]["identity"]) => void) => void
+            args:ClientRPCTable[method]['0']['identity'],
+            cb:(err:any, result?:ClientRPCTable[method]['1']['identity']) => void) => void
     };
 
     type ClientMessageInterface = {
-        [method in keyof ClientMessageTable]: (data:ClientMessageTable[method]["identity"]) => void
+        [method in keyof ClientMessageTable]: (data:ClientMessageTable[method]['identity']) => void
     };
-    
-    type ServerState = ServerModelType["identity"];
 
     type ServerRPCInterface = {
         [method in keyof ServerRPCTable]: (
-            args:ServerRPCTable[method]["0"]["identity"], 
-            cb:(err:any, result?:ServerRPCTable[method]["1"]["identity"]) => void) => void
+            args:ServerRPCTable[method]['0']['identity'],
+            cb:(err:any, result?:ServerRPCTable[method]['1']['identity']) => void) => void
     };
 
     type ServerMessageInterface = {
-        [method in keyof ServerMessageTable]: (data:ServerMessageTable[method]["identity"]) => void
+        [method in keyof ServerMessageTable]: (data:ServerMessageTable[method]['identity']) => void
     };
 
-    type RemoteServer = HelRemoteServer<ServerState, ServerModelType, ServerRPCInterface, ServerMessageInterface>;
-
     return new HelClient<
-        ClientModelType["identity"],
-        ClientModelType,
+        ClientState,
+        ClientModel,
         ClientRPCInterface,
         ClientMessageInterface,
-        ServerModelType["identity"],
+        ServerState,
         ServerModelType,
         ServerRPCInterface,
-        ServerMessageInterface,
-        RemoteServer>({
+        ServerMessageInterface>({
             serverMessage: {},
             serverRPC: {},
         });

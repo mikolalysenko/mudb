@@ -1,7 +1,7 @@
 import {
     HelSocket,
-    HelServer,
-    HelServerSpec,
+    HelSocketServer,
+    HelSocketServerSpec,
     HelSessionId,
     HelSessionData,
     HelData,
@@ -114,7 +114,7 @@ function removeIfExists (array, element) {
     }
 }
 
-export class HelLocalServer implements HelServer {
+export class HelLocalServer implements HelSocketServer {
     public clients:HelSocket[] = [];
 
     public _pendingSockets:HelSocket[] = [];
@@ -141,7 +141,7 @@ export class HelLocalServer implements HelServer {
         removeIfExists(this._pendingSockets, socket);
     }
 
-    public start (spec:HelServerSpec) {
+    public start (spec:HelSocketServerSpec) {
         setTimeout(
             () => {
                 if (this._started) {

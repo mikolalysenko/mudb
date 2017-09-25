@@ -1,3 +1,4 @@
+/*
 import {
     HelSessionId,
     HelSocket,
@@ -148,3 +149,4 @@ export function connectToServer (spec:{
         spec.url,
         spec.numUnreliable || 5);
 }
+*/
