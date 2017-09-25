@@ -36,6 +36,21 @@ entities['foo'] = player
 
 # api
 
+## interfaces
+
+### schema
+
+#### `import {HelSchema} = from 'helschema/schema';`
+
+* `identity`
+* `helType`
+* `helData` (optional)
+* `alloc()`
+* `free()`
+* `clone()`
+* `diff()`
+* `patch()`
+
 ## primitives
 
 ### numbers

@@ -1,2 +1,2 @@
 import { HelString } from './_string';
-export = (identity) => new HelString(identity);
+export = (identity?:string) => new HelString(identity || '');
