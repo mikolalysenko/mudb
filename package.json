@@ -1,0 +1,25 @@
+{
+  "name": "heldb",
+  "version": "1.0.0",
+  "description": "Realtime object replication database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikolalysenko/heldb.git"
+  },
+  "keywords": [
+    "object",
+    "replication",
+    "database",
+    "realtime"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mikolalysenko/heldb/issues"
+  },
+  "homepage": "https://github.com/mikolalysenko/heldb#readme"
+}

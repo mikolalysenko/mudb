@@ -1,7 +1,7 @@
 import HelModel from 'helschema/model';
 import HelUnion = require('helschema/union');
 import { HelSocket } from 'helnet/net';
-import { HelStateSet, pushState } from './state-set';
+import { HelStateSet, pushState, mostRecentCommonState } from './state-set';
 
 export type FreeModel = HelModel<any>;
 export type MessageType = FreeModel;
@@ -235,11 +235,12 @@ export class HelProtocol<
         return <MessageInterface>result;
     }
 
-    public createPRCCallDispatch (onRPC:(method:string, data:any, cb?:(err?:any, result?:any) => void) => void) : {
+    public createPRCCallDispatch (socket:HelSocket, rpcReplies:HelRPCReplies) : {
         [rpc in keyof RPCTable]:(
             args:RPCTable[rpc]['0']['identity'],
             cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void;
     }  {
+        /*
         const result = {};
         const argSchema = this.rpcArgsSchema;
         Object.keys(this.rpcTable).forEach((method) => {
@@ -249,16 +250,37 @@ export class HelProtocol<
                 packet.data = arg;
                 const serialized = argSchema.diff(argSchema.identity, packet);
                 packet.data = null;
+
+                if (cb) {
+                }
                 return onRPC(method, serialized, cb);
             };
         });
-
+        */
         type RPCInterface = {
             [rpc in keyof RPCTable]:(
                 args:RPCTable[rpc]['0']['identity'],
                 cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void;
         };
+        return <RPCInterface>{};
+    }
 
-        return <RPCInterface>result;
+    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], socket:HelSocket) {
+        observations.push(localStates.ticks);
+        const baseTick = mostRecentCommonState(observations);
+        observations.pop();
+
+        const baseIndex = localStates.at(baseTick);
+        const baseState = localStates.states[baseIndex];
+
+        const nextTick = localStates.ticks[localStates.ticks.length - 1];
+        const nextState = localStates.states[localStates.states.length - 1];
+
+        socket.sendUnreliable(JSON.stringify({
+            type: HelPacketType.STATE,
+            baseTick,
+            nextTick,
+            data: this.stateSchema.diff(baseState, nextState),
+        }));
     }
 }

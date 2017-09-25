@@ -32,6 +32,23 @@ const testClient = createClient({
     protocol,
 });
 
+const testServer = createServer({
+    socketServer: require('helnet/server')(),
+    protocol,
+});
+
+testServer.start({
+    message: {
+        splat(event) {
+        },
+    },
+    rpc: {},
+    ready() {
+    },
+    connect(client) {
+    },
+});
+
 export default {
     createClient,
     createServer,

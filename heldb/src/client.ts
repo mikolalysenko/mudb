@@ -2,23 +2,22 @@ import { HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
 import HelUnion = require('helschema/union');
 
-import { HelStateSet, pushState, updateStateSet, mostRecentCommonState } from './lib/state-set';
-import { HelStatistic } from './lib/statistic';
+import { HelStateSet, pushState, mostRecentCommonState, destroyStateSet } from './lib/state-set';
 import { HelProtocol, FreeModel, MessageTableBase, RPCTableBase, HelRPCReplies } from './lib/protocol';
 
 class HelRemoteServer<
-    ServerModel extends FreeModel,
+    ServerStateSchema extends FreeModel,
     ServerMessageInterface,
     ServerRPCInterface> {
-    public past:HelStateSet<ServerModel>;
-    public model:ServerModel;
+    public past:HelStateSet<ServerStateSchema>;
+    public schema:ServerStateSchema;
 
     public readonly message:ServerMessageInterface;
     public readonly rpc:ServerRPCInterface;
 
-    constructor (model:ServerModel, message:ServerMessageInterface, rpc:ServerRPCInterface) {
-        this.past = new HelStateSet(model.clone(model.identity));
-        this.model = model;
+    constructor (schema:ServerStateSchema, message:ServerMessageInterface, rpc:ServerRPCInterface) {
+        this.past = new HelStateSet(schema.clone(schema.identity));
+        this.schema = schema;
         this.message = message;
         this.rpc = rpc;
     }
@@ -54,6 +53,7 @@ class HelClient<
 
     // internal protocol variables
     private _protocol:HelProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
+    private _remoteProtocol:HelProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
     private _serverStates:number[] = [0];
     private _rpcReplies:HelRPCReplies = new HelRPCReplies();
 
@@ -71,17 +71,10 @@ class HelClient<
         this.socket = spec.socket;
         this.sessionId = spec.socket.sessionId;
 
+        this.state = spec.clientStateSchema.clone(spec.clientStateSchema.identity);
+
         this._protocol = new HelProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
-
-        const remoteProtocol = new HelProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
-
-        const onMessage = () => {};
-        const onRPC = () => {};
-
-        this.server = new HelRemoteServer(
-            spec.serverStateSchema,
-            remoteProtocol.createMessageDispatch(onMessage),
-            remoteProtocol.createPRCCallDispatch(onRPC));
+        this._remoteProtocol = new HelProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
     }
 
     public start (spec:{
@@ -98,6 +91,11 @@ class HelClient<
             return;
         }
         this._started = true;
+
+        this.server = new HelRemoteServer(
+            this._protocol.stateSchema,
+            this._remoteProtocol.createMessageDispatch(this.socket),
+            this._remoteProtocol.createPRCCallDispatch(this.socket, this._rpcReplies));
 
         const parsePacket = this._protocol.createParser({
             socket: this.socket,
@@ -120,7 +118,19 @@ class HelClient<
             message: parsePacket,
             unreliableMessage: parsePacket,
             close: () => {
-                // cancel all pending RPC callbacks
+                this.running = false;
+                this._closed = true;
+
+                // cancel all pending RPC
+                this._rpcReplies.cancel();
+
+                // call close
+                spec.close();
+
+                // clean up states
+                destroyStateSet(this.server.schema, this.server.past);
+                destroyStateSet(this.schema, this.past);
+                this.schema.free(this.state);
             },
         });
     }

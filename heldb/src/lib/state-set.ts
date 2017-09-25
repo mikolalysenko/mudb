@@ -66,12 +66,6 @@ export class HelStateSet<State> {
     }
 }
 
-export function updateStateSet (states:number[], add:number[], drop:number[]) {
-    // add states
-
-    // remove states
-}
-
 const _pointers:number[] = [];
 const _heads:number[] = [];
 export function mostRecentCommonState (states:number[][]) : number {
