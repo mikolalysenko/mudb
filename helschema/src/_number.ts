@@ -1,6 +1,6 @@
-import HelModel from './model';
+import { HelSchema } from './schema';
 
-export class HelNumber implements HelModel<number> {
+export class HelNumber implements HelSchema<number> {
     public readonly identity:number;
     public readonly helType:string;
 

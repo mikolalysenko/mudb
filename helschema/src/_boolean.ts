@@ -1,6 +1,6 @@
-import HelModel from './model';
+import { HelSchema } from './schema';
 
-export class HelBoolean implements HelModel<boolean> {
+export class HelBoolean implements HelSchema<boolean> {
     public readonly identity:boolean;
     public readonly helType = 'boolean';
 

@@ -1,4 +1,4 @@
-export default interface HelModel<State> {
+export interface HelSchema<State> {
     // Identity state
     readonly identity:State;
     
