@@ -1,8 +1,10 @@
 heldb
 =====
-`heldb` is a typescript-friendly ecosystem for synchronizing low latency replicas on the web.
+`heldb` is a fast, simple data base for creating multiplayer games on the web.
 
-Planned features:
+**UNDER CONSTRUCTION**
+
+## Planned features:
 
 * simple API
 * thorough documentation
@@ -18,7 +20,7 @@ Planned features:
 * tracing and playback
 * quick start development server
 
-Deliberately missing features:
+## Deliberately missing features:
 
 * Lobby server
 * Match making
@@ -26,6 +28,12 @@ Deliberately missing features:
 * Session management
 * Region of interest management
 * Fully peer-to-peer networking
+
+# install
+
+```
+npm i heldb helschema helnet
+```
 
 # example
 
@@ -135,6 +143,12 @@ if (process.env.HEL_CLIENT) {
 }
 ```
 
+## running the example
+
+```
+node example.js
+```
+
 # overview
 
 ## helschema
@@ -184,3 +198,5 @@ Timelines
 
 ### protobufs
 Schema based serialization
+
+# credits
