@@ -148,14 +148,39 @@ Used to specify network protocol.  Perform serialization, diffing and patching
 
 # design notes
 
+## replication
+
+### active
+
+"Transactions"
+
+RPC and messages
+
+Useful for replicating large data sets
+
+### passive
+
+Replicates state
+
+Uses delta encoding
+
+Necessary for physical properties, dynamic objects
+
+## schemas
+
+Faster, smaller serialization.
+
+Extensible, avoids ontological problems
+
+Simple
+
 ## systems that influenced heldb
 
 ### quake 3
+Delta based state replication
 
 ### planetary annihilation
+Timelines
 
 ### protobufs
-
-### timelines
-
-### colyseus
+Schema based serialization

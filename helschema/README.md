@@ -121,3 +121,6 @@ JS string data type
 ## design
 
 * should models define constructors?
+* should pool allocation be optional?
+    + some types don't need a pool
+    + pooled allocation can be cumbersome
