@@ -5,41 +5,16 @@ Network library for multiplayer games on the web.
 
 # api
 
-## client
+## protocols
 
-### constructor
+## constructor
 
-#### `const client = require('heldb/client')(spec)`
+### client
 
-### connection
+### server
 
-#### `client.tick`
+## state replication
 
-#### `client.running`
+## messages
 
-#### `client.ping`
-
-#### `client.
-
-### state
-
-#### `client.past`
-
-#### `client.state`
-
-#### `client.model`
-
-#### `client.commit()`
-
-### remote
-
-#### `client.server`
-
-#### `client.server.past`
-
-#### `client.server.rpc`
-
-#### `client.server.message`
-
-
-## server
+## rpc

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "copy-files": "rm -rf node_modules/* && npm install && cp -r ../helnet/build/* node_modules/helnet/ && cp -r ../helschema/build/* node_modules/helschema/"
+    "local": "budo src/example/local.ts --open --live -- -p [tsify]"
+
   },
   "keywords": [
     "heldb",

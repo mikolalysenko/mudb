@@ -3,12 +3,43 @@ import HelUnion = require('helschema/union');
 import { HelSocket } from 'helnet/net';
 import { HelStateSet, pushState, mostRecentCommonState } from './state-set';
 
+function compareInt (a, b) { return a - b; }
+
 export type FreeModel = HelModel<any>;
+
 export type MessageType = FreeModel;
 export type MessageTableBase = { [message:string]:MessageType };
+export interface MessageInterface<MessageTable extends MessageTableBase> {
+    api:{ [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void; };
+    schema:HelModel<{
+        type:keyof MessageTable;
+        data:MessageTable[keyof MessageTable]['identity'];
+    }>;
+}
 
 export type RPCType = { 0:FreeModel, 1:FreeModel } | [FreeModel, FreeModel];
 export type RPCTableBase = { [event:string]:RPCType };
+export interface RPCInterface<RPCTable extends RPCTableBase> {
+    api:{
+        [rpc in keyof RPCTable]:(
+            args:RPCTable[rpc]['0']['identity'],
+            cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
+    args:HelModel<{
+        type:keyof RPCTable;
+        data:RPCTable[keyof RPCTable]['0']['identity'];
+    }>;
+    response:HelModel<{
+        type:keyof RPCTable,
+        data:RPCTable[keyof RPCTable]['1']['identity'];
+    }>;
+}
+
+export interface HelStateReplica<StateSchema extends FreeModel> {
+    past:HelStateSet<StateSchema['identity']>;
+    state:StateSchema['identity'];
+    tick:number;
+    schema:StateSchema;
+}
 
 export enum HelPacketType {
     RPC,
@@ -47,20 +78,11 @@ export class HelProtocol<
     public readonly stateSchema:StateSchema;
 
     public readonly messageTable:MessageTable;
-    public readonly messageSchema:HelModel<{
-        type:keyof MessageTable,
-        data:MessageTable[keyof MessageTable]['identity'],
-    }>;
+    public readonly messageSchema:MessageInterface<MessageTable>['schema'];
 
     public readonly rpcTable:RPCTable;
-    public readonly rpcArgsSchema:HelModel<{
-        type:keyof RPCTable,
-        data:RPCTable[keyof RPCTable]['0']['identity'],
-    }>;
-    public readonly rpcResponseSchema:HelModel<{
-        type:keyof RPCTable,
-        data:RPCTable[keyof RPCTable]['1']['identity'],
-    }>;
+    public readonly rpcArgsSchema:RPCInterface<RPCTable>['args'];
+    public readonly rpcResponseSchema:RPCInterface<RPCTable>['response'];
 
     constructor (stateSchema:StateSchema, messageTable:MessageTable, rpcTable:RPCTable) {
         this.stateSchema = stateSchema;
@@ -89,23 +111,19 @@ export class HelProtocol<
 
     public createParser ({
         socket,
-        stateSet,
+        replica,
         messageHandlers,
         rpcHandlers,
         rpcReplies,
-        observations }:{
+        observations,
+        stateHandler }:{
         socket:HelSocket,
-        stateSet:HelStateSet<StateSchema['identity']>,
+        replica:HelStateReplica<StateSchema>,
         observations:number[],
-        messageHandlers:{
-            [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void;
-        },
-        rpcHandlers:{
-            [rpc in keyof RPCTable]:(
-                args:RPCTable[rpc]['0']['identity'],
-                cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void;
-        },
+        messageHandlers:MessageInterface<MessageTable>['api'],
+        rpcHandlers:RPCInterface<RPCTable>['api'],
         rpcReplies:HelRPCReplies,
+        stateHandler:(state:StateSchema['identity'], tick:number) => void,
     }) : (packet:any) => void {
         const messageSchema = this.messageSchema;
         function handleMessage (data:any) {
@@ -174,6 +192,7 @@ export class HelProtocol<
         };
 
         function handleState (baseTick:number, patch:any, nextTick:number) {
+            const stateSet = replica.past;
             const baseIndex = stateSet.at(baseTick);
             if (baseIndex >= 0 && stateSet.ticks[baseIndex] === baseTick) {
                 const baseState = stateSet.states[baseIndex];
@@ -181,18 +200,47 @@ export class HelProtocol<
                 pushState(stateSet, nextTick, nextState);
                 ackStatePacket.tick = nextTick;
                 socket.sendUnreliable(JSON.stringify(ackStatePacket));
+                if (nextTick > replica.tick) {
+                    replica.tick = nextTick;
+                    replica.state = nextState;
+                    stateHandler(nextState, nextTick);
+                }
             }
         }
 
         function handleAckState (tick:number) {
-            // add tick to state set
+            observations.push(tick);
+            let ptr = observations.length - 1;
+            while (ptr > 1) {
+                if (observations[ptr - 1] > tick) {
+                    observations[ptr] = observations[ptr - 1];
+                    ptr -= 1;
+                } else {
+                    break;
+                }
+            }
+            if (observations[ptr] < tick) {
+                observations[ptr] = tick;
+            }
         }
 
         function handleDropState (tick:number) {
-            // drop all ticks in state set
+            let ptr = 1;
+            for (; ptr < observations.length; ++ptr) {
+                if (observations[ptr] > tick) {
+                    break;
+                }
+            }
+
+            let sptr = 1;
+            for (; ptr < observations.length; ++ptr, ++sptr) {
+                observations[sptr] = observations[ptr];
+            }
+            observations.length = sptr;
         }
 
         function onPacket (data:any) {
+            console.log('got packet:', data);
             const packet = JSON.parse(data);
             switch (packet.type) {
                 case HelPacketType.MESSAGE:
@@ -213,10 +261,8 @@ export class HelProtocol<
         return onPacket;
     }
 
-    public createMessageDispatch (socket:HelSocket) : {
-        [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void;
-    } {
-        const result = {};
+    public createMessageDispatch (sockets:HelSocket[]) : MessageInterface<MessageTable>['api'] {
+        const result = <MessageInterface<MessageTable>['api']>{};
         const schema = this.messageSchema;
         Object.keys(this.messageTable).forEach((message) => {
             const packet = schema.alloc();
@@ -225,23 +271,21 @@ export class HelProtocol<
                 packet.data = data;
                 const serialized = schema.diff(schema.identity, packet);
                 packet.data = null;
-                socket.send(JSON.stringify(serialized));
+                const rawData = JSON.stringify({
+                    type: HelPacketType.MESSAGE,
+                    data: serialized,
+                });
+                for (let i = 0; i < sockets.length; ++i) {
+                    sockets[i].send(rawData);
+                }
             };
         });
-
-        type MessageInterface = {
-            [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void;
-        };
-        return <MessageInterface>result;
+        return result;
     }
 
-    public createPRCCallDispatch (socket:HelSocket, rpcReplies:HelRPCReplies) : {
-        [rpc in keyof RPCTable]:(
-            args:RPCTable[rpc]['0']['identity'],
-            cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void;
-    }  {
+    public createPRCCallDispatch (socket:HelSocket, rpcReplies:HelRPCReplies) : RPCInterface<RPCTable>['api']  {
+        const result = <RPCInterface<RPCTable>['api']>{};
         /*
-        const result = {};
         const argSchema = this.rpcArgsSchema;
         Object.keys(this.rpcTable).forEach((method) => {
             const packet = argSchema.alloc();
@@ -257,15 +301,10 @@ export class HelProtocol<
             };
         });
         */
-        type RPCInterface = {
-            [rpc in keyof RPCTable]:(
-                args:RPCTable[rpc]['0']['identity'],
-                cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void;
-        };
-        return <RPCInterface>{};
+        return result;
     }
 
-    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], socket:HelSocket) {
+    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], sockets:HelSocket[]) {
         observations.push(localStates.ticks);
         const baseTick = mostRecentCommonState(observations);
         observations.pop();
@@ -276,11 +315,15 @@ export class HelProtocol<
         const nextTick = localStates.ticks[localStates.ticks.length - 1];
         const nextState = localStates.states[localStates.states.length - 1];
 
-        socket.sendUnreliable(JSON.stringify({
+        const data = JSON.stringify({
             type: HelPacketType.STATE,
             baseTick,
             nextTick,
             data: this.stateSchema.diff(baseState, nextState),
-        }));
+        });
+
+        for (let i = 0; i < sockets.length; ++i) {
+            sockets[i].sendUnreliable(data);
+        }
     }
 }

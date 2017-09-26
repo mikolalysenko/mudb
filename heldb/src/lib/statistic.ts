@@ -5,7 +5,7 @@ function compare (a:number, b:number) { return a - b; }
 export function pushSample (stats:HelStatistic, value:number) {
     const {
         samples,
-        maxSamples
+        maxSamples,
     } = stats;
 
     // insert value into samples
@@ -34,7 +34,7 @@ export function pushSample (stats:HelStatistic, value:number) {
     // compute mode, average and std. dev
     let sum = 0;
     let sum2 = 0;
-    
+
     let curRunLength = 0;
     let curRunValue = NaN;
 
