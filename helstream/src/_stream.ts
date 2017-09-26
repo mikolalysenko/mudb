@@ -1,3 +1,9 @@
+import StringEncode = require('./string');
+const {
+    encodeString,
+    decodeString,
+} = StringEncode;
+
 // round to next highest power of 2
 function ceilLog2 (v_) {
     let v = v_ - 1;
@@ -97,19 +103,33 @@ export class HelStream {
         this.offset += 4;
     }
 
-    public readUint8 (x:number) : number {
+    public readUint8 () : number {
         return this.buffer.uint8[this.offset++];
     }
 
-    public readUint16 (x:number) : number {
+    public readUint16 () : number {
         const offset = this.offset;
         this.offset += 2;
         return this.buffer.uint16[offset & 1][offset >> 1];
     }
 
-    public readUint32 (x:number) : number {
+    public readUint32 () : number {
         const offset = this.offset;
         this.offset += 4;
         return this.buffer.uint16[offset & 3][offset >> 2];
+    }
+
+    public writeString (str:string) {
+        const bytes = encodeString(str);
+        this.writeUint32(bytes.length);
+        this.buffer.uint8.set(bytes, this.offset);
+        this.offset += bytes.length;
+    }
+
+    public readString () {
+        const byteLength = this.readUint32();
+        const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
+        this.offset += byteLength;
+        return decodeString(bytes);
     }
 }
