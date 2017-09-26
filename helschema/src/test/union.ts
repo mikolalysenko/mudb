@@ -55,7 +55,7 @@ tape('union [2]', function (t) {
   base.data = 'Name';
   console.log('target:', target);
   console.log('base:', base);
-  let patch_2 = TxtNum.diff(base, target);
+  let patch_2 = TxtNum.diff(target, base);
   console.log('patch_2:', patch_2);
 
   t.end();
