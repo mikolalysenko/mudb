@@ -57,7 +57,7 @@ export class HelStateSet<State> {
     // retrieves the state at tick
     public at (tick:number) : number {
         // FIXME: replace with binary search
-        for (let i = 0; i < this.ticks.length; ++i) {
+        for (let i = this.ticks.length - 1; i >= 0; --i) {
             if (this.ticks[i] <= tick) {
                 return i;
             }
