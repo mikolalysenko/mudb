@@ -10,6 +10,16 @@ Transportation:
 * TCP/UDP (planned)
 * File system (planned)
 
+# TODO
+
+* finish websockets
+* jitter simulation
+* latency simulation
+* logging
+* testing
+* docs
+* session id generation
+
 # example
 
 ## local

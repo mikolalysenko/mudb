@@ -1,20 +1,17 @@
-import HelModel from './model';
+import { HelSchema } from './schema';
 
-export class HelUnion<SchemaSpec extends {
-    [type:string]:HelModel<any>
+export class HelUnion<SubTypes extends {
+    [type:string]:HelSchema<any>
 }, StateType extends {
     type:string,
     data:any,   
-}> implements HelModel<StateType> {
+}> implements HelSchema<StateType> {
     public readonly identity:StateType;
 
     public readonly helType = 'union';
-    public readonly helData:SchemaSpec;
+    public readonly helData:SubTypes;
 
-    constructor (schemaSpec:SchemaSpec, identity:StateType) {
-        console.log('schemeSpec', schemaSpec);
-        console.log();
-        console.log('identity', identity);
+    constructor (schemaSpec:SubTypes, identity:StateType) {
         this.helData = schemaSpec;
         this.identity = identity;
     }

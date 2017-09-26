@@ -1,6 +1,6 @@
-import HelModel from './model';
+import { HelSchema } from './schema';
 
-export class HelDictionary<ValueType, ValueModel extends HelModel<ValueType>> implements HelModel<{[key:string]:ValueType}> {
+export class HelDictionary<ValueType, ValueModel extends HelSchema<ValueType>> implements HelSchema<{[key:string]:ValueType}> {
     public readonly identity:{[key:string]:ValueType};
     
     public readonly helType = 'dictionary';

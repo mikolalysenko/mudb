@@ -1,13 +1,13 @@
-import HelModel from './model';
+import { HelSchema } from './schema';
 
-export = function createStruct <StructSpec extends { [prop:string]:HelModel<any> } > (spec:StructSpec) {
+export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any> } > (spec:StructSpec) {
     type StructState = {
         [P in keyof StructSpec]: StructSpec[P]["identity"];
     };
-    type StructModel = HelModel<StructState>;
+    type StructModel = HelSchema<StructState>;
 
     const structProps:string[] = Object.keys(spec).sort();
-    const structTypes:HelModel<any>[] = structProps.map((propName) => spec[propName]);
+    const structTypes:HelSchema<any>[] = structProps.map((propName) => spec[propName]);
 
     const args:string[] = [];
     const props:any[] = [];

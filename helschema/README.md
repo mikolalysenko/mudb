@@ -36,6 +36,21 @@ entities['foo'] = player
 
 # api
 
+## interfaces
+
+### schema
+
+#### `import {HelSchema} = from 'helschema/schema';`
+
+* `identity`
+* `helType`
+* `helData` (optional)
+* `alloc()`
+* `free()`
+* `clone()`
+* `diff()`
+* `patch()`
+
 ## primitives
 
 ### numbers
@@ -106,3 +121,6 @@ JS string data type
 ## design
 
 * should models define constructors?
+* should pool allocation be optional?
+    + some types don't need a pool
+    + pooled allocation can be cumbersome

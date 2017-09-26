@@ -1,109 +1,202 @@
 heldb
 =====
-`heldb` is a typescript-friendly ecosystem for synchronizing low latency replicas on the web.
+`heldb` is a fast, simple data base for creating multiplayer games on the web.
+
+**UNDER CONSTRUCTION**
+
+## Planned features:
+
+* simple API
+* thorough documentation
+* typescript compatibility
+* delta based state replication
+* 0-copy binary serialization
+* 0-gc pooled memory management
+* client-server model
+* type safe RPC
+* state logging
+* multiple network transports
+* local network simulation
+* tracing and playback
+* quick start development server
+
+## Deliberately missing features:
+
+* Lobby server
+* Match making
+* Login/identity management
+* Session management
+* Region of interest management
+* Fully peer-to-peer networking
+
+# install
+
+```
+npm i heldb helschema helnet
+```
 
 # example
 
-#### `model.js`
-
 ```javascript
-const HelStruct = require('helschema/struct')
+// First we specify a network protocol
 const HelNumber = require('helschema/number')
 const HelString = require('helschema/string')
+const HelStruct = require('helschema/struct')
 const HelDictionary = require('helschema/dictionary')
 
-const EntityModel = HelStruct({
+const EntitySchema = HelStruct({
     x: HelNumber,
     y: HelNumber,
-    dx: HelNumber,
-    dy: HelNumber,
     color: HelString
 })
 
-module.exports = {
-    game: HelDictionary(EntityModel),
-    entity: EntityModel
-    tick: (game) => {
-        Object.keys(game).forEach((entityId) => {
-            const entity = game[entityId]
-            entity.x += entity.dx
-            entity.y += entity.dy
-        })
+const protocol = {
+    client: {
+        state: EntitySchema,
+        message: {},
+        rpc: {},
+    },
+    server: {
+        state: HelDictionary(EntitySchema),
+        message: { 
+            splat: EntitySchema
+        },
+        rpc: {}
     }
+}
+
+function clientMain () {
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+    const context = canvas.getContext('2d')
+
+    const client = require('heldb/client')({
+        protocol,
+        socket: require('helnet/socket')()
+    })
+
+    function randColor () {
+        return `rgb(${Math.random() * 256},${Math.random() * 256},${Math.random() * 256})`
+    }
+
+    client.start({
+        ready(err) {
+            const player = client.state.head
+            player.x = 0.5
+            player.y = 0.5
+            player.color = randColor()
+            client.state.commit()
+
+            canvas.addEventListener('mousemove', ({clientX, clientY}) => {
+                player.x = clientX / canvas.width
+                player.y = clientY / canvas.height
+                client.state.commit()
+            })
+
+            canvas.addEventListener('click', ({clientX, clientY}) => {
+                client.actions.splat({
+                    x: clientX / canvas.width,
+                    y: clientY / canvas.height,
+                    color: randColor()
+                })
+            })
+
+            function render () {
+                client.peers.forEach((peer) => {
+                    const {x, y, color} = peer.state.head
+                    context.fillStyle = color
+                    context.fillRect(canvas.width * x - 10, canvas.height * y - 10, 20, 20)
+                })
+                window.requestAnimationFrame(render)
+            }
+            render()
+        }
+    })
+}
+
+function serverMain () {
+    const server = require('heldb/server')({
+        protocol,
+        socketServer: require('helnet/server')({
+            client: __filename,
+            live: true,
+            debug: true
+        })
+    })
+    
+    let splatCount = 0
+
+    server.start({
+        event: {
+            splat (splat) {
+                server.state.head[++splatCount] = EntitySchema.clone(splat)
+                server.state.commit()
+            }
+        }
+    })
+}
+
+if (process.env.HEL_CLIENT) {
+    clientMain()
+} else {
+    serverMain()
 }
 ```
 
-#### `client.js`
+## running the example
 
-```javascript
-const model = require('./model')
-
-const canvas = document.createElement('canvas')
-document.body.appendChild(canvas)
-
-require('helclient')({
-    model: model.game,
-    onReady(err, client) {
-        if (!client) {
-            return alert(err)
-        }
-
-        client.onTick(model.game.tick)
-
-        function render () {
-            client.
-        }
-    }
-})
+```
+node example.js
 ```
 
-#### `server.js`
-
-```javascript
-const path = require('path')
-const model = require('./model')
-
-require('helserver')({
-    model: model.game,
-    net: {
-        budo: {
-            client: path.join(__dirname, './client.js'),
-        }
-    },
-    tickRate: 32,
-    syncRate: 200,
-    onReady(err, server) {
-        server.rpc('move', ({x, y, dx, dy}, sessionID) => {
-            const entity = server.state[sessionId]
-            const dt = server.clients[sessionId].clock.tick - server.clock.tick
-            entity.x = x + dt * dx
-            entity.y = y + dt * dy
-            entity.dx = dx
-            entity.dy = dy
-            server.snapshot()
-        })
-
-        server.onConnect((sessionId, connection) => {
-            server.state[sessionId] = model.entity.create({
-                x: 2 * Math.random() - 1,
-                y: 2 * Math.random() - 1,
-                dx: 0,
-                dy: 0,
-                color: `rgb(${Math.random() * 256 | 0}, ${Math.random() * 256 | 0, Math.random() * 256 | 0})`
-            })
-        })
-
-        server.onTick(model.tick)
-    }
-})
-```
-
-# modules
+# overview
 
 ## helschema
 
+Used to specify network protocol.  Perform serialization, diffing and patching
+
 ## helnet
 
-## helserver
+## heldb
 
-## helclient
+
+# design notes
+
+## replication
+
+### active
+
+"Transactions"
+
+RPC and messages
+
+Useful for replicating large data sets
+
+### passive
+
+Replicates state
+
+Uses delta encoding
+
+Necessary for physical properties, dynamic objects
+
+## schemas
+
+Faster, smaller serialization.
+
+Extensible, avoids ontological problems
+
+Simple
+
+## systems that influenced heldb
+
+### quake 3
+Delta based state replication
+
+### planetary annihilation
+Timelines
+
+### protobufs
+Schema based serialization
+
+# credits

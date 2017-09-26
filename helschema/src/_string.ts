@@ -1,6 +1,6 @@
-import HelModel from './model';
+import {HelSchema} from './schema';
 
-export class HelString implements HelModel<string> {
+export class HelString implements HelSchema<string> {
     public readonly identity:string;
     public readonly helType = 'string';
 
