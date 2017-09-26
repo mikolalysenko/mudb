@@ -1,22 +1,22 @@
 import { HelSchema } from './schema';
 
-export class HelDictionary<ValueType, ValueModel extends HelSchema<ValueType>> implements HelSchema<{[key:string]:ValueType}> {
-    public readonly identity:{[key:string]:ValueType};
+export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSchema<{[key:string]:ValueSchema['identity']}> {
+    public readonly identity:{[key:string]:ValueSchema['identity']};
     
     public readonly helType = 'dictionary';
-    public readonly helData:ValueModel;
+    public readonly helData:ValueSchema;
 
-    constructor (id:{[key:string]:ValueType}, valueSchema:ValueModel) {
+    constructor (id:{[key:string]:ValueSchema['identity']}, valueSchema:ValueSchema) {
         this.identity = id;
         this.helData = valueSchema;
     }
 
     alloc () { return {}; }
 
-    free (x:{[key:string]:ValueType}) {}
+    free (x:{[key:string]:ValueSchema['identity']}) {}
 
-    clone (x:{[key:string]:ValueType}):{[key:string]:ValueType} {
-        const result:{[key:string]:ValueType} = {};
+    clone (x:{[key:string]:ValueSchema['identity']}):{[key:string]:ValueSchema['identity']} {
+        const result:{[key:string]:ValueSchema['identity']} = {};
         const props = Object.keys(x);
         for (let i = 0; i < props.length; ++i) {
             result[props[i]] = x[props[i]];
@@ -24,7 +24,7 @@ export class HelDictionary<ValueType, ValueModel extends HelSchema<ValueType>> i
         return result;
     }
 
-    diff (base:{[key:string]:ValueType}, target:{[key:string]:ValueType}) {
+    diff (base:{[key:string]:ValueSchema['identity']}, target:{[key:string]:ValueSchema['identity']}) {
         const remove:string[] = [];
         const patch:{ [prop:string]:any } = {};
     
@@ -58,17 +58,30 @@ export class HelDictionary<ValueType, ValueModel extends HelSchema<ValueType>> i
         };
     }
 
-    patch (base:{[key:string]:ValueType}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
+    patch (base:{[key:string]:ValueSchema['identity']}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
         const result = {}
-        Object.keys(base).forEach((prop) => {
-            if (patch.remove.indexOf(prop) < 0) {
-                if (patch.patch[prop]) {
-                    result[prop] = this.helData.patch(base[prop], patch.patch[prop]);
+        const schema = this.helData;
+
+        const baseProps = Object.keys(base);
+        for (let i = 0; i < baseProps.length; ++i) {
+            const prop = baseProps[i];
+            if (remove.indexOf(prop) < 0) {
+                if (prop in patch) {
+                    result[prop] = schema.patch(base[prop], patch[prop]);
                 } else {
-                    result[prop] = this.helData.clone(base[prop]);
+                    result[prop] = schema.clone(base[prop]);
                 }
             }
-        })
+        }
+
+        const patchProps = Object.keys(patch);
+        for (let i = 0; i < patchProps.length; ++i) {
+            const prop = patchProps[i];
+            if (!(prop in base)) {
+                result[prop] = schema.patch(schema.identity, patch[prop]);
+            }
+        }
+
         return result;
     }
 }
