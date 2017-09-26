@@ -13,6 +13,7 @@ heldb
 * 0-copy binary serialization
 * 0-gc pooled memory management
 * client-server model
+* in-browser server emulation
 * type safe RPC
 * state logging
 * multiple network transports
