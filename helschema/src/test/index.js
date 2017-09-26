@@ -4,6 +4,6 @@
 // require('./struct');
 
 // require('./struct2');
-// require('./union');
+require('./union');
 
-require('./dict');
+// require('./dict');

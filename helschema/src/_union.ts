@@ -12,6 +12,9 @@ export class HelUnion<SchemaSpec extends {
     public readonly helData:SchemaSpec;
 
     constructor (schemaSpec:SchemaSpec, identity:StateType) {
+        console.log('schemeSpec', schemaSpec);
+        console.log();
+        console.log('identity', identity);
         this.helData = schemaSpec;
         this.identity = identity;
     }
@@ -22,6 +25,7 @@ export class HelUnion<SchemaSpec extends {
             data: null
         };
     }
+    // public alloc
     public free (data:StateType) {
         this.helData[data.type].free(data.data);
     }
@@ -35,6 +39,11 @@ export class HelUnion<SchemaSpec extends {
 
     public diff (base:StateType, target:StateType) : (any | undefined) {
         const model = this.helData[target.type];
+        console.log();
+        console.log('this.helData', this.helData);
+        console.log('base', base);
+        console.log('target', target);
+        console.log();
         if (target.type === base.type) {
             const delta = model.diff(base.data, target.data);
             if (delta === void 0) {
