@@ -43,10 +43,11 @@ server.start({
         server.state[client.sessionId] = client.schema.clone(client.state);
         server.commit();
     },
-    state(client, state, tick) {
+    state(client) {
         const serverEntity = server.state[client.sessionId];
-        serverEntity.x = state.x;
-        serverEntity.y = state.y;
+        const clientEntity = client.state;
+        serverEntity.x = clientEntity.x;
+        serverEntity.y = clientEntity.y;
         server.commit();
     },
     disconnect(client) {
@@ -116,7 +117,7 @@ function startClient () {
             });
             draw();
         },
-        state (state, tick) {
+        state () {
         },
         close () {
         },

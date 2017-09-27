@@ -102,7 +102,7 @@ class HelClient<
         message:MessageInterface<ClientMessageTable>['api'],
         rpc:RPCInterface<ClientRPCTable>['api'],
         ready:(err?:any) => void,
-        state:(state:ServerStateSchema['identity'], tick:number) => void,
+        state:() => void,
         close:() => void,
     }) {
         if (this._started) {

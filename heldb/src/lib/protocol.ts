@@ -124,7 +124,7 @@ export class HelProtocol<
         messageHandlers:MessageInterface<MessageTable>['api'],
         rpcHandlers:RPCInterface<RPCTable>['api'],
         rpcReplies:HelRPCReplies,
-        stateHandler:(state:StateSchema['identity'], tick:number) => void,
+        stateHandler:() => void,
     }) : (packet:any) => void {
         let mostRecentAck = 0;
 
@@ -214,7 +214,7 @@ export class HelProtocol<
                 if (nextTick > replica.tick) {
                     replica.tick = nextTick;
                     replica.state = nextState;
-                    stateHandler(nextState, nextTick);
+                    stateHandler();
                 }
             }
         }

@@ -117,10 +117,7 @@ class HelServer<
         };
         ready:(err?:any) => void;
         connect:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
-        state:(
-            client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
-            state:ClientStateSchema['identity'],
-            tick:number) => void;
+        state:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
         disconnect:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
     }) {
         type Client = HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>;
@@ -164,8 +161,8 @@ class HelServer<
                     };
                 });
 
-                const stateHandler = function (state:ClientStateSchema['identity'], tick:number) {
-                    return spec.state(client, state, tick);
+                const stateHandler = function () {
+                    return spec.state(client);
                 };
 
                 const parsePacket = this._protocol.createParser({
