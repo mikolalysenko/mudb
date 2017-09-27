@@ -20,6 +20,7 @@ export class HelBuffer {
     public uint8:Uint8Array;
     public uint16:Uint16Array[];
     public uint32:Uint32Array[];
+    public float64:Float64Array[];
 
     // TODO finish support for all types
 
@@ -29,14 +30,22 @@ export class HelBuffer {
 
         this.uint16 = [
             new Uint16Array(buffer), 
-            new Uint16Array(buffer, 1)
+            new Uint16Array(buffer, 2)
         ];
         this.uint32 = [
             new Uint32Array(buffer), 
-            new Uint32Array(buffer, 1), 
-            new Uint32Array(buffer, 2),
-            new Uint32Array(buffer, 3)
+            new Uint32Array(buffer, 4), 
+            new Uint32Array(buffer, 8),
+            new Uint32Array(buffer, 12)
         ];
+        console.log('', buffer.byteLength);
+        this.float64 = [0,8,16,24,32,40,48,56].map((i) => {
+            console.log('i', i);
+            if (i==0) {
+                return new Float64Array(buffer);
+            }
+            return new Float64Array(buffer, i);
+        });
     }
 };
 
@@ -97,6 +106,11 @@ export class HelStream {
         this.offset += 4;
     }
 
+    public writeFloat64 (x:number) {
+        this.buffer.float64[this.offset & 7][this.offset >> 4] = x;
+        this.offset += 8;
+    }
+
     public readUint8 () : number {
         return this.buffer.uint8[this.offset++];
     }
@@ -111,5 +125,11 @@ export class HelStream {
         const offset = this.offset;
         this.offset += 4;
         return this.buffer.uint16[offset & 3][offset >> 2];
+    }
+
+    public readFloat64 () : number {
+        const offset = this.offset;
+        this.offset += 8;
+        return this.buffer.float64[offset & 7][offset >> 4];
     }
 }
