@@ -1,0 +1,21 @@
+{
+  "name": "helstream",
+  "version": "1.0.0",
+  "description": "Sctream and Buffer definition utilities for heldb",
+  "main": "index.js",
+  "scripts": {
+    "test": "ts-node src/test/index.js",
+    "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
+  },
+  "keywords": [
+    "heldb",
+    "stream"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "devDependencies": {
+    "tape": "^4.8.0",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.5.2"
+  }
+}

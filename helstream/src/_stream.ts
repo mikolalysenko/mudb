@@ -26,7 +26,7 @@ export class HelBuffer {
     public uint8:Uint8Array;
     public uint16:Uint16Array;
     public uint32:Uint32Array;
-
+    public float64:Float64Array;
     // TODO finish support for all types
 
     constructor (buffer:ArrayBuffer) {
@@ -35,6 +35,7 @@ export class HelBuffer {
         this.uint8 = new Uint8Array(buffer);
         this.uint16 = new Uint16Array(buffer);
         this.uint32 = new Uint32Array(buffer);
+        this.float64 = new Float64Array(buffer);
     }
 };
 
@@ -114,6 +115,24 @@ export class HelWriteStream {
         } else {
             this.buffer.uint32[offset >> 2] = x;
         }
+        this.offset += 4;
+    }
+
+    public writeFloat64 (x:number) {
+        const offset = this.offset;
+        if (offset & 7) {
+            SCRATCH_BUFFER.float64[0] = x;
+            const xbytes = SCRATCH_BUFFER.uint8;
+            const bytes = this.buffer.uint8;
+            let i = 0;
+            while (i <= 7) {
+                bytes[offset + i] = xbytes[i];
+                i++;
+            }
+        } else {
+            this.buffer.float64[offset >> 4] = x;
+        }
+        this.offset += 8;
     }
 
     public writeString (str:string) {
@@ -163,6 +182,22 @@ export class HelReadStream {
             return SCRATCH_BUFFER.uint32[0];
         }
         return this.buffer.uint32[offset >> 2];
+    }
+
+    public readFloat64 () : number {
+        const offset = this.offset;
+        this.offset += 8;
+        if (offset & 7) {
+            const bytes = this.buffer.uint8;
+            const xbytes = SCRATCH_BUFFER.uint8;
+            let i = 0;
+            while (i <= 7) {
+                xbytes[i] = bytes[offset + i];
+                i++;
+            }
+            return SCRATCH_BUFFER.float64[0];
+        }
+        return this.buffer.float64[offset >> 4];
     }
 
     public readString () {
