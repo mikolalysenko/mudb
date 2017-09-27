@@ -1,10 +1,12 @@
 {
-  "name": "heldb",
+  "name": "heldb-root-repo",
   "version": "1.0.0",
-  "description": "Realtime object replication database",
+  "private": true,
+  "description": "Root directory for project contains scripts to run",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch-helnet": "cd helnet && tsc --watch --outDir ../heldb/node_modules/helnet",
+    "watch-helschema": "cd helschema && tsc --watch --outDir ../heldb/node_modules/helschema"
   },
   "repository": {
     "type": "git",

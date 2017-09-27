@@ -1,6 +1,6 @@
 heldb
 =====
-`heldb` is a fast, simple data base for creating multiplayer games on the web.
+`heldb` is a data base for creating multiplayer games on the web.  It aspires to simplicity 
 
 **UNDER CONSTRUCTION**
 
@@ -29,6 +29,7 @@ heldb
 * Session management
 * Region of interest management
 * Fully peer-to-peer networking
+* Cross language support (100% JavaScript/TypeScript)
 
 # install
 
@@ -40,14 +41,14 @@ npm i heldb helschema helnet
 
 ```javascript
 // First we specify a network protocol
-const HelNumber = require('helschema/number')
+const HelFloat64 = require('helschema/float64')
 const HelString = require('helschema/string')
 const HelStruct = require('helschema/struct')
 const HelDictionary = require('helschema/dictionary')
 
 const EntitySchema = HelStruct({
-    x: HelNumber,
-    y: HelNumber,
+    x: HelFloat64,
+    y: HelFloat64,
     color: HelString
 })
 
@@ -152,14 +153,17 @@ node example.js
 
 # overview
 
-## helschema
+## helstream
+Internal stream/buffer management.  Used for binary serialization.
 
-Used to specify network protocol.  Perform serialization, diffing and patching
+## helschema
+Used to specify network protocol, perform serialization, diffing and patching.
 
 ## helnet
+Network connection management.  Abstracts underlying transport.
 
 ## heldb
-
+The database itself.  Contains implementation of both client and server.
 
 # design notes
 
@@ -187,7 +191,13 @@ Faster, smaller serialization.
 
 Extensible, avoids ontological problems
 
-Simple
+Use schemas to speed up delta encoding
+
+## time travel
+
+Can improve latency hiding (local perception filters)
+
+Decouple rendering from updates
 
 ## systems that influenced heldb
 
