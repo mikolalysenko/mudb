@@ -69,9 +69,23 @@ function startClient () {
         socket,
     });
 
+    const container = document.createElement('div');
+    container.style.position = 'static';
+    container.style.display = 'inline';
+
+    const closeButton = document.createElement('input');
+    closeButton.type = 'button';
+    closeButton.value = 'x';
+    closeButton.style.position = 'absolute';
+    closeButton.addEventListener('click', () => client.close());
+    container.appendChild(closeButton);
+
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 256;
     const context = canvas.getContext('2d');
+    container.appendChild(canvas);
+
+    document.body.appendChild(container);
 
     function draw () {
         if (!context) {
@@ -98,8 +112,6 @@ function startClient () {
         requestAnimationFrame(draw);
     }
 
-    document.body.appendChild(canvas);
-
     client.start({
         message: {
         },
@@ -120,6 +132,7 @@ function startClient () {
         state () {
         },
         close () {
+            document.body.removeChild(container);
         },
     });
 }
@@ -128,4 +141,8 @@ const addClientButton = document.createElement('input');
 addClientButton.value = 'add client';
 addClientButton.type = 'button';
 addClientButton.addEventListener('click', startClient);
-document.body.appendChild(addClientButton);
+
+const clientButtonContainer = document.createElement('div');
+clientButtonContainer.appendChild(addClientButton);
+
+document.body.appendChild(clientButtonContainer);
