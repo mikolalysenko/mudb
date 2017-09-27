@@ -179,14 +179,15 @@ export function createLocalServer (config:HelLocalServerSpec) : HelLocalServer {
 }
 
 export type HelLocalSocketSpec = {
-    server:HelLocalServer;
+    server:HelSocketServer;
 };
 
 export function createLocalClient (sessionId:HelSessionId, spec:HelLocalSocketSpec) : HelLocalSocket {
-    const clientSocket = new HelLocalSocket(sessionId, spec.server);
-    const serverSocket = new HelLocalSocket(clientSocket.sessionId, spec.server);
+    const server = <HelLocalServer>spec.server;
+    const clientSocket = new HelLocalSocket(sessionId, server);
+    const serverSocket = new HelLocalSocket(clientSocket.sessionId, server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
-    spec.server._handleConnection(serverSocket);
+    server._handleConnection(serverSocket);
     return clientSocket;
 }
