@@ -57,11 +57,6 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         data:SubTypes[keyof SubTypes]['identity'];
     }) : (any | undefined) {
         const model = this.helData[target.type];
-        console.log();
-        console.log('this.helData', this.helData);
-        console.log('base', base);
-        console.log('target', target);
-        console.log();
         if (target.type === base.type) {
             const delta = model.diff(base.data, target.data);
             if (delta === void 0) {
