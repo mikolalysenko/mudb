@@ -1,7 +1,7 @@
 import HelModel from 'helschema/model';
 import HelUnion = require('helschema/union');
 import { HelSocket } from 'helnet/net';
-import { HelStateSet, pushState, mostRecentCommonState } from './state-set';
+import { HelStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
 
 function compareInt (a, b) { return a - b; }
 
@@ -39,6 +39,7 @@ export interface HelStateReplica<StateSchema extends FreeModel> {
     state:StateSchema['identity'];
     tick:number;
     schema:StateSchema;
+    windowLength:number;
 }
 
 export enum HelPacketType {
@@ -125,6 +126,8 @@ export class HelProtocol<
         rpcReplies:HelRPCReplies,
         stateHandler:(state:StateSchema['identity'], tick:number) => void,
     }) : (packet:any) => void {
+        let mostRecentAck = 0;
+
         const messageSchema = this.messageSchema;
         function handleMessage (data:any) {
             const message = messageSchema.patch(messageSchema.identity, data);
@@ -196,7 +199,9 @@ export class HelProtocol<
             const baseIndex = stateSet.at(baseTick);
             if (baseIndex >= 0 && stateSet.ticks[baseIndex] === baseTick) {
                 const baseState = stateSet.states[baseIndex];
-                const nextState = stateSchema.patch(baseState, patch);
+                const nextState = patch
+                    ? stateSchema.patch(baseState, patch)
+                    : stateSchema.clone(baseState);
                 pushState(stateSet, nextTick, nextState);
                 ackStatePacket.tick = nextTick;
                 socket.sendUnreliable(JSON.stringify(ackStatePacket));
@@ -205,6 +210,10 @@ export class HelProtocol<
                     replica.state = nextState;
                     stateHandler(nextState, nextTick);
                 }
+                // purge old acknowldged states
+                mostRecentAck = Math.max(mostRecentAck, baseTick);
+                const gcCutoff = Math.min(mostRecentAck, replica.tick - replica.windowLength);
+                garbageCollectStates(stateSchema, stateSet, gcCutoff);
             }
         }
 
@@ -240,7 +249,6 @@ export class HelProtocol<
         }
 
         function onPacket (data:any) {
-            console.log('got packet:', data);
             const packet = JSON.parse(data);
             switch (packet.type) {
                 case HelPacketType.MESSAGE:
@@ -304,7 +312,7 @@ export class HelProtocol<
         return result;
     }
 
-    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], sockets:HelSocket[]) {
+    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], sockets:HelSocket[], bufferSize:number) {
         observations.push(localStates.ticks);
         const baseTick = mostRecentCommonState(observations);
         observations.pop();
@@ -324,6 +332,20 @@ export class HelProtocol<
 
         for (let i = 0; i < sockets.length; ++i) {
             sockets[i].sendUnreliable(data);
+        }
+
+        // garbage collect old states
+        const gcCutoff = Math.min(baseTick, nextTick - bufferSize);
+        garbageCollectStates(this.stateSchema, localStates, gcCutoff);
+        for (let i = 0; i < observations.length; ++i) {
+            const list = observations[i];
+            let ptr = 1;
+            for (let j = 1; j < list.length; ++j) {
+                if (list[j] >= gcCutoff) {
+                    list[ptr++] = list[j];
+                }
+            }
+            list.length = ptr;
         }
     }
 }

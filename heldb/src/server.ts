@@ -1,7 +1,11 @@
 import { HelSocketServer, HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
 
-import { HelStateSet, destroyStateSet, pushState } from './lib/state-set';
+import {
+    HelStateSet,
+    destroyStateSet,
+    garbageCollectStates,
+    pushState } from './lib/state-set';
 import {
     HelProtocol,
     FreeModel,
@@ -22,27 +26,24 @@ class HelRemoteClient<
     public state:StateSchema['identity'];
     public schema:StateSchema;
     public tick:number = 0;
+    public windowLength:number = 0;
 
     public readonly message:MessageInterface<MessageTable>['api'];
     public readonly rpc:RPCInterface<RPCTable>['api'];
 
     constructor (
+        windowLength:number,
         sessionId:string,
         schema:StateSchema,
         message:MessageInterface<MessageTable>['api'],
         rpc:RPCInterface<RPCTable>['api']) {
+        this.windowLength = windowLength;
         this.sessionId = sessionId;
         this.past = new HelStateSet(schema.clone(schema.identity));
+        this.state = schema.clone(schema.identity);
         this.schema = schema;
         this.message = message;
         this.rpc = rpc;
-    }
-}
-
-function removeFromList<T> (array:T[], item:T) {
-    const idx = array.indexOf(item);
-    if (idx >= 0) {
-        array.splice(idx, 1);
     }
 }
 
@@ -58,11 +59,15 @@ class HelServer<
     public schema:ServerStateSchema;
     public tick:number = 0;
 
+    public windowLength:number = 0;
+
     public clients:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>[] = [];
+    private _sockets:HelSocket[] = [];
+    private _stateObservations:number[][] = [];
+
     public broadcast:MessageInterface<ClientMessageTable>['api'];
 
     private _socketServer:HelSocketServer;
-    private _sockets:HelSocket[] = [];
 
     public running:boolean = false;
     private _started:boolean = false;
@@ -70,9 +75,10 @@ class HelServer<
 
     private _protocol:HelProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
     private _remoteProtocol:HelProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
-    private _stateObservations:number[][] = [];
 
     constructor(spec:{
+        windowLength:number,
+
         socketServer:HelSocketServer,
 
         clientStateSchema:ClientStateSchema,
@@ -86,6 +92,8 @@ class HelServer<
         this.past = new HelStateSet(spec.serverStateSchema.clone(spec.serverStateSchema.identity));
         this.state = spec.serverStateSchema.clone(spec.serverStateSchema.identity);
         this.schema = spec.serverStateSchema;
+
+        this.windowLength = spec.windowLength;
 
         this._socketServer = spec.socketServer;
 
@@ -123,6 +131,7 @@ class HelServer<
                     return spec.ready(err);
                 }
                 this.running = true;
+
                 // set up broadcast table
 
                 spec.ready();
@@ -130,8 +139,10 @@ class HelServer<
             connection: (socket:HelSocket) => {
                 const rpcReplies = new HelRPCReplies();
                 const observations:number[] = [0];
+                const sessionId = socket.sessionId;
                 const client:Client = new HelRemoteClient(
-                    socket.sessionId,
+                    this.windowLength,
+                    sessionId,
                     this._protocol.stateSchema,
                     this._remoteProtocol.createMessageDispatch([socket]),
                     this._remoteProtocol.createPRCCallDispatch(socket, rpcReplies));
@@ -185,7 +196,8 @@ class HelServer<
                             this._remoteProtocol.dispatchState(
                                 this.past,
                                 [observations],
-                                [socket]);
+                                [socket],
+                                this.windowLength);
                         }
 
                         // fire connect callback
@@ -201,9 +213,10 @@ class HelServer<
                         spec.disconnect(client);
 
                         // remove client from data set
-                        removeFromList(this.clients, client);
-                        removeFromList(this._stateObservations, observations);
-                        removeFromList(this._sockets, socket);
+                        const index = this.clients.indexOf(client);
+                        this.clients.splice(index, 1);
+                        this._stateObservations.splice(index, 1);
+                        this._sockets.splice(index, 1);
 
                         // release client states
                         destroyStateSet(client.schema, client.past);
@@ -226,7 +239,7 @@ class HelServer<
         const nextState = this.schema.clone(this.state);
         pushState(past, ++this.tick, nextState);
 
-        this._remoteProtocol.dispatchState(past, this._stateObservations, this._sockets);
+        this._remoteProtocol.dispatchState(past, this._stateObservations, this._sockets, this.windowLength);
     }
 
     // destroy everything
@@ -249,6 +262,7 @@ export = function createHelServer<
     ServerRPCTable extends RPCTableBase> (
     spec:{
         socketServer:HelSocketServer,
+        windowLength?:number,
         protocol:{
             client:{
                 state:ClientStateSchema,
@@ -276,5 +290,6 @@ export = function createHelServer<
             serverStateSchema: spec.protocol.server.state,
             serverMessageTable: spec.protocol.server.message,
             serverRPCTable: spec.protocol.server.rpc,
+            windowLength: spec.windowLength || 0,
         });
 };

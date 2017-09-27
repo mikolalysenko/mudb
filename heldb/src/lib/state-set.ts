@@ -24,7 +24,7 @@ export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:H
     ticks.length = 0;
 }
 
-export function garbageCollectStates<State> (model:HelModel<State>, stateSet:HelStateSet<State>, tick:number) {
+export function garbageCollectStates<State> (model:HelModel<State>, stateSet:HelStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
     while (ptr < ticks.length) {
@@ -33,6 +33,9 @@ export function garbageCollectStates<State> (model:HelModel<State>, stateSet:Hel
         } else {
             break;
         }
+    }
+    if (ptr === 1) {
+        return false;
     }
     let dptr = 1;
     while (ptr < ticks.length) {
@@ -43,6 +46,7 @@ export function garbageCollectStates<State> (model:HelModel<State>, stateSet:Hel
     }
     ticks.length = dptr;
     states.length = dptr;
+    return true;
 }
 
 export class HelStateSet<State> {

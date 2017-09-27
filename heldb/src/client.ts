@@ -2,7 +2,11 @@ import { HelSocket } from 'helnet/net';
 import HelModel from 'helschema/model';
 import HelUnion = require('helschema/union');
 
-import { HelStateSet, pushState, mostRecentCommonState, destroyStateSet } from './lib/state-set';
+import {
+    HelStateSet,
+    pushState,
+    garbageCollectStates,
+    destroyStateSet } from './lib/state-set';
 import {
     HelProtocol,
     FreeModel,
@@ -21,14 +25,17 @@ class HelRemoteServer<
     public state:StateSchema['identity'];
     public schema:StateSchema;
     public tick:number = 0;
+    public windowLength:number = 0;
 
     public readonly message:MessageInterface<MessageTable>['api'];
     public readonly rpc:RPCInterface<RPCTable>['api'];
 
     constructor (
+        windowLength:number,
         schema:StateSchema,
         message:MessageInterface<MessageTable>['api'],
         rpc:RPCInterface<RPCTable>['api']) {
+        this.windowLength = windowLength;
         this.past = new HelStateSet(schema.clone(schema.identity));
         this.state = this.past.states[this.past.states.length - 1];
         this.schema = schema;
@@ -49,12 +56,12 @@ class HelClient<
     public past:HelStateSet<ClientStateSchema['identity']>;
     public state:ClientStateSchema['identity'];
     public schema:ClientStateSchema;
+    public tick:number = 0;
+    public windowLength:number = 0;
 
     public server:HelRemoteServer<ServerStateSchema, ServerMessageTable, ServerRPCTable>;
 
     private _socket:HelSocket;
-
-    public tick:number = 0;
 
     public running:boolean = false;
     private _started:boolean = false;
@@ -69,6 +76,8 @@ class HelClient<
     constructor(spec:{
         socket:HelSocket,
 
+        windowLength:number,
+
         clientStateSchema:ClientStateSchema,
         clientMessageTable:ClientMessageTable,
         clientRPCTable:ClientRPCTable,
@@ -81,6 +90,9 @@ class HelClient<
         this.sessionId = spec.socket.sessionId;
 
         this.state = spec.clientStateSchema.clone(spec.clientStateSchema.identity);
+        this.past = new HelStateSet(spec.clientStateSchema.clone(spec.clientStateSchema.identity));
+        this.schema = spec.clientStateSchema;
+        this.windowLength = spec.windowLength;
 
         this._protocol = new HelProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
         this._remoteProtocol = new HelProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
@@ -100,6 +112,7 @@ class HelClient<
         this._started = true;
 
         this.server = new HelRemoteServer(
+            this.windowLength,
             this._protocol.stateSchema,
             this._remoteProtocol.createMessageDispatch([this._socket]),
             this._remoteProtocol.createPRCCallDispatch(this._socket, this._rpcReplies));
@@ -154,7 +167,7 @@ class HelClient<
         pushState(past, ++this.tick, this.schema.clone(this.state));
 
         // send to server
-        this._protocol.dispatchState(past, this._serverStates, [this._socket]);
+        this._remoteProtocol.dispatchState(past, this._serverStates, [this._socket], this.windowLength);
     }
 
     // destroy the client instance
@@ -171,6 +184,7 @@ export = function createHelClient<
     ServerMessageTable extends MessageTableBase,
     ServerRPCTable extends RPCTableBase> (spec:{
         socket:HelSocket,
+        windowLength?:number,
         protocol:{
             client:{
                 state:ClientStateSchema,
@@ -193,6 +207,7 @@ export = function createHelClient<
         ServerMessageTable,
         ServerRPCTable>({
             socket: spec.socket,
+            windowLength: spec.windowLength || 0,
             clientStateSchema: spec.protocol.client.state,
             clientMessageTable: spec.protocol.client.message,
             clientRPCTable: spec.protocol.client.rpc,

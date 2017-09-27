@@ -18,9 +18,7 @@ const protocol = {
     },
     server: {
         state: HelDictionary(Entity),
-        message: {
-            splat: Entity,
-        },
+        message: { },
         rpc: {},
     },
 };
@@ -36,21 +34,24 @@ const server = createServer({
 
 server.start({
     message: {
-        splat(client, entity) {
-            console.log('splat', entity);
-            server.state[client.sessionId] = Entity.clone(entity);
-            server.commit();
-        },
     },
     rpc: {
     },
     ready() {
     },
     connect(client) {
+        server.state[client.sessionId] = client.schema.clone(client.state);
+        server.commit();
     },
     state(client, state, tick) {
+        const serverEntity = server.state[client.sessionId];
+        serverEntity.x = state.x;
+        serverEntity.y = state.y;
+        server.commit();
     },
     disconnect(client) {
+        delete server.state[client.sessionId];
+        server.commit();
     },
 });
 
@@ -80,11 +81,18 @@ function startClient () {
 
         const state = client.server.state;
         Object.keys(state).forEach((name) => {
+            if (name === client.sessionId) {
+                return;
+            }
+
             const entity = state[name];
 
             context.fillStyle = '#fff';
             context.fillRect(entity.x - 2.5, entity.y - 2.5, 5, 5);
         });
+
+        context.fillStyle = '#f00';
+        context.fillRect(client.state.x - 3, client.state.y - 3, 6, 6);
 
         requestAnimationFrame(draw);
     }
@@ -100,18 +108,15 @@ function startClient () {
             if (err) {
                 return;
             }
-            canvas.addEventListener('click', (ev) => {
-                console.log('click');
+            canvas.addEventListener('mousemove', (ev) => {
                 const bounds = canvas.getBoundingClientRect();
-                client.server.message.splat({
-                    x: ev.clientX - bounds.left,
-                    y: ev.clientY - bounds.top,
-                });
+                client.state.x = ev.clientX - bounds.left;
+                client.state.y = ev.clientY - bounds.top;
+                client.commit();
             });
             draw();
         },
-        state (state) {
-            console.log('server state updated!', state);
+        state (state, tick) {
         },
         close () {
         },
