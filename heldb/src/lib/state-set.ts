@@ -4,16 +4,16 @@ export function pushState<State> (stateSet:HelStateSet<State>, tick:number, stat
     const {ticks, states} = stateSet;
     ticks.push(tick);
     states.push(state);
-    let ptr = ticks.length - 2;
-    for (; ptr >= 1; --ptr) {
-        if (ticks[ptr] <= tick) {
-            break;
+    for (let i = ticks.length - 1; i >= 1; --i) {
+        if (ticks[i - 1] > tick) {
+            ticks[i] = ticks[i - 1];
+            states[i] = states[i - 1];
+        } else {
+            ticks[i] = tick;
+            states[i] = state;
+            return;
         }
-        ticks[ptr + 1] = ticks[ptr];
-        states[ptr + 1] = states[ptr];
     }
-    ticks[ptr + 1] = tick;
-    states[ptr + 1] = state;
 }
 
 export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:HelStateSet<State>) {
@@ -27,26 +27,18 @@ export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:H
 export function garbageCollectStates<State> (model:HelModel<State>, stateSet:HelStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
-    while (ptr < ticks.length) {
-        if (ticks[ptr] < tick) {
-            model.free(states[ptr++]);
+    for (let i = 1; i < ticks.length; ++i) {
+        if (ticks[i] < tick) {
+            model.free(states[i]);
         } else {
-            break;
+            ticks[ptr] = ticks[i];
+            states[ptr] = states[i];
+            ptr ++;
         }
     }
-    if (ptr === 1) {
-        return false;
-    }
-    let dptr = 1;
-    while (ptr < ticks.length) {
-        ticks[dptr] = ticks[ptr];
-        states[dptr] = states[dptr];
-        ++ptr;
-        ++dptr;
-    }
-    ticks.length = dptr;
-    states.length = dptr;
-    return true;
+    const modified = ptr === ticks.length;
+    ticks.length = states.length = ptr;
+    return modified;
 }
 
 export class HelStateSet<State> {

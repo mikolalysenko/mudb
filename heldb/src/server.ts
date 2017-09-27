@@ -233,8 +233,6 @@ class HelServer<
         }
         const past = this.past;
 
-        console.log('committing state');
-
         // append state to log
         const nextState = this.schema.clone(this.state);
         pushState(past, ++this.tick, nextState);

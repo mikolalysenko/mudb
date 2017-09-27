@@ -205,15 +205,17 @@ export class HelProtocol<
                 pushState(stateSet, nextTick, nextState);
                 ackStatePacket.tick = nextTick;
                 socket.sendUnreliable(JSON.stringify(ackStatePacket));
+
+                // purge old acknowldged states
+                mostRecentAck = Math.max(mostRecentAck, baseTick);
+                const gcCutoff = Math.min(mostRecentAck, Math.max(nextTick, replica.tick) - replica.windowLength);
+                garbageCollectStates(stateSchema, stateSet, gcCutoff);
+
                 if (nextTick > replica.tick) {
                     replica.tick = nextTick;
                     replica.state = nextState;
                     stateHandler(nextState, nextTick);
                 }
-                // purge old acknowldged states
-                mostRecentAck = Math.max(mostRecentAck, baseTick);
-                const gcCutoff = Math.min(mostRecentAck, replica.tick - replica.windowLength);
-                garbageCollectStates(stateSchema, stateSet, gcCutoff);
             }
         }
 
