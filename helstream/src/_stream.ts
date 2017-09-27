@@ -197,7 +197,7 @@ export class HelReadStream {
             }
             return SCRATCH_BUFFER.float64[0];
         }
-        return this.buffer.float64[offset >> 4];
+        return this.buffer.float64[offset >> 3];
     }
 
     public readString () {
