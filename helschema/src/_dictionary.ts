@@ -18,8 +18,9 @@ export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSch
     clone (x:{[key:string]:ValueSchema['identity']}):{[key:string]:ValueSchema['identity']} {
         const result:{[key:string]:ValueSchema['identity']} = {};
         const props = Object.keys(x);
+        const schema = this.helData;
         for (let i = 0; i < props.length; ++i) {
-            result[props[i]] = x[props[i]];
+            result[props[i]] = schema.clone(x[props[i]]);
         }
         return result;
     }
