@@ -1,17 +1,17 @@
-import HelModel from 'helschema/model';
+import { HelSchema } from 'helschema/schema';
 import HelUnion = require('helschema/union');
 import { HelSocket } from 'helnet/net';
 import { HelStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
 
 function compareInt (a, b) { return a - b; }
 
-export type FreeModel = HelModel<any>;
+export type FreeModel = HelSchema<any>;
 
 export type MessageType = FreeModel;
 export type MessageTableBase = { [message:string]:MessageType };
 export interface MessageInterface<MessageTable extends MessageTableBase> {
     api:{ [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void; };
-    schema:HelModel<{
+    schema:HelSchema<{
         type:keyof MessageTable;
         data:MessageTable[keyof MessageTable]['identity'];
     }>;
@@ -24,11 +24,11 @@ export interface RPCInterface<RPCTable extends RPCTableBase> {
         [rpc in keyof RPCTable]:(
             args:RPCTable[rpc]['0']['identity'],
             cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
-    args:HelModel<{
+    args:HelSchema<{
         type:keyof RPCTable;
         data:RPCTable[keyof RPCTable]['0']['identity'];
     }>;
-    response:HelModel<{
+    response:HelSchema<{
         type:keyof RPCTable,
         data:RPCTable[keyof RPCTable]['1']['identity'];
     }>;
@@ -91,23 +91,18 @@ export class HelProtocol<
         this.messageTable = messageTable;
         this.messageSchema = HelUnion(messageTable);
 
-        type RPCArgs = {
-            [method in keyof RPCTable]:RPCTable[method]['0'];
-        };
-        type RPCResponse = {
-            [method in keyof RPCTable]:RPCTable[method]['1'];
-        };
+        type RPCSchemaArgs = { [key:string]:HelSchema<any> };
 
         this.rpcTable = rpcTable;
-        const rpcArgs = {};
-        const rpcResponse = {};
+        const rpcArgs = <RPCSchemaArgs>{};
+        const rpcResponse = <RPCSchemaArgs>{};
         Object.keys(rpcTable).forEach((method) => {
             rpcArgs[method] = rpcTable[method][0];
             rpcResponse[method] = rpcTable[method][1];
         });
 
-        this.rpcArgsSchema = HelUnion(<RPCArgs>rpcArgs);
-        this.rpcResponseSchema = HelUnion(<RPCResponse>rpcResponse);
+        this.rpcArgsSchema = HelUnion(rpcArgs);
+        this.rpcResponseSchema = HelUnion(rpcResponse);
     }
 
     public createParser ({
