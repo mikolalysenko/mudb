@@ -1,5 +1,6 @@
 import { HelSchema } from './schema';
 
+/** Number type schema */
 export class HelNumber implements HelSchema<number> {
     public readonly identity:number;
     public readonly helType:string;

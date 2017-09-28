@@ -1,17 +1,25 @@
-export interface HelSchema<State> {
-    // Identity state
-    readonly identity:State;
+export interface HelSchema<Value> {
+    /** Base value type */
+    readonly identity:Value;
     
-    // Runtime type info
+    /** Run time type info */
     readonly helType:string;
+
+    /** Additional schema-specific type info */
     readonly helData?:any;
 
-    // Memory pool
-    alloc ():State;
-    free (state:State):void;
-    clone (state:State):State;
+    /** Allocates a new value */
+    alloc ():Value;
+
+    /** Returns a value to the memory pool */
+    free (state:Value):void;
+
+    /** Makes a copy of a value */
+    clone (state:Value):Value;
     
-    // Patching
-    diff (base:State, target:State):any;
-    patch (base:State, patch:any):State;
+    /** Computes a patch from base to target */
+    diff (base:Value, target:Value):any;
+
+    /** Applies a patch to base */
+    patch (base:Value, patch:any):Value;
 };

@@ -1,5 +1,6 @@
 import { HelSchema } from './schema';
 
+/** Dictionary type schema */
 export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSchema<{[key:string]:ValueSchema['identity']}> {
     public readonly identity:{[key:string]:ValueSchema['identity']};
     

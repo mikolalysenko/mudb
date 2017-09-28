@@ -1,5 +1,6 @@
 import { HelSchema } from './schema';
 
+/** Union of subtype schemas */
 export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> implements HelSchema<{
     type:keyof SubTypes;
     data:SubTypes[keyof SubTypes]['identity'];

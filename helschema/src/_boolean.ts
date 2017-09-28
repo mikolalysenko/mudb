@@ -1,5 +1,6 @@
 import { HelSchema } from './schema';
 
+/** Boolean type schema */
 export class HelBoolean implements HelSchema<boolean> {
     public readonly identity:boolean;
     public readonly helType = 'boolean';
