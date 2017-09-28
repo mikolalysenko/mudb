@@ -138,7 +138,7 @@ const HelFloat64 = require('helschema/float64')([identity])
 
 For generic numbers, use `HelFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
 
-### strings
+### strings ###
 String data type
 
 ```javascript
@@ -203,7 +203,7 @@ const p = FloatOrString.diff(FloatOrString.identity, x);
 const y = FloatOrString.patch(FloatOrString.idenity, p);
 ```
 
-## data structures
+## data structures ##
 
 ### dictionaries ###
 A dictionary is a labelled collection of values.

@@ -66,10 +66,12 @@ EntitySet.free(otherEntities)
          * [2.2.1 void](#section_2.2.1)
          * [2.2.2 boolean](#section_2.2.2)
          * [2.2.3 numbers](#section_2.2.3)
+         * [2.2.4 strings](#section_2.2.4)
       * [2.3 functors](#section_2.3)
          * [2.3.1 structs](#section_2.3.1)
          * [2.3.2 unions](#section_2.3.2)
-         * [2.3.3 dictionaries](#section_2.3.3)
+      * [2.4 data structures](#section_2.4)
+         * [2.4.1 dictionaries](#section_2.4.1)
    * [3 more examples](#section_3)
 
 # <a name="section_1"></a> 1 install
@@ -151,7 +153,7 @@ const HelFloat64 = require('helschema/float64')([identity])
 
 For generic numbers, use `HelFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
 
-### strings
+### <a name="section_2.2.4"></a> 2.2.4 strings
 String data type
 
 ```javascript
@@ -216,9 +218,9 @@ const p = FloatOrString.diff(FloatOrString.identity, x);
 const y = FloatOrString.patch(FloatOrString.idenity, p);
 ```
 
-## data structures
+## <a name="section_2.4"></a> 2.4 data structures
 
-### <a name="section_2.3.3"></a> 2.3.3 dictionaries
+### <a name="section_2.4.1"></a> 2.4.1 dictionaries
 A dictionary is a labelled collection of values.
 
 **Example:**
