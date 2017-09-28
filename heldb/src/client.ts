@@ -21,9 +21,9 @@ class HelRemoteServer<
     StateSchema extends FreeModel,
     MessageTable extends MessageTableBase,
     RPCTable extends RPCTableBase> implements HelStateReplica<StateSchema> {
-    public past:HelStateSet<StateSchema['identity']>;
-    public state:StateSchema['identity'];
-    public schema:StateSchema;
+    public readonly past:HelStateSet<StateSchema['identity']>;
+    public readonly state:StateSchema['identity'];
+    public readonly schema:StateSchema;
     public tick:number = 0;
     public windowLength:number = 0;
 
@@ -53,9 +53,9 @@ class HelClient<
     ServerRPCTable extends RPCTableBase> {
     public readonly sessionId:string;
 
-    public past:HelStateSet<ClientStateSchema['identity']>;
+    public readonly past:HelStateSet<ClientStateSchema['identity']>;
     public state:ClientStateSchema['identity'];
-    public schema:ClientStateSchema;
+    public readonly schema:ClientStateSchema;
     public tick:number = 0;
     public windowLength:number = 0;
 

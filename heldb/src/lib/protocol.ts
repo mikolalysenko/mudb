@@ -49,7 +49,6 @@ export enum HelPacketType {
     STATE,
     ACK_STATE,
     DROP_STATE,
-
     // PING?
     // TICK?
 }

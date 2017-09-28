@@ -1,21 +1,95 @@
 heldb
 =====
-`heldb` is a data base for creating multiplayer games on the web.  It aspires to simplicity 
+`heldb` is a client-server data base for multiplayer games on the web.
+
+It makes networked game programming fun and simple.
+
+**TODO INSERT VIDEO LIVE CODING DEMO**
+
+[TypeScript](https://www.typescriptlang.org/) friendly, works great with [nodejs](https://nodejs.org).
 
 **UNDER CONSTRUCTION**
 
+# table of contents
+
+# modules #
+`heldb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
+
+## [heldb](https://github.com/mikolalysenko/heldb/tree/master/heldb)
+[`heldb`](https://github.com/mikolalysenko/heldb/tree/master/heldb) is the database itself.  For users learning the API, start here after reading about concepts.
+
+## [helschema](https://github.com/mikolalysenko/heldb/tree/master/helschema)
+[`heldb`](https://github.com/mikolalysenko/heldb/tree/master/heldb) is used to define the database schema.
+
+## [helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet)
+[helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
+
+# big picture concepts #
+
+
+## rpc ##
+
+Active replication
+
+"Transactions"
+
+RPC and messages
+
+Useful for replicating large data sets
+
+## state replication ##
+Replicates state
+
+Uses delta encoding
+
+Necessary for physical properties, dynamic objects
+
+## schemas ##
+A schema is a type declaration for the interface between the client and server.
+
+Schemas in `heldb` are specified using the `helschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `helschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `heldb` departs from these systems in 3 important ways:
+
+* **Javascript only** Unlike protocol buffers, `helschema` has no aspirations of ever being cross-language.  However, it does make it much easier to extend `heldb` to support direct serialization of custom application specific data structures.  For example, you could store all of your objects in an octree and apply a custom schema to directly diff this octree into your own data type.
+* **0-copy delta encoding** `helschema` performs all serialization as a relative `diff` operation.  This means that messages and state changes can be encoded as changes relative to some observed reference.  Using relative state changes greatly reduces the amount of bandwidth required to replicate a given change set
+* **Memory pools** JavaScript is a garbage collected language, and creating patched versions of different messages can generate many temporary objects.  In order to avoid needless and wasteful GC thrashing, `helschema` provides a pooling interface and custom memory allocator.
+
+## persistence ##
+Finally, `heldb` can optionally buffer some number of past state observations.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
+
+## further reading ##
+
+Systems that influenced heldb:
+
+* protocol buffers
+* quake 3
+* planetary annihilation
+
+Lighter blog posts
+
+* gabriel gambetta
+* 0fps
+
+Academic references:
+
+* Local perception filters
+
+# examples #
+
+Collect list of systems using `heldb`
+
+# developing
+
+How to set up local development environment.
+
+# TODO
+
 ## Planned features:
 
-* simple API
 * thorough documentation
-* typescript compatibility
 * delta based state replication
 * 0-copy binary serialization
 * 0-gc pooled memory management
-* client-server model
 * in-browser server emulation
-* type safe RPC
-* state logging
 * multiple network transports
 * local network simulation
 * tracing and playback
@@ -30,184 +104,15 @@ heldb
 * Region of interest management
 * Fully peer-to-peer networking
 * Cross language support (100% JavaScript/TypeScript)
+* Cryptographic security is deferred to transport layer
 
-# install
+## Examples wanted
 
-```
-npm i heldb helschema helnet
-```
-
-# example
-
-```javascript
-// First we specify a network protocol
-const HelFloat64 = require('helschema/float64')
-const HelString = require('helschema/string')
-const HelStruct = require('helschema/struct')
-const HelDictionary = require('helschema/dictionary')
-
-const EntitySchema = HelStruct({
-    x: HelFloat64,
-    y: HelFloat64,
-    color: HelString
-})
-
-const protocol = {
-    client: {
-        state: EntitySchema,
-        message: {},
-        rpc: {},
-    },
-    server: {
-        state: HelDictionary(EntitySchema),
-        message: { 
-            splat: EntitySchema
-        },
-        rpc: {}
-    }
-}
-
-function clientMain () {
-    const canvas = document.createElement('canvas')
-    document.body.appendChild(canvas)
-    const context = canvas.getContext('2d')
-
-    const client = require('heldb/client')({
-        protocol,
-        socket: require('helnet/socket')()
-    })
-
-    function randColor () {
-        return `rgb(${Math.random() * 256},${Math.random() * 256},${Math.random() * 256})`
-    }
-
-    client.start({
-        ready(err) {
-            const player = client.state.head
-            player.x = 0.5
-            player.y = 0.5
-            player.color = randColor()
-            client.state.commit()
-
-            canvas.addEventListener('mousemove', ({clientX, clientY}) => {
-                player.x = clientX / canvas.width
-                player.y = clientY / canvas.height
-                client.state.commit()
-            })
-
-            canvas.addEventListener('click', ({clientX, clientY}) => {
-                client.actions.splat({
-                    x: clientX / canvas.width,
-                    y: clientY / canvas.height,
-                    color: randColor()
-                })
-            })
-
-            function render () {
-                client.peers.forEach((peer) => {
-                    const {x, y, color} = peer.state.head
-                    context.fillStyle = color
-                    context.fillRect(canvas.width * x - 10, canvas.height * y - 10, 20, 20)
-                })
-                window.requestAnimationFrame(render)
-            }
-            render()
-        }
-    })
-}
-
-function serverMain () {
-    const server = require('heldb/server')({
-        protocol,
-        socketServer: require('helnet/server')({
-            client: __filename,
-            live: true,
-            debug: true
-        })
-    })
-    
-    let splatCount = 0
-
-    server.start({
-        event: {
-            splat (splat) {
-                server.state.head[++splatCount] = EntitySchema.clone(splat)
-                server.state.commit()
-            }
-        }
-    })
-}
-
-if (process.env.HEL_CLIENT) {
-    clientMain()
-} else {
-    serverMain()
-}
-```
-
-## running the example
-
-```
-node example.js
-```
-
-# overview
-
-## helstream
-Internal stream/buffer management.  Used for binary serialization.
-
-## helschema
-Used to specify network protocol, perform serialization, diffing and patching.
-
-## helnet
-Network connection management.  Abstracts underlying transport.
-
-## heldb
-The database itself.  Contains implementation of both client and server.
-
-# design notes
-
-## replication
-
-### active
-
-"Transactions"
-
-RPC and messages
-
-Useful for replicating large data sets
-
-### passive
-
-Replicates state
-
-Uses delta encoding
-
-Necessary for physical properties, dynamic objects
-
-## schemas
-
-Faster, smaller serialization.
-
-Extensible, avoids ontological problems
-
-Use schemas to speed up delta encoding
-
-## time travel
-
-Can improve latency hiding (local perception filters)
-
-Decouple rendering from updates
-
-## systems that influenced heldb
-
-### quake 3
-Delta based state replication
-
-### planetary annihilation
-Timelines
-
-### protobufs
-Schema based serialization
+* Chat room
+* Moving dots
+* Capture the flag
+* Asteroids
+* Pong
+* Tetris
 
 # credits

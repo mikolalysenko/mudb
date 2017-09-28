@@ -1,13 +1,16 @@
-import HelFloat64 = require('helschema/float64');
-import HelStruct = require('helschema/struct');
-import HelDictionary = require('helschema/dictionary');
 import { createSocketServer, createSocket } from 'helnet';
 import createClient = require('../client');
 import createServer = require('../server');
 
+import HelFloat64 = require('helschema/float64');
+import HelStruct = require('helschema/struct');
+import HelString = require('helschema/string');
+import HelDictionary = require('helschema/dictionary');
+
 const Entity = HelStruct({
     x: HelFloat64(),
     y: HelFloat64(),
+    name: HelString('foo'),
 });
 
 const protocol = {
@@ -18,7 +21,9 @@ const protocol = {
     },
     server: {
         state: HelDictionary(Entity),
-        message: { },
+        message: {
+            explode: HelFloat64(),
+        },
         rpc: {},
     },
 };
@@ -34,6 +39,9 @@ const server = createServer({
 
 server.start({
     message: {
+        explode(client, value) {
+            console.log(`explode from ${client.sessionId} ${value}`);
+        },
     },
     rpc: {
     },
@@ -125,8 +133,14 @@ function startClient () {
                 const bounds = canvas.getBoundingClientRect();
                 client.state.x = ev.clientX - bounds.left;
                 client.state.y = ev.clientY - bounds.top;
+                client.state.name = 'bar';
                 client.commit();
             });
+
+            canvas.addEventListener('click', (ev) => {
+                client.server.message.explode(1);
+            });
+
             draw();
         },
         state () {
