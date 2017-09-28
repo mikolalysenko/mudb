@@ -25,52 +25,46 @@ It makes networked game programming fun and simple.
 [helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
 
 # big picture concepts #
+When thinking about `heldb`, there are a couple of high level concepts to keep in mind.
 
+## messages ##
+[Message passing](FIXME) is the basic building block for communication in a distributed system.  `heldb` provides a [reliable, ordered message delivery](FIXME) for intermittent communication.  This can be used to implement [active replication](FIXME) to synchronize larger objects (where state replicaiton would be too expensive) or to authenticate transactions.
 
-## rpc ##
+`heldb` provides two types of reliable message passing:
 
-Active replication
+* **[Remote procedure calls or RPC](FIXME)**: procedure which returns some value asynchronously
+* **Messages**: One shot events with no returned data
 
-"Transactions"
-
-RPC and messages
-
-Useful for replicating large data sets
+The practical difference between RPC and messages is that the server can broadcast messages to multiple clients.
 
 ## state replication ##
-Replicates state
+In addition to message passing, `heldb` supports passive state replication.  This is necessary for numerical quantities like position or velocity in physical simulations, where one can not expect reasonably that all nodes implement some numerical operation the same way.  
 
-Uses delta encoding
+`heldb` uses delta encoding to minimize bandwidth usage.  In order for this to work it must buffer some number of past state observations.  The number of these states which are stored can be configured to be arbitrarily large, and are visible to the user.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
 
-Necessary for physical properties, dynamic objects
 
 ## schemas ##
-A schema is a type declaration for the interface between the client and server.
-
-Schemas in `heldb` are specified using the `helschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `helschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `heldb` departs from these systems in 3 important ways:
+A schema is a type declaration for the interface between the client and server. Schemas in `heldb` are specified using the `helschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `helschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `heldb` departs from these systems in 3 important ways:
 
 * **Javascript only** Unlike protocol buffers, `helschema` has no aspirations of ever being cross-language.  However, it does make it much easier to extend `heldb` to support direct serialization of custom application specific data structures.  For example, you could store all of your objects in an octree and apply a custom schema to directly diff this octree into your own data type.
 * **0-copy delta encoding** `helschema` performs all serialization as a relative `diff` operation.  This means that messages and state changes can be encoded as changes relative to some observed reference.  Using relative state changes greatly reduces the amount of bandwidth required to replicate a given change set
 * **Memory pools** JavaScript is a garbage collected language, and creating patched versions of different messages can generate many temporary objects.  In order to avoid needless and wasteful GC thrashing, `helschema` provides a pooling interface and custom memory allocator.
 
-## persistence ##
-Finally, `heldb` can optionally buffer some number of past state observations.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
-
 ## further reading ##
 
-Systems that influenced heldb:
+Light reading:
 
 * protocol buffers
-* quake 3
-* planetary annihilation
-
-Lighter blog posts
-
-* gabriel gambetta
-* 0fps
+* [quake 3](http://fabiensanglard.net/quake3/network.php)
+* "[Planetary Annihilation](https://blog.forrestthewoods.com/the-tech-of-planetary-annihilation-chronocam-292e3d6b169a)"
+* [Janus](http://equis.cs.queensu.ca/wiki/index.php/Janus)
+* "[Implementation of Rewind in Braid](https://www.youtube.com/watch?v=8dinUbg2h70)"
+* "[Relativistic replication](https://mikolalysenko.github.io/nodeconfeu2014-slides/index.html#/)"
+* "[Source multiplayer networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking)"
 
 Academic references:
 
+* C. Savery, T.C. Graham, "[Timelines: Simplifying the programming of lag compensation for the next generation of networked games](https://link.springer.com/article/10.1007/s00530-012-0271-3)" 2013
 * Local perception filters
 
 # examples #
