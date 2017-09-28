@@ -59,17 +59,18 @@ EntitySet.free(otherEntities)
 
 # table of contents
 
-* [1 install](#section_1)
-* [2 api](#section_2)
-    * [2.1 interfaces](#section_2.1)
-    * [2.2 primitives](#section_2.2)
-        * [2.2.1 void](#section_2.2.1)
-        * [2.2.2 boolean](#section_2.2.2)
-        * [2.2.3 numbers](#section_2.2.3)
-        * [2.2.4 structs](#section_2.2.4)
-        * [2.2.5 unions](#section_2.2.5)
-        * [2.2.6 dictionaries](#section_2.2.6)
-* [3 more examples](#section_3)
+   * [1 install](#section_1)
+   * [2 api](#section_2)
+      * [2.1 interfaces](#section_2.1)
+      * [2.2 primitives](#section_2.2)
+         * [2.2.1 void](#section_2.2.1)
+         * [2.2.2 boolean](#section_2.2.2)
+         * [2.2.3 numbers](#section_2.2.3)
+      * [2.3 functors](#section_2.3)
+         * [2.3.1 structs](#section_2.3.1)
+         * [2.3.2 unions](#section_2.3.2)
+         * [2.3.3 dictionaries](#section_2.3.3)
+   * [3 more examples](#section_3)
 
 # <a name="section_1"></a> 1 install
 
@@ -157,10 +158,10 @@ String data type
 const HelString = require('helschema/string')([identity])
 ```
 
-## functors
+## <a name="section_2.3"></a> 2.3 functors
 Primitive data types in `helschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
 
-### <a name="section_2.2.4"></a> 2.2.4 structs
+### <a name="section_2.3.1"></a> 2.3.1 structs
 A struct is a collection of multiple subtypes.  Structs are constructed by passing in a dictionary of schemas.  Struct schemas may be nested as follows:
 
 **Example:**
@@ -188,7 +189,7 @@ p.position.y = 10
 Particle.free(p)
 ```
 
-### <a name="section_2.2.5"></a> 2.2.5 unions
+### <a name="section_2.3.2"></a> 2.3.2 unions
 A discriminated union of several subtypes.  Each subtype must be given a label.
 
 **Example:**
@@ -217,7 +218,7 @@ const y = FloatOrString.patch(FloatOrString.idenity, p);
 
 ## data structures
 
-### <a name="section_2.2.6"></a> 2.2.6 dictionaries
+### <a name="section_2.3.3"></a> 2.3.3 dictionaries
 A dictionary is a labelled collection of values.
 
 **Example:**

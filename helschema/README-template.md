@@ -57,6 +57,8 @@ const entityCopy = EntitySet.patch(entities, patch)
 EntitySet.free(otherEntities)
 ```
 
+# table of contents
+
 # install #
 
 ```
@@ -143,7 +145,7 @@ String data type
 const HelString = require('helschema/string')([identity])
 ```
 
-## functors
+## functors ##
 Primitive data types in `helschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
 
 ### structs ###
