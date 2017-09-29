@@ -1,16 +1,16 @@
 {
-  "name": "heldb-root-repo",
+  "name": "mudb-root-repo",
   "version": "1.0.0",
   "private": true,
-  "description": "Root directory for project contains scripts to run",
+  "description": "Root directory for project. Contains scripts to run",
   "main": "index.js",
   "scripts": {
-    "watch-helnet": "cd helnet && tsc --watch --outDir ../heldb/node_modules/helnet",
-    "watch-helschema": "cd helschema && tsc --watch --outDir ../heldb/node_modules/helschema"
+    "watch-helnet": "cd munet && tsc --watch --outDir ../mudb/node_modules/munet",
+    "watch-helschema": "cd muschema && tsc --watch --outDir ../heldb/node_modules/muschema"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikolalysenko/heldb.git"
+    "url": "git+https://github.com/mikolalysenko/mudb.git"
   },
   "keywords": [
     "object",
@@ -21,7 +21,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mikolalysenko/heldb/issues"
+    "url": "https://github.com/mikolalysenko/mudb/issues"
   },
-  "homepage": "https://github.com/mikolalysenko/heldb#readme"
+  "homepage": "https://github.com/mikolalysenko/mudb#readme"
 }
