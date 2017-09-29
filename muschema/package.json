@@ -1,11 +1,11 @@
 {
   "name": "muschema",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Schemas for mudb",
   "main": "index.js",
   "scripts": {
     "test": "ts-node src/test/index.js",
-    "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
+    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
   },
   "keywords": [
     "mudb",

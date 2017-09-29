@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "local": "budo src/example/local.ts --open --live -- -p [tsify]"
-
+    "local": "budo src/example/local.ts --open --live -- -p [tsify]",
+    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
   },
   "keywords": [
     "mudb",
