@@ -1,15 +1,17 @@
 {
-  "name": "helstream",
-  "version": "1.0.0",
-  "description": "Sctream and Buffer definition utilities for heldb",
+  "name": "mustream",
+  "version": "0.0.0",
+  "description": "Binary stream and buffer api for mudb",
   "main": "index.js",
   "scripts": {
     "test": "ts-node src/test/index.js",
     "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
   },
   "keywords": [
-    "heldb",
-    "stream"
+    "mudb",
+    "stream",
+    "buffer",
+    "binary"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

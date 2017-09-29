@@ -21,7 +21,7 @@ function ceilLog2 (v_) {
     return (r | (v >> 1)) + 1;
 }
 
-export class HelBuffer {
+export class MuBuffer {
     public buffer:ArrayBuffer;
     public uint8:Uint8Array;
     public uint16:Uint16Array;
@@ -40,22 +40,22 @@ export class HelBuffer {
 };
 
 // initialize buffer pool
-const bufferPool:HelBuffer[][] = new Array(32);
+const bufferPool:MuBuffer[][] = new Array(32);
 for (let i = 0; i < 32; ++i) {
     bufferPool[i] = [];
 }
 
-export function allocBuffer (sz) : HelBuffer {
+export function allocBuffer (sz) : MuBuffer {
     const b = ceilLog2(sz);
-    return bufferPool[b].pop() || new HelBuffer(new Uint8Array(1 << b).buffer);
+    return bufferPool[b].pop() || new MuBuffer(new Uint8Array(1 << b).buffer);
 }
 
-export function freeBuffer (buffer:HelBuffer) {
+export function freeBuffer (buffer:MuBuffer) {
     const pool = bufferPool[ceilLog2(buffer.uint8.length)];
     pool.push(buffer);
 }
 
-export function reallocBuffer (buffer:HelBuffer, nsize:number) {
+export function reallocBuffer (buffer:MuBuffer, nsize:number) {
     if (buffer.uint8.length <= nsize) {
         return buffer;
     }
@@ -65,10 +65,10 @@ export function reallocBuffer (buffer:HelBuffer, nsize:number) {
     return result;
 }
 
-const SCRATCH_BUFFER = new HelBuffer(new Uint8Array(8).buffer);
+const SCRATCH_BUFFER = new MuBuffer(new Uint8Array(8).buffer);
 
-export class HelWriteStream {
-    public buffer:HelBuffer;
+export class MuWriteStream {
+    public buffer:MuBuffer;
     public offset:number;
 
     constructor (capacity:number) {
@@ -141,15 +141,14 @@ export class HelWriteStream {
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
     }
-
 }
 
-export class HelReadStream {
-    public buffer:HelBuffer;
+export class MuReadStream {
+    public buffer:MuBuffer;
     public offset:number = 0;
 
     constructor (buffer:ArrayBuffer) {
-        this.buffer = new HelBuffer(buffer);
+        this.buffer = new MuBuffer(buffer);
     }
 
     public readUint8 () : number {
