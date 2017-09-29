@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test-node": "tape src/test/index-node.js",
-    "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
+    "publish": "tsc && cp package.json build/ && cp README.md build/ && cp LICENSE build/ && npm publish build/"
   },
   "keywords": [
     "mudb",
