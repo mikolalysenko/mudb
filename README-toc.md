@@ -12,15 +12,7 @@ It makes networked game programming fun and simple.
 
 # table of contents
 
-   * [1 modules](#section_1)
-   * [2 big picture concepts](#section_2)
-      * [2.1 messages](#section_2.1)
-      * [2.2 state replication](#section_2.2)
-      * [2.3 schemas](#section_2.3)
-      * [2.4 further reading](#section_2.4)
-   * [3 examples](#section_3)
-
-# <a name="section_1"></a> 1 modules
+# modules #
 `heldb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
 
 ## [heldb](https://github.com/mikolalysenko/heldb/tree/master/heldb)
@@ -32,10 +24,10 @@ It makes networked game programming fun and simple.
 ## [helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet)
 [helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
 
-# <a name="section_2"></a> 2 big picture concepts
+# big picture concepts #
 When thinking about `heldb`, there are a couple of high level concepts to keep in mind.
 
-## <a name="section_2.1"></a> 2.1 messages
+## messages ##
 [Message passing](FIXME) is the basic building block for communication in a distributed system.  `heldb` provides a [reliable, ordered message delivery](FIXME) for intermittent communication.  This can be used to implement [active replication](FIXME) to synchronize larger objects (where state replicaiton would be too expensive) or to authenticate transactions.
 
 `heldb` provides two types of reliable message passing:
@@ -45,20 +37,20 @@ When thinking about `heldb`, there are a couple of high level concepts to keep i
 
 The practical difference between RPC and messages is that the server can broadcast messages to multiple clients.
 
-## <a name="section_2.2"></a> 2.2 state replication
+## state replication ##
 In addition to message passing, `heldb` supports passive state replication.  This is necessary for numerical quantities like position or velocity in physical simulations, where one can not expect reasonably that all nodes implement some numerical operation the same way.  
 
 `heldb` uses delta encoding to minimize bandwidth usage.  In order for this to work it must buffer some number of past state observations.  The number of these states which are stored can be configured to be arbitrarily large, and are visible to the user.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
 
 
-## <a name="section_2.3"></a> 2.3 schemas
+## schemas ##
 A schema is a type declaration for the interface between the client and server. Schemas in `heldb` are specified using the `helschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `helschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `heldb` departs from these systems in 3 important ways:
 
 * **Javascript only** Unlike protocol buffers, `helschema` has no aspirations of ever being cross-language.  However, it does make it much easier to extend `heldb` to support direct serialization of custom application specific data structures.  For example, you could store all of your objects in an octree and apply a custom schema to directly diff this octree into your own data type.
 * **0-copy delta encoding** `helschema` performs all serialization as a relative `diff` operation.  This means that messages and state changes can be encoded as changes relative to some observed reference.  Using relative state changes greatly reduces the amount of bandwidth required to replicate a given change set
 * **Memory pools** JavaScript is a garbage collected language, and creating patched versions of different messages can generate many temporary objects.  In order to avoid needless and wasteful GC thrashing, `helschema` provides a pooling interface and custom memory allocator.
 
-## <a name="section_2.4"></a> 2.4 further reading
+## further reading ##
 
 Light reading:
 
@@ -75,7 +67,7 @@ Academic references:
 * C. Savery, T.C. Graham, "[Timelines: Simplifying the programming of lag compensation for the next generation of networked games](https://link.springer.com/article/10.1007/s00530-012-0271-3)" 2013
 * Local perception filters
 
-# <a name="section_3"></a> 3 examples
+# examples #
 
 Collect list of systems using `heldb`
 
@@ -118,5 +110,3 @@ Collect list of systems using `heldb`
 * Tetris
 
 # credits
-
-
