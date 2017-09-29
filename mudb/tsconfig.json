@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "lib": ["dom", "es5"],

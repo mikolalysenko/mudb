@@ -1,6 +1,6 @@
 import { MuSchema } from 'muschema/schema';
 import MuUnion = require('muschema/union');
-import { MuSocket } from 'helnet/net';
+import { MuSocket } from 'munet/net';
 import { MuStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
 
 function compareInt (a, b) { return a - b; }
@@ -55,9 +55,9 @@ export enum MuPacketType {
 
 export class MuRPCReply {
     public method:string;
-    public handler:(data:any) => void;
+    public handler:(err?:any, data?:any) => void;
 
-    constructor (method:string, handler:(data:any) => void) {
+    constructor (method:string, handler:(err?:any, data?:any) => void) {
         this.method = method;
         this.handler = handler;
     }
@@ -65,10 +65,19 @@ export class MuRPCReply {
 
 export class MuRPCReplies {
     public pendingRPC:{ [id:number]:MuRPCReply; } = {};
-    public rpcConter:number = 1;
+    public rpcCounter:number = 1;
+
+    public addRPC (method:string, handler:(err?:any, data?:any) => void) {
+        const id = ++this.rpcCounter;
+        this.pendingRPC[id] = new MuRPCReply(method, handler);
+        return id;
+    }
 
     public cancel () {
-        // TODO: cancel RPC callback
+        Object.keys(this.pendingRPC).forEach((id) => {
+            (this.pendingRPC[id])('rpc cancelled');
+        });
+        this.pendingRPC = {};
     }
 }
 
@@ -161,7 +170,7 @@ export class MuProtocol<
                 rpcContainerPacket.err = err;
                 if (result) {
                     rpcResponsePacket.data = result;
-                    const schema = rpcResponseSchema.helData[args.type];
+                    const schema = rpcResponseSchema.muData[args.type];
                     rpcContainerPacket.data = schema.diff(schema.identity, rpcResponsePacket);
                     rpcResponseSchema.free(rpcResponsePacket);
                 } else {
@@ -175,7 +184,7 @@ export class MuProtocol<
             const handler = rpcReplies.pendingRPC[callbackId];
             if (handler) {
                 delete rpcReplies.pendingRPC[callbackId];
-                const schema = rpcResponseSchema.helData[handler.method];
+                const schema = rpcResponseSchema.muData[handler.method];
                 if (schema) {
                     const response = schema.patch(schema.identity, data);
                     handler.handler(response);
@@ -290,7 +299,6 @@ export class MuProtocol<
 
     public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : RPCInterface<RPCTable>['api']  {
         const result = <RPCInterface<RPCTable>['api']>{};
-        /*
         const argSchema = this.rpcArgsSchema;
         Object.keys(this.rpcTable).forEach((method) => {
             const packet = argSchema.alloc();
@@ -299,13 +307,21 @@ export class MuProtocol<
                 packet.data = arg;
                 const serialized = argSchema.diff(argSchema.identity, packet);
                 packet.data = null;
-
                 if (cb) {
+                    const rpcId = rpcReplies.addRPC(method, cb);
+                    socket.send(JSON.stringify({
+                        type: MuPacketType.RPC,
+                        id: rpcId,
+                        data: serialized,
+                    }));
+                } else {
+                    socket.send(JSON.stringify({
+                        type: MuPacketType.RPC,
+                        data: serialized,
+                    }));
                 }
-                return onRPC(method, serialized, cb);
             };
         });
-        */
         return result;
     }
 

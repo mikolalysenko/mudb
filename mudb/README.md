@@ -164,11 +164,13 @@ addClientButton.addEventListener('click',
 ```
 
 **`example-ws-server.js`**
+
 ```javascript
 // TODO
 ```
 
 **`example-ws-client.js`**
+
 ```javascript
 // TODO
 ```
