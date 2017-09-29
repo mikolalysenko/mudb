@@ -25,7 +25,12 @@ It makes networked game programming fun and simple.
 [helnet](https://github.com/mikolalysenko/heldb/tree/master/helnet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
 
 # big picture concepts #
-When thinking about `heldb`, there are a couple of high level concepts to keep in mind.
+`heldb` solves networking problems by providing 2 generic types of communication:
+
+* **Active replication** or message passing
+* **Passive replication** or state synchronization
+
+It does this over a generic network interface that abstracts websockets, webrtc, local servers, workers and more.  All network information is serlialized using *schemas* which are specified via `helschema`.  
 
 ## messages ##
 [Message passing](FIXME) is the basic building block for communication in a distributed system.  `heldb` provides a [reliable, ordered message delivery](FIXME) for intermittent communication.  This can be used to implement [active replication](FIXME) to synchronize larger objects (where state replicaiton would be too expensive) or to authenticate transactions.
@@ -42,6 +47,8 @@ In addition to message passing, `heldb` supports passive state replication.  Thi
 
 `heldb` uses delta encoding to minimize bandwidth usage.  In order for this to work it must buffer some number of past state observations.  The number of these states which are stored can be configured to be arbitrarily large, and are visible to the user.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
 
+## abstract sockets ##
+`heldb` communicates over a generic socket abstraction provided by `helnet`.  `helnet` sockets support both reliable and unreliable delivery.  Unreliable delivery is used for state replication, while reliable delivery is used for messages.  Unreliable delivery is generally faster than reliable delivery since it does not suffer from head-of-line blocking problems.  For websocket servers, `helnet` emulates unreliable delivery using multiple websocket connections.
 
 ## schemas ##
 A schema is a type declaration for the interface between the client and server. Schemas in `heldb` are specified using the `helschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `helschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `heldb` departs from these systems in 3 important ways:
@@ -66,14 +73,29 @@ Academic references:
 
 * C. Savery, T.C. Graham, "[Timelines: Simplifying the programming of lag compensation for the next generation of networked games](https://link.springer.com/article/10.1007/s00530-012-0271-3)" 2013
 * Local perception filters
+* **TODO**
 
 # examples #
 
-Collect list of systems using `heldb`
+**TODO**
 
-# developing
+# developing #
 
-**TODO** How to set up local development environment.
+**TODO**
+
+## dev setup ##
+
+How to set up local development environment.
+
+## tests ##
+
+### run ###
+
+### write ###
+
+## style guide ##
+
+## deployment notes ##
 
 # TODO
 
