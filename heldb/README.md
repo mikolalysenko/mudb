@@ -1,8 +1,8 @@
-# heldb
+# mudb
 A database for HTML5 multiplayer games.
 
 ## example
-This is heavily commented example showing how to create a server/client pair and protocol using `heldb`.  A system using `heldb` has to specify 3 things:
+This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  A system using `mudb` has to specify 3 things:
 
 1. A protocol
 1. A server
@@ -16,14 +16,14 @@ First, we create a module which defines the network protocol called `protocol.js
 **`procotol.js`**
 ```javascript
 // Here we load in some basic schema types
-const HelFloat64 = require('helschema/float64')
-const HelStruct = require('helschema/struct')
-const HelDictionary = require('helschema/dictionary')
+const MuFloat64 = require('muschema/float64')
+const MuStruct = require('muschema/struct')
+const MuDictionary = require('muschema/dictionary')
 
-// We define a point type using helstruct as a pair of floating point numbers
-const Point = HelStruct({
-    x: HelFloat64(),
-    y: HelFloat64()
+// We define a point type using mustruct as a pair of floating point numbers
+const Point = MuStruct({
+    x: MuFloat64(),
+    y: MuFloat64()
 })
 
 module.exports = {
@@ -33,22 +33,23 @@ module.exports = {
         rpc: {},
     },
     server: {
-        state: HelDictionary(Entity),
+        state: MuDictionary(Entity),
         message: {},
         rpc: {},
     },
 }
 ```
 
-Then, we define a server module.  This exports a function which takes a `helnet` socketServer as input.
+Then, we define a server module.  This exports a function which takes a `munet` socketServer as input.
 
 **`server.js`**
 ```javascript
-const createServer = require('heldb/server')
+const createServer = require('mudb/server')
+const protocol = require('./protocol')
 
 module.exports = function (socketServer) {
     const server = createServer({
-        protocol: require('./protocol'),
+        protocol,
         socketServer
     })
 
@@ -80,11 +81,12 @@ Finally we create a client which renders the state of the world using HTML 5 can
 
 **`client.js`**
 ```javascript
-const createClient = require('heldb/client')
+const createClient = require('mudb/client')
+const protocol = require('./protocol')
 
 module.exports = function (socket) {
     const client = createClient({
-        protocol: require('./protocol'),
+        protocol,
         socket
     })
 
@@ -144,7 +146,7 @@ module.exports = function (socket) {
 
 **`example-local.js`**
 ```javascript
-const { createLocalSocket, createLocalSocketServer } = require('helnet/local')
+const { createLocalSocket, createLocalSocketServer } = require('munet/local')
 const exampleServer = require('./server')
 const exampleClient = require('./client')
 
@@ -175,25 +177,30 @@ addClientButton.addEventListener('click',
 
    * [1 install](#section_1)
    * [2 api](#section_2)
-      * [2.1 client](#section_2.1)
-         * [2.1.1 constructor](#section_2.1.1)
-         * [2.1.2 event handlers](#section_2.1.2)
-         * [2.1.3 sending data](#section_2.1.3)
+      * [2.1 protocols](#section_2.1)
       * [2.2 server](#section_2.2)
-         * [2.2.1 constructor](#section_2.2.1)
-         * [2.2.2 event handlers](#section_2.2.2)
-   * [3 more examples](#section_3)
+         * [2.2.1 server constructor](#section_2.2.1)
+         * [2.2.2 server events](#section_2.2.2)
+      * [2.3 client](#section_2.3)
+         * [2.3.1 client constructor](#section_2.3.1)
+         * [2.3.2 client events](#section_2.3.2)
+      * [2.4 state](#section_2.4)
+      * [2.5 rpc](#section_2.5)
+      * [2.6 messages](#section_2.6)
+         * [2.6.1 broadcast](#section_2.6.1)
+   * [3 usage tips](#section_3)
+   * [4 more examples](#section_4)
 
 # <a name="section_1"></a> 1 install
 
 ```
-npm install heldb helschema helnet
+npm install mudb muschema munet
 ```
 
 # <a name="section_2"></a> 2 api
 
-## protocols
-The first step to creating any application with `heldb` is to specify a protocol schema using [`helschema`](https://github.com/mikolalysenko/heldb/tree/master/helschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
+## <a name="section_2.1"></a> 2.1 protocols
+The first step to creating any application with `mudb` is to specify a protocol schema using [`muschema`](https://github.com/mikolalysenko/mudb/tree/master/muschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
 
 * `state` which defines the state protocol
 * `message` which is an object containing all message types and their arguments
@@ -201,31 +208,158 @@ The first step to creating any application with `heldb` is to specify a protocol
 
 **Example:**
 
-```javascript
-// TODO
-```
-
-## <a name="section_2.1"></a> 2.1 client
-
-### <a name="section_2.1.1"></a> 2.1.1 constructor
-
-**Example**
+Here is a protocol for a simple game with a chat server
 
 ```javascript
-// TODO
+const MuVoid = require('muschema/void')
+const MuFloat = require('muschema/float64')
+const MuStruct = require('muschema/struct')
+const MuString = require('muschema/string')
+const MuDictionary = require('muschema/dictionary')
+
+const Vec2 = MuStruct({
+    x: MuFloat(),
+    y: MuFLoat()
+})
+
+const Agent = MuStruct({
+    position: Vec2,
+    velocity: Vec2,
+    name: MuString('player')
+})
+
+module.exports = {
+    client: {
+        state: Agent,
+        message: {
+            chat: MuStruct({
+                sender: MuString(),
+                message: MuString()
+            }
+        },
+        rpc: {}
+    },
+    server: {
+        state: MuDictionary(Agent),
+        message: {
+            chat: MuString()
+        },
+        rpc: {
+            setName:[MuString(), MuVoid()]
+        }
+    }
+}
 ```
-
-### <a name="section_2.1.2"></a> 2.1.2 event handlers
-
-### <a name="section_2.1.3"></a> 2.1.3 sending data
 
 ## <a name="section_2.2"></a> 2.2 server
+A server in `mudb` processes messages from many clients.  It may choose to accept or reject incoming connections and dispatch messages to clients as appropriate.
 
-### <a name="section_2.2.1"></a> 2.2.1 constructor
+### <a name="section_2.2.1"></a> 2.2.1 server constructor
+`mudb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
 
-### <a name="section_2.2.2"></a> 2.2.2 event handlers
+* `protocol` which is a protocol schema as described above (see [`muschema`](FIXME) for more details)
+* `socketServer` a `munet` socket server instance (see [`munet`](FIXME) for more details)
+* `windowLength` an optional parameter describing the number of states to buffer
 
-# <a name="section_3"></a> 3 more examples
+**Example:**
+
+```javascript
+const server = require('mudb/server')({
+    socketServer: ..., // some socket server interface created by munet
+    protocol
+})
+```
+
+### <a name="section_2.2.2"></a> 2.2.2 server events
+Once a server is created, it is necessary to register event handlers and start the server.  This is done using the `server.start()` method.  This method takes an object that has the following properties:
+
+* `ready()` which is called when the server is started
+* `message` which is an object containing implementations of handlers for all of the message types
+* `rpc` an object implementing all handlers for rpc types
+* `connect(client)` called when a client connects to the server
+* `state(client)` called when a new state update is recieved by a client
+* `disconnect(client)` called when a client disconnects from the server
+
+**Example:**
+
+Working from the chat server schema above, here is a simple server for the above chat log
+
+```javascript
+server.start({
+    ready() {
+        console.log('server started')
+    },
+    message: {
+        chat(client, msg) {
+            server.broadcast.chat(server.state[client.sessionId].name, msg)
+        }
+    },
+    rpc: {
+        setName(client, name, cb) {
+            const ids = Object.keys(server.state)
+            for (let i = 0; i < ids.length; ++i) {
+                if (server.state[ids[i]].name === name) {
+                    return cb('name already in use')    
+                }
+            }
+            server.state[client.sessionId].name = name
+            return cb()
+        }
+    },
+    connect(client) {
+        server.state[client.sessionId] = client.schema.create()
+        server.broadcast.chat('server', 'player joined')
+        server.commit()
+    },
+    state(client) {
+        const serverState = server.state[client.sessionId]
+        const clientState = client.state
+
+        serverState.position.x = clientState.position.x
+        serverState.position.y = clientState.position.y
+        serverState.velocity.x = clientState.velocity.x
+        serverState.velocity.y = clientState.velocity.y
+
+        server.commit()
+    },
+    disconnect(client) {
+        delete server.state[client.sessionId]
+        server.commit()
+    }
+})
+```
+
+
+## <a name="section_2.3"></a> 2.3 client
+
+### <a name="section_2.3.1"></a> 2.3.1 client constructor
+
+```javascript
+const client = require('mudb/client')({
+    socket,
+    protocol
+})
+```
+
+### <a name="section_2.3.2"></a> 2.3.2 client events
+
+* `ready()`
+* `message`
+* `rpc`
+* `state()`
+* `close()`
+
+## <a name="section_2.4"></a> 2.4 state
+
+## <a name="section_2.5"></a> 2.5 rpc
+
+## <a name="section_2.6"></a> 2.6 messages
+
+### <a name="section_2.6.1"></a> 2.6.1 broadcast
+
+# <a name="section_3"></a> 3 usage tips
+
+# <a name="section_4"></a> 4 more examples
 
 # TODO
 

@@ -1,5 +1,5 @@
 {
-  "name": "heldb",
+  "name": "mudb",
   "version": "1.0.0",
   "description": "Realtime database for multiplayer games",
   "main": "index.js",
@@ -9,7 +9,7 @@
 
   },
   "keywords": [
-    "heldb",
+    "mudb",
     "multiplayer",
     "game",
     "network"

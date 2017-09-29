@@ -1,6 +1,6 @@
-import HelModel from 'helschema/model';
+import MuSchema from 'muschema/schema';
 
-export function pushState<State> (stateSet:HelStateSet<State>, tick:number, state:State) {
+export function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;
     ticks.push(tick);
     states.push(state);
@@ -16,7 +16,7 @@ export function pushState<State> (stateSet:HelStateSet<State>, tick:number, stat
     }
 }
 
-export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:HelStateSet<State>) {
+export function destroyStateSet<State> (model:MuSchema<State>, {states, ticks}:MuStateSet<State>) {
     for (let i = 0; i < states.length; ++i) {
         model.free(states[i]);
     }
@@ -24,7 +24,7 @@ export function destroyStateSet<State> (model:HelModel<State>, {states, ticks}:H
     ticks.length = 0;
 }
 
-export function garbageCollectStates<State> (model:HelModel<State>, stateSet:HelStateSet<State>, tick:number) : boolean {
+export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
     for (let i = 1; i < ticks.length; ++i) {
@@ -41,7 +41,7 @@ export function garbageCollectStates<State> (model:HelModel<State>, stateSet:Hel
     return modified;
 }
 
-export class HelStateSet<State> {
+export class MuStateSet<State> {
     public ticks:number[] = [];
     public states:State[] = [];
 

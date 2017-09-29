@@ -1,17 +1,17 @@
-import { HelSchema } from 'helschema/schema';
-import HelUnion = require('helschema/union');
-import { HelSocket } from 'helnet/net';
-import { HelStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
+import { MuSchema } from 'muschema/schema';
+import MuUnion = require('muschema/union');
+import { MuSocket } from 'helnet/net';
+import { MuStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
 
 function compareInt (a, b) { return a - b; }
 
-export type FreeModel = HelSchema<any>;
+export type FreeModel = MuSchema<any>;
 
 export type MessageType = FreeModel;
 export type MessageTableBase = { [message:string]:MessageType };
 export interface MessageInterface<MessageTable extends MessageTableBase> {
     api:{ [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void; };
-    schema:HelSchema<{
+    schema:MuSchema<{
         type:keyof MessageTable;
         data:MessageTable[keyof MessageTable]['identity'];
     }>;
@@ -24,25 +24,25 @@ export interface RPCInterface<RPCTable extends RPCTableBase> {
         [rpc in keyof RPCTable]:(
             args:RPCTable[rpc]['0']['identity'],
             cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
-    args:HelSchema<{
+    args:MuSchema<{
         type:keyof RPCTable;
         data:RPCTable[keyof RPCTable]['0']['identity'];
     }>;
-    response:HelSchema<{
+    response:MuSchema<{
         type:keyof RPCTable,
         data:RPCTable[keyof RPCTable]['1']['identity'];
     }>;
 }
 
-export interface HelStateReplica<StateSchema extends FreeModel> {
-    past:HelStateSet<StateSchema['identity']>;
+export interface MuStateReplica<StateSchema extends FreeModel> {
+    past:MuStateSet<StateSchema['identity']>;
     state:StateSchema['identity'];
     tick:number;
     schema:StateSchema;
     windowLength:number;
 }
 
-export enum HelPacketType {
+export enum MuPacketType {
     RPC,
     RPC_RESPONSE,
     MESSAGE,
@@ -53,7 +53,7 @@ export enum HelPacketType {
     // TICK?
 }
 
-export class HelRPCReply {
+export class MuRPCReply {
     public method:string;
     public handler:(data:any) => void;
 
@@ -63,8 +63,8 @@ export class HelRPCReply {
     }
 }
 
-export class HelRPCReplies {
-    public pendingRPC:{ [id:number]:HelRPCReply; } = {};
+export class MuRPCReplies {
+    public pendingRPC:{ [id:number]:MuRPCReply; } = {};
     public rpcConter:number = 1;
 
     public cancel () {
@@ -72,7 +72,7 @@ export class HelRPCReplies {
     }
 }
 
-export class HelProtocol<
+export class MuProtocol<
     StateSchema extends FreeModel,
     MessageTable extends MessageTableBase,
     RPCTable extends RPCTableBase> {
@@ -89,9 +89,9 @@ export class HelProtocol<
         this.stateSchema = stateSchema;
 
         this.messageTable = messageTable;
-        this.messageSchema = HelUnion(messageTable);
+        this.messageSchema = MuUnion(messageTable);
 
-        type RPCSchemaArgs = { [key:string]:HelSchema<any> };
+        type RPCSchemaArgs = { [key:string]:MuSchema<any> };
 
         this.rpcTable = rpcTable;
         const rpcArgs = <RPCSchemaArgs>{};
@@ -101,8 +101,8 @@ export class HelProtocol<
             rpcResponse[method] = rpcTable[method][1];
         });
 
-        this.rpcArgsSchema = HelUnion(rpcArgs);
-        this.rpcResponseSchema = HelUnion(rpcResponse);
+        this.rpcArgsSchema = MuUnion(rpcArgs);
+        this.rpcResponseSchema = MuUnion(rpcResponse);
     }
 
     public createParser ({
@@ -113,12 +113,12 @@ export class HelProtocol<
         rpcReplies,
         observations,
         stateHandler }:{
-        socket:HelSocket,
-        replica:HelStateReplica<StateSchema>,
+        socket:MuSocket,
+        replica:MuStateReplica<StateSchema>,
         observations:number[],
         messageHandlers:MessageInterface<MessageTable>['api'],
         rpcHandlers:RPCInterface<RPCTable>['api'],
-        rpcReplies:HelRPCReplies,
+        rpcReplies:MuRPCReplies,
         stateHandler:() => void,
     }) : (packet:any) => void {
         let mostRecentAck = 0;
@@ -134,7 +134,7 @@ export class HelProtocol<
         const rpcResponseSchema = this.rpcResponseSchema;
         const rpcResponsePacket = rpcResponseSchema.alloc();
         const rpcContainerPacket = {
-            type: HelPacketType.RPC_RESPONSE,
+            type: MuPacketType.RPC_RESPONSE,
             id: 0,
             err: null,
             data: null,
@@ -185,7 +185,7 @@ export class HelProtocol<
 
         const stateSchema = this.stateSchema;
         const ackStatePacket = {
-            type: HelPacketType.ACK_STATE,
+            type: MuPacketType.ACK_STATE,
             tick: 0,
         };
 
@@ -248,17 +248,17 @@ export class HelProtocol<
         function onPacket (data:any) {
             const packet = JSON.parse(data);
             switch (packet.type) {
-                case HelPacketType.MESSAGE:
+                case MuPacketType.MESSAGE:
                     return handleMessage(packet.data);
-                case HelPacketType.RPC:
+                case MuPacketType.RPC:
                     return handleRPC(packet.data, packet.id);
-                case HelPacketType.RPC_RESPONSE:
+                case MuPacketType.RPC_RESPONSE:
                     return handleRPCResponse(packet.data, packet.id);
-                case HelPacketType.STATE:
+                case MuPacketType.STATE:
                     return handleState(packet.baseTick, packet.data, packet.nextTick);
-                case HelPacketType.ACK_STATE:
+                case MuPacketType.ACK_STATE:
                     return handleAckState(packet.tick);
-                case HelPacketType.DROP_STATE:
+                case MuPacketType.DROP_STATE:
                     return handleDropState(packet.tick);
             }
         }
@@ -266,7 +266,7 @@ export class HelProtocol<
         return onPacket;
     }
 
-    public createMessageDispatch (sockets:HelSocket[]) : MessageInterface<MessageTable>['api'] {
+    public createMessageDispatch (sockets:MuSocket[]) : MessageInterface<MessageTable>['api'] {
         const result = <MessageInterface<MessageTable>['api']>{};
         const schema = this.messageSchema;
         Object.keys(this.messageTable).forEach((message) => {
@@ -277,7 +277,7 @@ export class HelProtocol<
                 const serialized = schema.diff(schema.identity, packet);
                 packet.data = null;
                 const rawData = JSON.stringify({
-                    type: HelPacketType.MESSAGE,
+                    type: MuPacketType.MESSAGE,
                     data: serialized,
                 });
                 for (let i = 0; i < sockets.length; ++i) {
@@ -288,7 +288,7 @@ export class HelProtocol<
         return result;
     }
 
-    public createPRCCallDispatch (socket:HelSocket, rpcReplies:HelRPCReplies) : RPCInterface<RPCTable>['api']  {
+    public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : RPCInterface<RPCTable>['api']  {
         const result = <RPCInterface<RPCTable>['api']>{};
         /*
         const argSchema = this.rpcArgsSchema;
@@ -309,7 +309,7 @@ export class HelProtocol<
         return result;
     }
 
-    public dispatchState (localStates:HelStateSet<StateSchema>, observations:number[][], sockets:HelSocket[], bufferSize:number) {
+    public dispatchState (localStates:MuStateSet<StateSchema>, observations:number[][], sockets:MuSocket[], bufferSize:number) {
         observations.push(localStates.ticks);
         const baseTick = mostRecentCommonState(observations);
         observations.pop();
@@ -321,7 +321,7 @@ export class HelProtocol<
         const nextState = localStates.states[localStates.states.length - 1];
 
         const data = JSON.stringify({
-            type: HelPacketType.STATE,
+            type: MuPacketType.STATE,
             baseTick,
             nextTick,
             data: this.stateSchema.diff(baseState, nextState),

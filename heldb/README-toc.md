@@ -1,8 +1,8 @@
-# heldb
+# mudb
 A database for HTML5 multiplayer games.
 
 ## example
-This is heavily commented example showing how to create a server/client pair and protocol using `heldb`.  A system using `heldb` has to specify 3 things:
+This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  A system using `mudb` has to specify 3 things:
 
 1. A protocol
 1. A server
@@ -16,14 +16,14 @@ First, we create a module which defines the network protocol called `protocol.js
 **`procotol.js`**
 ```javascript
 // Here we load in some basic schema types
-const HelFloat64 = require('helschema/float64')
-const HelStruct = require('helschema/struct')
-const HelDictionary = require('helschema/dictionary')
+const MuFloat64 = require('muschema/float64')
+const MuStruct = require('muschema/struct')
+const MuDictionary = require('muschema/dictionary')
 
-// We define a point type using helstruct as a pair of floating point numbers
-const Point = HelStruct({
-    x: HelFloat64(),
-    y: HelFloat64()
+// We define a point type using mustruct as a pair of floating point numbers
+const Point = MuStruct({
+    x: MuFloat64(),
+    y: MuFloat64()
 })
 
 module.exports = {
@@ -33,18 +33,18 @@ module.exports = {
         rpc: {},
     },
     server: {
-        state: HelDictionary(Entity),
+        state: MuDictionary(Entity),
         message: {},
         rpc: {},
     },
 }
 ```
 
-Then, we define a server module.  This exports a function which takes a `helnet` socketServer as input.
+Then, we define a server module.  This exports a function which takes a `munet` socketServer as input.
 
 **`server.js`**
 ```javascript
-const createServer = require('heldb/server')
+const createServer = require('mudb/server')
 const protocol = require('./protocol')
 
 module.exports = function (socketServer) {
@@ -81,7 +81,7 @@ Finally we create a client which renders the state of the world using HTML 5 can
 
 **`client.js`**
 ```javascript
-const createClient = require('heldb/client')
+const createClient = require('mudb/client')
 const protocol = require('./protocol')
 
 module.exports = function (socket) {
@@ -146,7 +146,7 @@ module.exports = function (socket) {
 
 **`example-local.js`**
 ```javascript
-const { createLocalSocket, createLocalSocketServer } = require('helnet/local')
+const { createLocalSocket, createLocalSocketServer } = require('munet/local')
 const exampleServer = require('./server')
 const exampleClient = require('./client')
 
@@ -178,13 +178,13 @@ addClientButton.addEventListener('click',
 # install #
 
 ```
-npm install heldb helschema helnet
+npm install mudb muschema munet
 ```
 
 # api #
 
 ## protocols ##
-The first step to creating any application with `heldb` is to specify a protocol schema using [`helschema`](https://github.com/mikolalysenko/heldb/tree/master/helschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
+The first step to creating any application with `mudb` is to specify a protocol schema using [`muschema`](https://github.com/mikolalysenko/mudb/tree/master/muschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
 
 * `state` which defines the state protocol
 * `message` which is an object containing all message types and their arguments
@@ -195,61 +195,61 @@ The first step to creating any application with `heldb` is to specify a protocol
 Here is a protocol for a simple game with a chat server
 
 ```javascript
-const HelVoid = require('helschema/void')
-const HelFloat = require('helschema/float64')
-const HelStruct = require('helschema/struct')
-const HelString = require('helschema/string')
-const HelDictionary = require('helschema/dictionary')
+const MuVoid = require('muschema/void')
+const MuFloat = require('muschema/float64')
+const MuStruct = require('muschema/struct')
+const MuString = require('muschema/string')
+const MuDictionary = require('muschema/dictionary')
 
-const Vec2 = HelStruct({
-    x: HelFloat(),
-    y: HelFLoat()
+const Vec2 = MuStruct({
+    x: MuFloat(),
+    y: MuFLoat()
 })
 
-const Agent = HelStruct({
+const Agent = MuStruct({
     position: Vec2,
     velocity: Vec2,
-    name: HelString('player')
+    name: MuString('player')
 })
 
 module.exports = {
     client: {
         state: Agent,
         message: {
-            chat: HelStruct({
-                sender: HelString(),
-                message: HelString()
+            chat: MuStruct({
+                sender: MuString(),
+                message: MuString()
             }
         },
         rpc: {}
     },
     server: {
-        state: HelDictionary(Agent),
+        state: MuDictionary(Agent),
         message: {
-            chat: HelString()
+            chat: MuString()
         },
         rpc: {
-            setName:[HelString(), HelVoid()]
+            setName:[MuString(), MuVoid()]
         }
     }
 }
 ```
 
 ## server ##
-A server in `heldb` processes messages from many clients.  It may choose to accept or reject incoming connections and dispatch messages to clients as appropriate.
+A server in `mudb` processes messages from many clients.  It may choose to accept or reject incoming connections and dispatch messages to clients as appropriate.
 
 ### server constructor ###
-`heldb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
+`mudb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
 
-* `protocol` which is a protocol schema as described above (see [`helschema`](FIXME) for more details)
-* `socketServer` a `helnet` socket server instance (see [`helnet`](FIXME) for more details)
+* `protocol` which is a protocol schema as described above (see [`muschema`](FIXME) for more details)
+* `socketServer` a `munet` socket server instance (see [`munet`](FIXME) for more details)
 * `windowLength` an optional parameter describing the number of states to buffer
 
 **Example:**
 
 ```javascript
-const server = require('heldb/server')({
-    socketServer: ..., // some socket server interface created by helnet
+const server = require('mudb/server')({
+    socketServer: ..., // some socket server interface created by munet
     protocol
 })
 ```
@@ -319,7 +319,7 @@ server.start({
 ### client constructor ###
 
 ```javascript
-const client = require('heldb/client')({
+const client = require('mudb/client')({
     socket,
     protocol
 })

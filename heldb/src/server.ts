@@ -1,28 +1,28 @@
-import { HelSocketServer, HelSocket } from 'helnet/net';
-import HelModel from 'helschema/model';
+import { MuSocketServer, HelSocket } from 'munet/net';
+import MuModel from 'muschema/model';
 
 import {
-    HelStateSet,
+    MuStateSet,
     destroyStateSet,
     garbageCollectStates,
     pushState } from './lib/state-set';
 import {
-    HelProtocol,
+    MuProtocol,
     FreeModel,
     MessageTableBase,
     MessageInterface,
     RPCTableBase,
     RPCInterface,
-    HelRPCReplies,
-    HelStateReplica } from './lib/protocol';
+    MuRPCReplies,
+    MuStateReplica } from './lib/protocol';
 
-class HelRemoteClient<
+class MuRemoteClient<
     StateSchema extends FreeModel,
     MessageTable extends MessageTableBase,
-    RPCTable extends RPCTableBase> implements HelStateReplica<StateSchema> {
+    RPCTable extends RPCTableBase> implements MuStateReplica<StateSchema> {
     public readonly sessionId:string;
 
-    public past:HelStateSet<StateSchema['identity']>;
+    public past:MuStateSet<StateSchema['identity']>;
     public state:StateSchema['identity'];
     public schema:StateSchema;
     public tick:number = 0;
@@ -39,7 +39,7 @@ class HelRemoteClient<
         rpc:RPCInterface<RPCTable>['api']) {
         this.windowLength = windowLength;
         this.sessionId = sessionId;
-        this.past = new HelStateSet(schema.clone(schema.identity));
+        this.past = new MuStateSet(schema.clone(schema.identity));
         this.state = schema.clone(schema.identity);
         this.schema = schema;
         this.message = message;
@@ -47,39 +47,39 @@ class HelRemoteClient<
     }
 }
 
-class HelServer<
+class MuServer<
     ClientStateSchema extends FreeModel,
     ClientMessageTable extends MessageTableBase,
     ClientRPCTable extends RPCTableBase,
     ServerStateSchema extends FreeModel,
     ServerMessageTable extends MessageTableBase,
     ServerRPCTable extends RPCTableBase> {
-    public past:HelStateSet<ServerStateSchema>;
+    public past:MuStateSet<ServerStateSchema>;
     public state:ServerStateSchema['identity'];
     public schema:ServerStateSchema;
     public tick:number = 0;
 
     public windowLength:number = 0;
 
-    public clients:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>[] = [];
+    public clients:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>[] = [];
     private _sockets:HelSocket[] = [];
     private _stateObservations:number[][] = [];
 
     public broadcast:MessageInterface<ClientMessageTable>['api'];
 
-    private _socketServer:HelSocketServer;
+    private _socketServer:MuSocketServer;
 
     public running:boolean = false;
     private _started:boolean = false;
     private _closed:boolean = false;
 
-    private _protocol:HelProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
-    private _remoteProtocol:HelProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
+    private _protocol:MuProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
+    private _remoteProtocol:MuProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
 
     constructor(spec:{
         windowLength:number,
 
-        socketServer:HelSocketServer,
+        socketServer:MuSocketServer,
 
         clientStateSchema:ClientStateSchema,
         clientMessageTable:ClientMessageTable,
@@ -89,7 +89,7 @@ class HelServer<
         serverMessageTable:ServerMessageTable,
         serverRPCTable:ServerRPCTable,
     }) {
-        this.past = new HelStateSet(spec.serverStateSchema.clone(spec.serverStateSchema.identity));
+        this.past = new MuStateSet(spec.serverStateSchema.clone(spec.serverStateSchema.identity));
         this.state = spec.serverStateSchema.clone(spec.serverStateSchema.identity);
         this.schema = spec.serverStateSchema;
 
@@ -97,8 +97,8 @@ class HelServer<
 
         this._socketServer = spec.socketServer;
 
-        this._protocol = new HelProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
-        this._remoteProtocol = new HelProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
+        this._protocol = new MuProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
+        this._remoteProtocol = new MuProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
 
         this.broadcast = this._remoteProtocol.createMessageDispatch(this._sockets);
     }
@@ -106,21 +106,21 @@ class HelServer<
     public start (spec:{
         message:{
             [name in keyof ServerMessageTable]:(
-                client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
+                client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
                 message:ServerMessageTable[name]['identity']) => void;
         };
         rpc:{
             [method in keyof ServerRPCTable]:(
-                client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
+                client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
                 args:ServerRPCTable[method]['0']['identity'],
                 cb?:(err?:any, result?:ServerRPCTable[method]['1']['identity']) => void) => void;
         };
         ready:(err?:any) => void;
-        connect:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
-        state:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
-        disconnect:(client:HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
+        connect:(client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
+        state:(client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
+        disconnect:(client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
     }) {
-        type Client = HelRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>;
+        type Client = MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>;
 
         this._socketServer.start({
             ready: (err?:any) => {
@@ -134,10 +134,10 @@ class HelServer<
                 spec.ready();
             },
             connection: (socket:HelSocket) => {
-                const rpcReplies = new HelRPCReplies();
+                const rpcReplies = new MuRPCReplies();
                 const observations:number[] = [0];
                 const sessionId = socket.sessionId;
-                const client:Client = new HelRemoteClient(
+                const client:Client = new MuRemoteClient(
                     this.windowLength,
                     sessionId,
                     this._protocol.stateSchema,
@@ -250,7 +250,7 @@ class HelServer<
     }
 }
 
-export = function createHelServer<
+export = function createMuServer<
     ClientStateSchema extends FreeModel,
     ClientMessageTable extends MessageTableBase,
     ClientRPCTable extends RPCTableBase,
@@ -258,7 +258,7 @@ export = function createHelServer<
     ServerMessageTable extends MessageTableBase,
     ServerRPCTable extends RPCTableBase> (
     spec:{
-        socketServer:HelSocketServer,
+        socketServer:MuSocketServer,
         windowLength?:number,
         protocol:{
             client:{
@@ -273,7 +273,7 @@ export = function createHelServer<
             },
         },
     }) {
-    return new HelServer<
+    return new MuServer<
         ClientStateSchema,
         ClientMessageTable,
         ClientRPCTable,
