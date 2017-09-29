@@ -253,3 +253,12 @@ Check out `mudb` for some examples of using `muschema`.
     + some types don't need a pool
     + pooled allocation can be cumbersome
 * do we need JSON and RPC serialization for debugging?
+
+# credits
+Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
+
+<img src="https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png" />
+
+Written in Shenzhen, China.
+
+(c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
