@@ -28,7 +28,7 @@
     "typescript": "^2.5.2"
   },
   "dependencies": {
-    "helnet": "^1.0.0",
-    "helschema": "^1.0.0"
+    "munet": "0.0.0",
+    "muschema": "0.0.0"
   }
 }

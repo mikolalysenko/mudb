@@ -2,15 +2,15 @@ import { createSocketServer, createSocket } from 'helnet';
 import createClient = require('../client');
 import createServer = require('../server');
 
-import HelFloat64 = require('helschema/float64');
-import HelStruct = require('helschema/struct');
-import HelString = require('helschema/string');
-import HelDictionary = require('helschema/dictionary');
+import MuFloat64 = require('muschema/float64');
+import MuStruct = require('muschema/struct');
+import MuString = require('muschema/string');
+import MuDictionary = require('muschema/dictionary');
 
-const Entity = HelStruct({
-    x: HelFloat64(),
-    y: HelFloat64(),
-    name: HelString('foo'),
+const Entity = MuStruct({
+    x: MuFloat64(),
+    y: MuFloat64(),
+    name: MuString('foo'),
 });
 
 const protocol = {
@@ -20,9 +20,9 @@ const protocol = {
         rpc: {},
     },
     server: {
-        state: HelDictionary(Entity),
+        state: MuDictionary(Entity),
         message: {
-            explode: HelFloat64(),
+            explode: MuFloat64(),
         },
         rpc: {},
     },
