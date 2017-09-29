@@ -2,14 +2,25 @@
 A database for HTML5 multiplayer games.
 
 ## example
-This is an example showing how to create a server/client pair and protocol using `heldb` using different network interfaces.
+This is heavily commented example showing how to create a server/client pair and protocol using `heldb`.  A system using `heldb` has to specify 3 things:
+
+1. A protocol
+1. A server
+1. A client
+
+Here is an example of a trivial game where many users can move a box around with their mouse, broken into 3 files:
+
+### mouse game
+First, we create a module which defines the network protocol called `protocol.js` here for simplicity:
 
 **`procotol.js`**
 ```javascript
+// Here we load in some basic schema types
 const HelFloat64 = require('helschema/float64')
 const HelStruct = require('helschema/struct')
 const HelDictionary = require('helschema/dictionary')
 
+// We define a point type using helstruct as a pair of floating point numbers
 const Point = HelStruct({
     x: HelFloat64(),
     y: HelFloat64()
@@ -29,6 +40,8 @@ module.exports = {
 }
 ```
 
+Then, we define a server module.  This exports a function which takes a `helnet` socketServer as input.
+
 **`server.js`**
 ```javascript
 const createServer = require('heldb/server')
@@ -44,6 +57,7 @@ module.exports = function (socketServer) {
         rpc: {},
         ready() {},
         connect(client) {
+            // when a client connects we create a new entry in the player dictionary
             server.state[client.sessionId] = client.schema.clone(client.state);
             server.commit();
         },
@@ -62,6 +76,8 @@ module.exports = function (socketServer) {
 }
 ```
 
+Finally we create a client which renders the state of the world using HTML 5 canvas and collects user input:
+
 **`client.js`**
 ```javascript
 const createClient = require('heldb/client')
@@ -74,28 +90,8 @@ module.exports = function (socket) {
 
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 256;
-    const context = canvas.getContext('2d');
     document.body.appendChild(canvas);
-
-    return client.start({
-        message: {},
-        rpc: {},
-        ready (err?:any) {
-            if (!err) {
-                canvas.addEventListener('mousemove', (ev) => {
-                    const bounds = canvas.getBoundingClientRect()
-                    client.state.x = ev.clientX - bounds.left
-                    client.state.y = ev.clientY - bounds.top
-                    client.commit()
-                });
-                draw()
-            }
-        },
-        state () {},
-        close () {
-            document.body.removeChild(canvas)
-        },
-    })
+    const context = canvas.getContext('2d');
 
     function draw () {
         if (!client.running || !context) {
@@ -121,8 +117,30 @@ module.exports = function (socket) {
 
         requestAnimationFrame(draw);
     }
+
+    return client.start({
+        message: {},
+        rpc: {},
+        ready (err?:any) {
+            if (!err) {
+                canvas.addEventListener('mousemove', (ev) => {
+                    const bounds = canvas.getBoundingClientRect()
+                    client.state.x = ev.clientX - bounds.left
+                    client.state.y = ev.clientY - bounds.top
+                    client.commit()
+                });
+                draw()
+            }
+        },
+        state () {},
+        close () {
+            document.body.removeChild(canvas)
+        },
+    })
 }
 ```
+
+### running the game
 
 **`example-local.js`**
 ```javascript

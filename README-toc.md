@@ -131,4 +131,10 @@ How to set up local development environment.
 * Pong
 * Tetris
 
+## Development tasks
+
+* Think through security implications
+* Debug the hell out of all serialization
+* Race condition hunt
+
 # credits

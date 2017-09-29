@@ -68,6 +68,7 @@ export class HelRPCReplies {
     public rpcConter:number = 1;
 
     public cancel () {
+        // TODO: cancel RPC callback
     }
 }
 
