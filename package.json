@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "watch-helnet": "cd munet && tsc --watch --outDir ../mudb/node_modules/munet",
-    "watch-helschema": "cd muschema && tsc --watch --outDir ../heldb/node_modules/muschema"
+    "watch-helschema": "cd muschema && tsc --watch --outDir ../heldb/node_modules/muschema",
+    "docs": "mdtoc < README-toc.md > README.md && mdtoc < mudb/README-toc.md > mudb/README.md && mdtoc < munet/README-toc.md > munet/README.md && mdtoc < muschema/README-toc.md > muschema/README.md && mdtoc < mustream/README-toc.md > mustream/README.md"
   },
   "repository": {
     "type": "git",

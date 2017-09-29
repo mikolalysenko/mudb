@@ -21,12 +21,6 @@ It makes networked game programming fun and simple.
       * [2.5 further reading](#section_2.5)
    * [3 examples](#section_3)
    * [4 developing](#section_4)
-      * [4.1 dev setup](#section_4.1)
-      * [4.2 tests](#section_4.2)
-         * [4.2.1 run](#section_4.2.1)
-         * [4.2.2 write](#section_4.2.2)
-      * [4.3 style guide](#section_4.3)
-      * [4.4 deployment notes](#section_4.4)
 
 # <a name="section_1"></a> 1 modules
 `mudb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
@@ -99,19 +93,16 @@ Academic references:
 
 **TODO**
 
-## <a name="section_4.1"></a> 4.1 dev setup
-
-How to set up local development environment.
-
-## <a name="section_4.2"></a> 4.2 tests
-
-### <a name="section_4.2.1"></a> 4.2.1 run
-
-### <a name="section_4.2.2"></a> 4.2.2 write
-
-## <a name="section_4.3"></a> 4.3 style guide
-
-## <a name="section_4.4"></a> 4.4 deployment notes
+* Environment set up
+    * typescript
+    * vs vode
+    * npm/node
+    * linking
+* tests
+    * running
+    * writing
+* code style
+* code of condunct
 
 # TODO
 
@@ -161,3 +152,5 @@ Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 Written in Shenzhen, China.
 
 (c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+
+

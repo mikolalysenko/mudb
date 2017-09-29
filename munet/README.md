@@ -3,21 +3,30 @@ Networking abstractions for `mudb`.
 
 ## example
 
-# install #
+   * [1 install](#section_1)
+   * [2 api](#section_2)
+      * [2.1 socket interface](#section_2.1)
+      * [2.2 socket server interface](#section_2.2)
+      * [2.3 local network](#section_2.3)
+      * [2.4 websockets](#section_2.4)
+      * [2.5 webworkers](#section_2.5)
+   * [3 more examples](#section_3)
 
-# api #
+# <a name="section_1"></a> 1 install
 
-## socket interface ##
+# <a name="section_2"></a> 2 api
 
-## socket server interface ##
+## <a name="section_2.1"></a> 2.1 socket interface
 
-## local network ##
+## <a name="section_2.2"></a> 2.2 socket server interface
 
-## websockets ##
+## <a name="section_2.3"></a> 2.3 local network
 
-## webworkers ##
+## <a name="section_2.4"></a> 2.4 websockets
 
-# more examples #
+## <a name="section_2.5"></a> 2.5 webworkers
+
+# <a name="section_3"></a> 3 more examples
 
 # TODO
 
@@ -43,3 +52,5 @@ Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 Written in Shenzhen, China.
 
 (c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+
+

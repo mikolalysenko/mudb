@@ -83,19 +83,16 @@ Academic references:
 
 **TODO**
 
-## dev setup ##
-
-How to set up local development environment.
-
-## tests ##
-
-### run ###
-
-### write ###
-
-## style guide ##
-
-## deployment notes ##
+* Environment set up
+    * typescript
+    * vs vode
+    * npm/node
+    * linking
+* tests
+    * running
+    * writing
+* code style
+* code of condunct
 
 # TODO
 

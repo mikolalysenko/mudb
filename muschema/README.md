@@ -1,5 +1,5 @@
-# helschema
-An extensible system for specifying diff/patch based replication [schemas](https://en.wikipedia.org/wiki/Database_schema).  In `heldb` schemas are used to define RPC and message interfaces as well as define state layouts.  Schemas allow for run time reflection on type information, and are necessary to support serialization and memory management.
+# muschema
+An extensible system for specifying diff/patch based replication [schemas](https://en.wikipedia.org/wiki/Database_schema).  In `mudb` schemas are used to define RPC and message interfaces as well as define state layouts.  Schemas allow for run time reflection on type information, and are necessary to support serialization and memory management.
 
 It is kind of like protobufs for JavaScript, only better in that it supports [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding) and is easier to customize (and worse in the sense that it only works in JavaScript).
 
@@ -9,23 +9,23 @@ It is kind of like protobufs for JavaScript, only better in that it supports [de
 Here is a somewhat contrived example showing how all of the methods of the schemas work.
 
 ```javascript
-const HelStruct = require('helschema/struct');
-const HelString = require('helschema/string');
-const HelFloat = require('helschema/float64');
-const HelInt = require('helschema/int32');
-const HelDictionary = require('helschema/dictionary');
+const MuStruct = require('muschema/struct');
+const MuString = require('muschema/string');
+const MuFloat = require('muschema/float64');
+const MuInt = require('muschema/int32');
+const MuDictionary = require('muschema/dictionary');
 
 // Define an entity schema
-const EntitySchema = HelStruct({
-    x: HelFloat(),
-    y: HelFloat(),
-    dx: HelFloat(),
-    dy: HelFloat(),
-    hp: HelInt(10),
-    name: HelString('entity')
+const EntitySchema = MuStruct({
+    x: MuFloat(),
+    y: MuFloat(),
+    dx: MuFloat(),
+    dy: MuFloat(),
+    hp: MuInt(10),
+    name: MuString('entity')
 })
 
-const EntitySet = HelDictionary(EntitySchema)
+const EntitySet = MuDictionary(EntitySchema)
 
 // create a new entity set object using the schema
 const entities = EntitySet.alloc()
@@ -77,17 +77,17 @@ EntitySet.free(otherEntities)
 # <a name="section_1"></a> 1 install
 
 ```
-npm i helschema
+npm i muschema
 ```
 
 # <a name="section_2"></a> 2 api
 
 ## <a name="section_2.1"></a> 2.1 interfaces
-Internally each `helschema` is an object which implements the following interface.
+Internally each `muschema` is an object which implements the following interface.
 
 * `identity` The default value of an object in the schema.
-* `helType` A string encoding some runtime information about the schema.
-* `helData` (optional) Additional runtime information about the schema.  May include subtype schemas, etc.
+* `muType` A string encoding some runtime information about the schema.
+* `muData` (optional) Additional runtime information about the schema.  May include subtype schemas, etc.
 * `alloc()` Creates a new value from scratch
 * `free(value)` Returns a value to the internal memory pool.
 * `clone(value)` Makes a copy of a value.
@@ -110,58 +110,58 @@ To serialize an arbitrary object without a base, use the identity element.  For 
 const serialized = schema.diff(schema.identity, value)
 ```
 
-Schemas can be composed recursively by calling submethods.  `helschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user defined applications can specify custom serialization and diffing/patching methods for various common types.
+Schemas can be composed recursively by calling submethods.  `muschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user defined applications can specify custom serialization and diffing/patching methods for various common types.
 
 ### a note for typescript ##
-For typescript users, a generic interface for schemas can be found in the `helschema/schema` module.  It exports the interface `HelSchema<ValueType>` which any `helschema` should implement.
+For typescript users, a generic interface for schemas can be found in the `muschema/schema` module.  It exports the interface `MuSchema<ValueType>` which any `muschema` should implement.
 
 ## <a name="section_2.2"></a> 2.2 primitives
-Out of the box `helschema` comes with schemas for all primitive types in JavaScript.  These can be accessed using the following constructors.
+Out of the box `muschema` comes with schemas for all primitive types in JavaScript.  These can be accessed using the following constructors.
 
 ### <a name="section_2.2.1"></a> 2.2.1 void
 An empty value type.  Useful for specifying arguments to messages which do not need to be serialized.
 
 ```javascript
-const HelVoid = require('helschema/void')()
+const MuVoid = require('muschema/void')()
 ```
 
 ### <a name="section_2.2.2"></a> 2.2.2 boolean
 A binary `true`/`false` boolean value
 
 ```javascript
-const HelBoolean = require('helschema/boolean')([identity])
+const MuBoolean = require('muschema/boolean')([identity])
 ```
 
 ### <a name="section_2.2.3"></a> 2.2.3 numbers
-Because `helschema` supports binary serialization
+Because `muschema` supports binary serialization
 
 ```javascript
 // Signed integers 8, 16 and 32-bit
-const HelInt8 = require('helschema/int8')([identity])
-const HelInt16 = require('helschema/int16')([identity])
-const HelInt32 = require('helschema/int32')([identity])
+const MuInt8 = require('muschema/int8')([identity])
+const MuInt16 = require('muschema/int16')([identity])
+const MuInt32 = require('muschema/int32')([identity])
 
 // Unsigned integers
-const HelUint8 = require('helschema/uint8')([identity])
-const HelInt16 = require('helschema/uint16')([identity])
-const HelInt32 = require('helschema/uint32')([identity])
+const MuUint8 = require('muschema/uint8')([identity])
+const MuInt16 = require('muschema/uint16')([identity])
+const MuInt32 = require('muschema/uint32')([identity])
 
 // Floating point
-const HelFloat32 = require('helschema/float32')([identity])
-const HelFloat64 = require('helschema/float64')([identity])
+const MuFloat32 = require('muschema/float32')([identity])
+const MuFloat64 = require('muschema/float64')([identity])
 ```
 
-For generic numbers, use `HelFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
+For generic numbers, use `MuFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
 
 ### <a name="section_2.2.4"></a> 2.2.4 strings
 String data type
 
 ```javascript
-const HelString = require('helschema/string')([identity])
+const MuString = require('muschema/string')([identity])
 ```
 
 ## <a name="section_2.3"></a> 2.3 functors
-Primitive data types in `helschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
+Primitive data types in `muschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
 
 ### <a name="section_2.3.1"></a> 2.3.1 structs
 A struct is a collection of multiple subtypes.  Structs are constructed by passing in a dictionary of schemas.  Struct schemas may be nested as follows:
@@ -169,15 +169,15 @@ A struct is a collection of multiple subtypes.  Structs are constructed by passi
 **Example:**
 
 ```javascript
-const HelFloat64 = require('helschema/float64')
-const HelStruct = require('helschema/struct')
+const MuFloat64 = require('muschema/float64')
+const MuStruct = require('muschema/struct')
 
-const Vec2 = HelStruct({
-    x: HelFloat64(0),
-    y: HelFloat64(0),
+const Vec2 = MuStruct({
+    x: MuFloat64(0),
+    y: MuFloat64(0),
 })
 
-const Particle = HelStruct({
+const Particle = MuStruct({
     position: Vec2,
     velocity: Vec2
 })
@@ -197,13 +197,13 @@ A discriminated union of several subtypes.  Each subtype must be given a label.
 **Example:**
 
 ```javascript
-const HelFloat64 = require('helschema/float64')
-const HelString = require('helschema/string')
-const HelUnion = require('helschema/union')
+const MuFloat64 = require('muschema/float64')
+const MuString = require('muschema/string')
+const MuUnion = require('muschema/union')
 
-const FloatOrString = HelUnion({
-    float: HelFloat64(),
-    string: HelString(),
+const FloatOrString = MuUnion({
+    float: MuFloat64(),
+    string: MuString(),
 });
 
 // create a new value
@@ -226,10 +226,10 @@ A dictionary is a labelled collection of values.
 **Example:**
 
 ```javascript
-const HelUint32 = require('helschema/uint32')
-const HelDictionary = require('helschema/dictionary/')
+const MuUint32 = require('muschema/uint32')
+const MuDictionary = require('muschema/dictionary/')
 
-const NumberDictionary = HelDictionary(HelUint32(0))
+const NumberDictionary = MuDictionary(MuUint32(0))
 
 // create a dictionary
 const dict = NumberDictionary.alloc()
@@ -239,7 +239,7 @@ dict['foo'] = 3
 
 # <a name="section_3"></a> 3 more examples
 
-Check out `heldb` for some examples of using `helschema`.
+Check out `mudb` for some examples of using `muschema`.
 
 # TODO
 
@@ -268,4 +268,14 @@ Check out `heldb` for some examples of using `helschema`.
     + some types don't need a pool
     + pooled allocation can be cumbersome
 * do we need JSON and RPC serialization for debugging?
+
+# credits
+Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
+
+<img src="https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png" />
+
+Written in Shenzhen, China.
+
+(c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+
 

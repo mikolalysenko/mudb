@@ -13,5 +13,3 @@ Written in Shenzhen, China.
 
 (c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
 
-
-
