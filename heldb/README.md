@@ -4,24 +4,18 @@ A database for HTML5 multiplayer games.
 ## example
 
 ```javascript
-const HelFloat64 = require('helschema/float64');
-const HelString = require('helschema/string');
-const HelStruct = require('helschema/struct');
-const HelDictionary = require('helschema/dictionary');
-
 import { createSocketServer, createSocket } from 'helnet';
 import createClient = require('../client');
 import createServer = require('../server');
 
+// First we define a protocol
 import HelFloat64 = require('helschema/float64');
 import HelStruct = require('helschema/struct');
-import HelString = require('helschema/string');
 import HelDictionary = require('helschema/dictionary');
 
 const Entity = HelStruct({
     x: HelFloat64(),
-    y: HelFloat64(),
-    name: HelString('foo'),
+    y: HelFloat64()
 });
 
 const protocol = {
@@ -37,15 +31,20 @@ const protocol = {
     },
 };
 
+
+// Next we create a locally socket server
 const socketServer = createSocketServer({
     local: {},
 });
 
+
+// We pass the protocol and socket server to the constructor of the server
 const server = createServer({
     protocol,
     socketServer,
 });
 
+// Then we initialize the server
 server.start({
     message: {},
     rpc: {},
@@ -67,23 +66,52 @@ server.start({
     },
 });
 
+// next we create a button to add clients to the server
+const addClientButton = document.createElement('input');
+addClientButton.value = 'add client';
+addClientButton.type = 'button';
+addClientButton.addEventListener('click', startClient);
+document.body.appendChild(addClientBUtton);
+
 function startClient () {
-    const socket = createSocket({
-        sessionId: Math.random() + 'client',
-        local: {
-            server: socketServer,
-        },
-    });
-
-    const client = createClient({
-        protocol,
-        socket,
-    });
-
+    // First we create a canvas element to draw the client
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 256;
     const context = canvas.getContext('2d');
     document.body.appendChild(canvas);
+
+    // First we create a new client object
+    const client = createClient({
+        protocol,
+        socket: createSocket({
+            sessionId: Math.random() + 'client',
+            local: {
+                server: socketServer,
+            },
+        }),
+    });
+
+    // Then we start the client and register our event handlers
+    client.start({
+        message: {},
+        rpc: {},
+        ready (err?:any) {
+            if (err) {
+                return;
+            }
+            canvas.addEventListener('mousemove', (ev) => {
+                const bounds = canvas.getBoundingClientRect();
+                client.state.x = ev.clientX - bounds.left;
+                client.state.y = ev.clientY - bounds.top;
+                client.commit();
+            });
+            draw();
+        },
+        state () {},
+        close () {
+            document.body.removeChild(container);
+        },
+    });
 
     function draw () {
         if (!context) {
@@ -109,34 +137,7 @@ function startClient () {
 
         requestAnimationFrame(draw);
     }
-
-    client.start({
-        message: {},
-        rpc: {},
-        ready (err?:any) {
-            if (err) {
-                return;
-            }
-            canvas.addEventListener('mousemove', (ev) => {
-                const bounds = canvas.getBoundingClientRect();
-                client.state.x = ev.clientX - bounds.left;
-                client.state.y = ev.clientY - bounds.top;
-                client.commit();
-            });
-            draw();
-        },
-        state () {},
-        close () {
-            document.body.removeChild(container);
-        },
-    });
 }
-
-const addClientButton = document.createElement('input');
-addClientButton.value = 'add client';
-addClientButton.type = 'button';
-addClientButton.addEventListener('click', startClient);
-document.body.appendChild(addClientBUtton);
 ```
 
 # table of contents
@@ -150,19 +151,31 @@ npm install heldb helschema helnet
 # api #
 
 ## protocols
-The first step to creating any application with `heldb` is to specify a protocol schema using [`helschema`](https://github.com/mikolalysenko/heldb/tree/master/helschema).  Each protocol then specifies two interfaces, one for the client and one for the server.  
+The first step to creating any application with `heldb` is to specify a protocol schema using [`helschema`](https://github.com/mikolalysenko/heldb/tree/master/helschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
 
-### state ###
+* `state` which defines the state protocol
+* `message` which is an object containing all message types and their arguments
+* `rpc` which is an object containing all rpc types and their arguments
 
-### messages ###
+**Example:**
 
-### rpc ###
+```javascript
+// TODO
+```
 
 ## client ##
 
 ### constructor ###
 
+**Example**
+
+```javascript
+// TODO
+```
+
 ### event handlers ###
+
+### sending data ###
 
 ## server ##
 
@@ -173,3 +186,5 @@ The first step to creating any application with `heldb` is to specify a protocol
 # more examples #
 
 # TODO
+
+* more test cases

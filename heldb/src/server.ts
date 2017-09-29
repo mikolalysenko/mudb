@@ -221,6 +221,8 @@ class HelServer<
                 });
             },
         });
+
+        return this;
     }
 
     // commit current state, publish to all clients

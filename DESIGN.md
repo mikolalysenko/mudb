@@ -377,10 +377,6 @@ Features:
 * Simulate jitter/lag
 * Packet logging/playback
 
-## History `helhist`
-
-* Interpolate to any time
-
 ## Clock synchronization `heltime`
 
 * Tick counter
