@@ -236,7 +236,7 @@ module.exports = {
 ```
 
 ## server ##
-A server in `heldb` processes messages from many clients.  It may choose to accept or reject incoming connections and 
+A server in `heldb` processes messages from many clients.  It may choose to accept or reject incoming connections and dispatch messages to clients as appropriate.
 
 ### server constructor ###
 `heldb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
