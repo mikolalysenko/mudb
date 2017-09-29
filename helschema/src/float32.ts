@@ -1,2 +1,2 @@
-import { HelNumber } from './_number';
-export = (x?:number) => new HelNumber('float32', x || 0);
+import { MuNumber } from './_number';
+export = (x?:number) => new MuNumber('float32', x || 0);

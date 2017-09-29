@@ -1,12 +1,12 @@
-export interface HelSchema<Value> {
+export interface MuSchema<Value> {
     /** Base value type */
     readonly identity:Value;
     
     /** Run time type info */
-    readonly helType:string;
+    readonly muType:string;
 
     /** Additional schema-specific type info */
-    readonly helData?:any;
+    readonly muData?:any;
 
     /** Allocates a new value */
     alloc ():Value;

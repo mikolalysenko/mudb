@@ -1,9 +1,9 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
 /** Boolean type schema */
-export class HelBoolean implements HelSchema<boolean> {
+export class MuBoolean implements MuSchema<boolean> {
     public readonly identity:boolean;
-    public readonly helType = 'boolean';
+    public readonly muType = 'boolean';
 
     constructor (id:boolean) {
         this.identity = id;

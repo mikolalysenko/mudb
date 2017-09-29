@@ -1,10 +1,10 @@
 import tape = require('tape');
 
-import HelBoolean = require('../boolean');
+import MuBoolean = require('../boolean');
 
 tape('boolean', function (t) {
-    const b = HelBoolean();
-    console.log(b.helType);
+    const b = MuBoolean();
+    console.log(b.muType);
 
     t.end();
 });

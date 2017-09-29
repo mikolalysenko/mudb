@@ -1,17 +1,18 @@
 {
-  "name": "helschema",
-  "version": "1.0.0",
-  "description": "Schema definition utilities for heldb",
+  "name": "muschema",
+  "version": "0.0.0",
+  "description": "Schemas for mudb",
   "main": "index.js",
   "scripts": {
     "test": "ts-node src/test/index.js",
     "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
   },
   "keywords": [
-    "heldb",
+    "mudb",
     "schema",
     "diff",
-    "patch"
+    "patch",
+    "binary"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

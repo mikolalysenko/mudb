@@ -1,9 +1,9 @@
-import { HelSchema } from './schema';
-import { HelDictionary } from './_dictionary';
+import { MuSchema } from './schema';
+import { MuDictionary } from './_dictionary';
 
-export = function <ValueSchema extends HelSchema<any>> (
+export = function <ValueSchema extends MuSchema<any>> (
     valueModel:ValueSchema,
     identity?:{ [prop:string]:ValueSchema['identity'] }) {
-    return new HelDictionary<ValueSchema>(identity || {}, valueModel);
+    return new MuDictionary<ValueSchema>(identity || {}, valueModel);
 };
 

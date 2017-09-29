@@ -1,9 +1,9 @@
-import {HelSchema} from './schema';
+import {MuSchema} from './schema';
 
 /** String type schema */
-export class HelString implements HelSchema<string> {
+export class MuString implements MuSchema<string> {
     public readonly identity:string;
-    public readonly helType = 'string';
+    public readonly muType = 'string';
 
     constructor (identity) {
         this.identity = identity;

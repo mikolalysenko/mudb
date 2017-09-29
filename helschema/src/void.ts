@@ -1,4 +1,4 @@
-import { HelVoid } from './_void';
+import { MuVoid } from './_void';
 
 /** Empty type schema */
-export = () => new HelVoid();
+export = () => new MuVoid();

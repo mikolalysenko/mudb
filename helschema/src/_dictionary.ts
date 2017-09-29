@@ -1,15 +1,15 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
 /** Dictionary type schema */
-export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSchema<{[key:string]:ValueSchema['identity']}> {
+export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema<{[key:string]:ValueSchema['identity']}> {
     public readonly identity:{[key:string]:ValueSchema['identity']};
     
-    public readonly helType = 'dictionary';
-    public readonly helData:ValueSchema;
+    public readonly muType = 'dictionary';
+    public readonly muData:ValueSchema;
 
     constructor (id:{[key:string]:ValueSchema['identity']}, valueSchema:ValueSchema) {
         this.identity = id;
-        this.helData = valueSchema;
+        this.muData = valueSchema;
     }
 
     alloc () { return {}; }
@@ -19,7 +19,7 @@ export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSch
     clone (x:{[key:string]:ValueSchema['identity']}):{[key:string]:ValueSchema['identity']} {
         const result:{[key:string]:ValueSchema['identity']} = {};
         const props = Object.keys(x);
-        const schema = this.helData;
+        const schema = this.muData;
         for (let i = 0; i < props.length; ++i) {
             result[props[i]] = schema.clone(x[props[i]]);
         }
@@ -32,7 +32,7 @@ export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSch
     
         Object.keys(base).forEach((prop) => {
             if (prop in target) {
-                const delta = this.helData.diff(base[prop], target[prop]);
+                const delta = this.muData.diff(base[prop], target[prop]);
                 if (delta !== undefined) {
                     patch[prop] = delta;
                 }
@@ -43,7 +43,7 @@ export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSch
     
         Object.keys(target).forEach((prop) => {
             if (!(prop in base)) {
-                const d = this.helData.diff(this.helData.identity, target[prop]);
+                const d = this.muData.diff(this.muData.identity, target[prop]);
                 if (d) {
                     patch[prop] = d;
                 }
@@ -62,7 +62,7 @@ export class HelDictionary<ValueSchema extends HelSchema<any>> implements HelSch
 
     patch (base:{[key:string]:ValueSchema['identity']}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
         const result = {}
-        const schema = this.helData;
+        const schema = this.muData;
 
         const baseProps = Object.keys(base);
         for (let i = 0; i < baseProps.length; ++i) {

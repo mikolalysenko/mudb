@@ -1,12 +1,12 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
 /** Number type schema */
-export class HelNumber implements HelSchema<number> {
+export class MuNumber implements MuSchema<number> {
     public readonly identity:number;
-    public readonly helType:string;
+    public readonly muType:string;
 
     constructor (helType:string, value:number) {
-        this.helType = helType;
+        this.muType = helType;
         this.identity = value;
     }
 

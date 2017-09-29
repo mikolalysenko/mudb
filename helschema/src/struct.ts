@@ -1,13 +1,13 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
-export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any> } > (spec:StructSpec) {
+export = function createStruct <StructSpec extends { [prop:string]:MuSchema<any> } > (spec:StructSpec) {
     type StructState = {
         [P in keyof StructSpec]: StructSpec[P]["identity"];
     };
-    type StructModel = HelSchema<StructState>;
+    type StructModel = MuSchema<StructState>;
 
     const structProps:string[] = Object.keys(spec).sort();
-    const structTypes:HelSchema<any>[] = structProps.map((propName) => spec[propName]);
+    const structTypes:MuSchema<any>[] = structProps.map((propName) => spec[propName]);
 
     const args:string[] = [];
     const props:any[] = [];
@@ -83,7 +83,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     prelude.push('function HelStruct(){');
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -109,7 +109,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     const identityRef = prelude.def('_alloc()');
     structProps.forEach((propName, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -131,7 +131,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     methods.alloc.push(`var result=_alloc();`);
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -154,7 +154,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     methods.free.push(`${poolRef}.push(x);`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -176,7 +176,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     methods.clone.push(`var result = _alloc();`)
     structProps.forEach((name, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -199,7 +199,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     // diff subroutine
     const diffReqdRefs = structProps.map((name, i) => {
         const type = structTypes[i];
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -225,7 +225,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
     structProps.forEach((name, i) => {
         const type = structTypes[i];
         methods.patch.push(`if("${name}" in p){`);
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':
@@ -242,7 +242,7 @@ export = function createStruct <StructSpec extends { [prop:string]:HelSchema<any
                 break;
         }
         methods.patch.push(`}else{`)
-        switch(type.helType) {
+        switch(type.muType) {
             case 'int8':
             case 'int16':
             case 'int32':

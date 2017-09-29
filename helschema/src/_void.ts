@@ -1,9 +1,9 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
 /** The empty type */
-export class HelVoid implements HelSchema<void> {
+export class MuVoid implements MuSchema<void> {
     public readonly identity:void;
-    public readonly helType = 'void';
+    public readonly muType = 'void';
 
     alloc () {}
     free () {}

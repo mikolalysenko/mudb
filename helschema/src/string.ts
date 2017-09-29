@@ -1,2 +1,2 @@
-import { HelString } from './_string';
-export = (identity?:string) => new HelString(identity || '');
+import { MuString } from './_string';
+export = (identity?:string) => new MuString(identity || '');

@@ -1,7 +1,7 @@
-import { HelSchema } from './schema';
+import { MuSchema } from './schema';
 
 /** Union of subtype schemas */
-export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> implements HelSchema<{
+export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }> implements MuSchema<{
     type:keyof SubTypes;
     data:SubTypes[keyof SubTypes]['identity'];
 }> {
@@ -10,14 +10,14 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         data:SubTypes[keyof SubTypes]['identity'];
     };
 
-    public readonly helType = 'union';
-    public readonly helData:SubTypes;
+    public readonly muType = 'union';
+    public readonly muData:SubTypes;
 
     constructor (schemaSpec:SubTypes, identity:{
         type:keyof SubTypes;
         data:SubTypes[keyof SubTypes]['identity'];
     }) {
-        this.helData = schemaSpec;
+        this.muData = schemaSpec;
         this.identity = identity;
     }
 
@@ -34,7 +34,7 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         type:keyof SubTypes;
         data:SubTypes[keyof SubTypes]['identity'];
     }) {
-        this.helData[data.type].free(data.data);
+        this.muData[data.type].free(data.data);
     }
     public clone (data:{
         type:keyof SubTypes;
@@ -43,7 +43,7 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         type:keyof SubTypes;
         data:SubTypes[keyof SubTypes]['identity'];
     } {
-        const schema = this.helData[data.type];
+        const schema = this.muData[data.type];
         return {
             type: data.type,
             data: schema.clone(data.data),
@@ -57,7 +57,7 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         type:keyof SubTypes;
         data:SubTypes[keyof SubTypes]['identity'];
     }) : (any | undefined) {
-        const model = this.helData[target.type];
+        const model = this.muData[target.type];
         if (target.type === base.type) {
             const delta = model.diff(base.data, target.data);
             if (delta === void 0) {
@@ -82,7 +82,7 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         data:SubTypes[keyof SubTypes]['identity'];
     } {
         if ('type' in patch) {
-            const model = this.helData[patch.type];
+            const model = this.muData[patch.type];
             return {
                 type: patch.type,
                 data: model.patch(model.identity, patch.data),
@@ -90,12 +90,12 @@ export class HelUnion<SubTypes extends { [type:string]:HelSchema<any> }> impleme
         } else if ('data' in patch) {
             return {
                 type: base.type,
-                data: this.helData[base.type].patch(base.data, patch.data),
+                data: this.muData[base.type].patch(base.data, patch.data),
             };
         } else {
             return {
                 type: base.type,
-                data: this.helData[base.type].clone(base.data),
+                data: this.muData[base.type].clone(base.data),
             };
         }
     }
