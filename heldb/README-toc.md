@@ -155,24 +155,13 @@ addClientButton.addEventListener('click',
 
 # table of contents
 
-   * [1 install](#section_1)
-   * [2 api](#section_2)
-      * [2.1 client](#section_2.1)
-         * [2.1.1 constructor](#section_2.1.1)
-         * [2.1.2 event handlers](#section_2.1.2)
-         * [2.1.3 sending data](#section_2.1.3)
-      * [2.2 server](#section_2.2)
-         * [2.2.1 constructor](#section_2.2.1)
-         * [2.2.2 event handlers](#section_2.2.2)
-   * [3 more examples](#section_3)
-
-# <a name="section_1"></a> 1 install
+# install #
 
 ```
 npm install heldb helschema helnet
 ```
 
-# <a name="section_2"></a> 2 api
+# api #
 
 ## protocols
 The first step to creating any application with `heldb` is to specify a protocol schema using [`helschema`](https://github.com/mikolalysenko/heldb/tree/master/helschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
@@ -187,9 +176,9 @@ The first step to creating any application with `heldb` is to specify a protocol
 // TODO
 ```
 
-## <a name="section_2.1"></a> 2.1 client
+## client ##
 
-### <a name="section_2.1.1"></a> 2.1.1 constructor
+### constructor ###
 
 **Example**
 
@@ -197,19 +186,18 @@ The first step to creating any application with `heldb` is to specify a protocol
 // TODO
 ```
 
-### <a name="section_2.1.2"></a> 2.1.2 event handlers
+### event handlers ###
 
-### <a name="section_2.1.3"></a> 2.1.3 sending data
+### sending data ###
 
-## <a name="section_2.2"></a> 2.2 server
+## server ##
 
-### <a name="section_2.2.1"></a> 2.2.1 constructor
+### constructor ###
 
-### <a name="section_2.2.2"></a> 2.2.2 event handlers
+### event handlers ###
 
-# <a name="section_3"></a> 3 more examples
+# more examples #
 
 # TODO
 
 * more test cases
-
