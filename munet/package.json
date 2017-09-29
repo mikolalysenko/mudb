@@ -1,7 +1,7 @@
 {
-  "name": "helnet",
-  "version": "1.0.0",
-  "description": "Network transport layer for heldb",
+  "name": "munet",
+  "version": "0.0.0",
+  "description": "Network transport layer for mudb",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,12 +9,10 @@
     "publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
   },
   "keywords": [
-    "heldb",
+    "mudb",
     "network",
     "multiplayer",
-    "game",
-    "the",
-    "future"
+    "game"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

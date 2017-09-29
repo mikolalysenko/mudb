@@ -1,38 +1,38 @@
 import {
-    HelSocket,
-    HelSocketServer,
-    HelSocketServerSpec,
-    HelSessionId,
-    HelSessionData,
-    HelData,
-    HelMessageHandler,
-    HelCloseHandler,
-    HelSocketSpec,
-    HelConnectionHandler,
+    MuSocket,
+    MuSocketServer,
+    MuSocketServerSpec,
+    MuSessionId,
+    MuSessionData,
+    MuData,
+    MuMessageHandler,
+    MuCloseHandler,
+    MuSocketSpec,
+    MuConnectionHandler,
 } from '../net';
 
 function noop () {}
 
-export class HelLocalSocket implements HelSocket {
-    public sessionId:HelSessionId;
+export class MuLocalSocket implements MuSocket {
+    public sessionId:MuSessionId;
 
-    private _server:HelLocalServer;
+    private _server:MuLocalSocketServer;
 
-    public _duplex:HelLocalSocket;
-    public _onMessage:HelMessageHandler = noop;
-    public _onUnreliableMessage:HelMessageHandler = noop;
-    public _onClose:HelCloseHandler = noop;
+    public _duplex:MuLocalSocket;
+    public _onMessage:MuMessageHandler = noop;
+    public _onUnreliableMessage:MuMessageHandler = noop;
+    public _onClose:MuCloseHandler = noop;
 
     private _started:boolean = false;
     public _closed:boolean = false;
     public open:boolean = false;
 
-    constructor (sessionId:string, server:HelLocalServer) {
+    constructor (sessionId:string, server:MuLocalSocketServer) {
         this.sessionId = sessionId;
         this._server = server;
     }
 
-    public start (spec:HelSocketSpec) {
+    public start (spec:MuSocketSpec) {
         setTimeout(
             () => {
                 if (this._closed) {
@@ -54,7 +54,7 @@ export class HelLocalSocket implements HelSocket {
             0);
     }
 
-    private _pendingMessages:HelData[] = [];
+    private _pendingMessages:MuData[] = [];
     private _pendingDrainTimeout;
     private _handleDrain = () => {
         this._pendingDrainTimeout = 0;
@@ -114,16 +114,16 @@ function removeIfExists (array, element) {
     }
 }
 
-export class HelLocalServer implements HelSocketServer {
-    public clients:HelSocket[] = [];
+export class MuLocalSocketServer implements MuSocketServer {
+    public clients:MuSocket[] = [];
 
-    public _pendingSockets:HelSocket[] = [];
+    public _pendingSockets:MuSocket[] = [];
 
     private _started:boolean = false;
     private _closed:boolean = false;
     public open:boolean = false;
 
-    private _onConnection:HelConnectionHandler;
+    private _onConnection:MuConnectionHandler;
 
     public _handleConnection (socket) {
         if (this.open) {
@@ -141,7 +141,7 @@ export class HelLocalServer implements HelSocketServer {
         removeIfExists(this._pendingSockets, socket);
     }
 
-    public start (spec:HelSocketServerSpec) {
+    public start (spec:MuSocketServerSpec) {
         setTimeout(
             () => {
                 if (this._started) {
@@ -171,21 +171,21 @@ export class HelLocalServer implements HelSocketServer {
     }
 }
 
-export type HelLocalServerSpec = {
+export type MuLocalSocketServerSpec = {
 };
 
-export function createLocalServer (config:HelLocalServerSpec) : HelLocalServer {
-    return new HelLocalServer();
+export function createLocalServer (config:MuLocalSocketServerSpec) : MuLocalSocketServer {
+    return new MuLocalSocketServer();
 }
 
-export type HelLocalSocketSpec = {
-    server:HelSocketServer;
+export type MuLocalSocketSpec = {
+    server:MuSocketServer;
 };
 
-export function createLocalClient (sessionId:HelSessionId, spec:HelLocalSocketSpec) : HelLocalSocket {
-    const server = <HelLocalServer>spec.server;
-    const clientSocket = new HelLocalSocket(sessionId, server);
-    const serverSocket = new HelLocalSocket(clientSocket.sessionId, server);
+export function createLocalClient (sessionId:MuSessionId, spec:MuLocalSocketSpec) : MuLocalSocket {
+    const server = <MuLocalSocketServer>spec.server;
+    const clientSocket = new MuLocalSocket(sessionId, server);
+    const serverSocket = new MuLocalSocket(clientSocket.sessionId, server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
     server._handleConnection(serverSocket);

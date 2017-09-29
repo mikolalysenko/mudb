@@ -1,6 +1,6 @@
-import { HelSocket, HelSocketServer } from './net';
+import { MuSocket, MuSocketServer } from './net';
 
-import { HelLocalServer } from './local/local';
+import { MuLocalSocketServer } from './local/local';
 
 import createSocketServer = require('./server');
 import createSocket = require('./socket');

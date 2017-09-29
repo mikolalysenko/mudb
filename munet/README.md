@@ -1,5 +1,5 @@
-# helnet
-Networking abstractions for heldb.
+# munet
+Networking abstractions for `mudb`.
 
 ## example
 
