@@ -1,4 +1,4 @@
-import MuSchema from 'muschema/schema';
+import { MuSchema } from 'muschema/schema';
 
 export function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;

@@ -1,7 +1,8 @@
-import { createSocketServer, createSocket } from 'helnet';
+import { createSocketServer, createSocket } from 'munet';
 import createClient = require('../client');
 import createServer = require('../server');
 
+import MuVoid = require('muschema/void');
 import MuFloat64 = require('muschema/float64');
 import MuStruct = require('muschema/struct');
 import MuString = require('muschema/string');
