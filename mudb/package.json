@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "local": "budo src/example/local.ts --open --live -- -p [tsify]",
-    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
+    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/",
+    "do-link": "cp package.json src/ && cd src && npm link ."
   },
   "keywords": [
     "mudb",
