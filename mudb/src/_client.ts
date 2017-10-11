@@ -9,7 +9,7 @@ import {
     destroyStateSet } from './lib/state-set';
 
 import {
-    MuProtocol,
+    MuProtocolFactory,
     FreeModel,
     MessageTableBase,
     MessageInterface,
@@ -22,20 +22,20 @@ export class MuRemoteServer<
     StateSchema extends FreeModel,
     MessageTable extends MessageTableBase,
     RPCTable extends RPCTableBase> implements MuStateReplica<StateSchema> {
-    public readonly past:MuStateSet<StateSchema['identity']>;
+    public readonly past:MuStateSet<StateSchema>;
     public readonly state:StateSchema['identity'];
     public readonly schema:StateSchema;
     public tick:number = 0;
     public windowLength:number = 0;
 
     public readonly message:MessageInterface<MessageTable>['api'];
-    public readonly rpc:RPCInterface<RPCTable>['api'];
+    public readonly rpc:RPCInterface<RPCTable>['call'];
 
     constructor (
         windowLength:number,
         schema:StateSchema,
         message:MessageInterface<MessageTable>['api'],
-        rpc:RPCInterface<RPCTable>['api']) {
+        rpc:RPCInterface<RPCTable>['call']) {
         this.windowLength = windowLength;
         this.past = new MuStateSet(schema.clone(schema.identity));
         this.state = this.past.states[this.past.states.length - 1];
@@ -69,8 +69,8 @@ export class MuClient<
     private _closed:boolean = false;
 
     // internal protocol variables
-    private _protocol:MuProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
-    private _remoteProtocol:MuProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
+    private _protocol:MuProtocolFactory<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
+    private _remoteProtocol:MuProtocolFactory<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
     private _serverStates:number[][] = [[0]];
     private _rpcReplies:MuRPCReplies = new MuRPCReplies();
 
@@ -95,8 +95,8 @@ export class MuClient<
         this.schema = spec.clientStateSchema;
         this.windowLength = spec.windowLength;
 
-        this._protocol = new MuProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
-        this._remoteProtocol = new MuProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
+        this._protocol = new MuProtocolFactory(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
+        this._remoteProtocol = new MuProtocolFactory(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
     }
 
     public start (spec:{

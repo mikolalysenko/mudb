@@ -7,7 +7,7 @@ import {
     garbageCollectStates,
     pushState } from './lib/state-set';
 import {
-    MuProtocol,
+    MuProtocolFactory,
     FreeModel,
     MessageTableBase,
     MessageInterface,
@@ -29,14 +29,14 @@ export class MuRemoteClient<
     public windowLength:number = 0;
 
     public readonly message:MessageInterface<MessageTable>['api'];
-    public readonly rpc:RPCInterface<RPCTable>['api'];
+    public readonly rpc:RPCInterface<RPCTable>['call'];
 
     constructor (
         windowLength:number,
         sessionId:string,
         schema:StateSchema,
         message:MessageInterface<MessageTable>['api'],
-        rpc:RPCInterface<RPCTable>['api']) {
+        rpc:RPCInterface<RPCTable>['call']) {
         this.windowLength = windowLength;
         this.sessionId = sessionId;
         this.past = new MuStateSet(schema.clone(schema.identity));
@@ -73,8 +73,8 @@ export class MuServer<
     private _started:boolean = false;
     private _closed:boolean = false;
 
-    private _protocol:MuProtocol<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
-    private _remoteProtocol:MuProtocol<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
+    private _protocol:MuProtocolFactory<ClientStateSchema, ServerMessageTable, ServerRPCTable>;
+    private _remoteProtocol:MuProtocolFactory<ServerStateSchema, ClientMessageTable, ClientRPCTable>;
 
     constructor(spec:{
         windowLength:number,
@@ -97,8 +97,8 @@ export class MuServer<
 
         this._socketServer = spec.socketServer;
 
-        this._protocol = new MuProtocol(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
-        this._remoteProtocol = new MuProtocol(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
+        this._protocol = new MuProtocolFactory(spec.clientStateSchema, spec.serverMessageTable, spec.serverRPCTable);
+        this._remoteProtocol = new MuProtocolFactory(spec.serverStateSchema, spec.clientMessageTable, spec.clientRPCTable);
 
         this.broadcast = this._remoteProtocol.createMessageDispatch(this._sockets);
     }
@@ -113,7 +113,7 @@ export class MuServer<
             [method in keyof ServerRPCTable]:(
                 client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>,
                 args:ServerRPCTable[method]['0']['identity'],
-                cb?:(err?:any, result?:ServerRPCTable[method]['1']['identity']) => void) => void;
+                cb:(err?:any, result?:ServerRPCTable[method]['1']['identity']) => void) => void;
         };
         ready:(err?:any) => void;
         connect:(client:MuRemoteClient<ClientStateSchema, ClientMessageTable, ClientRPCTable>) => void;
@@ -154,9 +154,6 @@ export class MuServer<
                 Object.keys(spec.rpc).forEach((method) => {
                     const handler = spec.rpc[method];
                     rpcHandlers[method] = function (x, y) {
-                        if (arguments.length === 1) {
-                            return handler(client, x);
-                        }
                         return handler(client, x, y);
                     };
                 });

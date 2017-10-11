@@ -23,6 +23,10 @@ export interface RPCInterface<RPCTable extends RPCTableBase> {
     api:{
         [rpc in keyof RPCTable]:(
             args:RPCTable[rpc]['0']['identity'],
+            cb:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
+    call:{
+        [rpc in keyof RPCTable]:(
+            args:RPCTable[rpc]['0']['identity'],
             cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
     args:MuSchema<{
         type:keyof RPCTable;
@@ -81,7 +85,7 @@ export class MuRPCReplies {
     }
 }
 
-export class MuProtocol<
+export class MuProtocolFactory<
     StateSchema extends FreeModel,
     MessageTable extends MessageTableBase,
     RPCTable extends RPCTableBase> {
@@ -297,8 +301,8 @@ export class MuProtocol<
         return result;
     }
 
-    public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : RPCInterface<RPCTable>['api']  {
-        const result = <RPCInterface<RPCTable>['api']>{};
+    public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : RPCInterface<RPCTable>['call']  {
+        const result = <RPCInterface<RPCTable>['call']>{};
         const argSchema = this.rpcArgsSchema;
         Object.keys(this.rpcTable).forEach((method) => {
             const packet = argSchema.alloc();
