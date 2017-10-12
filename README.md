@@ -40,7 +40,7 @@ It makes networked game programming fun and simple.
 * **Active replication** or message passing
 * **Passive replication** or state synchronization
 
-It does this over a generic network interface that abstracts websockets, webrtc, local servers, workers and more.  All network information is serlialized using *schemas* which are specified via `muschema`.  
+It does this over a generic network interface that abstracts websockets, webrtc, local servers, workers and more.  All network information is serlialized using *schemas* which are specified via `muschema`.
 
 ## <a name="section_2.1"></a> 2.1 messages
 [Message passing](FIXME) is the basic building block for communication in a distributed system.  `mudb` provides a [reliable, ordered message delivery](FIXME) for intermittent communication.  This can be used to implement [active replication](FIXME) to synchronize larger objects (where state replicaiton would be too expensive) or to authenticate transactions.
@@ -53,7 +53,7 @@ It does this over a generic network interface that abstracts websockets, webrtc,
 The practical difference between RPC and messages is that the server can broadcast messages to multiple clients.
 
 ## <a name="section_2.2"></a> 2.2 state replication
-In addition to message passing, `mudb` supports passive state replication.  This is necessary for numerical quantities like position or velocity in physical simulations, where one can not expect reasonably that all nodes implement some numerical operation the same way.  
+In addition to message passing, `mudb` supports passive state replication.  This is necessary for numerical quantities like position or velocity in physical simulations, where one can not expect reasonably that all nodes implement some numerical operation the same way.
 
 `mudb` uses delta encoding to minimize bandwidth usage.  In order for this to work it must buffer some number of past state observations.  The number of these states which are stored can be configured to be arbitrarily large, and are visible to the user.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
 
@@ -101,8 +101,6 @@ Academic references:
 * tests
     * running
     * writing
-* code style
-* code of condunct
 
 # TODO
 
