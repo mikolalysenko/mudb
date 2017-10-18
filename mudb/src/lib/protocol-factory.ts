@@ -1,50 +1,9 @@
 import { MuSchema } from 'muschema/schema';
 import MuUnion = require('muschema/union');
 import { MuSocket } from 'munet/net';
+import { MuStateReplica } from './replica'; 
 import { MuStateSet, pushState, mostRecentCommonState, garbageCollectStates } from './state-set';
-
-function compareInt (a, b) { return a - b; }
-
-export type FreeModel = MuSchema<any>;
-
-export type MessageType = FreeModel;
-export type MessageTableBase = { [message:string]:MessageType };
-export interface MessageInterface<MessageTable extends MessageTableBase> {
-    api:{ [message in keyof MessageTable]:(event:MessageTable[message]['identity']) => void; };
-    schema:MuSchema<{
-        type:keyof MessageTable;
-        data:MessageTable[keyof MessageTable]['identity'];
-    }>;
-}
-
-export type RPCType = { 0:FreeModel, 1:FreeModel } | [FreeModel, FreeModel];
-export type RPCTableBase = { [event:string]:RPCType };
-export interface RPCInterface<RPCTable extends RPCTableBase> {
-    api:{
-        [rpc in keyof RPCTable]:(
-            args:RPCTable[rpc]['0']['identity'],
-            cb:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
-    call:{
-        [rpc in keyof RPCTable]:(
-            args:RPCTable[rpc]['0']['identity'],
-            cb?:(err?:any, result?:RPCTable[rpc]['1']['identity']) => void) => void; };
-    args:MuSchema<{
-        type:keyof RPCTable;
-        data:RPCTable[keyof RPCTable]['0']['identity'];
-    }>;
-    response:MuSchema<{
-        type:keyof RPCTable,
-        data:RPCTable[keyof RPCTable]['1']['identity'];
-    }>;
-}
-
-export interface MuStateReplica<StateSchema extends FreeModel> {
-    past:MuStateSet<StateSchema['identity']>;
-    state:StateSchema['identity'];
-    tick:number;
-    schema:StateSchema;
-    windowLength:number;
-}
+import { MuAnyHalfProtocolSchema } from '../protocol';
 
 export enum MuPacketType {
     RPC,
@@ -53,8 +12,6 @@ export enum MuPacketType {
     STATE,
     ACK_STATE,
     DROP_STATE,
-    // PING?
-    // TICK?
 }
 
 export class MuRPCReply {
@@ -85,33 +42,28 @@ export class MuRPCReplies {
     }
 }
 
-export class MuProtocolFactory<
-    StateSchema extends FreeModel,
-    MessageTable extends MessageTableBase,
-    RPCTable extends RPCTableBase> {
-    public readonly stateSchema:StateSchema;
+export class MuProtocolFactory<Schema extends MuAnyHalfProtocolSchema> {
+    public readonly stateSchema:Schema['state'];
 
-    public readonly messageTable:MessageTable;
-    public readonly messageSchema:MessageInterface<MessageTable>['schema'];
+    public readonly messageTable:Schema['message'];
+    public readonly messageSchema:MuMessageInterface<Schema['message']>['schema'];
 
-    public readonly rpcTable:RPCTable;
-    public readonly rpcArgsSchema:RPCInterface<RPCTable>['args'];
-    public readonly rpcResponseSchema:RPCInterface<RPCTable>['response'];
+    public readonly rpcTable:Schema['rpc'];
+    public readonly rpcArgsSchema:MuRPCInterface<Schema['rpc']>['args'];
+    public readonly rpcResponseSchema:MuRPCInterface<Schema['rpc']>['response'];
 
-    constructor (stateSchema:StateSchema, messageTable:MessageTable, rpcTable:RPCTable) {
-        this.stateSchema = stateSchema;
+    constructor (schema:Schema) {
+        this.stateSchema = schema.state;
 
-        this.messageTable = messageTable;
-        this.messageSchema = MuUnion(messageTable);
+        this.messageTable = schema.message;
+        this.messageSchema = MuUnion(schema.message);
 
-        type RPCSchemaArgs = { [key:string]:MuSchema<any> };
-
-        this.rpcTable = rpcTable;
-        const rpcArgs = <RPCSchemaArgs>{};
-        const rpcResponse = <RPCSchemaArgs>{};
-        Object.keys(rpcTable).forEach((method) => {
-            rpcArgs[method] = rpcTable[method][0];
-            rpcResponse[method] = rpcTable[method][1];
+        this.rpcTable = schema.rpc;
+        const rpcArgs = {};
+        const rpcResponse = {};
+        Object.keys(this.rpcTable).forEach((method) => {
+            rpcArgs[method] = this.rpcTable[method][0];
+            rpcResponse[method] = this.rpcTable[method][1];
         });
 
         this.rpcArgsSchema = MuUnion(rpcArgs);
@@ -127,10 +79,10 @@ export class MuProtocolFactory<
         observations,
         stateHandler }:{
         socket:MuSocket,
-        replica:MuStateReplica<StateSchema>,
+        replica:MuStateReplica<Schema['state']>,
         observations:number[],
-        messageHandlers:MessageInterface<MessageTable>['api'],
-        rpcHandlers:RPCInterface<RPCTable>['api'],
+        messageHandlers:MuMessageInterface<Schema['message']>['api'],
+        rpcHandlers:MuRPCInterface<Schema['rpc']>['api'],
         rpcReplies:MuRPCReplies,
         stateHandler:() => void,
     }) : (packet:any) => void {
@@ -279,8 +231,8 @@ export class MuProtocolFactory<
         return onPacket;
     }
 
-    public createMessageDispatch (sockets:MuSocket[]) : MessageInterface<MessageTable>['api'] {
-        const result = <MessageInterface<MessageTable>['api']>{};
+    public createMessageDispatch (sockets:MuSocket[]) : MuMessageInterface<Schema['message']>['api'] {
+        const result = {};
         const schema = this.messageSchema;
         Object.keys(this.messageTable).forEach((message) => {
             const packet = schema.alloc();
@@ -298,11 +250,11 @@ export class MuProtocolFactory<
                 }
             };
         });
-        return result;
+        return <any>result;
     }
 
-    public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : RPCInterface<RPCTable>['call']  {
-        const result = <RPCInterface<RPCTable>['call']>{};
+    public createPRCCallDispatch (socket:MuSocket, rpcReplies:MuRPCReplies) : MuRPCInterface<Schema['rpc']>['call']  {
+        const result = {};
         const argSchema = this.rpcArgsSchema;
         Object.keys(this.rpcTable).forEach((method) => {
             const packet = argSchema.alloc();
@@ -326,10 +278,10 @@ export class MuProtocolFactory<
                 }
             };
         });
-        return result;
+        return <any>result;
     }
 
-    public dispatchState (localStates:MuStateSet<StateSchema>, observations:number[][], sockets:MuSocket[], bufferSize:number) {
+    public dispatchState (localStates:MuStateSet<Schema['state']>, observations:number[][], sockets:MuSocket[], bufferSize:number) {
         observations.push(localStates.ticks);
         const baseTick = mostRecentCommonState(observations);
         observations.pop();

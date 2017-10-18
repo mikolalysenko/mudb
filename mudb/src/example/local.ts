@@ -1,6 +1,6 @@
 import { createSocketServer, createSocket } from 'munet';
-import createClient = require('../client');
-import createServer = require('../server');
+import { MuClient } from '../client';
+import { MuServer } from '../server';
 
 import MuVoid = require('muschema/void');
 import MuFloat64 = require('muschema/float64');

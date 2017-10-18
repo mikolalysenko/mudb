@@ -4,6 +4,9 @@ import { MuSchema } from './schema';
 export class MuVoid implements MuSchema<void> {
     public readonly identity:void;
     public readonly muType = 'void';
+    public readonly json = {
+        type: 'void',
+    };
 
     alloc () {}
     free () {}

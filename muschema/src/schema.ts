@@ -8,6 +8,9 @@ export interface MuSchema<Value> {
     /** Additional schema-specific type info */
     readonly muData?:any;
 
+    /** Converts schema to a JSON description.  Used to compare schemas  */
+    readonly json:object;
+
     /** Allocates a new value */
     alloc ():Value;
 

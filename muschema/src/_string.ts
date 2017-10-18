@@ -4,9 +4,14 @@ import {MuSchema} from './schema';
 export class MuString implements MuSchema<string> {
     public readonly identity:string;
     public readonly muType = 'string';
+    public readonly json:object;
 
     constructor (identity) {
         this.identity = identity;
+        this.json = {
+            type: 'string',
+            identity: this.identity
+        };
     }
     
     public alloc () { return this.identity }

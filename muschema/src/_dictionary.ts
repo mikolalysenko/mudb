@@ -6,10 +6,16 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
     
     public readonly muType = 'dictionary';
     public readonly muData:ValueSchema;
+    public readonly json:object;
 
     constructor (id:{[key:string]:ValueSchema['identity']}, valueSchema:ValueSchema) {
         this.identity = id;
         this.muData = valueSchema;
+        this.json = {
+            type: 'dictionary',
+            valueType: this.muData.json,
+            identity: JSON.stringify(this.diff({}, this.identity)),
+        };
     }
 
     alloc () { return {}; }

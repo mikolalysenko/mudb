@@ -4,10 +4,18 @@ export = function createStruct <StructSpec extends { [prop:string]:MuSchema<any>
     type StructState = {
         [P in keyof StructSpec]: StructSpec[P]["identity"];
     };
-    type StructModel = MuSchema<StructState>;
+    type StructSchema = MuSchema<StructState>;
 
     const structProps:string[] = Object.keys(spec).sort();
     const structTypes:MuSchema<any>[] = structProps.map((propName) => spec[propName]);
+
+    const structJSON = {
+        type: 'struct',
+        subTypes: {},
+    };
+    structProps.forEach((prop) => {
+        structJSON.subTypes[prop] = spec[prop].json;
+    });
 
     const args:string[] = [];
     const props:any[] = [];
@@ -262,8 +270,10 @@ export = function createStruct <StructSpec extends { [prop:string]:MuSchema<any>
     });
     methods.patch.push('return result;');
 
+
+
     // write result
-    epilog.push(`return {identity:${identityRef},_helType:"struct",`)
+    epilog.push(`return {identity:${identityRef},muType:"struct",muData:${inject(spec)},json:${JSON.stringify(structJSON)},`)
     Object.keys(methods).forEach((name) => {
         prelude.push(methods[name].toString());
         epilog.push(`${name}:${name},`)
@@ -275,5 +285,5 @@ export = function createStruct <StructSpec extends { [prop:string]:MuSchema<any>
     const proc = Function.apply(null, args);
 
     // console.log(args)
-    return <StructModel>proc.apply(null, props);
+    return <StructSchema>proc.apply(null, props);
 };

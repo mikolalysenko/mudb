@@ -44,7 +44,6 @@ export class MuLocalSocket implements MuSocket {
                     return;
                 }
                 this._onMessage = spec.message;
-                this._onUnreliableMessage = spec.unreliableMessage;
                 this._onClose = spec.close;
                 this._started = true;
                 this.open = true;
@@ -64,16 +63,24 @@ export class MuLocalSocket implements MuSocket {
             }
             const message = this._pendingMessages[i];
             try {
-                this._duplex._onMessage(message);
+                this._duplex._onMessage(message, false);
             } catch (e) { }
         }
         this._pendingMessages.length = 0;
     }
 
-    public send(data:any) {
-        this._pendingMessages.push(data);
-        if (!this._pendingDrainTimeout) {
-            this._pendingDrainTimeout = setTimeout(this._handleDrain, 0);
+    public send(data:any, unreliable?:boolean) {
+        if (this._closed) {
+            return;
+        }
+        if (unreliable) {
+            this._pendingUnreliableMessages.push(data);
+            setTimeout(this._handleUnreliableDrain, 0);
+        } else {
+            this._pendingMessages.push(data);
+            if (!this._pendingDrainTimeout) {
+                this._pendingDrainTimeout = setTimeout(this._handleDrain, 0);
+            }
         }
     }
 
@@ -83,15 +90,7 @@ export class MuLocalSocket implements MuSocket {
             return;
         }
         const message = this._pendingUnreliableMessages.pop();
-        this._duplex._onMessage(message);
-    }
-
-    public sendUnreliable (data:any) {
-        if (this._closed) {
-            return;
-        }
-        this._pendingUnreliableMessages.push(data);
-        setTimeout(this._handleUnreliableDrain, 0);
+        this._duplex._onMessage(message, true);
     }
 
     public close () {

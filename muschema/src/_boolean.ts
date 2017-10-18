@@ -4,9 +4,14 @@ import { MuSchema } from './schema';
 export class MuBoolean implements MuSchema<boolean> {
     public readonly identity:boolean;
     public readonly muType = 'boolean';
+    public readonly json:object;
 
     constructor (id:boolean) {
         this.identity = id;
+        this.json = {
+            type: 'boolean',
+            identity: this.identity,
+        };
     }
 
     alloc () { return this.identity }

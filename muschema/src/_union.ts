@@ -12,6 +12,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }> implement
 
     public readonly muType = 'union';
     public readonly muData:SubTypes;
+    public readonly json:object;
 
     constructor (schemaSpec:SubTypes, identity:{
         type:keyof SubTypes;
@@ -19,6 +20,16 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }> implement
     }) {
         this.muData = schemaSpec;
         this.identity = identity;
+
+        const result = {};
+        Object.keys(this.muData).forEach((subtype) => {
+            result[subtype] = this.muData[subtype].json;
+        });
+        this.json = {
+            type: 'union',
+            identity: this.identity.type,
+            data: result,
+        };
     }
 
     public alloc () : {
