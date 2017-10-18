@@ -95,6 +95,7 @@ export class MuClient {
         const serverFactory = new MuProtocolFactory(serverSchemas);
 
         const _spec = spec || {};
+        /*
         this._socket.start({
             ready:(error) => {
                 this.running = true;
@@ -117,8 +118,6 @@ export class MuClient {
                     _spec.ready();
                 }
             },
-            message: (data, unrelaible) => {
-            },
             close:(error) => {
                 this.running = false;
                 this._closed = true;
@@ -134,6 +133,7 @@ export class MuClient {
                 }
             },
         });
+        */
     }
 
     public destroy () {
