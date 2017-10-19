@@ -1,33 +1,31 @@
-import tape = require('tape');
-import { MuWriteStream, MuReadStream } from '../_stream';
-import { reallocBuffer, allocBuffer, freeBuffer } from '../_stream';
+import * as test from 'tape';
+import { MuWriteStream, MuReadStream } from '../';
+import { reallocBuffer, allocBuffer, freeBuffer } from '../';
 
-tape('int', function(t) {
-  let ws = new MuWriteStream(16);
+test('int', (t) => {
+  const ws = new MuWriteStream(16);
   ws.writeUint16(1024);
   ws.writeUint16(144);
   ws.writeUint8(128);
-  
-  let rs = new MuReadStream(ws.buffer.buffer);
-  
-  console.log(rs.readUint16());
-  console.log(rs.readUint16());
-  console.log(rs.readUint8());
-  console.log('rs', rs);
-  t.end();  
+
+  const rs = new MuReadStream(ws.buffer.buffer);
+
+  t.equal(rs.readUint16(), 1024);
+  t.equal(rs.readUint16(), 144);
+  t.equal(rs.readUint8(), 128);
+
+  t.end();
 });
 
-tape('fl64', function(t) {
-  let ws = new MuWriteStream(16);
+test('float64', (t) => {
+  const ws = new MuWriteStream(16);
   ws.writeUint16(2018);
   ws.writeFloat64(1024.256);
 
-  let rs = new MuReadStream(ws.buffer.buffer);
+  const rs = new MuReadStream(ws.buffer.buffer);
 
-  console.log(rs.readUint16());
-  console.log(rs.readFloat64());
-  console.log(rs.buffer.uint8);
-  console.log(rs.buffer.uint16);
+  t.equal(rs.readUint16(), 2018);
+  t.equal(rs.readFloat64(), 1024.256);
 
   t.end();
 });
