@@ -6,8 +6,7 @@ export class MuNumber implements MuSchema<number> {
     public readonly muType:string;
     public readonly json:object;
 
-    constructor (helType:string, value:number) {
-        this.muType = helType;
+    constructor (value:number) {
         this.identity = value;
         this.json = {
             type: this.muType,

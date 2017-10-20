@@ -1,2 +1,9 @@
-import { MuNumber } from './_number';
-export = (x?:number) => new MuNumber('float32', x || 0);
+import {MuNumber} from './_number';
+
+export class MuFloat32 extends MuNumber {
+    public readonly muType = 'float32';
+
+    constructor(value?:number) {
+        super(+(value || 0));
+    }
+};

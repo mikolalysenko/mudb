@@ -1,23 +1,19 @@
 import tape = require('tape');
 
-import HelStruct = require('../struct');
-
-import HelInt8 = require('../int8');
-import HelInt16 = require('../int16');
-import HelInt32 = require('../int32');
-
-import HelUint8 = require('../uint8');
-import HelUint16 = require('../uint16');
-import HelUint32 = require('../uint32');
-
-import HelFloat32 = require('../float32');
-import HelFloat64 = require('../float64');
-
-import HelBoolean = require('../boolean');
-
-import HelString = require('../string');
-
-import HelUnion = require('../union');
+import {
+  MuStruct,
+  MuInt8,
+  MuInt16,
+  MuInt32,
+  MuUint8,
+  MuUint16,
+  MuUint32,
+  MuBoolean,
+  MuString,
+  MuFloat32,
+  MuFloat64,
+  MuUnion,
+} from '../index';
 
 // tape('union [1]', function (t) {
 //   const TxtNum = HelUnion({
@@ -44,10 +40,10 @@ import HelUnion = require('../union');
 // });
 
 tape('union [2]', function (t) {
-  const TxtNum = HelUnion({
-    text: HelString('abcd'),
-    number: HelInt32(120),
-  }, 'number', HelInt32(320).alloc());
+  const TxtNum = new MuUnion({
+    text: new MuString('abcd'),
+    number: new MuInt32(120),
+  }, 'number', new MuInt32(320).alloc());
   console.log('TxtNum', TxtNum);
   let target = TxtNum.alloc();
   let base = TxtNum.alloc();

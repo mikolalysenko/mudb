@@ -1,3 +1,9 @@
-import { MuNumber } from './_number';
-/** Unsigned 32-bit integer schema */
-export = (x?:number) => new MuNumber('uint32', x || 0);
+import {MuNumber} from './_number';
+
+export class MuUint32 extends MuNumber {
+    public readonly muType = 'uint32';
+
+    constructor(value?:number) {
+        super((value || 0) >>> 0);
+    }
+};

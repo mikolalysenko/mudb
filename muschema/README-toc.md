@@ -9,23 +9,25 @@ It is kind of like protobufs for JavaScript, only better in that it supports [de
 Here is a somewhat contrived example showing how all of the methods of the schemas work.
 
 ```javascript
-const MuStruct = require('muschema/struct');
-const MuString = require('muschema/string');
-const MuFloat = require('muschema/float64');
-const MuInt = require('muschema/int32');
-const MuDictionary = require('muschema/dictionary');
+const {
+    MuStruct,
+    MuString,
+    MuFloat64,
+    MuInt32,
+    MuDictionary
+} = require('muschema')
 
 // Define an entity schema
-const EntitySchema = MuStruct({
-    x: MuFloat(),
-    y: MuFloat(),
-    dx: MuFloat(),
-    dy: MuFloat(),
-    hp: MuInt(10),
-    name: MuString('entity')
+const EntitySchema = new MuStruct({
+    x: new MuFloat64(),
+    y: new MuFloat64(),
+    dx: new MuFloat64(),
+    dy: new MuFloat64(),
+    hp: new MuInt32(10),
+    name: new MuString('entity')
 })
 
-const EntitySet = MuDictionary(EntitySchema)
+const EntitySet = new MuDictionary(EntitySchema)
 
 // create a new entity set object using the schema
 const entities = EntitySet.alloc()
