@@ -31,13 +31,12 @@ export class MuBuffer {
 
     constructor (buffer:ArrayBuffer) {
         this.buffer = buffer;
-
         this.uint8 = new Uint8Array(buffer);
         this.uint16 = new Uint16Array(buffer);
         this.uint32 = new Uint32Array(buffer);
         this.float64 = new Float64Array(buffer);
     }
-};
+}
 
 // initialize buffer pool
 const bufferPool:MuBuffer[][] = new Array(32);
@@ -45,14 +44,13 @@ for (let i = 0; i < 32; ++i) {
     bufferPool[i] = [];
 }
 
-export function allocBuffer (sz) : MuBuffer {
-    const b = ceilLog2(sz);
-    return bufferPool[b].pop() || new MuBuffer(new Uint8Array(1 << b).buffer);
+export function allocBuffer (size) : MuBuffer {
+    const b = ceilLog2(size);
+    return bufferPool[b].pop() || new MuBuffer(new ArrayBuffer(1 << b));
 }
 
 export function freeBuffer (buffer:MuBuffer) {
-    const pool = bufferPool[ceilLog2(buffer.uint8.length)];
-    pool.push(buffer);
+    bufferPool[ceilLog2(buffer.uint8.length)].push(buffer);
 }
 
 export function reallocBuffer (buffer:MuBuffer, nsize:number) {
@@ -65,7 +63,7 @@ export function reallocBuffer (buffer:MuBuffer, nsize:number) {
     return result;
 }
 
-const SCRATCH_BUFFER = new MuBuffer(new Uint8Array(8).buffer);
+const SCRATCH_BUFFER = new MuBuffer(new ArrayBuffer(8));
 
 export class MuWriteStream {
     public buffer:MuBuffer;
@@ -124,10 +122,8 @@ export class MuWriteStream {
             SCRATCH_BUFFER.float64[0] = x;
             const xbytes = SCRATCH_BUFFER.uint8;
             const bytes = this.buffer.uint8;
-            let i = 0;
-            while (i <= 7) {
+            for (let i = 0; i <= 7; ++i) {
                 bytes[offset + i] = xbytes[i];
-                i++;
             }
         } else {
             this.buffer.float64[offset >> 4] = x;
@@ -165,7 +161,7 @@ export class MuReadStream {
             xbytes[1] = bytes[offset + 1];
             return SCRATCH_BUFFER.uint16[0];
         }
-        return this.buffer.uint16[offset >> 1];                
+        return this.buffer.uint16[offset >> 1];
     }
 
     public readUint32 () : number {
@@ -189,10 +185,8 @@ export class MuReadStream {
         if (offset & 7) {
             const bytes = this.buffer.uint8;
             const xbytes = SCRATCH_BUFFER.uint8;
-            let i = 0;
-            while (i <= 7) {
+            for (let i = 0; i <= 7; ++i) {
                 xbytes[i] = bytes[offset + i];
-                i++;
             }
             return SCRATCH_BUFFER.float64[0];
         }

@@ -9,4 +9,4 @@ function decodeString (bytes:Uint8Array) {
 export = {
     encodeString,
     decodeString,
-}
+};
