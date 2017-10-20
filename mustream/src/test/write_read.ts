@@ -24,21 +24,30 @@ test('buffer reallocation', (t) => {
 });
 
 test('int', (t) => {
-  let ws = new MuWriteStream(8);
-  ws.writeUint32(1234567890);
-  ws.writeUint16(12345);
-  ws.writeUint8(123);
+  let ws = new MuWriteStream(16);
+  ws.writeInt32(1234567890);
+  ws.writeUint32(2345678901);
+  ws.writeInt16(12345);
+  ws.writeUint16(23456);
+  ws.writeInt8(123);
+  ws.writeUint8(234);
 
   let rs = new MuReadStream(ws.buffer.buffer);
 
-  t.equals(rs.readUint32(), 1234567890);
-  t.equals(rs.readUint16(), 12345);
-  t.equals(rs.readUint8(), 123);
+  t.equals(rs.readInt32(), 1234567890);
+  t.equals(rs.readUint32(), 2345678901);
+  t.equals(rs.readInt16(), 12345);
+  t.equals(rs.readUint16(), 23456);
+  t.equals(rs.readInt8(), 123);
+  t.equals(rs.readUint8(), 234);
 
-  ws = new MuWriteStream(8);
+  ws = new MuWriteStream(16);
   ws.writeUint8(255);
   ws.writeUint16(65535);
   ws.writeUint32(4294967295);
+  ws.writeInt32(2147483647);
+  ws.writeInt16(32767);
+  ws.writeInt8(127);
 
   rs = new MuReadStream(ws.buffer.buffer);
 
@@ -46,13 +55,19 @@ test('int', (t) => {
   t.equals(rs.readUint16(), 65535);
   t.equals(rs.readUint8(), 255);
 
-  ws = new MuWriteStream(8);
+  ws = new MuWriteStream(16);
+  ws.writeInt8(128);
+  ws.writeInt16(32768);
+  ws.writeInt32(2147483648);
   ws.writeUint8(256);
   ws.writeUint16(65536);
   ws.writeUint32(4294967296);
 
   rs = new MuReadStream(ws.buffer.buffer);
 
+  t.equals(rs.readInt8(), -128);
+  t.equals(rs.readInt16(), -32768);
+  t.equals(rs.readInt32(), -2147483648);
   t.equals(rs.readUint8(), 0);
   t.equals(rs.readUint16(), 0);
   t.equals(rs.readUint32(), 0);
@@ -60,24 +75,32 @@ test('int', (t) => {
   t.end();
 });
 
-test('float64', (t) => {
-  let ws = new MuWriteStream(16);
+test('float', (t) => {
+  let ws = new MuWriteStream(32);
   ws.writeFloat64(1024.256);
-  ws.writeUint16(2018);
+  ws.writeFloat64(2048.512);
+  ws.writeFloat32(1234.56);
+  ws.writeUint16(2017);
 
   let rs = new MuReadStream(ws.buffer.buffer);
 
   t.equals(rs.readFloat64(), 1024.256);
-  t.equals(rs.readUint16(), 2018);
+  t.equals(rs.readFloat64(), 2048.512);
+  t.equals(rs.readFloat32(), 1234.56);
+  t.equals(rs.readUint16(), 2017);
 
-  ws = new MuWriteStream(16);
+  ws = new MuWriteStream(32);
 
   ws.writeUint16(2018);
+  ws.writeFloat64(2048.512);
+  ws.writeFloat32(1234.56);
   ws.writeFloat64(1024.256);
 
   rs = new MuReadStream(ws.buffer.buffer);
 
   t.equals(rs.readUint16(), 2018);
+  t.equals(rs.readFloat64(), 2048.512);
+  t.equals(rs.readFloat32(), 1234.56);
   t.equals(rs.readFloat64(), 1024.256);
 
   t.end();
