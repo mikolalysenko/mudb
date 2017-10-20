@@ -16,22 +16,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }> implement
 
     constructor (
         schemaSpec:SubTypes,
-        identityType?:keyof SubTypes,
-        identityValue?:SubTypes[keyof SubTypes]['identity']) {
+        identityType?:keyof SubTypes) {
         this.muData = schemaSpec;
 
         if (identityType) {
-            if (identityValue) {
-                this.identity = {
-                    type: identityType,
-                    data: identityValue,
-                };
-            } else {
-                this.identity = {
-                    type: identityType,
-                    data: schemaSpec[identityType]
-                };
-            }
+            this.identity = {
+                type: identityType,
+                data: schemaSpec[identityType]
+            };
         } else {
             this.identity = {
                 type: '',

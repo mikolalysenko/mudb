@@ -109,14 +109,14 @@ Out of the box `muschema` comes with schemas for all primitive types in JavaScri
 An empty value type.  Useful for specifying arguments to messages which do not need to be serialized.
 
 ```javascript
-const MuVoid = require('muschema/void')()
+const { MuVoid } = require('muschema/void')
 ```
 
 ### boolean ###
 A binary `true`/`false` boolean value
 
 ```javascript
-const MuBoolean = require('muschema/boolean')([identity])
+const { MuBoolean } = require('muschema/boolean')
 ```
 
 ### numbers ###
@@ -124,18 +124,18 @@ Because `muschema` supports binary serialization
 
 ```javascript
 // Signed integers 8, 16 and 32-bit
-const MuInt8 = require('muschema/int8')([identity])
-const MuInt16 = require('muschema/int16')([identity])
-const MuInt32 = require('muschema/int32')([identity])
+const { MuInt8 } = require('muschema/int8')
+const { MuInt16 } = require('muschema/int16')
+const { MuInt32 } = require('muschema/int32')
 
 // Unsigned integers
-const MuUint8 = require('muschema/uint8')([identity])
-const MuInt16 = require('muschema/uint16')([identity])
-const MuInt32 = require('muschema/uint32')([identity])
+const { MuUint8 } = require('muschema/uint8')
+const { MuUint16 } = require('muschema/uint16')
+const { MuUint32 } = require('muschema/uint32')
 
 // Floating point
-const MuFloat32 = require('muschema/float32')([identity])
-const MuFloat64 = require('muschema/float64')([identity])
+const { MuFloat32 } = require('muschema/float32')
+const { MuFloat64 } = require('muschema/float32')
 ```
 
 For generic numbers, use `MuFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
@@ -144,7 +144,7 @@ For generic numbers, use `MuFloat64`.  If you know the size of your number in ad
 String data type
 
 ```javascript
-const MuString = require('muschema/string')([identity])
+const { MuString } = require('muschema/string')
 ```
 
 ## functors ##
@@ -156,15 +156,15 @@ A struct is a collection of multiple subtypes.  Structs are constructed by passi
 **Example:**
 
 ```javascript
-const MuFloat64 = require('muschema/float64')
-const MuStruct = require('muschema/struct')
+const { MuFloat64 } = require('muschema/float64')
+const { MuStruct } = require('muschema/struct')
 
-const Vec2 = MuStruct({
-    x: MuFloat64(0),
-    y: MuFloat64(0),
+const Vec2 = new MuStruct({
+    x: new MuFloat64(0),
+    y: new MuFloat64(0),
 })
 
-const Particle = MuStruct({
+const Particle = new MuStruct({
     position: Vec2,
     velocity: Vec2
 })
@@ -184,13 +184,13 @@ A discriminated union of several subtypes.  Each subtype must be given a label.
 **Example:**
 
 ```javascript
-const MuFloat64 = require('muschema/float64')
-const MuString = require('muschema/string')
-const MuUnion = require('muschema/union')
+const { MuFloat64 } = require('muschema/float64')
+const { MuString } = require('muschema/string')
+const { MuUnion } = require('muschema/union')
 
-const FloatOrString = MuUnion({
-    float: MuFloat64(),
-    string: MuString(),
+const FloatOrString = new MuUnion({
+    float: new MuFloat64('foo'),
+    string: new MuString('bar'),
 });
 
 // create a new value
@@ -213,10 +213,10 @@ A dictionary is a labelled collection of values.
 **Example:**
 
 ```javascript
-const MuUint32 = require('muschema/uint32')
-const MuDictionary = require('muschema/dictionary/')
+const { MuUint32 } = require('muschema/uint32')
+const { MuDictionary } = require('muschema/dictionary')
 
-const NumberDictionary = MuDictionary(MuUint32(0))
+const NumberDictionary = new MuDictionary(new MuUint32(0))
 
 // create a dictionary
 const dict = NumberDictionary.alloc()
