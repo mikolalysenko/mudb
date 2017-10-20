@@ -86,11 +86,10 @@ test('float', (t) => {
 
   t.equals(rs.readFloat64(), 1024.256);
   t.equals(rs.readFloat64(), 2048.512);
-  t.equals(rs.readFloat32(), 1234.56);
+  t.equals(rs.readFloat32().toFixed(2), '1234.56');
   t.equals(rs.readUint16(), 2017);
 
   ws = new MuWriteStream(32);
-
   ws.writeUint16(2018);
   ws.writeFloat64(2048.512);
   ws.writeFloat32(1234.56);
@@ -100,7 +99,7 @@ test('float', (t) => {
 
   t.equals(rs.readUint16(), 2018);
   t.equals(rs.readFloat64(), 2048.512);
-  t.equals(rs.readFloat32(), 1234.56);
+  t.equals(rs.readFloat32().toFixed(2), '1234.56');
   t.equals(rs.readFloat64(), 1024.256);
 
   t.end();

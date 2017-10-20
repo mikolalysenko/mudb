@@ -121,13 +121,15 @@ export class MuWriteStream {
         if (offset & 7) {
             SCRATCH_BUFFER.float64[0] = x;
             const xbytes = SCRATCH_BUFFER.uint8;
+
             const bytes = this.buffer.uint8;
             for (let i = 0; i <= 7; ++i) {
                 bytes[offset + i] = xbytes[i];
             }
         } else {
-            this.buffer.float64[offset >> 4] = x;
+            this.buffer.float64[offset >> 3] = x;
         }
+
         this.offset += 8;
     }
 
