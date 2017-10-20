@@ -54,7 +54,7 @@ export function freeBuffer (buffer:MuBuffer) {
 }
 
 export function reallocBuffer (buffer:MuBuffer, nsize:number) {
-    if (buffer.uint8.length <= nsize) {
+    if (buffer.uint8.length > nsize) {
         return buffer;
     }
     const result = allocBuffer(nsize);

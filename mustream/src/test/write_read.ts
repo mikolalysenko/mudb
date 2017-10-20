@@ -10,6 +10,19 @@ test('buffer allocation', (t) => {
   t.end();
 });
 
+test('buffer reallocation', (t) => {
+  const ws = new MuWriteStream(8);
+
+  t.equals(ws.buffer.uint8.byteLength, 8);
+
+  ws.writeFloat64(1234.5678);
+  ws.grow(8);
+
+  t.equals(ws.buffer.uint8.byteLength, 16);
+
+  t.end();
+});
+
 test('int', (t) => {
   let ws = new MuWriteStream(8);
   ws.writeUint32(1234567890);
