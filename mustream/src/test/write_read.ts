@@ -18,7 +18,10 @@ test('buffer reallocation', (t) => {
   ws.writeFloat64(1234.5678);
   ws.grow(8);
 
+  const rs = new MuReadStream(ws.buffer.buffer);
+
   t.equals(ws.buffer.uint8.byteLength, 16);
+  t.equals(rs.readFloat64(), 1234.5678);
 
   t.end();
 });
@@ -51,9 +54,12 @@ test('int', (t) => {
 
   rs = new MuReadStream(ws.buffer.buffer);
 
-  t.equals(rs.readUint32(), 4294967295);
-  t.equals(rs.readUint16(), 65535);
   t.equals(rs.readUint8(), 255);
+  t.equals(rs.readUint16(), 65535);
+  t.equals(rs.readUint32(), 4294967295);
+  t.equals(rs.readInt32(), 2147483647);
+  t.equals(rs.readInt16(), 32767);
+  t.equals(rs.readInt8(), 127);
 
   ws = new MuWriteStream(16);
   ws.writeInt8(128);
@@ -77,30 +83,34 @@ test('int', (t) => {
 
 test('float', (t) => {
   let ws = new MuWriteStream(32);
-  ws.writeFloat64(1024.256);
-  ws.writeFloat64(2048.512);
+  ws.writeFloat64(128.2097152);
+  ws.writeFloat64(256.16777216);
   ws.writeFloat32(1234.56);
-  ws.writeUint16(2017);
 
   let rs = new MuReadStream(ws.buffer.buffer);
 
-  t.equals(rs.readFloat64(), 1024.256);
-  t.equals(rs.readFloat64(), 2048.512);
-  t.equals(rs.readFloat32().toFixed(2), '1234.56');
-  t.equals(rs.readUint16(), 2017);
+  t.equals(rs.readFloat64(), 128.2097152);
+  t.equals(rs.readFloat64(), 256.16777216);
+  t.equals(rs.readFloat32(), toFloat32(1234.56));
 
   ws = new MuWriteStream(32);
   ws.writeUint16(2018);
-  ws.writeFloat64(2048.512);
   ws.writeFloat32(1234.56);
-  ws.writeFloat64(1024.256);
+  ws.writeFloat64(2048.8589934592);
+  ws.writeFloat64(1024.1073741824);
 
   rs = new MuReadStream(ws.buffer.buffer);
 
   t.equals(rs.readUint16(), 2018);
-  t.equals(rs.readFloat64(), 2048.512);
-  t.equals(rs.readFloat32().toFixed(2), '1234.56');
-  t.equals(rs.readFloat64(), 1024.256);
+  t.equals(rs.readFloat32(), toFloat32(1234.56));
+  t.equals(rs.readFloat64(), 2048.8589934592);
+  t.equals(rs.readFloat64(), 1024.1073741824);
 
   t.end();
 });
+
+function toFloat32(x:number) {
+  const f = new Float32Array(1);
+  f[0] = x;
+  return f[0];
+}
