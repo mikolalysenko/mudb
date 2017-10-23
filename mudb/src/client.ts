@@ -51,16 +51,15 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         this.protoSpec.closeHandler = spec.close || noop;
     }
 
-    public protocol<SubSchema extends MuAnyProtocolSchema> (name:string, schema:SubSchema) : MuClientProtocol<SubSchema> {
-        return this.client.protocol(this.name + '.' + name, schema);
+    public protocol<SubSchema extends MuAnyProtocolSchema> (schema:SubSchema) : MuClientProtocol<SubSchema> {
+        return this.client.protocol(schema);
     }
 }
 
 export class MuClient {
     public readonly sessionId:string;
-    public protocols:{ [name:string]:MuAnyClientProtocol } = {};
-
-    private protocolSpec:{ [name:string]:MuClientProtocolSpec } = {};
+    public protocols:MuAnyClientProtocol[] = [];
+    private _protocolSpec:MuClientProtocolSpec[] = [];
 
     public running:boolean = false;
 
@@ -83,19 +82,10 @@ export class MuClient {
 
         this._started = true;
 
-        const clientSchemas = {};
-        const serverSchemas = {};
-        Object.keys(this.protocols).forEach((name) => {
-            const protocol = this.protocols[name];
-            clientSchemas[name] = protocol.schema.client;
-            serverSchemas[name] = protocol.schema.server;
-        });
-
-        const clientFactory = new MuProtocolFactory(clientSchemas);
-        const serverFactory = new MuProtocolFactory(serverSchemas);
+        const clientSchemas = this.protocols.map((p) => p.schema.client);
+        const serverSchemas = this.protocols.map((p) => p.schema.server);
 
         const _spec = spec || {};
-        /*
         this._socket.start({
             ready:(error) => {
                 this.running = true;
@@ -109,7 +99,7 @@ export class MuClient {
 
                 // initialize all protocols
                 serverFactory.protocolNames.forEach((protocolName, protocolId) => {
-                    const protoSpec = this.protocolSpec[protocolName];
+                    const protoSpec = this._protocolSpec[protocolName];
                     protoSpec.readyHandler();
                 });
 
@@ -118,13 +108,14 @@ export class MuClient {
                     _spec.ready();
                 }
             },
+            message: clientFactory.createParser(this._protocolSpec),
             close:(error) => {
                 this.running = false;
                 this._closed = true;
 
                 // initialize all protocols
                 serverFactory.protocolNames.forEach((protocolName, protocolId) => {
-                    const protoSpec = this.protocolSpec[protocolName];
+                    const protoSpec = this._protocolSpec[protocolName];
                     protoSpec.closeHandler();
                 });
 
@@ -133,7 +124,6 @@ export class MuClient {
                 }
             },
         });
-        */
     }
 
     public destroy () {
@@ -143,7 +133,7 @@ export class MuClient {
         this._socket.close();
     }
 
-    public protocol<Schema extends MuAnyProtocolSchema> (name:string, schema:Schema) : MuClientProtocol<Schema> {
+    public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuClientProtocol<Schema> {
         if (name in this.protocols) {
             throw new Error('protocol already in use');
         }
@@ -152,8 +142,8 @@ export class MuClient {
         }
         const spec = new MuClientProtocolSpec();
         const p = new MuClientProtocol(name, schema, this, spec);
-        this.protocols[name] = p;
-        this.protocolSpec[name] = spec;
+        this.protocols.push(p);
+        this._protocolSpec.push(spec);
         return p;
     }
 }

@@ -1,6 +1,9 @@
 import { MuSocket } from 'munet/net';
 import { MuSchema } from 'muschema/schema';
 
+import stableStringify = require('json-stable-stringify');
+import sha512 = require('hash.js/lib/hash/sha/512');
+
 export type MuAnySchema = MuSchema<any>;
 export type MuMessageType = MuAnySchema;
 export type MuAnyMessageTable = { [message:string]:MuMessageType };
@@ -31,8 +34,6 @@ export class MuMessageFactory {
     constructor (schema:MuAnyMessageTable, protocolId:number) {
         this.protocolId = protocolId;
 
-        // compute hash code
-
         const names = Object.keys(schema).sort();
         this.schemas = new Array(names.length);
         this.messageNames = names;
@@ -40,6 +41,11 @@ export class MuMessageFactory {
             this.messageId[name] = id;
             this.schemas[id] = schema[name];
         });
+
+        // compute hash code for message digest
+        const json = this.messageNames.map((message) => this.schemas[message].json);
+        const jsonStr = stableStringify(json);
+        this.hash = sha512().update(jsonStr).digest('hex');
     }
 
     public createDispatch (sockets:MuSocket[]) {
@@ -55,11 +61,7 @@ export class MuMessageFactory {
                 packet.d = schema.diff(schema.identity, data);
                 const str = JSON.stringify(packet);
                 for (let i = 0; i < sockets.length; ++i) {
-                    if (unreliable) {
-                        sockets[i].sendUnreliable(str);
-                    } else {
-                        sockets[i].send(str);
-                    }
+                    sockets[i].send(str, unreliable);
                 }
             };
         });
@@ -74,40 +76,25 @@ export class MuMessageFactory {
                 u: Array.prototype.slice.call(data),
             });
             for (let i = 0; i < sockets.length; ++i) {
-                if (unreliable) {
-                    sockets[i].sendUnreliable(packet);
-                } else {
-                    sockets[i].send(packet);
-                }
+                sockets[i].send(packet, unreliable);
             }
         };
     }
 }
 
 export class MuProtocolFactory {
-    public protocolNames:string[];
     public protocolFactories:MuMessageFactory[];
-    public protocolId:{[name:string]:number} = {};
 
-    constructor (protocolSchemas:{[name:string]:MuAnyMessageTable}) {
-        const names = Object.keys(protocolSchemas).sort();
-
-        this.protocolNames = names;
-        this.protocolFactories = new Array(names.length);
-        names.forEach((name, id) => {
-            this.protocolId[name] = id;
-            this.protocolFactories[id] = new MuMessageFactory(protocolSchemas[name], id);
-        });
+    constructor (protocolSchemas:MuAnyMessageTable[]) {
+        this.protocolFactories = protocolSchemas.map((schema, id) => new MuMessageFactory(schema, id));
     }
 
-    public createParser<HandlerType extends {[name:string]:{
-        messageHandlers:{[msg:string]:(data, unreliable:boolean) => void },
-        rawHandler:(data:Uint8Array, unreliable:boolean) => void }}> (handlers:HandlerType) {
-        const rawHandlers = this.protocolNames.map((name) => handlers[name].rawHandler);
-        const messageHandlers = this.protocolNames.map(
-            (name, id) => this.protocolFactories[id].messageNames.map(
-                (message) => handlers[name].messageHandlers[message]));
+    public createParser(
+            messageDispatch:({ [name:string]:(data, unreliable) => void })[],
+            rawHandlers:((data, unreliable) => void)[]) {
         const factories = this.protocolFactories;
+        const messageHandlers = factories.map((factory, id) =>
+            factory.messageNames.map((name) => messageDispatch[id][name]));
 
         return function (data, unreliable:boolean) {
             const object = JSON.parse(data);
