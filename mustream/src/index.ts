@@ -1,4 +1,5 @@
 import StringEncode = require('./string');
+
 const {
     encodeString,
     decodeString,
