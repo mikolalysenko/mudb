@@ -89,12 +89,14 @@ export class MuProtocolFactory {
         this.protocolFactories = protocolSchemas.map((schema, id) => new MuMessageFactory(schema, id));
     }
 
-    public createParser(
-            messageDispatch:({ [name:string]:(data, unreliable) => void })[],
-            rawHandlers:((data, unreliable) => void)[]) {
+    public createParser(spec:{
+            messageHandlers:({ [name:string]:(data, unreliable) => void }),
+            rawHandler:((data, unreliable) => void),
+        }[]) {
+        const raw = spec.map((h) => h.rawHandler);
+        const message = spec.map(({messageHandlers}, id) =>
+            this.protocolFactories[id].messageNames.map((name) => messageHandlers[name]));
         const factories = this.protocolFactories;
-        const messageHandlers = factories.map((factory, id) =>
-            factory.messageNames.map((name) => messageDispatch[id][name]));
 
         return function (data, unreliable:boolean) {
             const object = JSON.parse(data);
@@ -107,7 +109,7 @@ export class MuProtocolFactory {
 
             if (object.u) {
                 const bytes = new Uint8Array(object.u);
-                rawHandlers[protoId](bytes, unreliable);
+                raw[protoId](bytes, unreliable);
             } else {
                 const messageId = object.m;
                 const packetData = object.d;
@@ -116,8 +118,8 @@ export class MuProtocolFactory {
                     return;
                 }
 
-                const message = messageSchema.patch(messageSchema.identity, packetData);
-                messageHandlers[protoId][messageId](message, unreliable);
+                const m = messageSchema.patch(messageSchema.identity, packetData);
+                message[protoId][messageId](m, unreliable);
                 messageSchema.free(message);
             }
         };

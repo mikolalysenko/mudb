@@ -83,24 +83,25 @@ export class MuClient {
         this._started = true;
 
         const clientSchemas = this.protocols.map((p) => p.schema.client);
+        const clientFactory = new MuProtocolFactory(clientSchemas);
+
         const serverSchemas = this.protocols.map((p) => p.schema.server);
+        const serverFactory = new MuProtocolFactory(serverSchemas);
 
         const _spec = spec || {};
         this._socket.start({
             ready:(error) => {
                 this.running = true;
                 // configure all protocols;
-                serverFactory.protocolNames.forEach((protocolName, protocolId) => {
-                    const protocol = this.protocols[protocolName];
-                    const factory = serverFactory.protocolFactories[protocolId];
+                serverFactory.protocolFactories.forEach((factory, protocolId) => {
+                    const protocol = this.protocols[protocolId];
                     protocol.server.message = factory.createDispatch([this._socket]);
                     protocol.server.sendRaw = factory.createSendRaw([this._socket]);
                 });
 
                 // initialize all protocols
-                serverFactory.protocolNames.forEach((protocolName, protocolId) => {
-                    const protoSpec = this._protocolSpec[protocolName];
-                    protoSpec.readyHandler();
+                this._protocolSpec.forEach((spec) => {
+                    spec.readyHandler();
                 });
 
                 // fire ready event
@@ -113,11 +114,7 @@ export class MuClient {
                 this.running = false;
                 this._closed = true;
 
-                // initialize all protocols
-                serverFactory.protocolNames.forEach((protocolName, protocolId) => {
-                    const protoSpec = this._protocolSpec[protocolName];
-                    protoSpec.closeHandler();
-                });
+                this._protocolSpec.forEach((spec) => spec.closeHandler());
 
                 if (_spec.close) {
                     _spec.close(error);
