@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test-node": "tape src/test/index-node.js"
+    "link-all": "npm i && npm link mustream && npm link ."
   },
   "keywords": [
     "mudb",

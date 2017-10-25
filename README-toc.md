@@ -91,7 +91,28 @@ Academic references:
 
 # developing #
 
-**TODO**
+## set up ##
+
+After cloning this repo, the first thing you'll need to do is install and link all submodules:
+
+```
+npm run link-all
+```
+
+## watching ##
+
+```
+npm run watch
+```
+
+## testing ##
+
+```
+npm test
+```
+
+
+## TODO ##
 
 * Environment set up
     * typescript

@@ -4,7 +4,8 @@
   "description": "Realtime database for multiplayer games",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "link-all": "npm i && npm link mustream && npm link munet && npm link muschema && npm link ."
   },
   "keywords": [
     "mudb",
