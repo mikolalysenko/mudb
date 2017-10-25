@@ -7,11 +7,7 @@
   "scripts": {
     "watch-helnet": "cd munet && tsc --watch --outDir ../mudb/node_modules/munet",
     "watch-helschema": "cd muschema && tsc --watch --outDir ../heldb/node_modules/muschema",
-    "docs": "mdtoc < README-toc.md > README.md && mdtoc < mudb/README-toc.md > mudb/README.md && mdtoc < munet/README-toc.md > munet/README.md && mdtoc < muschema/README-toc.md > muschema/README.md && mdtoc < mustream/README-toc.md > mustream/README.md",
-    "link-muschema": "cd muschema && rm -rf node_modules && npm i && npm run do-link",
-    "link-munet": "cd munet && rm -rf node_modules && npm i && npm run do-link && npm link muschema",
-    "link-mudb": "cd mudb && rm -rf node_modules && npm i && npm run do-link && npm link muschema && npm link munet",
-    "link-all": "npm run link-muschema && npm run link-munet && npm run link-mudb"
+    "docs": "mdtoc < README-toc.md > README.md && mdtoc < mudb/README-toc.md > mudb/README.md && mdtoc < munet/README-toc.md > munet/README.md && mdtoc < muschema/README-toc.md > muschema/README.md && mdtoc < mustream/README-toc.md > mustream/README.md"
   },
   "repository": {
     "type": "git",

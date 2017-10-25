@@ -1,6 +1,6 @@
 import tape = require('tape');
-import { MuWriteStream, MuReadStream } from '../_stream';
-import { reallocBuffer, allocBuffer, freeBuffer } from '../_stream';
+import { MuWriteStream, MuReadStream } from '../index';
+import { reallocBuffer, allocBuffer, freeBuffer } from '../index';
 
 tape('int', function(t) {
   let ws = new MuWriteStream(16);

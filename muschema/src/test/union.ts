@@ -43,7 +43,7 @@ tape('union [2]', function (t) {
   const TxtNum = new MuUnion({
     text: new MuString('abcd'),
     number: new MuInt32(120),
-  }, 'number', new MuInt32(320).alloc());
+  }, 'number');
   console.log('TxtNum', TxtNum);
   let target = TxtNum.alloc();
   let base = TxtNum.alloc();
