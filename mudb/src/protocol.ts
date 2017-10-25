@@ -43,7 +43,7 @@ export class MuMessageFactory {
         });
 
         // compute hash code for message digest
-        const json = this.messageNames.map((message) => this.schemas[message].json);
+        const json = this.schemas.map((s) => s.json);
         const jsonStr = stableStringify(json);
         this.hash = sha512().update(jsonStr).digest('hex');
     }

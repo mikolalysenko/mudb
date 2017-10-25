@@ -11,6 +11,8 @@ const server = new MuServer(socketServer);
 const chatServer = new ChatServer(server);
 server.start();
 
+console.log('starting');
+
 function createClient () {
     const socket = createLocalClient(`id.${Math.random()}`, {
         server: socketServer,
