@@ -9,6 +9,8 @@ export class ChatClient {
 
         const messageDiv = document.createElement('div');
         const messageStyle = messageDiv.style;
+        messageStyle.overflow = 'auto';
+        messageStyle.width = '100%';
 
         const textDiv = document.createElement('input');
         textDiv.type = 'text';
@@ -27,10 +29,11 @@ export class ChatClient {
                 container.appendChild(textDiv);
                 textDiv.addEventListener('keydown', (ev) => {
                     if (ev.keyCode === 13) {
-                        const message = textDiv.textContent;
-                        textDiv.
+                        const message = textDiv.value;
+                        textDiv.value = '';
+                        this.protocol.server.message.say(message);
                     }
-                })
+                });
             },
             message: {
                 chat: ({name, text}) => {
@@ -41,13 +44,5 @@ export class ChatClient {
             close: () => {
             },
         });
-    }
-
-    public say (text:string) {
-        this.protocol.server.message.say(text);
-    }
-
-    public setName (name:string) {
-        this.protocol.server.message.setName(name);
     }
 }

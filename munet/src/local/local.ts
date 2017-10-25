@@ -124,6 +124,9 @@ export class MuLocalSocketServer implements MuSocketServer {
 
     private _onConnection:MuConnectionHandler;
 
+    constructor () {
+    }
+
     public _handleConnection (socket) {
         if (this.open) {
             this.clients.push(socket);

@@ -7,7 +7,7 @@ export class ChatServer {
     public clients:{[sessionId:string]:string};
 
     constructor (server:MuServer) {
-        this.protocol = server.protocol('chat', ChatSchema);
+        this.protocol = server.protocol(ChatSchema);
 
         this.protocol.configure({
             message:{
@@ -24,6 +24,9 @@ export class ChatServer {
                         text,
                     });
                 },
+            },
+            connect: (client) => {
+                this.clients[client.sessionId] = client.sessionId;
             },
         });
     }

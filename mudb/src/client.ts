@@ -100,8 +100,8 @@ export class MuClient {
                 });
 
                 // initialize all protocols
-                this._protocolSpec.forEach((spec) => {
-                    spec.readyHandler();
+                this._protocolSpec.forEach((protoSpec) => {
+                    protoSpec.readyHandler();
                 });
 
                 // fire ready event
@@ -114,7 +114,7 @@ export class MuClient {
                 this.running = false;
                 this._closed = true;
 
-                this._protocolSpec.forEach((spec) => spec.closeHandler());
+                this._protocolSpec.forEach((protoSpec) => protoSpec.closeHandler());
 
                 if (_spec.close) {
                     _spec.close(error);

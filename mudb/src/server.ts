@@ -75,8 +75,8 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
         this._protoSpec.closeHandler = spec.close || noop;
     }
 
-    public protocol<SubSchema extends MuAnyProtocolSchema> (name:string, schema:SubSchema) : MuServerProtocol<SubSchema> {
-        return this.server.protocol(this.name + '.' + name, schema);
+    public protocol<SubSchema extends MuAnyProtocolSchema> (schema:SubSchema) : MuServerProtocol<SubSchema> {
+        return this.server.protocol(schema);
     }
 }
 
@@ -120,8 +120,8 @@ export class MuServer {
                 this.running = true;
             },
             connection: (socket) => {
-                const clientObjects = {};
-                const protocolHandlers = {};
+                const clientObjects = new Array(this.protocols.length);
+                const protocolHandlers = new Array(this.protocols.length);
                 this.protocols.forEach((protocol, id) => {
                     const factory = clientFactory.protocolFactories[id];
 
@@ -129,9 +129,9 @@ export class MuServer {
                         socket,
                         factory.createDispatch([socket]),
                         factory.createSendRaw([socket]));
-                    clientObjects[name] = client;
+                    clientObjects[id] = client;
 
-                    const protoSpec = this._protocolSpec[name];
+                    const protoSpec = this._protocolSpec[id];
 
                     const messageHandlers = {};
                     Object.keys(protoSpec.messageHandlers).forEach((message) => {
@@ -140,7 +140,7 @@ export class MuServer {
                     });
 
                     const rawHandler = protoSpec.rawHandler;
-                    protocolHandlers[name] = {
+                    protocolHandlers[id] = {
                         rawHandler: function (bytes, unreliable) { rawHandler(client, bytes, unreliable); },
                         messageHandlers,
                     };
@@ -149,28 +149,23 @@ export class MuServer {
                     ready: () => {
                         sockets.push(socket);
 
-                        clientFactory.protocolNames.forEach((name, id) => {
-                            const protocol = this.protocols[name];
-                            const client = clientObjects[name];
+                        this.protocols.forEach((protocol, id) => {
+                            const client = clientObjects[id];
                             protocol.clients[socket.sessionId] = client;
                         });
-
-                        clientFactory.protocolNames.forEach((name, id) => {
-                            const protoSpec = this._protocolSpec[name];
-                            const client = clientObjects[name];
+                        this._protocolSpec.forEach((protoSpec, id) => {
+                            const client = clientObjects[id];
                             protoSpec.connectHandler(client);
                         });
                     },
                     message: serverFactory.createParser(protocolHandlers),
                     close: () => {
-                        clientFactory.protocolNames.forEach((name, id) => {
-                            const protoSpec = this._protocolSpec[name];
-                            const client = clientObjects[name];
+                        this._protocolSpec.forEach((protoSpec, id) => {
+                            const client = clientObjects[id];
                             protoSpec.disconnectHandler(client);
                         });
 
-                        clientFactory.protocolNames.forEach((name, id) => {
-                            const protocol = this.protocols[name];
+                        this.protocols.forEach((protocol) => {
                             delete protocol.clients[socket.sessionId];
                         });
 
@@ -188,9 +183,7 @@ export class MuServer {
         this._closed = true;
         this.running = false;
         this._socketServer.close();
-        Object.keys(this._protocolSpec).forEach((name) => {
-            this._protocolSpec[name].closeHandler();
-        });
+        this._protocolSpec.forEach((protoSpec) => protoSpec.closeHandler());
     }
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuServerProtocol<Schema> {
