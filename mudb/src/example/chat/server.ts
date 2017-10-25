@@ -4,7 +4,7 @@ import { MuServer, MuServerProtocol } from '../../server';
 export class ChatServer {
     private protocol:MuServerProtocol<typeof ChatSchema>;
 
-    public clients:{[sessionId:string]:string};
+    public clients:{[sessionId:string]:string} = {};
 
     constructor (server:MuServer) {
         this.protocol = server.protocol(ChatSchema);

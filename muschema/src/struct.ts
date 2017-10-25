@@ -127,7 +127,6 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         });
         prelude.push(`}; function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new HelStruct(); }`)
 
-
         const identityRef = prelude.def('_alloc()');
         structProps.forEach((propName, i) => {
             const type = structTypes[i];
@@ -295,14 +294,15 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
 
         args.push(prelude.toString());
         const proc = Function.apply(null, args);
+        const compiled = proc.apply(null, props);
 
         this.json = structJSON;
-        this.muData = spec;
-        this.identity = proc.identity;
-        this.alloc = proc.alloc;
-        this.free = proc.free;
-        this.clone = proc.clone;
-        this.patch = proc.patch;
-        this.diff = proc.diff;
+        this.muData = compiled;
+        this.identity = compiled.identity;
+        this.alloc = compiled.alloc;
+        this.free = compiled.free;
+        this.clone = compiled.clone;
+        this.patch = compiled.patch;
+        this.diff = compiled.diff;
     }
 };

@@ -89,9 +89,31 @@ export class MuClient {
         const serverFactory = new MuProtocolFactory(serverSchemas);
 
         const _spec = spec || {};
+
+        let firstPacket = true;
+        const socket = this._socket;
+        function checkHashConsistency (packet) {
+            try {
+                const data = JSON.parse(packet);
+                if (data.clientHash !== clientFactory.hash ||
+                    data.serverHash !== serverFactory.hash) {
+                    socket.close();
+                }
+            } catch (e) {
+                socket.close();
+            }
+        }
+        const parser = clientFactory.createParser(this._protocolSpec);
+
         this._socket.start({
             ready:(error) => {
                 this.running = true;
+
+                this._socket.send(JSON.stringify({
+                    clientHash: clientFactory.hash,
+                    serverHash: serverFactory.hash,
+                }));
+
                 // configure all protocols;
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
                     const protocol = this.protocols[protocolId];
@@ -109,7 +131,13 @@ export class MuClient {
                     _spec.ready();
                 }
             },
-            message: clientFactory.createParser(this._protocolSpec),
+            message: (data, unreliable) => {
+                if (!firstPacket) {
+                    return parser(data, unreliable);
+                }
+                checkHashConsistency(data);
+                firstPacket = false;
+            },
             close:(error) => {
                 this.running = false;
                 this._closed = true;

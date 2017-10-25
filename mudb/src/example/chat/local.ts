@@ -20,9 +20,6 @@ function createClient () {
     const client = new MuClient(socket);
     const container = document.createElement('div');
     const chatClient = new ChatClient(client, container);
-
-    container.style.width = '800px';
-    container.style.height = '600px';
     document.body.appendChild(container);
 
     client.start();

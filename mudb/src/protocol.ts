@@ -51,7 +51,7 @@ export class MuMessageFactory {
     public createDispatch (sockets:MuSocket[]) {
         const result = {};
         this.messageNames.forEach((name, messageId) => {
-            const schema = this.schemas[name];
+            const schema = this.schemas[messageId];
             const packet = {
                 p: this.protocolId,
                 m: messageId,
@@ -85,8 +85,13 @@ export class MuMessageFactory {
 export class MuProtocolFactory {
     public protocolFactories:MuMessageFactory[];
 
+    public hash:string;
+
     constructor (protocolSchemas:MuAnyMessageTable[]) {
         this.protocolFactories = protocolSchemas.map((schema, id) => new MuMessageFactory(schema, id));
+
+        const hashList = this.protocolFactories.map((factory) => factory.hash).join();
+        this.hash = sha512().update(hashList).digest('hex');
     }
 
     public createParser(spec:{

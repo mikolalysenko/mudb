@@ -118,6 +118,15 @@ export class MuServer {
         this._socketServer.start({
             ready: () => {
                 this.running = true;
+
+                this.protocols.forEach((protocol, id) => {
+                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets);
+                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets);
+                });
+
+                this._protocolSpec.forEach((protoSpec) => {
+                    protoSpec.closeHandler();
+                });
             },
             connection: (socket) => {
                 const clientObjects = new Array(this.protocols.length);
@@ -145,20 +154,48 @@ export class MuServer {
                         messageHandlers,
                     };
                 });
+
+                const parser = serverFactory.createParser(protocolHandlers);
+                let firstPacket = true;
+
+                function checkHashConsistency (packet) {
+                    try {
+                        const info = JSON.parse(packet);
+                        if (info.clientHash !== clientFactory.hash ||
+                            info.serverHash !== serverFactory.hash) {
+                            socket.close();
+                        }
+                    } catch (e) {
+                        socket.close();
+                    }
+                }
+
                 socket.start({
                     ready: () => {
                         sockets.push(socket);
+
+                        socket.send(JSON.stringify({
+                            clientHash: clientFactory.hash,
+                            serverHash: serverFactory.hash,
+                        }));
 
                         this.protocols.forEach((protocol, id) => {
                             const client = clientObjects[id];
                             protocol.clients[socket.sessionId] = client;
                         });
+
                         this._protocolSpec.forEach((protoSpec, id) => {
                             const client = clientObjects[id];
                             protoSpec.connectHandler(client);
                         });
                     },
-                    message: serverFactory.createParser(protocolHandlers),
+                    message: (data, unreliable) => {
+                        if (!firstPacket) {
+                            return parser(data, unreliable);
+                        }
+                        checkHashConsistency(data);
+                        firstPacket = false;
+                    },
                     close: () => {
                         this._protocolSpec.forEach((protoSpec, id) => {
                             const client = clientObjects[id];
