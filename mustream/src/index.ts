@@ -191,11 +191,7 @@ export class MuWriteStream {
             const xbytes = SCRATCH_BUFFER.uint8;
 
             const bytes = this.buffer.uint8;
-<<<<<<< HEAD
-            for (let i = 0; i < 8; ++i) {
-=======
             for (let i = 0; i <= 7; ++i) {
->>>>>>> c08143f779958ba90fe78c4eae86bcb5109915df
                 bytes[offset + i] = xbytes[i];
             }
         } else {
@@ -312,11 +308,7 @@ export class MuReadStream {
         if (offset & 7) {
             const bytes = this.buffer.uint8;
             const xbytes = SCRATCH_BUFFER.uint8;
-<<<<<<< HEAD
-            for (let i = 0; i < 8; ++i) {
-=======
             for (let i = 0; i <= 7; ++i) {
->>>>>>> c08143f779958ba90fe78c4eae86bcb5109915df
                 xbytes[i] = bytes[offset + i];
             }
             return SCRATCH_BUFFER.float64[0];
