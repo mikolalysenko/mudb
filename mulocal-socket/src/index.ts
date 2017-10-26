@@ -9,7 +9,7 @@ import {
     MuCloseHandler,
     MuSocketSpec,
     MuConnectionHandler,
-} from '../net';
+} from 'mudb/socket';
 
 function noop () {}
 
@@ -173,20 +173,16 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 }
 
-export type MuLocalSocketServerSpec = {
-};
-
-export function createLocalServer (config:MuLocalSocketServerSpec) : MuLocalSocketServer {
+export function createLocalSocketServer () : MuLocalSocketServer {
     return new MuLocalSocketServer();
 }
 
-export type MuLocalSocketSpec = {
-    server:MuSocketServer;
-};
-
-export function createLocalClient (sessionId:MuSessionId, spec:MuLocalSocketSpec) : MuLocalSocket {
+export function createLocalSocket (spec:{
+    sessionId:MuSessionId;
+    server:MuLocalSocketServer;
+}) : MuLocalSocket {
     const server = <MuLocalSocketServer>spec.server;
-    const clientSocket = new MuLocalSocket(sessionId, server);
+    const clientSocket = new MuLocalSocket(spec.sessionId, server);
     const serverSocket = new MuLocalSocket(clientSocket.sessionId, server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;

@@ -1,4 +1,4 @@
-import { createLocalClient, createLocalServer } from 'munet/local/local';
+import { createLocalSocket, createLocalSocketServer } from 'mulocal-socket';
 
 import { MuClient } from '../../client';
 import { MuServer } from '../../server';
@@ -6,15 +6,14 @@ import { MuServer } from '../../server';
 import { ChatClient } from './client';
 import { ChatServer } from './server';
 
-const socketServer = createLocalServer({});
+const socketServer = createLocalSocketServer();
 const server = new MuServer(socketServer);
 const chatServer = new ChatServer(server);
 server.start();
 
-console.log('starting');
-
 function createClient () {
-    const socket = createLocalClient(`id.${Math.random()}`, {
+    const socket = createLocalSocket({
+        sessionId: `id.${Math.random()}`,
         server: socketServer,
     });
     const client = new MuClient(socket);

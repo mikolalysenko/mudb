@@ -1,4 +1,4 @@
-import { MuSocket } from 'munet/net';
+import { MuSocket } from './socket';
 import { MuSchema } from 'muschema/schema';
 
 import stableStringify = require('json-stable-stringify');

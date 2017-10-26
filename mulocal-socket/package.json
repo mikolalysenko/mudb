@@ -1,34 +1,32 @@
 {
-  "name": "mudb",
-  "version": "0.0.1",
-  "description": "Realtime database for multiplayer games",
+  "name": "mulocal-socket",
+  "version": "0.0.0",
+  "description": "Local socket emulation for mudb",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "link-all": "npm i && npm link mustream && npm link muschema && npm link ."
+    "link-all": "npm i && npm link mudb && npm link ."
   },
   "keywords": [
     "mudb",
+    "network",
     "multiplayer",
-    "game",
-    "network"
+    "game"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",
+  "dependencies": {
+    "mudb": "0.0.0"
+  },
   "devDependencies": {
     "@types/node": "^8.0.28",
     "browserify": "^14.4.0",
     "budo": "^10.0.4",
-    "tape": "^4.8.0",
     "ts-node": "^3.3.0",
     "tsify": "^3.0.3",
     "tslint": "^5.7.0",
     "tslint-language-service": "^0.9.6",
-    "typescript": "^2.5.2"
-  },
-  "dependencies": {
-    "hash.js": "^1.1.3",
-    "json-stable-stringify": "^1.0.1",
-    "muschema": "0.0.0"
+    "typescript": "^2.5.2",
+    "tape": "^4.8.0"
   }
 }

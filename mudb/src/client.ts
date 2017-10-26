@@ -1,4 +1,4 @@
-import { MuSocket } from 'munet/net';
+import { MuSocket } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 
 export class MuRemoteServer<Schema extends MuAnyMessageTable> {

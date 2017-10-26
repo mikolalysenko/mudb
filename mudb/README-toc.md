@@ -199,7 +199,6 @@ server.start({
 })
 ```
 
-
 ## client ##
 
 ### client constructor ###
@@ -218,15 +217,51 @@ const client = require('mudb/client')({
 * `raw()`
 * `close()`
 
-## state ##
-
-## rpc ##
-
 ## messages ##
 
 ### broadcast ###
 
+## socket interface ##
+
+`MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.  
+
+### properties ###
+
+#### `sessionId` ####
+A string representing a unique session id identifying the socket.
+
+#### `open` ####
+Boolean flag determing whether a socket is open or not.
+
+### methods ###
+
+#### `start(spec)` ####
+
+* `ready()`
+* `message(data:Uint8Array, unreliable:boolean)`
+* `close()`
+
+#### `send(data:Uint8Array, unreliable?:boolean)` ####
+
+#### `close()` ####
+
+## socket server interface ##
+
+### properties ###
+
+#### `clients[]` ####
+
+#### `open` ####
+
+### method ###
+
+#### `start()` ####
+
+#### `close()` ####
+
 # usage tips #
+
+# helpful modules #
 
 # more examples #
 
