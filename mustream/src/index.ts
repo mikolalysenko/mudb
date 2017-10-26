@@ -1,4 +1,5 @@
 import StringEncode = require('./string');
+
 const {
     encodeString,
     decodeString,
@@ -23,21 +24,27 @@ function ceilLog2 (v_) {
 
 export class MuBuffer {
     public buffer:ArrayBuffer;
+    public int8:Int8Array;
+    public int16:Int16Array;
+    public int32:Int32Array;
     public uint8:Uint8Array;
     public uint16:Uint16Array;
     public uint32:Uint32Array;
+    public float32:Float32Array;
     public float64:Float64Array;
-    // TODO finish support for all types
 
     constructor (buffer:ArrayBuffer) {
         this.buffer = buffer;
-
+        this.int8 = new Int8Array(buffer);
+        this.int16 = new Int16Array(buffer);
+        this.int32 = new Int32Array(buffer);
         this.uint8 = new Uint8Array(buffer);
         this.uint16 = new Uint16Array(buffer);
         this.uint32 = new Uint32Array(buffer);
+        this.float32 = new Float32Array(buffer);
         this.float64 = new Float64Array(buffer);
     }
-};
+}
 
 // initialize buffer pool
 const bufferPool:MuBuffer[][] = new Array(32);
@@ -45,18 +52,17 @@ for (let i = 0; i < 32; ++i) {
     bufferPool[i] = [];
 }
 
-export function allocBuffer (sz) : MuBuffer {
-    const b = ceilLog2(sz);
-    return bufferPool[b].pop() || new MuBuffer(new Uint8Array(1 << b).buffer);
+export function allocBuffer (size) : MuBuffer {
+    const b = ceilLog2(size);
+    return bufferPool[b].pop() || new MuBuffer(new ArrayBuffer(1 << b));
 }
 
 export function freeBuffer (buffer:MuBuffer) {
-    const pool = bufferPool[ceilLog2(buffer.uint8.length)];
-    pool.push(buffer);
+    bufferPool[ceilLog2(buffer.uint8.length)].push(buffer);
 }
 
 export function reallocBuffer (buffer:MuBuffer, nsize:number) {
-    if (buffer.uint8.length <= nsize) {
+    if (buffer.uint8.length > nsize) {
         return buffer;
     }
     const result = allocBuffer(nsize);
@@ -65,7 +71,7 @@ export function reallocBuffer (buffer:MuBuffer, nsize:number) {
     return result;
 }
 
-const SCRATCH_BUFFER = new MuBuffer(new Uint8Array(8).buffer);
+const SCRATCH_BUFFER = new MuBuffer(new ArrayBuffer(8));
 
 export class MuWriteStream {
     public buffer:MuBuffer;
@@ -84,6 +90,44 @@ export class MuWriteStream {
         this.buffer = reallocBuffer(this.buffer, this.offset + bytes);
     }
 
+    public writeInt8 (x:number) {
+        this.buffer.int8[this.offset++] = x;
+    }
+
+    public writeInt16 (x:number) {
+        const offset = this.offset;
+        if (offset & 1) {
+            SCRATCH_BUFFER.int16[0] = x;
+            const xbytes = SCRATCH_BUFFER.uint8;
+
+            const bytes = this.buffer.uint8;
+            bytes[offset] = xbytes[0];
+            bytes[offset + 1] = xbytes[1];
+        } else {
+            this.buffer.int16[offset >> 1] = x;
+        }
+
+        this.offset += 2;
+    }
+
+    public writeInt32 (x:number) {
+        const offset = this.offset;
+        if (offset & 3) {
+            SCRATCH_BUFFER.int32[0] = x;
+            const xbytes = SCRATCH_BUFFER.uint8;
+
+            const bytes = this.buffer.uint8;
+            bytes[offset] = xbytes[0];
+            bytes[offset + 1] = xbytes[1];
+            bytes[offset + 2] = xbytes[2];
+            bytes[offset + 3] = xbytes[3];
+        } else {
+            this.buffer.int32[offset >> 2] = x;
+        }
+
+        this.offset += 4;
+    }
+
     public writeUint8 (x:number) {
         this.buffer.uint8[this.offset++] = x;
     }
@@ -93,12 +137,14 @@ export class MuWriteStream {
         if (offset & 1) {
             SCRATCH_BUFFER.uint16[0] = x;
             const xbytes = SCRATCH_BUFFER.uint8;
+
             const bytes = this.buffer.uint8;
             bytes[offset] = xbytes[0];
             bytes[offset + 1] = xbytes[1];
         } else {
             this.buffer.uint16[offset >> 1] = x;
         }
+
         this.offset += 2;
     }
 
@@ -107,6 +153,7 @@ export class MuWriteStream {
         if (offset & 3) {
             SCRATCH_BUFFER.uint32[0] = x;
             const xbytes = SCRATCH_BUFFER.uint8;
+
             const bytes = this.buffer.uint8;
             bytes[offset] = xbytes[0];
             bytes[offset + 1] = xbytes[1];
@@ -115,6 +162,25 @@ export class MuWriteStream {
         } else {
             this.buffer.uint32[offset >> 2] = x;
         }
+
+        this.offset += 4;
+    }
+
+    public writeFloat32 (x:number) {
+        const offset = this.offset;
+        if (offset & 3) {
+            SCRATCH_BUFFER.float32[0] = x;
+            const xbytes = SCRATCH_BUFFER.uint8;
+
+            const bytes = this.buffer.uint8;
+            bytes[offset] = xbytes[0];
+            bytes[offset + 1] = xbytes[1];
+            bytes[offset + 2] = xbytes[2];
+            bytes[offset + 3] = xbytes[3];
+        } else {
+            this.buffer.float32[offset >> 2] = x;
+        }
+
         this.offset += 4;
     }
 
@@ -123,13 +189,19 @@ export class MuWriteStream {
         if (offset & 7) {
             SCRATCH_BUFFER.float64[0] = x;
             const xbytes = SCRATCH_BUFFER.uint8;
+
             const bytes = this.buffer.uint8;
+<<<<<<< HEAD
             for (let i = 0; i < 8; ++i) {
+=======
+            for (let i = 0; i <= 7; ++i) {
+>>>>>>> c08143f779958ba90fe78c4eae86bcb5109915df
                 bytes[offset + i] = xbytes[i];
             }
         } else {
-            this.buffer.float64[offset >> 4] = x;
+            this.buffer.float64[offset >> 3] = x;
         }
+
         this.offset += 8;
     }
 
@@ -149,6 +221,40 @@ export class MuReadStream {
         this.buffer = new MuBuffer(buffer);
     }
 
+    public readInt8 () {
+        return this.buffer.int8[this.offset++];
+    }
+
+    public readInt16 () {
+        const offset = this.offset;
+        this.offset += 2;
+
+        if (offset & 1) {
+            const bytes = this.buffer.uint8;
+            const xbytes = SCRATCH_BUFFER.uint8;
+            xbytes[0] = bytes[offset];
+            xbytes[1] = bytes[offset + 1];
+            return SCRATCH_BUFFER.int16[0];
+        }
+        return this.buffer.int16[offset >> 1];
+    }
+
+    public readInt32 () {
+        const offset = this.offset;
+        this.offset += 4;
+
+        if (offset & 3) {
+            const bytes = this.buffer.uint8;
+            const xbytes = SCRATCH_BUFFER.uint8;
+            xbytes[0] = bytes[offset];
+            xbytes[1] = bytes[offset + 1];
+            xbytes[2] = bytes[offset + 2];
+            xbytes[3] = bytes[offset + 3];
+            return SCRATCH_BUFFER.int32[0];
+        }
+        return this.buffer.int32[offset >> 2];
+    }
+
     public readUint8 () : number {
         return this.buffer.uint8[this.offset++];
     }
@@ -156,6 +262,7 @@ export class MuReadStream {
     public readUint16 () : number {
         const offset = this.offset;
         this.offset += 2;
+
         if (offset & 1) {
             const bytes = this.buffer.uint8;
             const xbytes = SCRATCH_BUFFER.uint8;
@@ -163,12 +270,13 @@ export class MuReadStream {
             xbytes[1] = bytes[offset + 1];
             return SCRATCH_BUFFER.uint16[0];
         }
-        return this.buffer.uint16[offset >> 1];                
+        return this.buffer.uint16[offset >> 1];
     }
 
     public readUint32 () : number {
         const offset = this.offset;
         this.offset += 4;
+
         if (offset & 3) {
             const bytes = this.buffer.uint8;
             const xbytes = SCRATCH_BUFFER.uint8;
@@ -181,13 +289,34 @@ export class MuReadStream {
         return this.buffer.uint32[offset >> 2];
     }
 
+    public readFloat32 () {
+        const offset = this.offset;
+        this.offset += 4;
+
+        if (offset & 3) {
+            const bytes = this.buffer.uint8;
+            const xbytes = SCRATCH_BUFFER.uint8;
+            xbytes[0] = bytes[offset];
+            xbytes[1] = bytes[offset + 1];
+            xbytes[2] = bytes[offset + 2];
+            xbytes[3] = bytes[offset + 3];
+            return SCRATCH_BUFFER.float32[0];
+        }
+        return this.buffer.float32[offset >> 2];
+    }
+
     public readFloat64 () : number {
         const offset = this.offset;
         this.offset += 8;
+
         if (offset & 7) {
             const bytes = this.buffer.uint8;
             const xbytes = SCRATCH_BUFFER.uint8;
+<<<<<<< HEAD
             for (let i = 0; i < 8; ++i) {
+=======
+            for (let i = 0; i <= 7; ++i) {
+>>>>>>> c08143f779958ba90fe78c4eae86bcb5109915df
                 xbytes[i] = bytes[offset + i];
             }
             return SCRATCH_BUFFER.float64[0];
