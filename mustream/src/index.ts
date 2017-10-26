@@ -213,8 +213,8 @@ export class MuReadStream {
     public buffer:MuBuffer;
     public offset:number = 0;
 
-    constructor (buffer:ArrayBuffer) {
-        this.buffer = new MuBuffer(buffer);
+    constructor (buffer:MuBuffer) {
+        this.buffer = buffer;
     }
 
     public readInt8 () {
