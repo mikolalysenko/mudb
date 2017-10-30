@@ -74,6 +74,7 @@ export function reallocBuffer (buffer:MuBuffer, nsize:number) {
 }
 
 const SCRATCH_BUFFER = new MuBuffer(new ArrayBuffer(8));
+const LITTLE_ENDIAN = true;
 
 export class MuWriteStream {
     public buffer:MuBuffer;
@@ -97,12 +98,12 @@ export class MuWriteStream {
     }
 
     public writeInt16 (x:number) {
-        this.buffer.dataView.setInt16(this.offset, x);
+        this.buffer.dataView.setInt16(this.offset, x, LITTLE_ENDIAN);
         this.offset += 2;
     }
 
     public writeInt32 (x:number) {
-        this.buffer.dataView.setInt32(this.offset, x);
+        this.buffer.dataView.setInt32(this.offset, x, LITTLE_ENDIAN);
         this.offset += 4;
     }
 
@@ -111,22 +112,22 @@ export class MuWriteStream {
     }
 
     public writeUint16 (x:number) {
-        this.buffer.dataView.setUint16(this.offset, x);
+        this.buffer.dataView.setUint16(this.offset, x, LITTLE_ENDIAN);
         this.offset += 2;
     }
 
     public writeUint32 (x:number) {
-        this.buffer.dataView.setUint32(this.offset, x);
+        this.buffer.dataView.setUint32(this.offset, x, LITTLE_ENDIAN);
         this.offset += 4;
     }
 
     public writeFloat32 (x:number) {
-        this.buffer.dataView.setFloat32(this.offset, x);
+        this.buffer.dataView.setFloat32(this.offset, x, LITTLE_ENDIAN);
         this.offset += 4;
     }
 
     public writeFloat64 (x:number) {
-        this.buffer.dataView.setFloat64(this.offset, x);
+        this.buffer.dataView.setFloat64(this.offset, x, LITTLE_ENDIAN);
         this.offset += 8;
     }
 
@@ -153,13 +154,13 @@ export class MuReadStream {
     public readInt16 () : number {
         const offset = this.offset;
         this.offset += 2;
-        return this.buffer.dataView.getInt16(offset);
+        return this.buffer.dataView.getInt16(offset, LITTLE_ENDIAN);
     }
 
     public readInt32 () : number {
         const offset = this.offset;
         this.offset += 4;
-        return this.buffer.dataView.getInt32(offset);
+        return this.buffer.dataView.getInt32(offset, LITTLE_ENDIAN);
     }
 
     public readUint8 () : number {
@@ -169,25 +170,25 @@ export class MuReadStream {
     public readUint16 () : number {
         const offset = this.offset;
         this.offset += 2;
-        return this.buffer.dataView.getUint16(offset);
+        return this.buffer.dataView.getUint16(offset, LITTLE_ENDIAN);
     }
 
     public readUint32 () : number {
         const offset = this.offset;
         this.offset += 4;
-        return this.buffer.dataView.getUint32(offset);
+        return this.buffer.dataView.getUint32(offset, LITTLE_ENDIAN);
     }
 
     public readFloat32 () : number {
         const offset = this.offset;
         this.offset += 4;
-        return this.buffer.dataView.getFloat32(offset);
+        return this.buffer.dataView.getFloat32(offset, LITTLE_ENDIAN);
     }
 
     public readFloat64 () : number {
         const offset = this.offset;
         this.offset += 8;
-        return this.buffer.dataView.getFloat64(offset);
+        return this.buffer.dataView.getFloat64(offset, LITTLE_ENDIAN);
     }
 
     public readString () : string {
