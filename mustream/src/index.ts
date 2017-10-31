@@ -25,26 +25,12 @@ function ceilLog2 (v_) {
 export class MuBuffer {
     public buffer:ArrayBuffer;
     public dataView:DataView;
-    public int8:Int8Array;
-    public int16:Int16Array;
-    public int32:Int32Array;
     public uint8:Uint8Array;
-    public uint16:Uint16Array;
-    public uint32:Uint32Array;
-    public float32:Float32Array;
-    public float64:Float64Array;
 
     constructor (buffer:ArrayBuffer) {
         this.buffer = buffer;
         this.dataView = new DataView(buffer);
-        this.int8 = new Int8Array(buffer);
-        this.int16 = new Int16Array(buffer);
-        this.int32 = new Int32Array(buffer);
         this.uint8 = new Uint8Array(buffer);
-        this.uint16 = new Uint16Array(buffer);
-        this.uint32 = new Uint32Array(buffer);
-        this.float32 = new Float32Array(buffer);
-        this.float64 = new Float64Array(buffer);
     }
 }
 
