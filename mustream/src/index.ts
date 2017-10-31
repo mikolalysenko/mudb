@@ -217,6 +217,10 @@ export class MuReadStream {
         this.buffer = new MuBuffer(buffer);
     }
 
+    public bytesLeft () {
+        return this.buffer.uint8.length - this.offset;
+    }
+
     public readInt8 () {
         return this.buffer.int8[this.offset++];
     }
