@@ -1,3 +1,5 @@
+import { MuReadStream, MuWriteStream } from 'mustream';
+
 export interface MuSchema<Value> {
     /** Base value type */
     readonly identity:Value;
@@ -25,4 +27,10 @@ export interface MuSchema<Value> {
 
     /** Applies a patch to base */
     patch (base:Value, patch:any):Value;
+
+    /** Computes a binary patch */
+    diffBinary? (base:Value, target:Value, out:MuWriteStream):boolean;
+
+    /** Apply a patch to an object */
+    patchBinary? (base:Value, inp:MuReadStream):Value;
 };

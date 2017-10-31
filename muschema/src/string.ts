@@ -1,4 +1,5 @@
 import {MuSchema} from './schema';
+import { MuReadStream, MuWriteStream } from 'mustream';
 
 /** String type schema */
 export class MuString implements MuSchema<string> {
@@ -30,5 +31,21 @@ export class MuString implements MuSchema<string> {
             return b;
         }
         return '';
+    }
+
+    public diffBinary (a:string, b:string, stream:MuWriteStream) {
+        if (a !== b) {
+            stream.grow(4 + 4 * b.length);
+            stream.writeString(b);
+            return true;
+        }
+        return false;
+    }
+
+    public patchBinary (a:string, stream:MuReadStream) {
+        if (stream.bytesLeft() > 0) {
+            return stream.readString();
+        }
+        return a;
     }
 }
