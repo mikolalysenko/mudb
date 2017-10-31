@@ -24,6 +24,7 @@ function ceilLog2 (v_) {
 
 export class MuBuffer {
     public buffer:ArrayBuffer;
+    public dataView:DataView;
     public int8:Int8Array;
     public int16:Int16Array;
     public int32:Int32Array;
@@ -35,6 +36,7 @@ export class MuBuffer {
 
     constructor (buffer:ArrayBuffer) {
         this.buffer = buffer;
+        this.dataView = new DataView(buffer);
         this.int8 = new Int8Array(buffer);
         this.int16 = new Int16Array(buffer);
         this.int32 = new Int32Array(buffer);
@@ -91,113 +93,40 @@ export class MuWriteStream {
     }
 
     public writeInt8 (x:number) {
-        this.buffer.int8[this.offset++] = x;
+        this.buffer.dataView.setInt8(this.offset++, x);
     }
 
     public writeInt16 (x:number) {
-        const offset = this.offset;
-        if (offset & 1) {
-            SCRATCH_BUFFER.int16[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            bytes[offset] = xbytes[0];
-            bytes[offset + 1] = xbytes[1];
-        } else {
-            this.buffer.int16[offset >> 1] = x;
-        }
-
+        this.buffer.dataView.setInt16(this.offset, x);
         this.offset += 2;
     }
 
     public writeInt32 (x:number) {
-        const offset = this.offset;
-        if (offset & 3) {
-            SCRATCH_BUFFER.int32[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            bytes[offset] = xbytes[0];
-            bytes[offset + 1] = xbytes[1];
-            bytes[offset + 2] = xbytes[2];
-            bytes[offset + 3] = xbytes[3];
-        } else {
-            this.buffer.int32[offset >> 2] = x;
-        }
-
+        this.buffer.dataView.setInt32(this.offset, x);
         this.offset += 4;
     }
 
     public writeUint8 (x:number) {
-        this.buffer.uint8[this.offset++] = x;
+        this.buffer.dataView.setUint8(this.offset++, x);
     }
 
     public writeUint16 (x:number) {
-        const offset = this.offset;
-        if (offset & 1) {
-            SCRATCH_BUFFER.uint16[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            bytes[offset] = xbytes[0];
-            bytes[offset + 1] = xbytes[1];
-        } else {
-            this.buffer.uint16[offset >> 1] = x;
-        }
-
+        this.buffer.dataView.setUint16(this.offset, x);
         this.offset += 2;
     }
 
     public writeUint32 (x:number) {
-        const offset = this.offset;
-        if (offset & 3) {
-            SCRATCH_BUFFER.uint32[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            bytes[offset] = xbytes[0];
-            bytes[offset + 1] = xbytes[1];
-            bytes[offset + 2] = xbytes[2];
-            bytes[offset + 3] = xbytes[3];
-        } else {
-            this.buffer.uint32[offset >> 2] = x;
-        }
-
+        this.buffer.dataView.setUint32(this.offset, x);
         this.offset += 4;
     }
 
     public writeFloat32 (x:number) {
-        const offset = this.offset;
-        if (offset & 3) {
-            SCRATCH_BUFFER.float32[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            bytes[offset] = xbytes[0];
-            bytes[offset + 1] = xbytes[1];
-            bytes[offset + 2] = xbytes[2];
-            bytes[offset + 3] = xbytes[3];
-        } else {
-            this.buffer.float32[offset >> 2] = x;
-        }
-
+        this.buffer.dataView.setFloat32(this.offset, x);
         this.offset += 4;
     }
 
     public writeFloat64 (x:number) {
-        const offset = this.offset;
-        if (offset & 7) {
-            SCRATCH_BUFFER.float64[0] = x;
-            const xbytes = SCRATCH_BUFFER.uint8;
-
-            const bytes = this.buffer.uint8;
-            for (let i = 0; i <= 7; ++i) {
-                bytes[offset + i] = xbytes[i];
-            }
-        } else {
-            this.buffer.float64[offset >> 3] = x;
-        }
-
+        this.buffer.dataView.setFloat64(this.offset, x);
         this.offset += 8;
     }
 
@@ -213,114 +142,55 @@ export class MuReadStream {
     public buffer:MuBuffer;
     public offset:number = 0;
 
-    constructor (buffer:ArrayBuffer) {
-        this.buffer = new MuBuffer(buffer);
+    constructor (buffer:MuBuffer) {
+        this.buffer = buffer;
     }
 
-    public bytesLeft () {
-        return this.buffer.uint8.length - this.offset;
+    public readInt8 () : number {
+        return this.buffer.dataView.getInt8(this.offset++);
     }
 
-    public readInt8 () {
-        return this.buffer.int8[this.offset++];
-    }
-
-    public readInt16 () {
+    public readInt16 () : number {
         const offset = this.offset;
         this.offset += 2;
-
-        if (offset & 1) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            xbytes[0] = bytes[offset];
-            xbytes[1] = bytes[offset + 1];
-            return SCRATCH_BUFFER.int16[0];
-        }
-        return this.buffer.int16[offset >> 1];
+        return this.buffer.dataView.getInt16(offset);
     }
 
-    public readInt32 () {
+    public readInt32 () : number {
         const offset = this.offset;
         this.offset += 4;
-
-        if (offset & 3) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            xbytes[0] = bytes[offset];
-            xbytes[1] = bytes[offset + 1];
-            xbytes[2] = bytes[offset + 2];
-            xbytes[3] = bytes[offset + 3];
-            return SCRATCH_BUFFER.int32[0];
-        }
-        return this.buffer.int32[offset >> 2];
+        return this.buffer.dataView.getInt32(offset);
     }
 
     public readUint8 () : number {
-        return this.buffer.uint8[this.offset++];
+        return this.buffer.dataView.getUint8(this.offset++);
     }
 
     public readUint16 () : number {
         const offset = this.offset;
         this.offset += 2;
-
-        if (offset & 1) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            xbytes[0] = bytes[offset];
-            xbytes[1] = bytes[offset + 1];
-            return SCRATCH_BUFFER.uint16[0];
-        }
-        return this.buffer.uint16[offset >> 1];
+        return this.buffer.dataView.getUint16(offset);
     }
 
     public readUint32 () : number {
         const offset = this.offset;
         this.offset += 4;
-
-        if (offset & 3) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            xbytes[0] = bytes[offset];
-            xbytes[1] = bytes[offset + 1];
-            xbytes[2] = bytes[offset + 2];
-            xbytes[3] = bytes[offset + 3];
-            return SCRATCH_BUFFER.uint32[0];
-        }
-        return this.buffer.uint32[offset >> 2];
+        return this.buffer.dataView.getUint32(offset);
     }
 
-    public readFloat32 () {
+    public readFloat32 () : number {
         const offset = this.offset;
         this.offset += 4;
-
-        if (offset & 3) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            xbytes[0] = bytes[offset];
-            xbytes[1] = bytes[offset + 1];
-            xbytes[2] = bytes[offset + 2];
-            xbytes[3] = bytes[offset + 3];
-            return SCRATCH_BUFFER.float32[0];
-        }
-        return this.buffer.float32[offset >> 2];
+        return this.buffer.dataView.getFloat32(offset);
     }
 
     public readFloat64 () : number {
         const offset = this.offset;
         this.offset += 8;
-
-        if (offset & 7) {
-            const bytes = this.buffer.uint8;
-            const xbytes = SCRATCH_BUFFER.uint8;
-            for (let i = 0; i <= 7; ++i) {
-                xbytes[i] = bytes[offset + i];
-            }
-            return SCRATCH_BUFFER.float64[0];
-        }
-        return this.buffer.float64[offset >> 3];
+        return this.buffer.dataView.getFloat64(offset);
     }
 
-    public readString () {
+    public readString () : string {
         const byteLength = this.readUint32();
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
         this.offset += byteLength;
