@@ -7,51 +7,264 @@ import {
 } from 'mudb/socket';
 import ws = require('uws');
 
+const RELIABLE_PACKET = JSON.stringify({ reliable: true });
+const UNRELIABLE_PACKET = JSON.stringify({ reliable: false });
+
+export interface _UWebSocket {
+    onmessage:(data:Uint8Array|string) => void;
+    onclose:() => void;
+    send:(data:Uint8Array) => void;
+    close:() => void;
+};
+
+function noop () {};
+
+export class _MuWebSocketConnection {
+    public readonly sessionId:string;
+
+    public started:boolean = false;
+    public closed:boolean = false;
+
+    public reliableSocket:_UWebSocket;
+    public unreliableSockets:_UWebSocket[] = [];
+
+    public pendingMessages:(Uint8Array | string)[] = [];
+    
+    public nextMessageBox = 0;
+
+    public onMessage:(data:Uint8Array|string, unreliable:boolean) => void = noop;
+    public onClose:() => void = noop;
+    public serverClose:() => void;
+
+    constructor (reliableSocket:_UWebSocket, serverClose:() => void) {
+        this.serverClose = serverClose;
+        this.reliableSocket = reliableSocket;
+        this.reliableSocket.onmessage = (data) => {
+            if (this.started) {
+                this.onMessage(data, false);
+            } else {
+                if (typeof data === 'string') {
+                    this.pendingMessages.push(data);
+                } else {
+                    this.pendingMessages.push(new Uint8Array(data));
+                }
+            }
+        };
+        this.reliableSocket.onclose = () => {
+            this._handleClose();
+        };
+    }
+
+    public addSocket (socket:_UWebSocket) {
+        if (this.closed) {
+            return;
+        }
+        this.unreliableSockets.push(socket);
+        socket.onmessage = (data) => {
+            this.onMessage(data, true);
+        };
+        socket.onclose = () => {
+            this.unreliableSockets.splice(this.unreliableSockets.indexOf(socket), 1);
+        }
+    }
+
+    public send (data:Uint8Array, unreliable:boolean) {
+        if (this.closed) {
+            return;
+        }
+        if (unreliable) {
+            if (this.unreliableSockets.length > 0) {
+                this.unreliableSockets[this.nextMessageBox++ % this.unreliableSockets.length].send(data);
+            }            
+        } else {
+            this.reliableSocket.send(data);
+        }
+    }
+
+    public close () {
+        this.reliableSocket.close();
+    }
+
+    private _handleClose () {
+        this.closed = true;
+
+        // close all unreliable sockets
+        for (let i = 0; i < this.unreliableSockets.length; ++i) {
+            this.unreliableSockets[i].close();
+        }
+
+        // fire close handler
+        this.onClose();
+
+        // remove connection from server
+        this.serverClose();
+    }
+}
+
 export class MuWebSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
-    public open:boolean;
+    public open:boolean = false;
 
-    private _reliableConnection:object;
-    private _unreliableConnections:object[];
+    private _started:boolean = false;
+    private _closed:boolean = false;
 
-    private _pendingReliableMessages:Uint8Array[];
-    private _pendingUnreliableMessages:Uint8Array[];
+    private _connection:_MuWebSocketConnection;
 
-    constructor () {
+    constructor (connection:_MuWebSocketConnection) {
+        this.sessionId = connection.sessionId;
+        this._connection = connection;
     }
 
     public start(spec:MuSocketSpec) {
-        process.nextTick(() => {
+        if (this._started) {
+            throw new Error('socket already started');
+        }
+        if (this._closed) {
+            throw new Error('socket closed');
+        }
+        this._started = true;
+        setTimeout(() => {
+            // hook handlers on socket
+            this._connection.started = true;
+            this._connection.onMessage = spec.message;
+            this._connection.onClose = () => {
+                this._closed = true;
+                this.open = false;
+                spec.close();
+            };
 
-            // drain all messages
+            // set open flag
+            this.open = true;
+            
+            // fire ready handler
+            spec.ready();
 
-        });
+            // process any pending messages
+            for (let i = 0; i < this._connection.pendingMessages.length; ++i) {
+                const message = this._connection.pendingMessages[i];
+                spec.message(message, false);
+            }
+            this._connection.pendingMessages.length = 0;
+
+            // if socket already closed, then fire close event immediately
+            if (this._connection.closed) {
+                this._closed = true;
+                this.open = false;
+                spec.close();
+            }
+        }, 0);
     }
 
     public send(data:Uint8Array, unreliable?:boolean) {
+        this._connection.send(data, !!unreliable);
     }
 
     public close() {
+        this._connection.close();
     }
 }
 
 export class MuWebSocketServer implements MuSocketServer {
-    public clients:MuWebSocketClient[];
-    public open:boolean;
+    public clients:MuWebSocketClient[] = [];
+    public open:boolean = false;
+
+    private _connections:_MuWebSocketConnection[] = []
+
+    private _started:boolean = false;
+    private _closed:boolean = false;
+
+    private _maxUnreliableConnections:number = 10;
+
+    private _websocketServer:ws.Server;
+
+    private _httpServer;
+    private _maxPayload:number;
+    private _maxConnections:number;
 
     constructor (spec:{
-        host?:string,
-        port?:number,
-        backlog?:number,
-        server?:object,
+        server:object,
         maxPayload?:number,
-        perMessageDeflate?:boolean,
+        maxConnections?:number,
     }) {
+        this._httpServer = spec.server;
+        this._maxPayload = spec.maxPayload || 0;
+        this._maxConnections = spec.maxConnections || 10;
     }
 
     public start(spec:MuSocketServerSpec) {
+        if (this._started) {
+            throw new Error('web socket server already started');
+        }
+        if (this._closed) {
+            throw new Error('web socket server already closed');
+        }
+        this._started = true;
+        setTimeout(() => {
+            this._websocketServer = new ws.Server({
+                server: this._httpServer,
+                maxPayload: this._maxPayload,
+                maxConnections: this._maxConnections,
+            })
+            .on('connection', (socket) => {
+                socket.onmessage = (data:string) => {
+                    try {
+                        const packet = JSON.parse(data);
+                        const sessionId = packet.sessionId;
+                        if (typeof sessionId !== 'string') {
+                            throw 'bad session id';
+                        }
+                        let connection = this._getConnection(sessionId);
+                        if (connection) {
+                            return connection.addSocket(socket);
+                        } else {
+                            connection = new _MuWebSocketConnection(socket, () => {
+                                if (connection) {
+                                    this._connections.splice(this._connections.indexOf(connection), 1);
+                                    for (let i = this.clients.length - 1; i >= 0; --i) {
+                                        if (this.clients[i].sessionId === connection.sessionId) {
+                                            this.clients.splice(i, 1);
+                                        }
+                                    }
+                                }
+                            });
+                            const client = new MuWebSocketClient(connection);
+                            this._connections.push(connection);
+                            this.clients.push(client);
+                            return spec.connection(client);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                    socket.terminate();
+                };
+            })
+            .on('close', () => {
+                // handle close event
+                this._closed = true;
+                this.open = false;
+            });
+
+            this.open = true;
+            spec.ready();
+        }, 0);
+    }
+
+    private _getConnection(sessionId:string) : _MuWebSocketConnection | null {
+        for (let i = 0; i < this._connections.length; ++i) {
+            if (this._connections[i].sessionId === sessionId) {
+                return this._connections[i];
+            }
+        }
+        return null;
     }
 
     public close() {
+        if (this._closed) {
+            return;
+        }
+        this._closed = true;
+        if (this._websocketServer) {
+            this._websocketServer.close();
+        }
     }
 }

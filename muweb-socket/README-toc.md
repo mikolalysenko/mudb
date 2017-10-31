@@ -1,6 +1,35 @@
 # muweb-socket
 Web sockets for mudb
 
+# example
+
+# table of contents
+
+# api #
+
+## socket ##
+
+```javascript
+import { MuWebSocket } from 'muwebsocket/socket';
+```
+
+### constructor ###
+
+### methods ###
+
+### properties ###
+
+## socket server ##
+
+```javascript
+import { MuWebSocketServer } from 'muwebsocket/server';
+```
+
+### constructor ###
+
+### methods ###
+
+### properties ###
 
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.

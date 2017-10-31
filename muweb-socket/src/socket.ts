@@ -40,12 +40,74 @@ export class MuWebSocket implements MuSocket {
         if (this._closed) {
             throw new Error('socket already closed');
         }
-        this._started = true;
-        for (let i = 0; i <= this._maxSockets; ++i) {
-            // open a socket
+        this._started = true;        
+
+        const socketQueue:WebSocket[] = [];
+
+        function removeSocket (socket) {
+            for (let i = 0; i < socketQueue.length; ++i) {
+                if (socketQueue[i] === socket) {
+                    socketQueue.splice(i, 1);
+                }
+            }
         }
 
-        // once at least one unreliable socket and one reliable socket is opened then we can start
+        window.addEventListener('beforeunload', () => {
+            for (let i = 0; i < socketQueue.length; ++i) {
+                socketQueue[i].close();
+            }
+        });
+
+        const openSocket = () => {
+            const socket = new WebSocket(this._url);
+            socketQueue.push(socket);
+            socket.onmessage = (ev) => {
+                if (this._closed) {
+                    return socket.close();
+                }
+                const data = ev.data;
+                if (typeof data === 'string') {
+                    const info = JSON.parse(data);
+                    if (info.reliable) {
+                        // allocate reliable socket
+                        this.open = true;
+                        socket.onmessage = (ev) => {
+                            if (this.open) {
+                                spec.message(ev.data, false);
+                            }
+                        };
+                        socket.onclose = () => {
+                            this._closed = true;
+                            this.open = false;
+                            removeSocket(socket);
+
+                            for (let i = 0; i < socketQueue.length; ++i) {
+                                socket.close();
+                            }
+                        };
+                    } else {
+                        // allocate unreliable socket
+                        this._unreliableSockets.push(socket);
+                        socket.onmessage = (ev) => {
+                            if (this.open) {
+                                spec.message(ev.data, true);
+                            }
+                        };
+                        socket.onclose = () => {
+                            for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
+                                if (this._unreliableSockets[i] === socket) {
+                                    this._unreliableSockets.splice(i, 1);
+                                }
+                            }
+                            removeSocket(socket);
+                        };
+                    }
+                }
+            };
+        }
+        for (let i = 0; i <= this._maxSockets; ++i) {
+            openSocket();
+        }
     }
 
     public send(data:Uint8Array, unreliable?:boolean) {
@@ -53,9 +115,11 @@ export class MuWebSocket implements MuSocket {
             return;
         }
         if (unreliable) {
-            const id = (this._lastSocketSend++) % this._unreliableSockets.length;
+            if (this._unreliableSockets.length > 0) {
+                this._unreliableSockets[this._lastSocketSend++ % this._unreliableSockets.length].send(data);
+            }
         } else {
-
+            this._reliableSocket.send(data);
         }
     }
 
