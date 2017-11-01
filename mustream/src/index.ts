@@ -133,6 +133,10 @@ export class MuReadStream {
         this.buffer = buffer;
     }
 
+    public bytesLeft() : number {
+        return this.buffer.uint8.length - this.offset;
+    }
+
     public readInt8 () : number {
         return this.buffer.dataView.getInt8(this.offset++);
     }
