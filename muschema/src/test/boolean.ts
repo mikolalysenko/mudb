@@ -1,9 +1,9 @@
 import tape = require('tape');
 
-import MuBoolean = require('../boolean');
+import { MuBoolean } from '../boolean';
 
 tape('boolean', function (t) {
-    const b = MuBoolean();
+    const b = new MuBoolean();
     console.log(b.muType);
 
     t.end();

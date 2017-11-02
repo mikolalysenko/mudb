@@ -5,8 +5,18 @@
   "description": "Root directory for project. Contains scripts to run",
   "main": "index.js",
   "scripts": {
-    "watch-helnet": "cd munet && tsc --watch --outDir ../mudb/node_modules/munet",
-    "watch-helschema": "cd muschema && tsc --watch --outDir ../heldb/node_modules/muschema",
+    "watch-stream": "cd mustream && tsc --watch",
+    "watch-schema": "cd muschema && tsc --watch",
+    "watch-db": "cd mudb && tsc --watch",
+    "watch-local-socket": "cd mulocal-socket && tsc --watch",
+    "watch-web-socket": "cd muweb-wocket && tsc --watch",
+    "watch": "npm run watch-stream & npm run watch-schema & npm run watch-db & npm run watch-local-socket & npm run watch-web-socket",
+    "link-stream": "cd mustream && npm run link-all",
+    "link-schema": "cd muschema && npm run link-all",
+    "link-db": "cd mudb && npm run link-all",
+    "link-local-socket": "cd mulocal-socket & npm run link-all",
+    "link-web-socket": "cd muweb-socket & npm run link-all",
+    "link-all": "npm run link-stream && npm run link-schema && npm run link-db & npm run link-local-socket & npm run link-web-socket",
     "docs": "mdtoc < README-toc.md > README.md && mdtoc < mudb/README-toc.md > mudb/README.md && mdtoc < munet/README-toc.md > munet/README.md && mdtoc < muschema/README-toc.md > muschema/README.md && mdtoc < mustream/README-toc.md > mustream/README.md"
   },
   "repository": {
@@ -24,5 +34,6 @@
   "bugs": {
     "url": "https://github.com/mikolalysenko/mudb/issues"
   },
-  "homepage": "https://github.com/mikolalysenko/mudb#readme"
+  "homepage": "https://github.com/mikolalysenko/mudb#readme",
+  "dependencies": {}
 }

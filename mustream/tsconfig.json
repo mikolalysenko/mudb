@@ -9,7 +9,7 @@
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "noImplicitAny": false,
-    "outDir": "build",
+    "outDir": ".",
     "plugins": [
       {
         "name": "tslint-language-service"

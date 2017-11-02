@@ -15,14 +15,24 @@ It makes networked game programming fun and simple.
 # modules #
 `mudb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
 
-## [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb)
+## [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb) ##
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is the database itself.  For users learning the API, start here after reading about concepts.
 
-## [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema)
+## [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema) ##
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is used to define the database schema.
 
-## [munet](https://github.com/mikolalysenko/mudb/tree/master/munet)
+## [munet](https://github.com/mikolalysenko/mudb/tree/master/munet) ##
 [munet](https://github.com/mikolalysenko/mudb/tree/master/munet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
+
+## murpc ##
+
+## mustate ##
+
+## muping ##
+
+## mustream ##
+
+## mudo ##
 
 # big picture concepts #
 `mudb` solves networking problems by providing 2 generic types of communication:
@@ -81,7 +91,28 @@ Academic references:
 
 # developing #
 
-**TODO**
+## set up ##
+
+After cloning this repo, the first thing you'll need to do is install and link all submodules:
+
+```
+npm run link-all
+```
+
+## watching ##
+
+```
+npm run watch
+```
+
+## testing ##
+
+```
+npm test
+```
+
+
+## TODO ##
 
 * Environment set up
     * typescript

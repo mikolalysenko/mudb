@@ -1,4 +1,16 @@
-import { MuVoid } from './_void';
+import { MuSchema } from './schema';
 
-/** Empty type schema */
-export = () => new MuVoid();
+/** The empty type */
+export class MuVoid implements MuSchema<void> {
+    public readonly identity:void;
+    public readonly muType = 'void';
+    public readonly json = {
+        type: 'void',
+    };
+
+    alloc () {}
+    free () {}
+    clone () {}
+    diff () {}
+    patch () {}
+}

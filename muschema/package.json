@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "ts-node src/test/index.js",
-    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/"
+    "link-all": "npm link mustream && npm link ."
   },
   "keywords": [
     "mudb",
@@ -20,5 +20,8 @@
     "tape": "^4.8.0",
     "ts-node": "^3.3.0",
     "typescript": "^2.5.2"
+  },
+  "dependencies": {
+    "mustream": "0.0.0"
   }
 }

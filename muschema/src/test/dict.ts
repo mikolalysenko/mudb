@@ -1,31 +1,23 @@
 import tape = require('tape');
 
-import HelStruct = require('../struct');
-
-import HelInt8 = require('../int8');
-import HelInt16 = require('../int16');
-import HelInt32 = require('../int32');
-
-import HelUint8 = require('../uint8');
-import HelUint16 = require('../uint16');
-import HelUint32 = require('../uint32');
-
-import HelFloat32 = require('../float32');
-import HelFloat64 = require('../float64');
-
-import HelBoolean = require('../boolean');
-
-import HelString = require('../string');
-
-import HelUnion = require('../union');
-
-import HelDict = require('../dictionary');
+import {
+  MuStruct,
+  MuBoolean,
+  MuFloat32,
+  MuFloat64,
+  MuUint8,
+  MuUint16,
+  MuInt32,
+  MuString,
+  MuUnion,
+  MuDictionary
+} from '../index';
 
 tape('dict', function (t) {
   // const Name = HelString('Bob');
 
-  const FaceBook = HelDict(
-    HelString('Name'),
+  const FaceBook = new MuDictionary(
+    new MuString('Name'),
     {
       ['Bob']: 'HelBob',
     });
@@ -34,7 +26,7 @@ tape('dict', function (t) {
   console.log('FaceBook', FaceBook);
   console.log('rel:', rel);
   console.log('>>>>>>>>>>>');
-  const BookFace = HelDict(FaceBook);
+  const BookFace = new MuDictionary(FaceBook);
   console.log('BookFace:', BookFace);
   let rel2 = BookFace.alloc();
   console.log('rel2:', rel2);
@@ -43,12 +35,12 @@ tape('dict', function (t) {
 });
 
 tape('dict-struct', function (t) {
-  const NameNote = HelStruct({
-    Name: HelString('Empty')
+  const NameNote = new MuStruct({
+    Name: new MuString('Empty')
   });
   let name = NameNote.alloc();
   name.Name = 'Tom';
-  const FaceBook = HelDict(
+  const FaceBook = new MuDictionary(
     NameNote,
     {
       ['Bob']: name,

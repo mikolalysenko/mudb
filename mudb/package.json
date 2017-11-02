@@ -5,9 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "local": "budo src/example/local.ts --open --live -- -p [tsify]",
-    "do-publish": "tsc && cp package.json build/ && cp README.md build/ && npm publish build/",
-    "do-link": "cp package.json src/ && cd src && npm link ."
+    "link-all": "npm i && npm link mustream && npm link muschema && npm link ."
   },
   "keywords": [
     "mudb",
@@ -29,7 +27,8 @@
     "typescript": "^2.5.2"
   },
   "dependencies": {
-    "munet": "0.0.0",
+    "hash.js": "^1.1.3",
+    "json-stable-stringify": "^1.0.1",
     "muschema": "0.0.0"
   }
 }

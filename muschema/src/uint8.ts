@@ -1,2 +1,8 @@
 import {MuNumber} from './_number';
-export = (x?:number) => new MuNumber('uint8', x || 0);
+
+export class MuUint8 extends MuNumber {
+    public readonly muType = 'uint8';
+    constructor(value?:number) {
+        super((value || 0) >>> 0);
+    }
+};

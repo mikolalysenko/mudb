@@ -59,16 +59,11 @@ function createLogServer () {
                         socket,
                     }));
                 },
-                message(message) {
+                message(message, unreliable) {
                     events.push(new DBEvent('message', {
                         message,
                         socket,
-                    }));
-                },
-                unreliableMessage(message) {
-                    events.push(new DBEvent('~message', {
-                        message,
-                        socket,
+                        unreliable,
                     }));
                 },
                 close(err?:any) {
@@ -95,16 +90,11 @@ function createLogServer () {
                     err,
                 }));
             },
-            message(message) {
+            message(message, unreliable) {
                 clientEvents.push(new DBEvent('message', {
                     message,
                     socket,
-                }));
-            },
-            unreliableMessage(message) {
-                clientEvents.push(new DBEvent('~message', {
-                    message,
-                    socket,
+                    unreliable,
                 }));
             },
             close(err?:any) {
