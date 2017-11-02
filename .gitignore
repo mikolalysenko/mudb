@@ -9,3 +9,4 @@ node_modules/*
 !*/src/*.ts
 !*/src/*.js
 !*/types/*.d.ts
+!bin/*
