@@ -74,10 +74,6 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
         this._protoSpec.readyHandler = spec.ready || noop;
         this._protoSpec.closeHandler = spec.close || noop;
     }
-
-    public protocol<SubSchema extends MuAnyProtocolSchema> (schema:SubSchema) : MuServerProtocol<SubSchema> {
-        return this.server.protocol(schema);
-    }
 }
 
 export type MuAnyServerProtocol = MuServerProtocol<MuAnyProtocolSchema>;

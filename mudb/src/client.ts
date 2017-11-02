@@ -50,10 +50,6 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         this.protoSpec.readyHandler = spec.ready || noop;
         this.protoSpec.closeHandler = spec.close || noop;
     }
-
-    public protocol<SubSchema extends MuAnyProtocolSchema> (schema:SubSchema) : MuClientProtocol<SubSchema> {
-        return this.client.protocol(schema);
-    }
 }
 
 export class MuClient {
