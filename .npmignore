@@ -2,9 +2,9 @@ node_modules/*
 */build/*
 **/node_modules/*
 *.DS_Store
-*.d.ts
-*.js
-*.map
+!*.d.ts
+!*.js
+!*.map
 *npm-debug.log
 !*/src/*.ts
 !*/src/*.js
