@@ -1,145 +1,32 @@
 # mudb
 A database for HTML5 multiplayer games.
 
-## example
-This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  A system using `mudb` has to specify 3 things:
+A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.  
 
-1. A protocol
+## example
+This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  Each `mudb` instance consists of a `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
+
+1. A schema
 1. A server
 1. A client
 
-Here is an example of a trivial game where many users can move a box around with their mouse, broken into 3 files:
+Here is an example of a simple chat protocol:
 
-### mouse game
-First, we create a module which defines the network protocol called `protocol.js` here for simplicity:
+### chat example
 
-**`procotol.js`**
+**schema.js**
+
 ```javascript
-// Here we load in some basic schema types
-const MuFloat64 = require('muschema/float64')
-const MuStruct = require('muschema/struct')
-const MuDictionary = require('muschema/dictionary')
-
-// We define a point type using mustruct as a pair of floating point numbers
-const Point = MuStruct({
-    x: MuFloat64(),
-    y: MuFloat64()
-})
-
-module.exports = {
-    client: {
-        state: Point,
-        message: {},
-        rpc: {},
-    },
-    server: {
-        state: MuDictionary(Entity),
-        message: {},
-        rpc: {},
-    },
-}
 ```
 
-Then, we define a server module.  This exports a function which takes a `munet` socketServer as input.
+**server.js**
 
-**`server.js`**
 ```javascript
-const createServer = require('mudb/server')
-const protocol = require('./protocol')
-
-module.exports = function (socketServer) {
-    const server = createServer({
-        protocol,
-        socketServer
-    })
-
-    return server.start({
-        message: {},
-        rpc: {},
-        ready() {},
-        connect(client) {
-            // when a client connects we create a new entry in the player dictionary
-            server.state[client.sessionId] = client.schema.clone(client.state);
-            server.commit();
-        },
-        state(client) {
-            const serverEntity = server.state[client.sessionId];
-            const clientEntity = client.state;
-            serverEntity.x = clientEntity.x;
-            serverEntity.y = clientEntity.y;
-            server.commit();
-        },
-        disconnect(client) {
-            delete server.state[client.sessionId];
-            server.commit();
-        },
-    })
-}
 ```
 
-Finally we create a client which renders the state of the world using HTML 5 canvas and collects user input:
+**client.js**
 
-**`client.js`**
 ```javascript
-const createClient = require('mudb/client')
-const protocol = require('./protocol')
-
-module.exports = function (socket) {
-    const client = createClient({
-        protocol,
-        socket
-    })
-
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    document.body.appendChild(canvas);
-    const context = canvas.getContext('2d');
-
-    function draw () {
-        if (!client.running || !context) {
-            return;
-        }
-
-        // clear background
-        context.fillStyle = '#000';
-        context.fillRect(0, 0, 256, 256);
-
-        // draw all objects in the game
-        const state = client.server.state;
-        Object.keys(state).forEach((id) => {
-            if (id !== client.sessionId) {
-                context.fillStyle = '#fff';
-                context.fillRect(state[id].x - 2.5, state[id].y - 2.5, 5, 5);
-            }
-        });
-
-        // draw client cursor
-        context.fillStyle = '#f00';
-        context.fillRect(client.state.x - 3, client.state.y - 3, 6, 6);
-
-        requestAnimationFrame(draw);
-    }
-
-    return client.start({
-        message: {},
-        rpc: {},
-        ready (err?:any) {
-            if (!err) {
-                canvas.addEventListener('mousemove', (ev) => {
-                    const bounds = canvas.getBoundingClientRect()
-                    client.state.x = ev.clientX - bounds.left
-                    client.state.y = ev.clientY - bounds.top
-                    client.commit()
-                });
-                draw()
-            }
-        },
-        state () {},
-        close () {
-            document.body.removeChild(canvas)
-        },
-    })
-}
 ```
 
 ### running the game
@@ -184,12 +71,26 @@ addClientButton.addEventListener('click',
       * [2.3 client](#section_2.3)
          * [2.3.1 client constructor](#section_2.3.1)
          * [2.3.2 client events](#section_2.3.2)
-      * [2.4 state](#section_2.4)
-      * [2.5 rpc](#section_2.5)
-      * [2.6 messages](#section_2.6)
-         * [2.6.1 broadcast](#section_2.6.1)
+      * [2.4 messages](#section_2.4)
+         * [2.4.1 broadcast](#section_2.4.1)
+      * [2.5 socket interface](#section_2.5)
+         * [2.5.1 properties](#section_2.5.1)
+            * [2.5.1.1 `sessionId`](#section_2.5.1.1)
+            * [2.5.1.2 `open`](#section_2.5.1.2)
+         * [2.5.2 methods](#section_2.5.2)
+            * [2.5.2.1 `start(spec)`](#section_2.5.2.1)
+            * [2.5.2.2 `send(data:Uint8Array, unreliable?:boolean)`](#section_2.5.2.2)
+            * [2.5.2.3 `close()`](#section_2.5.2.3)
+      * [2.6 socket server interface](#section_2.6)
+         * [2.6.1 properties](#section_2.6.1)
+            * [2.6.1.1 `clients[]`](#section_2.6.1.1)
+            * [2.6.1.2 `open`](#section_2.6.1.2)
+         * [2.6.2 method](#section_2.6.2)
+            * [2.6.2.1 `start()`](#section_2.6.2.1)
+            * [2.6.2.2 `close()`](#section_2.6.2.2)
    * [3 usage tips](#section_3)
-   * [4 more examples](#section_4)
+   * [4 helpful modules](#section_4)
+   * [5 more examples](#section_5)
 
 # <a name="section_1"></a> 1 install
 
@@ -275,9 +176,8 @@ Once a server is created, it is necessary to register event handlers and start t
 
 * `ready()` which is called when the server is started
 * `message` which is an object containing implementations of handlers for all of the message types
-* `rpc` an object implementing all handlers for rpc types
+* `raw`
 * `connect(client)` called when a client connects to the server
-* `state(client)` called when a new state update is recieved by a client
 * `disconnect(client)` called when a client disconnects from the server
 
 **Example:**
@@ -329,7 +229,6 @@ server.start({
 })
 ```
 
-
 ## <a name="section_2.3"></a> 2.3 client
 
 ### <a name="section_2.3.1"></a> 2.3.1 client constructor
@@ -345,21 +244,56 @@ const client = require('mudb/client')({
 
 * `ready()`
 * `message`
-* `rpc`
-* `state()`
+* `raw()`
 * `close()`
 
-## <a name="section_2.4"></a> 2.4 state
+## <a name="section_2.4"></a> 2.4 messages
 
-## <a name="section_2.5"></a> 2.5 rpc
+### <a name="section_2.4.1"></a> 2.4.1 broadcast
 
-## <a name="section_2.6"></a> 2.6 messages
+## <a name="section_2.5"></a> 2.5 socket interface
 
-### <a name="section_2.6.1"></a> 2.6.1 broadcast
+`MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.  
+
+### <a name="section_2.5.1"></a> 2.5.1 properties
+
+#### <a name="section_2.5.1.1"></a> 2.5.1.1 `sessionId`
+A string representing a unique session id identifying the socket.
+
+#### <a name="section_2.5.1.2"></a> 2.5.1.2 `open`
+Boolean flag determing whether a socket is open or not.
+
+### <a name="section_2.5.2"></a> 2.5.2 methods
+
+#### <a name="section_2.5.2.1"></a> 2.5.2.1 `start(spec)`
+
+* `ready()`
+* `message(data:Uint8Array, unreliable:boolean)`
+* `close()`
+
+#### <a name="section_2.5.2.2"></a> 2.5.2.2 `send(data:Uint8Array, unreliable?:boolean)`
+
+#### <a name="section_2.5.2.3"></a> 2.5.2.3 `close()`
+
+## <a name="section_2.6"></a> 2.6 socket server interface
+
+### <a name="section_2.6.1"></a> 2.6.1 properties
+
+#### <a name="section_2.6.1.1"></a> 2.6.1.1 `clients[]`
+
+#### <a name="section_2.6.1.2"></a> 2.6.1.2 `open`
+
+### <a name="section_2.6.2"></a> 2.6.2 method
+
+#### <a name="section_2.6.2.1"></a> 2.6.2.1 `start()`
+
+#### <a name="section_2.6.2.2"></a> 2.6.2.2 `close()`
 
 # <a name="section_3"></a> 3 usage tips
 
-# <a name="section_4"></a> 4 more examples
+# <a name="section_4"></a> 4 helpful modules
+
+# <a name="section_5"></a> 5 more examples
 
 # TODO
 
