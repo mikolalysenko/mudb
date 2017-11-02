@@ -31,12 +31,16 @@ modulePaths.forEach((dir) => {
     const exec = execInDirectory(dir)
 
     const packageJSON = require(path.join(dir, 'package.json'))
-    const dependencies = packageJSON.dependencies
-    if (dependencies) {
-        Object.keys(packageJSON.dependencies).forEach((dep) => {
-            if (dep.indexOf('mu') === 0) {
-                exec(`npm link ${dep}`)
-            }
-        })
+
+    function linkDeps (dependencies) {
+        if (dependencies) {
+            Object.keys(dependencies).forEach((dep) => {
+                if (dep.indexOf('mu') === 0) {
+                    exec(`npm link ${dep}`)
+                }
+            })
+        }    
     }
+    linkDeps(packageJSON.dependencies)
+    linkDeps(packageJSON.devDependencies)
 })
