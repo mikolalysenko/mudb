@@ -1,10 +1,6 @@
 mudb
 =====
-`hudb` is a client-server data base for multiplayer games on the web.
-
-It makes networked game programming fun and simple.
-
-**TODO INSERT VIDEO LIVE CODING DEMO**
+`mudb` is a collection of modules for building realtime client-server networked applications.
 
 [TypeScript](https://www.typescriptlang.org/) friendly, works great with [nodejs](https://nodejs.org).
 
@@ -13,7 +9,7 @@ It makes networked game programming fun and simple.
 # table of contents
 
 # modules #
-`mudb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
+`mudb` is implemented as a collection of modules for building realtime networked applications.
 
 ## [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb) ##
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is the database itself.  For users learning the API, start here after reading about concepts.
@@ -21,18 +17,23 @@ It makes networked game programming fun and simple.
 ## [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema) ##
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is used to define the database schema.
 
-## [munet](https://github.com/mikolalysenko/mudb/tree/master/munet) ##
-[munet](https://github.com/mikolalysenko/mudb/tree/master/munet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
+## socket emulation ##
 
-## murpc ##
+### [mulocal-socket](https://github.com/mikolalysenko/mudb/tree/master/mulocal-socket) ###
 
-## mustate ##
+### [muweb-socket](https://github.com/mikolalysenko/mudb/tree/master/muweb-socket) ###
 
-## muping ##
+## protocols ##
 
-## mustream ##
+**TODO**
 
-## mudo ##
+## development ##
+
+### [mudo](https://github.com/mikolalysenko/mudb/tree/master/mudo) ###
+
+## internal ##
+
+### [mustreams](https://github.com/mikolalysenko/mudb/tree/master/mustreams) ###
 
 # big picture concepts #
 `mudb` solves networking problems by providing 2 generic types of communication:
@@ -103,6 +104,12 @@ npm run link-all
 
 ```
 npm run watch
+```
+
+## generating docs ##
+
+```
+npm run docs
 ```
 
 ## testing ##
