@@ -1,5 +1,5 @@
 import {MuNumber} from './_number';
-import {MuWriteStream, MuReadStream} from 'mustream';
+import {MuWriteStream, MuReadStream} from 'mustreams';
 
 export class MuInt8 extends MuNumber {
     public readonly muType = 'int8';
