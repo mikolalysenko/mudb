@@ -3,6 +3,7 @@
         "**/node_modules/*": true,
         "**/*.map": true,
         "**/*.js": true,
-        "**/*.d.ts": true
+        "**/*.d.ts": true,
+        "**/README.md": true
     }
 }
