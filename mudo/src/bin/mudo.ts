@@ -3,16 +3,9 @@ import minimist = require('minimist');
 
 const argv = minimist(process.argv.slice(2));
 
-if (!('client' in argv)) {
-    throw new Error('must specify client');
-}
-if (!('server' in argv)) {
-    throw new Error('must specify server');
-}
-
 const mudoSpec:MudoSpec = {
-    client: argv.client,
-    server: argv.server,
+    client: argv.client || 'client.js',
+    server: argv.server || 'server.js',
 };
 
 if ('socket' in argv) {

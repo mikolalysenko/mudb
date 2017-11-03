@@ -3,6 +3,7 @@ import path = require('path');
 import temp = require('temp');
 import fs = require('fs');
 import budo = require('budo');
+import { MuWebSocketServer } from 'muweb-socket/server';
 
 export enum MUDO_SOCKET_TYPES {
     LOCAL = 0,
@@ -17,13 +18,11 @@ type ClientTemplateSpec = {
 };
 
 function clientTemplate (spec:ClientTemplateSpec) {
-    const NODE_MODULES = path.resolve(__dirname, 'node_modules');
-
     function generateLocal() {
         return `
-var MuServer = require('${NODE_MODULES}/mudb/server').MuServer;
+var MuServer = require('${require.resolve('mudb/server')}').MuServer;
 var createServer = require('${spec.serverPath}');
-var muLocalSocket = require('${NODE_MODULES}/mulocal-socket');
+var muLocalSocket = require('${require.resolve('mulocal-socket')}');
 
 var socketServer = muLocalSocket.createLocalSocketServer();
 var server = new MuServer(socketServer);
@@ -38,10 +37,10 @@ var socket = muLocalSocket.createLocalSocket({
 
     function generateWebSocket() {
         return `
-var MuWebSocket = require('${NODE_MODULES}/muweb-socket').MuWebSocket;
+var MuWebSocket = require('${require.resolve('muweb-socket/socket')}').MuWebSocket;
 var socket = new MuWebSocket({
     sessionId: Math.round(1e12 * Math.random()).toString(32),
-    url: 'ws://' + window.location.hostname + ':${spec.socketPort}/socket',
+    url: 'ws://' + window.location.host,
 });
 `;
     }
@@ -56,7 +55,7 @@ var socket = new MuWebSocket({
     }
 
     return `
-var MuClient = require('${NODE_MODULES}/mudb/client').MuClient;
+var MuClient = require('${require.resolve('mudb/client')}').MuClient;
 var createClient = require('${spec.clientPath}');
 
 ${generateSocket()}
@@ -64,15 +63,6 @@ ${generateSocket()}
 var client = new MuClient(socket);
 createClient(client);
 `;
-}
-
-function serverTemplate (spec:{
-    serverPath:string,
-    socketType:MUDO_SOCKET_TYPES,
-    socketHost:string,
-    socketPort:number,
-}) {
-
 }
 
 // live reload server
@@ -106,6 +96,8 @@ export type MudoSpec = {
 
 export function createMudo (spec:MudoSpec) {
     const socketType = spec.socket || MUDO_SOCKET_TYPES.LOCAL;
+    const clientPath = path.resolve(spec.client);
+    const serverPath = path.resolve(spec.server);
 
     const tracker = temp.track();
     temp.open(
@@ -118,15 +110,11 @@ export function createMudo (spec:MudoSpec) {
                 return console.error(err);
             }
             const clientModuleSpec:ClientTemplateSpec = {
-                clientPath: path.resolve(spec.client),
-                serverPath: path.resolve(spec.server),
+                clientPath,
+                serverPath,
                 socketType,
             };
-            if (socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
-            }
             const clientModule = clientTemplate(clientModuleSpec);
-            console.log(`writing client module ${info.path}`);
-            console.log(clientModule);
             fs.write(
                 info.fd,
                 clientModule,
@@ -138,7 +126,6 @@ export function createMudo (spec:MudoSpec) {
                         if (err) {
                             return console.error(closeErr);
                         }
-                        console.log('starting budo: ', info.path);
 
                         const budoSpec = {
                             live: false,
@@ -146,19 +133,23 @@ export function createMudo (spec:MudoSpec) {
                             forceDefaultIndex: true,
                             errorHandler: true,
                             verbose: true,
-                            stream: process.stdout,
+                            // stream: process.stdout,
                             ...spec,
                         };
 
                         const budoServer = budo(info.path, budoSpec);
+                        if (socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
+                            budoServer.on('connect', (event) => {
+                                const httpServer = event.server;
+                                const socketServer = new MuWebSocketServer({
+                                    server:httpServer,
+                                });
+                                const muServer = new MuServer(socketServer);
 
-                        /*
-                        if (spec.socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
-                            // create server bundle, attach to server
-
-                            temp.
+                                // load and run server
+                                require(serverPath)(muServer);
+                            });
                         }
-                        */
                     });
                 });
         });
