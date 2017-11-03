@@ -4,8 +4,7 @@
   "description": "Development framework for rapid prototyping systems based on mudb",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "link-all": "npm i && npm link mudb && npm link ."
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "mudb",

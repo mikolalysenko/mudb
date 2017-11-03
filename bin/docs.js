@@ -23,14 +23,11 @@ modulePaths.forEach((dir) => {
 
     console.log(`generate toc: ${tocPath} > ${mdPath}`)
 
-    const x = fs.openSync(tocPath, 'r+')
-    const y = fs.openSync(mdPath, 'w+')
-
     spawn('mdtoc', [], {
         cwd: dir,
         stdio: [
-            x,
-            y,
+            fs.openSync(tocPath, 'r+'),
+            fs.openSync(mdPath, 'w+'),
             'inherit']
     })
 })
