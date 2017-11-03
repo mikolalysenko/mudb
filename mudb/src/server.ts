@@ -36,7 +36,6 @@ export class MuServerProtocolSpec {
 }
 
 export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
-    public readonly name:string;
     public readonly schema:Schema;
     public readonly server:MuServer;
     public readonly clients:{ [sessionId:string]:MuRemoteClientProtocol<Schema['client']> } = {};
@@ -48,9 +47,8 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
 
     private _protoSpec:MuServerProtocolSpec;
 
-    constructor (name:string, schema:Schema, server:MuServer, protoSpec:MuServerProtocolSpec) {
+    constructor (schema:Schema, server:MuServer, protoSpec:MuServerProtocolSpec) {
         this.schema = schema;
-        this.name = name;
         this.server = server;
         this._protoSpec = protoSpec;
     }
@@ -220,14 +218,11 @@ export class MuServer {
     }
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuServerProtocol<Schema> {
-        if (name in this.protocols) {
-            throw new Error('protocol already in use');
-        }
         if (this._started || this._closed) {
             throw new Error('cannot add a protocol until the client has been initialized');
         }
         const spec = new MuServerProtocolSpec();
-        const p = new MuServerProtocol(name, schema, this, spec);
+        const p = new MuServerProtocol(schema, this, spec);
         this.protocols.push(p);
         this._protocolSpec.push(spec);
         return p;

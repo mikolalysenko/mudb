@@ -17,16 +17,12 @@ export class MuWebSocket implements MuSocket {
     constructor (spec:{
         sessionId:MuSessionId,
         url:string,
-        query?:{ [arg:string]:string },
         maxSockets?:number,
     }) {
         this.sessionId = spec.sessionId;
-        
+
         // generate query url
-        const query = spec.query || {}
-        const queryString = Object.keys(query).map((arg) => encodeURIComponent(arg) + '=' + encodeURIComponent(query[arg]))
-        queryString.push(`sessionID=${encodeURIComponent(spec.sessionId)}`);
-        this._url = `${encodeURI(spec.url)}?${queryString.join('&')}`;
+        this._url = spec.url;
 
         if (spec.maxSockets) {
             this._maxSockets = Math.max(1, spec.maxSockets | 0);
@@ -40,7 +36,7 @@ export class MuWebSocket implements MuSocket {
         if (this._closed) {
             throw new Error('socket already closed');
         }
-        this._started = true;        
+        this._started = true;
 
         const socketQueue:WebSocket[] = [];
 
@@ -61,50 +57,59 @@ export class MuWebSocket implements MuSocket {
         const openSocket = () => {
             const socket = new WebSocket(this._url);
             socketQueue.push(socket);
-            socket.onmessage = (ev) => {
-                if (this._closed) {
-                    return socket.close();
-                }
-                const data = ev.data;
-                if (typeof data === 'string') {
-                    const info = JSON.parse(data);
-                    if (info.reliable) {
-                        // allocate reliable socket
-                        this.open = true;
-                        socket.onmessage = (ev) => {
-                            if (this.open) {
-                                spec.message(ev.data, false);
-                            }
-                        };
-                        socket.onclose = () => {
-                            this._closed = true;
-                            this.open = false;
-                            removeSocket(socket);
 
-                            for (let i = 0; i < socketQueue.length; ++i) {
-                                socket.close();
-                            }
-                        };
-                    } else {
-                        // allocate unreliable socket
-                        this._unreliableSockets.push(socket);
-                        socket.onmessage = (ev) => {
-                            if (this.open) {
-                                spec.message(ev.data, true);
-                            }
-                        };
-                        socket.onclose = () => {
-                            for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
-                                if (this._unreliableSockets[i] === socket) {
-                                    this._unreliableSockets.splice(i, 1);
-                                }
-                            }
-                            removeSocket(socket);
-                        };
+            socket.onopen = () => {
+                socket.onmessage = (ev) => {
+                    if (this._closed) {
+                        return socket.close();
                     }
-                }
+                    const data = ev.data;
+                    if (typeof data === 'string') {
+                        const info = JSON.parse(data);
+                        if (info.reliable) {
+                            // allocate reliable socket
+                            this.open = true;
+                            socket.onmessage = (message) => {
+                                if (this.open) {
+                                    spec.message(message.data, false);
+                                }
+                            };
+                            socket.onclose = () => {
+                                this._closed = true;
+                                this.open = false;
+                                removeSocket(socket);
+
+                                for (let i = 0; i < socketQueue.length; ++i) {
+                                    socket.close();
+                                }
+                                spec.close();
+                            };
+                            this._reliableSocket = socket;
+                            spec.ready();
+                        } else {
+                            // allocate unreliable socket
+                            this._unreliableSockets.push(socket);
+                            socket.onmessage = (message) => {
+                                if (this.open) {
+                                    spec.message(message.data, true);
+                                }
+                            };
+                            socket.onclose = () => {
+                                for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
+                                    if (this._unreliableSockets[i] === socket) {
+                                        this._unreliableSockets.splice(i, 1);
+                                    }
+                                }
+                                removeSocket(socket);
+                            };
+                        }
+                    }
+                };
+                socket.send(JSON.stringify({
+                    sessionId: this.sessionId,
+                }));
             };
-        }
+        };
         for (let i = 0; i <= this._maxSockets; ++i) {
             openSocket();
         }
