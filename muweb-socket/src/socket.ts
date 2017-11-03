@@ -21,10 +21,10 @@ export class MuWebSocket implements MuSocket {
         maxSockets?:number,
     }) {
         this.sessionId = spec.sessionId;
-        
+
         // generate query url
-        const query = spec.query || {}
-        const queryString = Object.keys(query).map((arg) => encodeURIComponent(arg) + '=' + encodeURIComponent(query[arg]))
+        const query = spec.query || {};
+        const queryString = Object.keys(query).map((arg) => encodeURIComponent(arg) + '=' + encodeURIComponent(query[arg]));
         queryString.push(`sessionID=${encodeURIComponent(spec.sessionId)}`);
         this._url = `${encodeURI(spec.url)}?${queryString.join('&')}`;
 
@@ -40,7 +40,7 @@ export class MuWebSocket implements MuSocket {
         if (this._closed) {
             throw new Error('socket already closed');
         }
-        this._started = true;        
+        this._started = true;
 
         const socketQueue:WebSocket[] = [];
 
@@ -71,9 +71,9 @@ export class MuWebSocket implements MuSocket {
                     if (info.reliable) {
                         // allocate reliable socket
                         this.open = true;
-                        socket.onmessage = (ev) => {
+                        socket.onmessage = (message) => {
                             if (this.open) {
-                                spec.message(ev.data, false);
+                                spec.message(message.data, false);
                             }
                         };
                         socket.onclose = () => {
@@ -88,9 +88,9 @@ export class MuWebSocket implements MuSocket {
                     } else {
                         // allocate unreliable socket
                         this._unreliableSockets.push(socket);
-                        socket.onmessage = (ev) => {
+                        socket.onmessage = (message) => {
                             if (this.open) {
-                                spec.message(ev.data, true);
+                                spec.message(message.data, true);
                             }
                         };
                         socket.onclose = () => {
@@ -104,7 +104,7 @@ export class MuWebSocket implements MuSocket {
                     }
                 }
             };
-        }
+        };
         for (let i = 0; i <= this._maxSockets; ++i) {
             openSocket();
         }
