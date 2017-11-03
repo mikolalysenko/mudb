@@ -4,10 +4,19 @@ import temp = require('temp');
 import fs = require('fs');
 import budo = require('budo');
 
-function clientTemplate (spec:{
+export enum MUDO_SOCKET_TYPES {
+    LOCAL = 0,
+    WEBSOCKET = 1,
+}
+
+type ClientTemplateSpec = {
     clientPath:string,
     serverPath:string,
-}) {
+    socketType:MUDO_SOCKET_TYPES,
+    socketPort?:number,
+};
+
+function clientTemplate (spec:ClientTemplateSpec) {
     const NODE_MODULES = path.resolve(__dirname, 'node_modules');
 
     function generateLocal() {
@@ -21,21 +30,49 @@ var server = new MuServer(socketServer);
 createServer(server);
 
 var socket = muLocalSocket.createLocalSocket({
-    sessionId: Math.round(1e9 * Math.random()).toString(32),
+    sessionId: Math.round(1e12 * Math.random()).toString(32),
     server: socketServer
 });
 `;
+    }
+
+    function generateWebSocket() {
+        return `
+var MuWebSocket = require('${NODE_MODULES}/muweb-socket').MuWebSocket;
+var socket = new MuWebSocket({
+    sessionId: Math.round(1e12 * Math.random()).toString(32),
+    url: 'ws://' + window.location.hostname + ':${spec.socketPort}/socket',
+});
+`;
+    }
+
+    function generateSocket () {
+        switch (spec.socketType) {
+            case MUDO_SOCKET_TYPES.LOCAL:
+                return generateLocal();
+            case MUDO_SOCKET_TYPES.WEBSOCKET:
+                return generateWebSocket();
+        }
     }
 
     return `
 var MuClient = require('${NODE_MODULES}/mudb/client').MuClient;
 var createClient = require('${spec.clientPath}');
 
-${generateLocal()}
+${generateSocket()}
 
 var client = new MuClient(socket);
 createClient(client);
 `;
+}
+
+function serverTemplate (spec:{
+    serverPath:string,
+    socketType:MUDO_SOCKET_TYPES,
+    socketHost:string,
+    socketPort:number,
+}) {
+
 }
 
 // live reload server
@@ -45,12 +82,16 @@ createClient(client);
 //  + websocket mode
 //
 
-function createMudo (spec:{
+export type MudoSpec = {
     // path to client module
     client:string,
 
     // path to server module
     server:string,
+
+    // socket type
+    socket?:MUDO_SOCKET_TYPES,
+    socketPort?:number,
 
     // network
     port?:number,
@@ -61,7 +102,11 @@ function createMudo (spec:{
 
     // budo stuff
     open?:boolean,
-}) {
+};
+
+export function createMudo (spec:MudoSpec) {
+    const socketType = spec.socket || MUDO_SOCKET_TYPES.LOCAL;
+
     const tracker = temp.track();
     temp.open(
         {
@@ -72,10 +117,14 @@ function createMudo (spec:{
             if (err) {
                 return console.error(err);
             }
-            const clientModule = clientTemplate({
+            const clientModuleSpec:ClientTemplateSpec = {
                 clientPath: path.resolve(spec.client),
                 serverPath: path.resolve(spec.server),
-            });
+                socketType,
+            };
+            if (socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
+            }
+            const clientModule = clientTemplate(clientModuleSpec);
             console.log(`writing client module ${info.path}`);
             console.log(clientModule);
             fs.write(
@@ -101,10 +150,16 @@ function createMudo (spec:{
                             ...spec,
                         };
 
-                        budo(info.path, budoSpec);
+                        const budoServer = budo(info.path, budoSpec);
+
+                        /*
+                        if (spec.socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
+                            // create server bundle, attach to server
+
+                            temp.
+                        }
+                        */
                     });
                 });
         });
 }
-
-export default createMudo;
