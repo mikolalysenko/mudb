@@ -1,12 +1,70 @@
 # mudo
+Local development server for mudb.  Makes it easy to start mudb client/server pairs using some opinionated conventions.
 
-Local development server for mudb
+# install
 
-# usage
+```
+npm i mudo
+```
+
+# example usage
+To run `mudo`, execute the following command:
 
 ```sh
-mudo --client myclient.ts --server myserver.ts --open --live
+mudo --client myclient.js --server myserver.js --open
 ```
+
+Where `myclient.js` and `myserver.js` are implemented as follows:
+
+**myclient.js**
+
+```javascript
+module.exports = function (muClient) {
+    // client implementation ...
+
+    muClient.start();
+}
+```
+
+**myserver.js**
+```javascript
+module.exports = function (muServer) {
+    // server implementation ...
+
+    muServer.start();
+}
+```
+
+By default `mudo` uses `mulocal-socket` to connect the client and server instances locally.  Multiplayer games over `muweb-socket` can be run by passing the `--socket websocket` option to mudo.
 
 # cli
 
+## options
+
+### `client`
+Path to the client script.  Defaults to `client.js`
+
+### `server`
+Path to the server script.  Defaults to `server.js`
+
+### `socket`
+Socket type to use.  Possible options:
+
+* `local`: uses `mulocal-socket`  (default)
+* `websocket`: uses `muweb-socket`
+
+### `open`
+Opens a new socket server
+
+# api
+
+**TODO**
+
+# credits
+Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
+
+<img src="https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png" />
+
+Written in Shenzhen, China.
+
+(c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.

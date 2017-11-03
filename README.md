@@ -1,10 +1,6 @@
 mudb
 =====
-`hudb` is a client-server data base for multiplayer games on the web.
-
-It makes networked game programming fun and simple.
-
-**TODO INSERT VIDEO LIVE CODING DEMO**
+`mudb` is a collection of modules for building realtime client-server networked applications.
 
 [TypeScript](https://www.typescriptlang.org/) friendly, works great with [nodejs](https://nodejs.org).
 
@@ -15,12 +11,14 @@ It makes networked game programming fun and simple.
    * [1 modules](#section_1)
       * [1.1 [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb)](#section_1.1)
       * [1.2 [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema)](#section_1.2)
-      * [1.3 [munet](https://github.com/mikolalysenko/mudb/tree/master/munet)](#section_1.3)
-      * [1.4 murpc](#section_1.4)
-      * [1.5 mustate](#section_1.5)
-      * [1.6 muping](#section_1.6)
-      * [1.7 mustream](#section_1.7)
-      * [1.8 mudo](#section_1.8)
+      * [1.3 socket emulation](#section_1.3)
+         * [1.3.1 [mulocal-socket](https://github.com/mikolalysenko/mudb/tree/master/mulocal-socket)](#section_1.3.1)
+         * [1.3.2 [muweb-socket](https://github.com/mikolalysenko/mudb/tree/master/muweb-socket)](#section_1.3.2)
+      * [1.4 protocols](#section_1.4)
+      * [1.5 development](#section_1.5)
+         * [1.5.1 [mudo](https://github.com/mikolalysenko/mudb/tree/master/mudo)](#section_1.5.1)
+      * [1.6 internal](#section_1.6)
+         * [1.6.1 [mustreams](https://github.com/mikolalysenko/mudb/tree/master/mustreams)](#section_1.6.1)
    * [2 big picture concepts](#section_2)
       * [2.1 messages](#section_2.1)
       * [2.2 state replication](#section_2.2)
@@ -31,11 +29,12 @@ It makes networked game programming fun and simple.
    * [4 developing](#section_4)
       * [4.1 set up](#section_4.1)
       * [4.2 watching](#section_4.2)
-      * [4.3 testing](#section_4.3)
-      * [4.4 TODO](#section_4.4)
+      * [4.3 generating docs](#section_4.3)
+      * [4.4 testing](#section_4.4)
+      * [4.5 TODO](#section_4.5)
 
 # <a name="section_1"></a> 1 modules
-`mudb` is implemented as a collection of modules, each of which solves a particular problem related to networked game programming.  They work great together, but you can also use them individually in other projects.
+`mudb` is implemented as a collection of modules for building realtime networked applications.
 
 ## <a name="section_1.1"></a> 1.1 [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb)
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is the database itself.  For users learning the API, start here after reading about concepts.
@@ -43,18 +42,23 @@ It makes networked game programming fun and simple.
 ## <a name="section_1.2"></a> 1.2 [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema)
 [`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is used to define the database schema.
 
-## <a name="section_1.3"></a> 1.3 [munet](https://github.com/mikolalysenko/mudb/tree/master/munet)
-[munet](https://github.com/mikolalysenko/mudb/tree/master/munet) is a socket/server abstraction over websockets, web workers, timeouts and other transports.  You can use it to emulate different network conditions, log and replay events, and set up different testing scenarios.
+## <a name="section_1.3"></a> 1.3 socket emulation
 
-## <a name="section_1.4"></a> 1.4 murpc
+### <a name="section_1.3.1"></a> 1.3.1 [mulocal-socket](https://github.com/mikolalysenko/mudb/tree/master/mulocal-socket)
 
-## <a name="section_1.5"></a> 1.5 mustate
+### <a name="section_1.3.2"></a> 1.3.2 [muweb-socket](https://github.com/mikolalysenko/mudb/tree/master/muweb-socket)
 
-## <a name="section_1.6"></a> 1.6 muping
+## <a name="section_1.4"></a> 1.4 protocols
 
-## <a name="section_1.7"></a> 1.7 mustream
+**TODO**
 
-## <a name="section_1.8"></a> 1.8 mudo
+## <a name="section_1.5"></a> 1.5 development
+
+### <a name="section_1.5.1"></a> 1.5.1 [mudo](https://github.com/mikolalysenko/mudb/tree/master/mudo)
+
+## <a name="section_1.6"></a> 1.6 internal
+
+### <a name="section_1.6.1"></a> 1.6.1 [mustreams](https://github.com/mikolalysenko/mudb/tree/master/mustreams)
 
 # <a name="section_2"></a> 2 big picture concepts
 `mudb` solves networking problems by providing 2 generic types of communication:
@@ -127,14 +131,20 @@ npm run link-all
 npm run watch
 ```
 
-## <a name="section_4.3"></a> 4.3 testing
+## <a name="section_4.3"></a> 4.3 generating docs
+
+```
+npm run docs
+```
+
+## <a name="section_4.4"></a> 4.4 testing
 
 ```
 npm test
 ```
 
 
-## <a name="section_4.4"></a> 4.4 TODO
+## <a name="section_4.5"></a> 4.5 TODO
 
 * Environment set up
     * typescript
