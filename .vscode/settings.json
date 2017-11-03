@@ -1,8 +1,11 @@
 {
+    "editor.tabSize": 4,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
     "files.exclude": {
         "**/node_modules/*": true,
         "**/*.map": true,
-        "**/*.js": true,
+        "mu*/**/*.js": true,
         "**/*.d.ts": true,
         "**/README.md": true
     }
