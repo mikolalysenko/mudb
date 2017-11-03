@@ -2,7 +2,10 @@
   "name": "mudo",
   "version": "0.0.0",
   "description": "Development framework for rapid prototyping systems based on mudb",
-  "main": "index.js",
+  "main": "mudo.js",
+  "bin": {
+    "mudo": "./bin/mudo.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
