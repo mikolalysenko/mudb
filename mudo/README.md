@@ -54,7 +54,7 @@ Socket type to use.  Possible options:
 * `websocket`: uses `muweb-socket`
 
 ### `open`
-Opens a new socket server
+Opens a browser window with the socket server contents listed
 
 # api
 

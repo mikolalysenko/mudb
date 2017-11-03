@@ -4,62 +4,18 @@ mudb
 
 [TypeScript](https://www.typescriptlang.org/) friendly, works great with [nodejs](https://nodejs.org).
 
-**UNDER CONSTRUCTION**
+**WORK IN PROGRESS**
 
 # table of contents
 
-# modules #
-`mudb` is implemented as a collection of modules for building realtime networked applications.
-
-## [mudb](https://github.com/mikolalysenko/mudb/tree/master/mudb) ##
-[`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is the database itself.  For users learning the API, start here after reading about concepts.
-
-## [muschema](https://github.com/mikolalysenko/mudb/tree/master/muschema) ##
-[`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is used to define the database schema.
-
-## socket emulation ##
-
-### [mulocal-socket](https://github.com/mikolalysenko/mudb/tree/master/mulocal-socket) ###
-
-### [muweb-socket](https://github.com/mikolalysenko/mudb/tree/master/muweb-socket) ###
+# big picture concepts #
+`mudb` is a collection of modules for writing realtime distributed applications consisting of many *protocols*.
 
 ## protocols ##
-
-**TODO**
-
-## development ##
-
-### [mudo](https://github.com/mikolalysenko/mudb/tree/master/mudo) ###
-
-## internal ##
-
-### [mustreams](https://github.com/mikolalysenko/mudb/tree/master/mustreams) ###
-
-# big picture concepts #
-`mudb` solves networking problems by providing 2 generic types of communication:
-
-* **Active replication** or message passing
-* **Passive replication** or state synchronization
-
-It does this over a generic network interface that abstracts websockets, webrtc, local servers, workers and more.  All network information is serlialized using *schemas* which are specified via `muschema`.  
+A protocol, in the `mudb` sense`, is a collection of related messages and handlers which are grouped according
 
 ## messages ##
-[Message passing](FIXME) is the basic building block for communication in a distributed system.  `mudb` provides a [reliable, ordered message delivery](FIXME) for intermittent communication.  This can be used to implement [active replication](FIXME) to synchronize larger objects (where state replicaiton would be too expensive) or to authenticate transactions.
-
-`mudb` provides two types of reliable message passing:
-
-* **[Remote procedure calls or RPC](FIXME)**: procedure which returns some value asynchronously
-* **Messages**: One shot events with no returned data
-
-The practical difference between RPC and messages is that the server can broadcast messages to multiple clients.
-
-## state replication ##
-In addition to message passing, `mudb` supports passive state replication.  This is necessary for numerical quantities like position or velocity in physical simulations, where one can not expect reasonably that all nodes implement some numerical operation the same way.  
-
-`mudb` uses delta encoding to minimize bandwidth usage.  In order for this to work it must buffer some number of past state observations.  The number of these states which are stored can be configured to be arbitrarily large, and are visible to the user.  This can be useful when implementing different types of latency hiding techniques like local perception filters.  It also makes it easier to decouple rendering from state updates.
-
-## abstract sockets ##
-`mudb` communicates over a generic socket abstraction provided by `munet`.  `munet` sockets support both reliable and unreliable delivery.  Unreliable delivery is used for state replication, while reliable delivery is used for messages.  Unreliable delivery is generally faster than reliable delivery since it does not suffer from head-of-line blocking problems.  For websocket servers, `munet` emulates unreliable delivery using multiple websocket connections.
+[Message passing](FIXME) is the basic building block for communication in a distributed system.  `mudb` provides a [reliable, ordered message delivery](FIXME) and a faster but unreliable method for sending messages immediately.  Messages are strongly typed using user-defined `schemas`.
 
 ## schemas ##
 A schema is a type declaration for the interface between the client and server. Schemas in `mudb` are specified using the `muschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `muschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `mudb` departs from these systems in 3 important ways:
@@ -68,8 +24,10 @@ A schema is a type declaration for the interface between the client and server. 
 * **0-copy delta encoding** `muschema` performs all serialization as a relative `diff` operation.  This means that messages and state changes can be encoded as changes relative to some observed reference.  Using relative state changes greatly reduces the amount of bandwidth required to replicate a given change set
 * **Memory pools** JavaScript is a garbage collected language, and creating patched versions of different messages can generate many temporary objects.  In order to avoid needless and wasteful GC thrashing, `muschema` provides a pooling interface and custom memory allocator.
 
-## further reading ##
+## abstract sockets ##
+`mudb` communicates over a generic socket abstraction provided by `munet`.  `munet` sockets support both reliable and unreliable delivery.  Unreliable delivery is used for state replication, while reliable delivery is used for messages.  Unreliable delivery is generally faster than reliable delivery since it does not suffer from head-of-line blocking problems.  For websocket servers, `munet` emulates unreliable delivery using multiple websocket connections.
 
+## further reading ##
 Light reading:
 
 * protocol buffers
@@ -90,87 +48,37 @@ Academic references:
 
 **TODO**
 
-# developing #
+# modules #
+`mudb` is implemented as a collection of modules for building realtime networked applications.
 
-## set up ##
+## mudb ##
+[`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is the database itself.  For users learning the API, start here after reading about concepts.
 
-After cloning this repo, the first thing you'll need to do is install and link all submodules:
+## muschema ##
+[`mudb`](https://github.com/mikolalysenko/mudb/tree/master/mudb) is used to define the database schema.
 
-```
-npm run link-all
-```
+## protocols ##
 
-## watching ##
+### murpc ###
 
-```
-npm run watch
-```
+### mustate ###
 
-## generating docs ##
+**TODO**
 
-```
-npm run docs
-```
+## tools ##
 
-## testing ##
+### mudo ###
+[`mudo`](https://github.com/mikolalysenko/mudb/tree/master/mudo) is a local development server based on `budo` which handles a lot of the boilerplate around creating and starting a server/client pair for you.
 
-```
-npm test
-```
+## socket emulation ##
 
+### mulocal-socket ###
 
-## TODO ##
+### muweb-socket ###
 
-* Environment set up
-    * typescript
-    * vs vode
-    * npm/node
-    * linking
-* tests
-    * running
-    * writing
-* code style
-* code of condunct
+## internal ##
 
-# TODO
-
-## Planned features:
-
-* thorough documentation
-* delta based state replication
-* 0-copy binary serialization
-* 0-gc pooled memory management
-* in-browser server emulation
-* multiple network transports
-* local network simulation
-* tracing and playback
-* quick start development server
-
-## Deliberately missing features:
-
-* Lobby server
-* Match making
-* Login/identity management
-* Session management
-* Region of interest management
-* Fully peer-to-peer networking
-* Cross language support (100% JavaScript/TypeScript)
-* Cryptographic security is deferred to transport layer
-
-## Examples wanted
-
-* Chat room
-* Moving dots
-* Capture the flag
-* Asteroids
-* Pong
-* Tetris
-
-## Development tasks
-
-* Think through security implications
-* Debug serialization
-* Race condition hunt
+### mustreams ###
 
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.

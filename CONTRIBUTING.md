@@ -11,6 +11,51 @@ The following is a a set of guidelines, not rules. Feel free to propose changes 
 
 By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.md).
 
+
+## set up ##
+
+* Clone repo
+* Install nodejs
+* Install typescript
+* Linking submodules
+
+```
+npm run link-all
+```
+
+* typescript watch
+
+```
+npm run watch
+```
+
+## adding a module ##
+
+**TODO** document workflow
+
+## writing docs docs ##
+
+Notes on mdtoc
+
+```
+npm run docs
+```
+
+Edit `README-toc.md`, not `README.md`
+
+## testing ##
+
+### run all tests ###
+
+```
+npm test
+```
+
+### add a test case ###
+
+Notes on tape
+
+
 ## Coding Style Guide
 
 ### Naming
@@ -52,3 +97,5 @@ By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.m
 - Use `undefined`. Do not use `null`.
 - Always surround loop and conditional bodies with curly braces.
 - Prefer arrow functions over anonymous function expressisons.
+
+
