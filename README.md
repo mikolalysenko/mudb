@@ -2,7 +2,7 @@ mudb
 =====
 `mudb` is a collection of modules for building realtime client-server networked applications.
 
-[TypeScript](https://www.typescriptlang.org/) friendly, works great with [nodejs](https://nodejs.org).
+[TypeScript](https://www.typescriptlang.org/) friendly, works great with [Node.js](https://nodejs.org).
 
 **WORK IN PROGRESS**
 
@@ -39,7 +39,7 @@ A protocol, in the `mudb` sense`, is a collection of related messages and handle
 [Message passing](FIXME) is the basic building block for communication in a distributed system.  `mudb` provides a [reliable, ordered message delivery](FIXME) and a faster but unreliable method for sending messages immediately.  Messages are strongly typed using user-defined `schemas`.
 
 ## <a name="section_1.3"></a> 1.3 schemas
-A schema is a type declaration for the interface between the client and server. Schemas in `mudb` are specified using the `muschema` module.  Like [protocol buffers](FIXME) or [gRPC](FIXME), `muschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `mudb` departs from these systems in 3 important ways:
+A schema is a type declaration for the interface between the client and server. Schemas in `mudb` are specified using the `muschema` module.  Like [protocol buffers](https://developers.google.com/protocol-buffers/docs/overview) or [gRPC](https://grpc.io/docs/guides), `muschema` uses binary serialized messages with a defined schema and makes extensive use of code generation. However, `mudb` departs from these systems in 3 important ways:
 
 * **Javascript only** Unlike protocol buffers, `muschema` has no aspirations of ever being cross-language.  However, it does make it much easier to extend `mudb` to support direct serialization of custom application specific data structures.  For example, you could store all of your objects in an octree and apply a custom schema to directly diff this octree into your own data type.
 * **0-copy delta encoding** `muschema` performs all serialization as a relative `diff` operation.  This means that messages and state changes can be encoded as changes relative to some observed reference.  Using relative state changes greatly reduces the amount of bandwidth required to replicate a given change set

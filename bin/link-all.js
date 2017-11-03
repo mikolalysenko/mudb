@@ -16,10 +16,12 @@ modulePaths.forEach((dir) => {
     execSync('npm link')
 })
 
-console.log('linking dependencies...')
+console.log('compiling and linking dependencies...')
 modulePaths.forEach((dir) => {
     const exec = execInDirectory(dir)
     const packageJSON = require(path.join(dir, 'package.json'))
+
+    exec('tsc')
 
     function linkDeps (dependencies) {
         if (dependencies) {
@@ -33,7 +35,6 @@ modulePaths.forEach((dir) => {
 
     linkDeps(packageJSON.dependencies)
     linkDeps(packageJSON.devDependencies)
-    exec('tsc')
 })
 
 function execInDirectorySync (dir) {

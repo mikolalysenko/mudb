@@ -20,6 +20,6 @@ modulePaths.forEach((dir) => {
     console.log(`starting tsc for ${dir}`)
     spawn('tsc', ['--watch'], {
         cwd: dir,
-        stdio: ['inherit', 'inherit', 'inherit']
+        stdio: 'inherit'
     })
 })
