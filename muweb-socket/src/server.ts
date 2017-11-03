@@ -11,9 +11,9 @@ const RELIABLE_PACKET = JSON.stringify({ reliable: true });
 const UNRELIABLE_PACKET = JSON.stringify({ reliable: false });
 
 export interface UWSSocketInterface {
-    onmessage:(data:Uint8Array|string) => void;
+    onmessage:(message:{data:Uint8Array|string}) => void;
     onclose:() => void;
-    send:(data:Uint8Array) => void;
+    send:(data:Uint8Array|string) => void;
     close:() => void;
 }
 
@@ -36,10 +36,11 @@ export class MuWebSocketConnectionImpl {
     public onClose:() => void = noop;
     public serverClose:() => void;
 
-    constructor (reliableSocket:UWSSocketInterface, serverClose:() => void) {
+    constructor (sessionId:string, reliableSocket:UWSSocketInterface, serverClose:() => void) {
+        this.sessionId = sessionId;
         this.serverClose = serverClose;
         this.reliableSocket = reliableSocket;
-        this.reliableSocket.onmessage = (data) => {
+        this.reliableSocket.onmessage = ({data}) => {
             if (this.started) {
                 this.onMessage(data, false);
             } else {
@@ -60,7 +61,7 @@ export class MuWebSocketConnectionImpl {
             return;
         }
         this.unreliableSockets.push(socket);
-        socket.onmessage = (data) => {
+        socket.onmessage = ({ data }) => {
             this.onMessage(data, true);
         };
         socket.onclose = () => {
@@ -180,17 +181,11 @@ export class MuWebSocketServer implements MuSocketServer {
     private _websocketServer:ws.Server;
 
     private _httpServer;
-    private _maxPayload:number;
-    private _maxConnections:number;
 
     constructor (spec:{
         server:object,
-        maxPayload?:number,
-        maxConnections?:number,
     }) {
         this._httpServer = spec.server;
-        this._maxPayload = spec.maxPayload || 0;
-        this._maxConnections = spec.maxConnections || 10;
     }
 
     public start(spec:MuSocketServerSpec) {
@@ -205,11 +200,9 @@ export class MuWebSocketServer implements MuSocketServer {
             () => {
                 this._websocketServer = new ws.Server({
                     server: this._httpServer,
-                    maxPayload: this._maxPayload,
-                    maxConnections: this._maxConnections,
                 })
                 .on('connection', (socket) => {
-                    socket.onmessage = (data:string) => {
+                    socket.onmessage = ({data}) => {
                         try {
                             const packet = JSON.parse(data);
                             const sessionId = packet.sessionId;
@@ -218,9 +211,15 @@ export class MuWebSocketServer implements MuSocketServer {
                             }
                             let connection = this._getConnection(sessionId);
                             if (connection) {
+                                socket.send(JSON.stringify({
+                                    reliable: false,
+                                }));
                                 return connection.addSocket(socket);
                             } else {
-                                connection = new MuWebSocketConnectionImpl(socket, () => {
+                                socket.send(JSON.stringify({
+                                    reliable: true,
+                                }));
+                                connection = new MuWebSocketConnectionImpl(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
                                         for (let i = this.clients.length - 1; i >= 0; --i) {
@@ -242,7 +241,6 @@ export class MuWebSocketServer implements MuSocketServer {
                     };
                 })
                 .on('close', () => {
-                    // handle close event
                     this._closed = true;
                     this.open = false;
                 });
