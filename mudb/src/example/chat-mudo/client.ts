@@ -23,6 +23,7 @@ export = function (client:MuClient) {
 
     protocol.configure({
         ready: () => {
+            console.log('ready!');
             textDiv.addEventListener('keydown', (ev) => {
                 if (ev.keyCode === 13) {
                     const message = textDiv.value;
