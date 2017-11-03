@@ -6,7 +6,7 @@ const repoPath = path.resolve(__dirname, '..')
 
 const repoContents = fs.readdirSync(repoPath)
 const muModules = repoContents.filter((filename) => filename.indexOf('mu') === 0)
-const modulePaths = muModules.map((modname) => path.join(repoPath, modname))
+const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
 modulePaths.push(repoPath)
 
 function spawnInDirectory (dir, command, args) {
@@ -29,7 +29,7 @@ modulePaths.forEach((dir) => {
     spawn('mdtoc', [], {
         cwd: dir,
         stdio: [
-            x, 
+            x,
             y,
             'inherit']
     })

@@ -6,7 +6,7 @@ const repoPath = path.resolve(__dirname, '..')
 
 const repoContents = fs.readdirSync(repoPath)
 const muModules = repoContents.filter((filename) => filename.indexOf('mu') === 0)
-const modulePaths = muModules.map((modname) => path.join(repoPath, modname))
+const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
 
 function spawnInDirectory (dir, command, args) {
     console.log('spawn:', command, 'in', dir, 'with args', args)
