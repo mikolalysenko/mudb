@@ -1,7 +1,7 @@
 # mudb
 A database for HTML5 multiplayer games.
 
-A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.  
+A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.
 
 ## example
 This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  Each `mudb` instance consists of a `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
@@ -43,10 +43,10 @@ exampleServer(socketServer)
 const addClientButton = document.createElement('input');
 addClientButton.value = 'add client';
 addClientButton.type = 'button';
-addClientButton.addEventListener('click', 
+addClientButton.addEventListener('click',
     () => exampleClient(createLocalSocket({
         sessionId: 'client' + Math.random(),
-        socketServer    
+        socketServer
     })));
 ```
 
@@ -158,7 +158,7 @@ A server in `mudb` processes messages from many clients.  It may choose to accep
 ### <a name="section_2.2.1"></a> 2.2.1 server constructor
 `mudb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
 
-* `protocol` which is a protocol schema as described above (see [`muschema`](FIXME) for more details)
+* `protocol` which is a protocol schema as described above (see [`muschema`](../muschema) for more details)
 * `socketServer` a `munet` socket server instance (see [`munet`](FIXME) for more details)
 * `windowLength` an optional parameter describing the number of states to buffer
 
@@ -199,7 +199,7 @@ server.start({
             const ids = Object.keys(server.state)
             for (let i = 0; i < ids.length; ++i) {
                 if (server.state[ids[i]].name === name) {
-                    return cb('name already in use')    
+                    return cb('name already in use')
                 }
             }
             server.state[client.sessionId].name = name
@@ -253,7 +253,7 @@ const client = require('mudb/client')({
 
 ## <a name="section_2.5"></a> 2.5 socket interface
 
-`MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.  
+`MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.
 
 ### <a name="section_2.5.1"></a> 2.5.1 properties
 
