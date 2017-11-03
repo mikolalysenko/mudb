@@ -133,7 +133,7 @@ export function createMudo (spec:MudoSpec) {
                             forceDefaultIndex: true,
                             errorHandler: true,
                             verbose: true,
-                            // stream: process.stdout,
+                            stream: process.stdout,
                             ...spec,
                         };
 
