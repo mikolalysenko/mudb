@@ -9,7 +9,7 @@ export type MuAnySchema = MuSchema<any>;
 export type MuRPCSchema = {
     0:MuAnySchema;
     1:MuAnySchema;
-} | [MuAnySchema, MuAnySchema];
+} | [ MuAnySchema, MuAnySchema ];
 
 export type MuRPCTable = {
     [method:string]:MuRPCSchema;
