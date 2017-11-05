@@ -11,17 +11,18 @@ const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
 console.log('installing dependencies and registering modules...')
 modulePaths.forEach((dir) => {
     const execSync = execInDirectorySync(dir)
+
+    // bypass compilation errors
+    try { execSync('tsc') } catch (e) { }
     execSync('rm -rf node_modules')
     execSync('npm i')
     execSync('npm link')
 })
 
-console.log('compiling and linking dependencies...')
+console.log('linking dependencies...')
 modulePaths.forEach((dir) => {
     const exec = execInDirectory(dir)
     const packageJSON = require(path.join(dir, 'package.json'))
-
-    exec('tsc')
 
     function linkDeps (dependencies) {
         if (dependencies) {
