@@ -10,31 +10,55 @@ export = function (client:MuClient) {
     messageStyle.width = '400px';
     messageStyle.height = '300px';
 
-    const textDiv = document.createElement('input');
-    textDiv.type = 'text';
-    const textStyle = textDiv.style;
-    textStyle.width = '400px';
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    const textStyle = textInput.style;
+    textStyle.width = '300px';
     textStyle.padding = '0px';
     textStyle.margin = '0px';
 
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.style.width = '300px';
+    nameInput.style.padding = textStyle.padding;
+    nameInput.style.margin = textStyle.margin;
+
+    const nameLabel = document.createElement('label');
+    nameLabel.textContent = 'Your name: ';
+    const textLabel = document.createElement('label');
+    textLabel.textContent = 'message:  ';
+
     document.body.appendChild(messageDiv);
     document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(textDiv);
+    document.body.appendChild(nameLabel);
+    document.body.appendChild(nameInput);
+    document.body.appendChild(document.createElement('br'));
+    document.body.appendChild(textLabel);
+    document.body.appendChild(textInput);
 
     protocol.configure({
         ready: () => {
             console.log('ready!');
-            textDiv.addEventListener('keydown', (ev) => {
+            textInput.addEventListener('keydown', (ev) => {
                 if (ev.keyCode === 13) {
-                    const message = textDiv.value;
-                    textDiv.value = '';
-                    protocol.server.message.say(message);
+                    const data = JSON.stringify({
+                        text: textInput.value,
+                        userName: nameInput.value,
+                    });
+                    const message = data;
+                    textInput.value = '';
+                    protocol.server.message.say(message); //MuRemoteServer
                 }
             });
         },
         message: {
             chat: ({name, text}) => {
-                const textNode = document.createTextNode(`${name}: ${text}`);
+                const data =JSON.parse(text);
+                let userName = data.userName;
+                if (!data.userName || data.userName == '') {
+                    userName = name;
+                }
+                const textNode = document.createTextNode(`${userName}: ${data.text}`);
                 messageDiv.appendChild(textNode);
                 messageDiv.appendChild(document.createElement('br'));
             },
