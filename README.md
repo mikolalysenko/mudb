@@ -14,7 +14,9 @@ mudb
       * [1.3 schemas](#section_1.3)
       * [1.4 abstract sockets](#section_1.4)
       * [1.5 further reading](#section_1.5)
-   * [2 examples](#section_2)
+   * [2 learning guide](#section_2)
+      * [2.1 roadmap](#section_2.1)
+      * [2.2 examples](#section_2.2)
    * [3 modules](#section_3)
       * [3.1 mudb](#section_3.1)
       * [3.2 muschema](#section_3.2)
@@ -65,7 +67,11 @@ Academic references:
 * Local perception filters
 * **TODO**
 
-# <a name="section_2"></a> 2 examples
+# <a name="section_2"></a> 2 learning guide
+
+## <a name="section_2.1"></a> 2.1 roadmap
+
+## <a name="section_2.2"></a> 2.2 examples
 
 **TODO**
 

@@ -17,6 +17,7 @@ By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.m
 * Clone repo
 * Install nodejs
 * Install typescript
+* Install vscode (optional)
 * Linking submodules
 
 ```
