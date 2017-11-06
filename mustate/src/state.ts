@@ -1,4 +1,5 @@
 import { MuSchema } from 'muschema/schema';
+import { MuUint32 } from 'muschema/uint32';
 
 export type MuAnySchema = MuSchema<any>;
 
@@ -10,8 +11,14 @@ export interface MuStateSchema<
 }
 
 export const MuDefaultStateSchema = {
-    client:{},
-    server:{},
+    client:{
+        ackState: new MuUint32(),
+        forgetState: new MuUint32(),
+    },
+    server:{
+        ackState: new MuUint32(),
+        forgetState: new MuUint32(),
+    },
 };
 
 export class MuStateSet<State> {
@@ -42,7 +49,7 @@ export interface MuStateReplica<Schema extends MuAnySchema> {
     windowSize:number;
 }
 
-export function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
+function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;
     ticks.push(tick);
     states.push(state);
@@ -58,15 +65,7 @@ export function pushState<State> (stateSet:MuStateSet<State>, tick:number, state
     }
 }
 
-export function destroyStateSet<State> (model:MuSchema<State>, {states, ticks}:MuStateSet<State>) {
-    for (let i = 0; i < states.length; ++i) {
-        model.free(states[i]);
-    }
-    states.length = 0;
-    ticks.length = 0;
-}
-
-export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
+function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
     for (let i = 1; i < ticks.length; ++i) {
@@ -85,7 +84,7 @@ export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuS
 
 const _pointers:number[] = [];
 const _heads:number[] = [];
-export function mostRecentCommonState (states:number[][]) : number {
+function mostRecentCommonState (states:number[][]) : number {
     _pointers.length = states.length;
     _heads.length = states.length;
     for (let i = 0; i < states.length; ++i) {
@@ -112,4 +111,92 @@ export function mostRecentCommonState (states:number[][]) : number {
 
         _heads[largestIndex] = states[largestIndex][--_pointers[largestIndex]];
     }
+}
+
+export function addObservation (ticks:number[], newTick:number) {
+    ticks.push(newTick);
+    for (let idx = ticks.length - 2; idx >= 0; --idx) {
+        if (ticks[idx] < newTick) {
+            ticks[idx + 1] = newTick;
+            break;
+        } else if (ticks[idx] > newTick) {
+            ticks[idx + 1] = ticks[idx];
+        } else {
+            break;
+        }
+    }
+}
+
+export function forgetObservation (ticks:number[], horizon:number) {
+    let ptr = 1;
+    for (let i = 1; i < ticks.length; ++i) {
+        if (ticks[i] >= horizon) {
+            ticks[ptr] = ticks[i];
+            ptr ++;
+        }
+    }
+    ticks.length = ptr;
+}
+
+export function parseState<Schema extends MuAnySchema> (
+    packet:any,
+    schema:Schema,
+    replica:MuStateReplica<Schema>,
+    ack:(tick:number, unreliable?:boolean) => void) : boolean {
+    const { history, state, tick, windowSize } = replica;
+    if (typeof packet.nextTick !== 'number' ||
+        typeof packet.baseTick !== 'number') {
+        return false;
+    }
+    const nextTick = packet.nextTick;
+    const baseTick = packet.baseTick;
+    const baseIndex = packet.history.at(baseTick);
+    const baseState = packet.history.states[baseIndex];
+
+    // check that nextTick is valid
+    for (let i = 0; i < history.ticks.length; ++i) {
+        const x = history.ticks[i];
+        if (x === nextTick) {
+            return false;
+        }
+    }
+
+    let nextState:Schema['identity'];
+    if ('patch' in packet) {
+        nextState = schema.patch(baseState, packet.patch);
+    } else {
+        nextState = schema.clone(schema.identity);
+    }
+
+    pushState(history, nextTick, nextState);
+
+    return nextTick === history.ticks[history.ticks.length - 1];
+}
+
+export function publishState<Schema extends MuAnySchema> (
+    schema:Schema,
+    observations:number[][],
+    replica:MuStateReplica<Schema>,
+    raw:(data:Uint8Array|string, unreliable?:boolean) => void,
+    forget:(horizon:number) => void,
+    reliable:boolean) {
+    const { history, state, tick, windowSize } = replica;
+
+    observations.push(history.ticks);
+    const baseTick = mostRecentCommonState(observations);
+    observations.pop();
+
+    const baseIndex = history.at(baseTick);
+    const baseState = history.states[baseIndex];
+
+    const nextTick = ++replica.tick;
+
+    const packet = JSON.stringify({
+        nextTick,
+        baseTick,
+        patch: schema.diff(baseState, replica.state),
+    });
+    raw(packet);
+
+    // update window
 }
