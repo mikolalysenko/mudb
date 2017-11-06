@@ -3,12 +3,14 @@ A database for HTML5 multiplayer games.
 
 A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.
 
+A *protocol* is a collection of message handlers which implement
+
 ## example
 This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  Each `mudb` instance consists of a `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
 
 1. A schema
-1. A server
-1. A client
+1. A server protocol handler
+1. A client protocol handler
 
 Here is an example of a simple chat protocol:
 
@@ -17,48 +19,100 @@ Here is an example of a simple chat protocol:
 **schema.js**
 
 ```javascript
+// first, we define a
+import {
+    MuString,
+    MuStruct,
+    MuFloat32,
+    MuUnion,
+} from 'muschema';
+
+export const ChatSchema = {
+    client: {
+        chat: new MuStruct({
+            name: new MuString(),
+            text: new MuString(),
+        }),
+    },
+    server: {
+        say: new MuString(),
+    },
+};
 ```
 
 **server.js**
 
 ```javascript
+import { ChatSchema } from './schema';
+
+export = function (server) {
+    const protocol = server.protocol(ChatSchema);
+
+    protocol.configure({
+        message: {
+            say: (client, text) => {
+                protocol.broadcast.chat({
+                    name: client.sessionId,
+                    text,
+                });
+            },
+        },
+    });
+
+    server.start();
+};
 ```
 
 **client.js**
 
 ```javascript
+import { ChatSchema } from './schema';
+
+export = function (client) {
+    const messageDiv = document.createElement('div');
+    const messageStyle = messageDiv.style;
+    messageStyle.overflow = 'auto';
+    messageStyle.width = '400px';
+    messageStyle.height = '300px';
+
+    const textDiv = document.createElement('input');
+    textDiv.type = 'text';
+    const textStyle = textDiv.style;
+    textStyle.width = '400px';
+    textStyle.padding = '0px';
+    textStyle.margin = '0px';
+
+    document.body.appendChild(messageDiv);
+    document.body.appendChild(document.createElement('br'));
+    document.body.appendChild(textDiv);
+
+    const protocol = client.protocol(ChatSchema);
+
+    protocol.configure({
+        ready: () => {
+            textDiv.addEventListener('keydown', (ev) => {
+                if (ev.keyCode === 13) {
+                    const message = textDiv.value;
+                    textDiv.value = '';
+                    protocol.server.message.say(message);
+                }
+            });
+        },
+        message: {
+            chat: ({name, text}) => {
+                const textNode = document.createTextNode(`${name}: ${text}`);
+                messageDiv.appendChild(textNode);
+                messageDiv.appendChild(document.createElement('br'));
+            },
+        },
+    });
+
+    client.start();
+};
 ```
 
 ### running the game
 
-**`example-local.js`**
-```javascript
-const { createLocalSocket, createLocalSocketServer } = require('munet/local')
-const exampleServer = require('./server')
-const exampleClient = require('./client')
-
-const socketServer = createLocalSocketServer()
-exampleServer(socketServer)
-
-const addClientButton = document.createElement('input');
-addClientButton.value = 'add client';
-addClientButton.type = 'button';
-addClientButton.addEventListener('click',
-    () => exampleClient(createLocalSocket({
-        sessionId: 'client' + Math.random(),
-        socketServer
-    })));
-```
-
-**`example-ws-server.js`**
-```javascript
-// TODO
-```
-
-**`example-ws-client.js`**
-```javascript
-// TODO
-```
 
 # table of contents
 
