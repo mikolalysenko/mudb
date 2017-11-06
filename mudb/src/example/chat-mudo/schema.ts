@@ -19,5 +19,6 @@ export const ChatSchema = {
     },
     server: {
         say: new MuString(),
+        setName: new MuString(),
     },
 };

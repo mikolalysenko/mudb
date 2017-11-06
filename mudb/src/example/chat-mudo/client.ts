@@ -41,24 +41,20 @@ export = function (client:MuClient) {
             console.log('ready!');
             textInput.addEventListener('keydown', (ev) => {
                 if (ev.keyCode === 13) {
-                    const data = JSON.stringify({
-                        text: textInput.value,
-                        userName: nameInput.value,
-                    });
-                    const message = data;
+                    protocol.server.message.say(textInput.value); //MuRemoteServer
                     textInput.value = '';
-                    protocol.server.message.say(message); //MuRemoteServer
+                }
+            });
+
+            nameInput.addEventListener('keydown', (ev) => {
+                if (ev.keyCode === 13) {
+                    protocol.server.message.setName(nameInput.value);
                 }
             });
         },
         message: {
             chat: ({name, text}) => {
-                const data =JSON.parse(text);
-                let userName = data.userName;
-                if (!data.userName || data.userName == '') {
-                    userName = name;
-                }
-                const textNode = document.createTextNode(`${userName}: ${data.text}`);
+                const textNode = document.createTextNode(`${name}: ${text}`);
                 messageDiv.appendChild(textNode);
                 messageDiv.appendChild(document.createElement('br'));
             },
