@@ -1,0 +1,115 @@
+import { MuSchema } from 'muschema/schema';
+
+export type MuAnySchema = MuSchema<any>;
+
+export interface MuStateSchema<
+    ClientSchema extends MuAnySchema,
+    ServerSchema extends MuAnySchema> {
+    client:ClientSchema;
+    server:ServerSchema;
+}
+
+export const MuDefaultStateSchema = {
+    client:{},
+    server:{},
+};
+
+export class MuStateSet<State> {
+    public ticks:number[] = [];
+    public states:State[] = [];
+
+    constructor (initialState:State) {
+        this.ticks.push(0);
+        this.states.push(initialState);
+    }
+
+    // retrieves the state at tick
+    public at (tick:number) : number {
+        // FIXME: replace with binary search
+        for (let i = this.ticks.length - 1; i >= 0; --i) {
+            if (this.ticks[i] <= tick) {
+                return i;
+            }
+        }
+        return -1;
+    }
+}
+
+export interface MuStateReplica<Schema extends MuAnySchema> {
+    tick:number;
+    state:Schema['identity'];
+    history:MuStateSet<Schema['identity']>;
+    windowSize:number;
+}
+
+export function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
+    const {ticks, states} = stateSet;
+    ticks.push(tick);
+    states.push(state);
+    for (let i = ticks.length - 1; i >= 1; --i) {
+        if (ticks[i - 1] > tick) {
+            ticks[i] = ticks[i - 1];
+            states[i] = states[i - 1];
+        } else {
+            ticks[i] = tick;
+            states[i] = state;
+            return;
+        }
+    }
+}
+
+export function destroyStateSet<State> (model:MuSchema<State>, {states, ticks}:MuStateSet<State>) {
+    for (let i = 0; i < states.length; ++i) {
+        model.free(states[i]);
+    }
+    states.length = 0;
+    ticks.length = 0;
+}
+
+export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
+    const { ticks, states } = stateSet;
+    let ptr = 1;
+    for (let i = 1; i < ticks.length; ++i) {
+        if (ticks[i] < tick) {
+            model.free(states[i]);
+        } else {
+            ticks[ptr] = ticks[i];
+            states[ptr] = states[i];
+            ptr ++;
+        }
+    }
+    const modified = ptr === ticks.length;
+    ticks.length = states.length = ptr;
+    return modified;
+}
+
+const _pointers:number[] = [];
+const _heads:number[] = [];
+export function mostRecentCommonState (states:number[][]) : number {
+    _pointers.length = states.length;
+    _heads.length = states.length;
+    for (let i = 0; i < states.length; ++i) {
+        _pointers[i] = states[i].length - 1;
+        _heads[i] = states[i][states[i].length - 1];
+    }
+
+    while (true) {
+        let largestIndex = 0;
+        let largestValue = _heads[0];
+        let allEqual = true;
+        for (let i = 1; i < states.length; ++i) {
+            const v = _heads[i];
+            allEqual = allEqual && (v === largestValue);
+            if (v > largestValue) {
+                largestIndex = i;
+                largestValue = v;
+            }
+        }
+
+        if (allEqual) {
+            return largestValue;
+        }
+
+        _heads[largestIndex] = states[largestIndex][--_pointers[largestIndex]];
+    }
+}
