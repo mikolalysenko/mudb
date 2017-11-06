@@ -12,7 +12,7 @@ const noop = function () {};
 
 export class MuClientProtocolSpec {
     public messageHandlers = {};
-    public rawHandler:(bytes:Uint8Array, unreliable:boolean) => void = noop;
+    public rawHandler:(data:Uint8Array|string, unreliable:boolean) => void = noop;
     public readyHandler:() => void = noop;
     public closeHandler:() => void = noop;
 }
@@ -37,7 +37,7 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
 
     public configure (spec:{
         message:MuMessageInterface<Schema['client']>['abstractAPI'];
-        raw?:(bytes:Uint8Array, unreliable:boolean) => void;
+        raw?:(bytes:Uint8Array|string, unreliable:boolean) => void;
         ready?:() => void;
         close?:() => void;
     }) {

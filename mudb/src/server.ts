@@ -28,7 +28,7 @@ const noop = function () {};
 
 export class MuServerProtocolSpec {
     public messageHandlers = {};
-    public rawHandler:(client, bytes:Uint8Array, unreliable:boolean) => void = noop;
+    public rawHandler:(client, bytes:Uint8Array|string, unreliable:boolean) => void = noop;
     public readyHandler:() => void = noop;
     public connectHandler:(client) => void = noop;
     public disconnectHandler:(client) => void = noop;
@@ -55,7 +55,7 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
 
     public configure (spec:{
         message:MuRemoteMessageInterface<Schema>['api'];
-        raw?:(client:MuRemoteClientProtocol<Schema['client']>, bytes:Uint8Array, unreliable:boolean) => void;
+        raw?:(client:MuRemoteClientProtocol<Schema['client']>, data:Uint8Array|string, unreliable:boolean) => void;
         ready?:() => void;
         connect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
         disconnect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
