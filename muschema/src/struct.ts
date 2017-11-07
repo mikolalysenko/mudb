@@ -49,7 +49,7 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
             const result = token();
             args.push(result);
             props.push(x);
-            return result;    
+            return result;
         }
 
         const typeRefs:string[] = structTypes.map(inject);
