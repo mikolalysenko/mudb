@@ -1,5 +1,5 @@
 # mustate
-Delta based state replication for mudb
+State replication for mudb
 
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
