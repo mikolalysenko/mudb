@@ -169,6 +169,7 @@ export function parseState<Schema extends MuAnySchema> (
     }
 
     pushState(history, nextTick, nextState);
+    ack(nextTick, true);
 
     return nextTick === history.ticks[history.ticks.length - 1];
 }
@@ -178,7 +179,7 @@ export function publishState<Schema extends MuAnySchema> (
     observations:number[][],
     replica:MuStateReplica<Schema>,
     raw:(data:Uint8Array|string, unreliable?:boolean) => void,
-    forget:(horizon:number) => void,
+    forget:(horizon:number, unreliable?:boolean) => void,
     reliable:boolean) {
     const { history, state, tick, windowSize } = replica;
 
@@ -196,7 +197,13 @@ export function publishState<Schema extends MuAnySchema> (
         baseTick,
         patch: schema.diff(baseState, replica.state),
     });
-    raw(packet);
+    raw(packet, !reliable);
 
     // update window
+    const horizon = nextTick - windowSize;
+    if (horizon < baseTick) {
+        if (garbageCollectStates(schema, history, horizon)) {
+            forget(horizon, !reliable);
+        }
+    }
 }
