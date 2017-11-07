@@ -65,7 +65,7 @@ function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State)
     }
 }
 
-function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
+export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
     for (let i = 1; i < ticks.length; ++i) {
@@ -150,8 +150,8 @@ export function parseState<Schema extends MuAnySchema> (
     }
     const nextTick = packet.nextTick;
     const baseTick = packet.baseTick;
-    const baseIndex = packet.history.at(baseTick);
-    const baseState = packet.history.states[baseIndex];
+    const baseIndex = history.at(baseTick);
+    const baseState = history.states[baseIndex];
 
     // check that nextTick is valid
     for (let i = 0; i < history.ticks.length; ++i) {
@@ -165,13 +165,18 @@ export function parseState<Schema extends MuAnySchema> (
     if ('patch' in packet) {
         nextState = schema.patch(baseState, packet.patch);
     } else {
-        nextState = schema.clone(schema.identity);
+        nextState = schema.clone(baseState);
     }
 
     pushState(history, nextTick, nextState);
     ack(nextTick, true);
 
-    return nextTick === history.ticks[history.ticks.length - 1];
+    if (nextTick > replica.tick) {
+        replica.state = nextState;
+        replica.tick = nextTick;
+        return true;
+    }
+    return false;
 }
 
 export function publishState<Schema extends MuAnySchema> (
@@ -197,13 +202,12 @@ export function publishState<Schema extends MuAnySchema> (
         baseTick,
         patch: schema.diff(baseState, replica.state),
     });
+    pushState(replica.history, nextTick, schema.clone(replica.state));
     raw(packet, !reliable);
 
     // update window
-    const horizon = nextTick - windowSize;
-    if (horizon < baseTick) {
-        if (garbageCollectStates(schema, history, horizon)) {
-            forget(horizon, !reliable);
-        }
+    const horizon = baseTick - windowSize;
+    if (garbageCollectStates(schema, history, horizon)) {
+        forget(horizon, !reliable);
     }
 }

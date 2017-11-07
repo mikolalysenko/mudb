@@ -9,6 +9,7 @@ import {
     forgetObservation,
     parseState,
     publishState,
+    garbageCollectStates,
 } from './state';
 
 export class MuRemoteServerState<Schema extends MuAnySchema> implements MuStateReplica<Schema> {
@@ -56,7 +57,7 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         this.server = new MuRemoteServerState(spec.schema.server, this.windowSize);
     }
 
-    public configure(spec:{
+    public configure(spec?:{
         ready?:() => void,
         state?:(state:Schema['server']['identity'], tick:number, reliable:boolean) => void,
         close?:() => void,
@@ -76,19 +77,20 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 }
                 const packet = JSON.parse(data);
                 if (parseState(packet, this.schema.server, this.server, this._protocol.server.message.ackState)) {
-                    if (spec.state) {
+                    if (spec && spec.state) {
                         spec.state(this.server.state, this.server.tick, !unreliable);
                     }
                 }
             },
             ready: () => {
-                if (spec.ready) {
+                if (spec && spec.ready) {
                     spec.ready();
                 }
             },
             close: () => {
-                // destruct state history
-                if (spec.close) {
+                garbageCollectStates(this.schema.client, this.history, 0);
+                garbageCollectStates(this.schema.server, this.history, 0);
+                if (spec && spec.close) {
                     spec.close();
                 }
             },

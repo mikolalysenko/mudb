@@ -9,6 +9,7 @@ import {
     forgetObservation,
     parseState,
     publishState,
+    garbageCollectStates,
 } from './state';
 
 export class MuRemoteClientState<Schema extends MuAnySchema> implements MuStateReplica<Schema> {
@@ -74,7 +75,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         this._protocol = spec.server.protocol(MuDefaultStateSchema);
     }
 
-    public configure(spec:{
+    public configure(spec?:{
         ready?:() => void,
         connect?:(client:MuRemoteClientState<Schema['client']>) => void,
         disconnect?:(client:MuRemoteClientState<Schema['client']>) => void,
@@ -98,7 +99,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 },
             },
             ready: () => {
-                if (spec.ready) {
+                if (spec && spec.ready) {
                     spec.ready();
                 }
             },
@@ -109,7 +110,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 const client = this.clients[findClient(this.clients, client_.sessionId)];
                 const packet = JSON.parse(data);
                 if (parseState(packet, this.schema.client, client, client_.message.ackState)) {
-                    if (spec.state) {
+                    if (spec && spec.state) {
                         spec.state(client, client.state, client.tick, !unreliable);
                     }
                 }
@@ -118,20 +119,19 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 const client = new MuRemoteClientState(client_, this.schema.client, this.windowSize);
                 this.clients.push(client);
                 this._observedStates.push([0]);
-                if (spec.connect) {
+                if (spec && spec.connect) {
                     spec.connect(client);
                 }
+                // TODO send initial state packet to client
+
             },
             disconnect: (client_) => {
                 const clientId = findClient(this.clients, client_.sessionId);
-                if (spec.disconnect) {
+                if (spec && spec.disconnect) {
                     spec.disconnect(this.clients[clientId]);
                 }
                 const client = this.clients[clientId];
-                const states = client.history.states;
-                for (let i = 1; i < states.length; ++i) {
-                    this.schema.client.free(states[i]);
-                }
+                garbageCollectStates(this.schema.client, client.history, 0);
                 removeItem(this.clients, clientId);
                 removeItem(this._observedStates, clientId);
             },
