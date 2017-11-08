@@ -29,5 +29,5 @@ export {
     MuString,
     MuDictionary,
     MuUnion,
-    MuStruct
+    MuStruct,
 };

@@ -19,11 +19,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         };
     }
 
-    alloc () { return {}; }
+    public alloc () { return {}; }
 
-    free (x:{[key:string]:ValueSchema['identity']}) {}
+    public free (x:{[key:string]:ValueSchema['identity']}) {}
 
-    clone (x:{[key:string]:ValueSchema['identity']}):{[key:string]:ValueSchema['identity']} {
+    public clone (x:{[key:string]:ValueSchema['identity']}) : {[key:string]:ValueSchema['identity']} {
         const result:{[key:string]:ValueSchema['identity']} = {};
         const props = Object.keys(x);
         const schema = this.muData;
@@ -33,7 +33,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         return result;
     }
 
-    diff (base:{[key:string]:ValueSchema['identity']}, target:{[key:string]:ValueSchema['identity']}) {
+    public diff (base:{[key:string]:ValueSchema['identity']}, target:{[key:string]:ValueSchema['identity']}) {
         const remove:string[] = [];
         const patch:{ [prop:string]:any } = {};
 
@@ -55,7 +55,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
                     patch[prop] = d;
                 }
             }
-        })
+        });
 
         if (remove.length === 0 && Object.keys(patch).length === 0) {
             return;
@@ -67,8 +67,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         };
     }
 
-    patch (base:{[key:string]:ValueSchema['identity']}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
-        const result = {}
+    public patch (base:{[key:string]:ValueSchema['identity']}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
+        const result = {};
         const schema = this.muData;
 
         const baseProps = Object.keys(base);
@@ -97,7 +97,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
     public diffBinary (
         base:{[key:string]:ValueSchema['identity']},
         target:{[key:string]:ValueSchema['identity']},
-        stream:MuWriteStream):boolean {
+        stream:MuWriteStream) : boolean {
         const valueSchema = this.muData;
 
         const removeOffset = stream.offset;
@@ -139,7 +139,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
                 if (valueSchema.diffBinary) {
                     const equal = !valueSchema.diffBinary(valueSchema.identity, target[prop], stream);
                     if (equal) {
-                        stream.buffer.uint8[prefixOffset + 3] |= 0x80
+                        stream.buffer.uint8[prefixOffset + 3] |= 0x80;
                     }
                 }
                 numPatch += 1;
@@ -154,7 +154,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
 
     public patchBinary(
         base:{[key:string]:ValueSchema['identity']},
-        stream:MuReadStream):{[key:string]:ValueSchema['identity']} {
+        stream:MuReadStream) : {[key:string]:ValueSchema['identity']} {
         const valueSchema = this.muData;
         if (!valueSchema.patchBinary) {
             return this.identity;

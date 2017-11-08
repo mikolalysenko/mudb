@@ -1,4 +1,4 @@
-import {MuNumber} from './_number';
+import { MuNumber } from './_number';
 
 export class MuUint32 extends MuNumber {
     public readonly muType = 'uint32';
@@ -6,4 +6,4 @@ export class MuUint32 extends MuNumber {
     constructor(value?:number) {
         super((value || 0) >>> 0);
     }
-};
+}
