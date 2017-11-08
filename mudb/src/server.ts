@@ -92,8 +92,8 @@ export class MuServer {
     }
 
     public start (spec?:{
-        ready?:(error?:string) => void,
-        close?:(error?:string) => void,
+        ready?:() => void,
+        close?:(error?:any) => void,
     }) {
         if (this._started || this._closed) {
             throw new Error('server already started');
@@ -119,8 +119,17 @@ export class MuServer {
                 });
 
                 this._protocolSpec.forEach((protoSpec) => {
-                    protoSpec.closeHandler();
+                    protoSpec.readyHandler();
                 });
+
+                if (spec && spec.ready) {
+                    spec.ready();
+                }
+            },
+            close: (error) => {
+                if (spec && spec.close) {
+                    spec.close(error);
+                }
             },
             connection: (socket) => {
                 const clientObjects = new Array(this.protocols.length);

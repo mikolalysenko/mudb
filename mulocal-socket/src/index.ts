@@ -123,6 +123,7 @@ export class MuLocalSocketServer implements MuSocketServer {
     public open:boolean = false;
 
     private _onConnection:MuConnectionHandler;
+    private _onClose:MuCloseHandler;
 
     constructor () {
     }
@@ -150,6 +151,7 @@ export class MuLocalSocketServer implements MuSocketServer {
                     return spec.ready.call(this, 'server already started');
                 }
                 this._onConnection = spec.connection;
+                this._onClose = spec.close;
                 this._started = true;
                 this.open = true;
                 spec.ready.call(this);
@@ -170,6 +172,7 @@ export class MuLocalSocketServer implements MuSocketServer {
         for (let i = this.clients.length - 1; i >= 0; --i) {
             this.clients[i].close();
         }
+        this._onClose();
     }
 }
 

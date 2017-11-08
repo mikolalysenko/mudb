@@ -243,6 +243,9 @@ export class MuWebSocketServer implements MuSocketServer {
                 .on('close', () => {
                     this._closed = true;
                     this.open = false;
+                    if (spec && spec.close) {
+                        spec.close();
+                    }
                 });
 
                 this.open = true;

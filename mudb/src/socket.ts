@@ -3,7 +3,7 @@ export type MuSessionData = any;
 
 export type MuData = Uint8Array | string;
 
-export type MuReadyHandler = (error?:any) => void;
+export type MuReadyHandler = () => void;
 export type MuMessageHandler = (data:MuData, unreliable:boolean) => void;
 export type MuCloseHandler = (error?:any) => void;
 export type MuConnectionHandler = (socket:MuSocket) => void;
@@ -26,6 +26,7 @@ export interface MuSocket {
 export type MuSocketServerSpec = {
     ready:MuReadyHandler;
     connection:MuConnectionHandler;
+    close:MuCloseHandler;
 };
 
 export interface MuSocketServer {
