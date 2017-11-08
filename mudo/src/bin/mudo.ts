@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { createMudo, MUDO_SOCKET_TYPES, MudoSpec } from '../mudo';
 import minimist = require('minimist');
 
