@@ -2,7 +2,8 @@ import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 /** Dictionary type schema */
-export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema<{[key:string]:ValueSchema['identity']}> {
+export class MuDictionary<ValueSchema extends MuSchema<any>>
+        implements MuSchema<{[key:string]:ValueSchema['identity']}> {
     public readonly identity:{[key:string]:ValueSchema['identity']};
 
     public readonly muType = 'dictionary';
