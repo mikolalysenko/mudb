@@ -1,4 +1,4 @@
-import tape = require('tape');
+import test = require('tape');
 
 import {
   MuStruct,
@@ -10,10 +10,10 @@ import {
   MuInt32,
   MuString,
   MuUnion,
-  MuDictionary
+  MuDictionary,
 } from '../index';
 
-tape('dict', function (t) {
+test('dict', function (t) {
   // const Name = HelString('Bob');
 
   const FaceBook = new MuDictionary(
@@ -21,7 +21,7 @@ tape('dict', function (t) {
     {
       ['Bob']: 'HelBob',
     });
-  
+
   let rel = FaceBook.alloc();
   console.log('FaceBook', FaceBook);
   console.log('rel:', rel);
@@ -34,9 +34,9 @@ tape('dict', function (t) {
   t.end();
 });
 
-tape('dict-struct', function (t) {
+test('dict-struct', function (t) {
   const NameNote = new MuStruct({
-    Name: new MuString('Empty')
+    Name: new MuString('Empty'),
   });
   let name = NameNote.alloc();
   name.Name = 'Tom';

@@ -1,4 +1,4 @@
-import tape = require('tape');
+import test = require('tape');
 
 import {
   MuStruct,
@@ -11,10 +11,10 @@ import {
   MuFloat32,
   MuFloat64,
   MuBoolean,
-  MuString
+  MuString,
 } from '../index';
 
-tape('struct', function (t) {
+test('struct', function (t) {
   const HandleItem = new MuStruct({
     category: new MuString('food'),
     energy: new MuInt8(100),
@@ -31,7 +31,7 @@ tape('struct', function (t) {
   const Ego = Player.alloc();
   Lua.item.energy = 80;
   Lua.isRunning = true;
-  console.log('Lua=',Lua);
+  console.log('Lua=', Lua);
   console.log('Ego=', Ego);
   console.log('patch:', Player.diff(Lua, Ego));
   t.end();

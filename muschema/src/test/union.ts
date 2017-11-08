@@ -1,4 +1,4 @@
-import tape = require('tape');
+import test = require('tape');
 
 import {
   MuStruct,
@@ -35,11 +35,10 @@ import {
 //   // target = TxtNum.patch(target, patch_1);
 //   // console.log('target:', target);
 
-  
 //   t.end();
 // });
 
-tape('union [2]', function (t) {
+test('union [2]', function (t) {
   const TxtNum = new MuUnion({
     text: new MuString('abcd'),
     number: new MuInt32(120),
