@@ -1,7 +1,5 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
-import { MuUnion } from './union';
-import { MuDictionary } from './dictionary';
 
 /** Array type schema */
 export class MuArray<ValueSchema extends MuSchema<any>>
