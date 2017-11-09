@@ -72,13 +72,23 @@ export class MuMessageFactory {
 
     public createSendRaw (sockets:MuSocket[]) {
         const p = this.protocolId;
-        return function (data:Uint8Array, unreliable?:boolean) {
-            const packet = JSON.stringify({
-                p,
-                u: Array.prototype.slice.call(data),
-            });
-            for (let i = 0; i < sockets.length; ++i) {
-                sockets[i].send(packet, unreliable);
+        return function (data:Uint8Array|string, unreliable?:boolean) {
+            if (typeof data === 'string') {
+                const packet = JSON.stringify({
+                    p,
+                    s: data,
+                });
+                for (let i = 0; i < sockets.length; ++i) {
+                    sockets[i].send(packet, unreliable);
+                }
+            } else {
+                const packet = JSON.stringify({
+                    p,
+                    u: Array.prototype.slice.call(data),
+                });
+                for (let i = 0; i < sockets.length; ++i) {
+                    sockets[i].send(packet, unreliable);
+                }
             }
         };
     }
@@ -117,6 +127,8 @@ export class MuProtocolFactory {
             if (object.u) {
                 const bytes = new Uint8Array(object.u);
                 raw[protoId](bytes, unreliable);
+            } else if (object.s) {
+                raw[protoId](object.s, unreliable);
             } else {
                 const messageId = object.m;
                 const packetData = object.d;

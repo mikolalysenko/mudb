@@ -1,5 +1,5 @@
-import tape = require('tape');
+import test = require('tape');
 
-tape('dictionary', function (t) {
+test('dictionary', function (t) {
     t.end();
 });

@@ -1,10 +1,11 @@
 import { MuSchema } from './schema';
 
+// tslint:disable-next-line:class-name
 export interface _MuStructT<StructSpec extends { [prop:string]:MuSchema<any> }> {
     v:{
-        [P in keyof StructSpec]: StructSpec[P]["identity"];
+        [P in keyof StructSpec]: StructSpec[P]['identity'];
     };
-};
+}
 
 export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implements MuSchema<_MuStructT<StructSpec>['v']> {
     public readonly muType = 'struct';
@@ -43,13 +44,13 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         function inject (x) : string {
             for (let i = 0; i < props.length; ++i) {
                 if (props[i] === x) {
-                    return args[i]
+                    return args[i];
                 }
             }
             const result = token();
             args.push(result);
             props.push(x);
-            return result;    
+            return result;
         }
 
         const typeRefs:string[] = structTypes.map(inject);
@@ -71,13 +72,13 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
                     const tok = token();
                     vars.push(tok);
                     if (value) {
-                        body.push(`${tok}=${value};`)
+                        body.push(`${tok}=${value};`);
                     }
                     return tok;
                 },
                 push(...args:string[]) {
                     body.push.apply(this.body, args);
-                }
+                },
             };
         }
 
@@ -88,8 +89,8 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
             const b = block();
             const baseToString = b.toString;
             b.toString = function () {
-                return `function ${name}(${args.join()}){${baseToString()}};`
-            }
+                return `function ${name}(${args.join()}){${baseToString()}}`;
+            };
             return b;
         }
 
@@ -105,7 +106,7 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         prelude.push('function HelStruct(){');
         structProps.forEach((name, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -125,12 +126,12 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
                     break;
             }
         });
-        prelude.push(`}; function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new HelStruct(); }`)
+        prelude.push(`}; function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new HelStruct(); }`);
 
         const identityRef = prelude.def('_alloc()');
         structProps.forEach((propName, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -152,7 +153,7 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         methods.alloc.push(`var result=_alloc();`);
         structProps.forEach((name, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -172,10 +173,10 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         methods.alloc.push(`return result`);
 
         // free subroutine
-        methods.free.push(`${poolRef}.push(x);`)
+        methods.free.push(`${poolRef}.push(x);`);
         structProps.forEach((name, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -194,10 +195,10 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         });
 
         // clone subroutine
-        methods.clone.push(`var result = _alloc();`)
+        methods.clone.push(`var result = _alloc();`);
         structProps.forEach((name, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -220,7 +221,7 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         // diff subroutine
         const diffReqdRefs = structProps.map((name, i) => {
             const type = structTypes[i];
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -232,7 +233,7 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
                 case 'boolean':
                     return methods.diff.def(`x["${name}"] !== y["${name}"]?y["${name}"]:void 0`);
                 default:
-                    return methods.diff.def(`${typeRefs[i]}.diff(x["${name}"],y["${name}"])`)
+                    return methods.diff.def(`${typeRefs[i]}.diff(x["${name}"],y["${name}"])`);
             }
         });
         methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&')}) return;var result = {};`);
@@ -242,11 +243,11 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         methods.diff.push('return result;');
 
         // patch subroutine
-        methods.patch.push(`if (!p) { return clone(x); } var result=_alloc();`)
+        methods.patch.push(`if (!p) { return clone(x); } var result=_alloc();`);
         structProps.forEach((name, i) => {
             const type = structTypes[i];
             methods.patch.push(`if("${name}" in p){`);
-            switch(type.muType) {
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -262,8 +263,8 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
                     methods.patch.push(`result["${name}"]=${typeRefs[i]}.patch(x["${name}"], p["${name}"]);`);
                     break;
             }
-            methods.patch.push(`}else{`)
-            switch(type.muType) {
+            methods.patch.push(`}else{`);
+            switch (type.muType) {
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -279,15 +280,15 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
                     methods.patch.push(`result["${name}"]=${typeRefs[i]}.clone(x["${name}"]);`);
                     break;
             }
-            methods.patch.push('}')
+            methods.patch.push('}');
         });
         methods.patch.push('return result;');
 
         // write result
-        epilog.push(`return {identity:${identityRef},`)
+        epilog.push(`return {identity:${identityRef},`);
         Object.keys(methods).forEach((name) => {
             prelude.push(methods[name].toString());
-            epilog.push(`${name}:${name},`)
+            epilog.push(`${name}:${name},`);
         });
         epilog.push('}');
         prelude.push(epilog.toString());
@@ -305,4 +306,4 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }> implem
         this.patch = compiled.patch;
         this.diff = compiled.diff;
     }
-};
+}
