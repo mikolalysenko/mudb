@@ -1,215 +1,79 @@
-export interface PointInterface {
-    x:number;
-    y:number;
-}
-
-const Spec = {
+const config = {
     size: 20,
     mapWidth: 800,
     mapHeight: 600,
 };
 
-interface FoodInterface {
-    pointX:number;
-    pointY:number;
+export interface PointInterface {
+    x:number;
+    y:number;
 }
 
 export class GameMap {
     public height:number;
     public width:number;
 
-    constructor(width:number=Spec.mapWidth,
-                height:number=Spec.mapHeight) {
+    constructor(width:number=config.mapWidth,
+                height:number=config.mapHeight) {
         this.height = height;
         this.width = width;
     }
 
-    public show() : void {
-        const main = document.createElement('div');
-        main.style.width = this.width + 'px';
-        main.style.height = this.height + 'px';
-        main.style.border = '1px solid';
-        document.body.appendChild(main);
-    }
-}
-
-export class Food {
-    public point:PointInterface;
-    private div:HTMLElement;
-
-    constructor(point:PointInterface={
-        x:Math.floor(Math.random() * Spec.mapWidth / Spec.size),
-        y:Math.floor(Math.random() * Spec.mapHeight / Spec.size),
-    }) {
-        this.point = point;
-    }
-
-    private createDiv() : void {
-        this.div = document.createElement('div');
-        this.div.style.width = this.div.style.height = Spec.size + 'px';
-        this.div.style.backgroundColor = 'green';
-        this.div.style.position = 'absolute';
-        document.body.appendChild(this.div);
-    }
-
-    public show() : void {
-        const foodDiv = document.createElement('div');
-        if (this.div) {
-            this.createDiv();
-        }
-        this.div.style.left = setPoint(this.point.x);
-        this.div.style.top = setPoint(this.point.y);
-    }
-}
-
-const food = new Food();
-
-class Snake {
-    private snakebody:{
-        point:PointInterface,
-        color:string,
-        div:any,
-    }[] = [];
-    public redirect:string;
-
-    constructor(bodyLength:number = 4) {
-        const snakehead = {
-            point: {
-                x: bodyLength,
-                y: 1,
-            },
-            color: 'red',
-            div: null,
-        };
-        this.snakebody.push(snakehead);
-        for (let i = bodyLength - 1; i > 0; i--) {
-            this.snakebody.push({
-                point: {
-                    x: i,
-                    y: 1,
-                },
-                color: 'black',
-                div: null,
-            });
-        }
-        this.redirect = 'right';
-    }
-
-    public show() : void {
-        for (let i = 0; i < this.snakebody.length; i++) {
-            if (this.snakebody[i].div === null) {
-                this.snakebody[i].div = document.createElement('div');
-                this.snakebody[i].div.style.height = this.snakebody[i].div.style.width = size + 'px';
-                this.snakebody[i].div.style.backgroundColor = this.snakebody[i].color;
-                this.snakebody[i].div.style.position = 'absolute';
-                document.body.appendChild(this.snakebody[i].div);
-            }
-
-            // set the point
-            this.snakebody[i].div.style.left = setPoint(this.snakebody[i].point.x);
-            this.snakebody[i].div.style.top = setPoint(this.snakebody[i].point.y);
-        }
-    }
-
-    private addSection() : void {
-        const newSection = {
-            point: {
-                x: this.snakebody[this.snakebody.length - 1].point.x,
-                y: this.snakebody[this.snakebody.length - 1].point.y,
-            },
-            color: 'black',
-            div: null,
-        };
-        this.snakebody.push(newSection);
-    }
-
-    public move() : any {
-        for (let i = this.snakebody.length - 1; i > 0; i--) {
-            this.snakebody[i].point.x = this.snakebody[i - 1].point.x;
-            this.snakebody[i].point.y = this.snakebody[i - 1].point.y;
-        }
-
-        const snakehead = this.snakebody[0];
-
-        switch (this.redirect) {
-            case 'right':
-                this.snakebody[0].point.x++;
-                break;
-            case 'left':
-                this.snakebody[0].point.x--;
-                break;
-            case 'top':
-                this.snakebody[0].point.y--;
-                break;
-            case 'down':
-                this.snakebody[0].point.y++;
-                break;
-        }
-
-        // snake head touches the food
-        if (isSamePoint(snakehead.point, food.point)) {
-            this.addSection();
-            food.show();
-        }
-        // snake touches the map border
-        if (snakehead.point.x > map.width / size ||
-            snakehead.point.x < 0 ||
-            snakehead.point.y > map.height / size ||
-            snakehead.point.y < 0) {
-            alert('Game over');
-            clearInterval(mytime);
+    public show(canvas:HTMLCanvasElement) : CanvasRenderingContext2D|undefined {
+        const context = canvas.getContext('2d');
+        if (!context) {
             return;
         }
-
-        // snake head touches its own body
-        console.dir(this.snakebody);
-        for (let i = 1; i < this.snakebody.length - 1; i++) {
-            if (isSamePoint(snakehead.point, this.snakebody[i].point)) {
-                alert('kill you by yourself. Game over!');
-                clearInterval(mytime);
-                return;
-            }
-        }
-
-        this.show();
+        canvas.width = this.width;
+        canvas.height = this.height;
+        canvas.style.border = '1px solid';
+        context.fillStyle = '#fff';
+        return context;
     }
 }
 
-// window.onload = function () {
-//     map.show();
+export type SnakeBody = {x:number, y:number}[];
+export type SnakeColor = {head:string, body:string};
 
-//     food.show();
+export class Snake {
+    public color:SnakeColor;
+    public body:SnakeBody;
+    public readonly id:string;
+    public redirect:string;
 
-//     const snake = new Snake();
-//     snake.show();
+    constructor(
+            id:string,
+            bodyLength:number=4,
+            redirect:string='right',
+            color:SnakeColor={head:'red', body:'black'}) {
+        this.id = id;
+        this.color = color;
 
-//     mytime = window.setInterval(() => {
-//         snake.move();
-//     },                          200);
+        // Generate the snake body
+        const snakehead = {x: bodyLength, y: 1};
+        this.body.push(snakehead);
+        for (let i = bodyLength - 1; i > 0; i--) {
+            this.body.push({x:i, y:1});
+        }
+        this.redirect = redirect;
+    }
 
-//     document.onkeyup = function (evt) {
-//         const num = evt.keyCode;
-//         switch (num) {
-//             case 37:
-//                 snake.redirect = 'left';
-//                 break;
-//             case 38:
-//                 snake.redirect = 'top';
-//                 break;
-//             case 39:
-//                 snake.redirect = 'right';
-//                 break;
-//             case 40:
-//                 snake.redirect = 'down';
-//                 break;
-//         }
-//     };
-// };
+    public move() {
+        //
+    }
 
-function setPoint(axis:number) : string {
-    return axis * Spec.size + 'px';
+    public static draw(context:CanvasRenderingContext2D, body:SnakeBody, color:SnakeColor) {
+        rect(context, body[0], color.head);
+        for (let i = 1; i < body.length; i++) {
+            rect(context, body[i], color.body);
+        }
+    }
 }
 
-function isSamePoint(point1:PointInterface, point2:PointInterface) : boolean {
-    return point1.x === point2.x && point1.y === point2.y;
+function rect(context:CanvasRenderingContext2D, point:PointInterface, color:string) : void {
+    context.beginPath();
+    context.fillStyle = color;
+    context.rect(point.x, point.y, config.size, config.size);
+    context.fill();
+    context.stroke();
 }
