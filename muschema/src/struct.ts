@@ -24,8 +24,6 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }>
     constructor (spec:StructSpec) {
         const structProps:string[] = Object.keys(spec).sort();
         const structTypes:MuSchema<any>[] = structProps.map((propName) => spec[propName]);
-        console.log('structProps', structProps);
-        console.log('structTypes', structTypes);
         const structJSON = {
             type: 'struct',
             subTypes: {},
@@ -50,7 +48,6 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }>
                 }
             }
             const result = token();
-            console.log('inject', x, result);
             args.push(result);
             props.push(x);
             return result;
@@ -73,7 +70,6 @@ export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }>
                 },
                 def(value) { //vars.push('_vN'), body.push('_vN=value')
                     const tok = token();
-                    console.log('block', value, tok);
                     vars.push(tok);
                     if (value) {
                         body.push(`${tok}=${value};`);
