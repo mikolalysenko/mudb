@@ -1,10 +1,32 @@
-import tape = require('tape');
+import test = require('tape');
 
 import { MuBoolean } from '../boolean';
+import { MuReadStream, MuWriteStream } from 'mustreams';
 
-tape('boolean', function (t) {
-    const b = new MuBoolean();
-    console.log(b.muType);
+test('boolean', (t) => {
+    let b = new MuBoolean();
+
+    t.equals(b.identity, false);
+    t.equals(b.muType, 'boolean');
+
+    b = new MuBoolean(true);
+
+    t.equals(b.identity, true);
+    t.equals(b.muType, 'boolean');
+    t.equals(b.alloc(), true);
+    t.equals(b.clone(true), true);
+
+    const ws = new MuWriteStream(4);
+
+    t.equals(b.diffBinary(true, true, ws), false);
+    t.equals(b.diffBinary(false, false, ws), false);
+    t.equals(b.diffBinary(true, false, ws), true);
+    t.equals(b.diffBinary(false, true, ws), true);
+
+    const rs = new MuReadStream(ws);
+
+    t.equals(b.patchBinary(true, rs), false);
+    t.equals(b.patchBinary(true, rs), true);
 
     t.end();
 });

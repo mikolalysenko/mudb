@@ -14,15 +14,15 @@ export class MuNumber implements MuSchema<number> {
         };
     }
 
-    alloc () { return this.identity }
-    free (x:number) { }
-    clone (x:number) { return x; }
+    public alloc () { return this.identity; }
+    public free (x:number) { }
+    public clone (x:number) { return x; }
 
-    diff (s:number, t:number) {
+    public diff (s:number, t:number) {
         if (s !== t) {
-            return t; 
+            return t;
         }
         return;
     }
-    patch(s:number, p:number) { return p; }
+    public patch(s:number, p:number) { return p; }
 }

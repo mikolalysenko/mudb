@@ -128,13 +128,15 @@ export class MuWriteStream {
 export class MuReadStream {
     public buffer:MuBuffer;
     public offset:number = 0;
+    public readonly contentBytes:number;
 
-    constructor (buffer:MuBuffer) {
-        this.buffer = buffer;
+    constructor (ws:MuWriteStream) {
+        this.buffer = ws.buffer;
+        this.contentBytes = ws.offset;
     }
 
     public bytesLeft() : number {
-        return this.buffer.uint8.length - this.offset;
+        return this.contentBytes - this.offset;
     }
 
     public readInt8 () : number {

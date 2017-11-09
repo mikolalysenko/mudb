@@ -1,4 +1,4 @@
-import {MuSchema} from './schema';
+import { MuSchema } from './schema';
 import { MuReadStream, MuWriteStream } from 'mustreams';
 
 /** String type schema */
@@ -11,14 +11,14 @@ export class MuString implements MuSchema<string> {
         this.identity = identity || '';
         this.json = {
             type: 'string',
-            identity: this.identity
+            identity: this.identity,
         };
     }
-    
-    public alloc () { return this.identity }
+
+    public alloc () { return this.identity; }
     public free () {}
-    public clone (x:string) { return x }
-    
+    public clone (x:string) { return x; }
+
     public diff (a:string, b:string) {
         if (a !== b) {
             return b;
