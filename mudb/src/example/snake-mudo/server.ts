@@ -23,13 +23,14 @@ export  = function (server:MuServer) {
             },
         },
         connect: (client) => {
-            console.log(client.sessionId + ' joined');
             const snake = new Snake(client.sessionId);
             snakeObjs.push(snake);
             snakes.push({
                 id: snake.id,
                 body: snake.body,
                 color: snake.color});
+            console.log('-------server------');
+            console.dir(snakes);
             protocol.broadcast.updateSnakes(snakes);
         },
         // TODO: disconnect

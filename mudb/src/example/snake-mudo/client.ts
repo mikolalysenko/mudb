@@ -7,6 +7,7 @@ export = function (client:MuClient) {
     const protocol = client.protocol(GameSchema);
 
     const canvas = document.createElement('canvas');
+    canvas.id = 'canvas';
     canvas.style.padding = '0px';
     canvas.style.margin = '0px';
     document.body.appendChild(canvas);
@@ -25,7 +26,8 @@ export = function (client:MuClient) {
         },
         message: { //message from server
             updateSnakes: (snakes) => {
-                console.dir('receive ' + snakes);
+                console.log('-----client------');
+                console.dir(snakes);
                 snakes.forEach((snake) => {
                     Snake.draw(context, snake.body, snake.color);
                 });

@@ -1,5 +1,5 @@
 const config = {
-    size: 20,
+    size: 10,
     mapWidth: 800,
     mapHeight: 600,
 };
@@ -48,7 +48,7 @@ export class Snake {
             color:SnakeColor={head:'red', body:'black'}) {
         this.id = id;
         this.color = color;
-
+        this.body = [];
         // Generate the snake body
         const snakehead = {x: bodyLength, y: 1};
         this.body.push(snakehead);
@@ -59,21 +59,28 @@ export class Snake {
     }
 
     public move() {
-        //
+        console.log('move');
     }
 
     public static draw(context:CanvasRenderingContext2D, body:SnakeBody, color:SnakeColor) {
-        rect(context, body[0], color.head);
-        for (let i = 1; i < body.length; i++) {
-            rect(context, body[i], color.body);
+        let bodyArray:SnakeBody = [];
+        if (!(body instanceof Array)) {
+            bodyArray = Object.keys(body).map((key) => body[key]);
+        } else {
+            bodyArray = body;
         }
+        rect(context, bodyArray[0], color.head);
+        // for (let i = 1; i < bodyArray.length; i++) {
+        //     rect(context, bodyArray[i], color.body);
+        // }
     }
 }
 
 function rect(context:CanvasRenderingContext2D, point:PointInterface, color:string) : void {
+    console.log('rect pointX', (point.x * config.size), 'color:', color);
     context.beginPath();
     context.fillStyle = color;
-    context.rect(point.x, point.y, config.size, config.size);
+    context.rect(point.x * config.size, point.y * config.size, config.size, config.size);
     context.fill();
     context.stroke();
 }
