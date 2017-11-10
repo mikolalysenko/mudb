@@ -35,16 +35,23 @@ export class GameMap {
 export type SnakeBody = {x:number, y:number}[];
 export type SnakeColor = {head:string, body:string};
 
+export const DirectDict = {
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40,
+};
+
 export class Snake {
     public color:SnakeColor;
     public body:SnakeBody;
     public readonly id:string;
-    public redirect:string;
+    public direction:number;
 
     constructor(
             id:string,
             bodyLength:number=4,
-            redirect:string='right',
+            direction:number=DirectDict.right,
             color:SnakeColor={head:'red', body:'black'}) {
         this.id = id;
         this.color = color;
@@ -55,11 +62,69 @@ export class Snake {
         for (let i = bodyLength - 1; i > 0; i--) {
             this.body.push({x:i, y:1});
         }
-        this.redirect = redirect;
+        this.direction = direction;
     }
 
-    public move() {
-        console.log('move');
+    private eatFood(allFood) : boolean {
+        let result = false;
+        allFood.forEach((food) => {
+            if (food && this.body[0].x === food.x && this.body[0].y === food.y) {
+                allFood.splice(allFood.indexOf(food), 1);
+                allFood.push(Food.new());
+                result = true;
+            }
+        });
+        return result;
+    }
+
+    public move(allFood:PointInterface[], eatFood:() => void, gameOver:() => void) {
+        // body move
+        const newHead = {x:this.body[0].x, y:this.body[0].y};
+        this.body.splice(1, 0, newHead);
+
+        if (this.eatFood(allFood)) {
+            eatFood();
+        } else {
+            this.body.pop();
+        }
+
+        // snake head move
+        switch (this.direction) {
+            case DirectDict.left:
+                this.body[0].x --;
+                break;
+            case DirectDict.up:
+                this.body[0].y --;
+                break;
+            case DirectDict.right:
+                this.body[0].x ++;
+                break;
+            case DirectDict.down:
+                this.body[0].y ++;
+                break;
+            default:
+                break;
+        }
+
+        // TODO: GAME OVER
+        if (this.body[0].x > config.mapWidth || this.body[0].x < 0 || this.body[0].y > config.mapHeight || this.body[0].y < 0) {
+            gameOver();
+        }
+
+        for (let i = 1; i < this.body.length; i++) {
+            if (this.body[0].x === this.body[i].x && this.body[0].y === this.body[i].y) {
+                gameOver();
+            }
+        }
+        // TODO: touch other snake
+    }
+
+    public toData() : {id:string, body:{x:number, y:number}[], color:{head:string, body:string}} {
+        return {
+            id: this.id,
+            body: this.body,
+            color: this.color,
+        };
     }
 
     public static draw(context:CanvasRenderingContext2D, body:SnakeBody, color:SnakeColor) {
@@ -70,17 +135,34 @@ export class Snake {
             bodyArray = body;
         }
         rect(context, bodyArray[0], color.head);
-        // for (let i = 1; i < bodyArray.length; i++) {
-        //     rect(context, bodyArray[i], color.body);
-        // }
+        for (let i = 1; i < bodyArray.length; i++) {
+            rect(context, bodyArray[i], color.body);
+        }
+    }
+}
+
+export class Food {
+    public static new(color:string = 'green') : PointInterface {
+        const x = getRandomNumber(0, config.mapWidth / config.size - 1);
+        const y = getRandomNumber(0, config.mapHeight / config.size - 1);
+        return {x: x, y: y};
+    }
+
+    public static draw(context:CanvasRenderingContext2D, food:PointInterface, color:string = 'green') {
+        rect(context, food, color);
     }
 }
 
 function rect(context:CanvasRenderingContext2D, point:PointInterface, color:string) : void {
-    console.log('rect pointX', (point.x * config.size), 'color:', color);
     context.beginPath();
     context.fillStyle = color;
     context.rect(point.x * config.size, point.y * config.size, config.size, config.size);
     context.fill();
-    context.stroke();
+    // context.stroke();
+}
+
+function getRandomNumber(min, max) {
+    const range = max - min;
+    const r = Math.random();
+    return Math.round(r * range + min);
 }

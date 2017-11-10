@@ -1,40 +1,73 @@
 import { GameSchema } from './schema';
 import { MuServer } from '../../server';
-import { Snake } from './snakeAPI';
+import { Snake, PointInterface, Food } from './snakeAPI';
 
 export  = function (server:MuServer) {
     const protocol = server.protocol(GameSchema);
 
-    const snakes:{id:string, body:{x:number, y:number}[], color:{head:string, body:string}}[] = [];
-    const foods:{id:string, point:{x:number, y:number}}[] = [];
-    const snakeObjs:Snake[] = [];
+    let snakes:{id:string, body:PointInterface[], color:{head:string, body:string}}[] = []; //FIXME: id can delete
+    const allFood:PointInterface[] = [];
+    const snakeObjs:{[id:string]:Snake} = {};
+    const timeInterval:number = 100;
+    const foodNum = 3;
 
     protocol.configure({
         ready: () => {
-            // window.setInterval(() => {
-            //     snakeObjs.forEach(snakeObj => {
-            //         snakeObj.move();
-            //     });
-            // });
+            for (let i = 0; i < foodNum; i++) {
+                allFood.push(Food.new());
+            }
+
+            window.setInterval(() => {
+                snakes = [];
+                Object.keys(snakeObjs).forEach((id) => {
+                    let snakeIsDead = false;
+                    const snake = snakeObjs[id];
+                    snake.move(
+                        allFood,
+                        () => { protocol.broadcast.updateFood(allFood); },
+                        () => {
+                            delete snakeObjs[id];
+                            protocol.broadcast.playerDead(id);
+                            snakeIsDead = true;
+                         });
+                    if (!snakeIsDead) {
+                        snakes.push(snake.toData());
+                    }
+                });
+                protocol.broadcast.updateSnakes(snakes);
+            },                 timeInterval);
         },
         message: { // message from client
             redirect: (client, redirect) => {
-                console.log('server redirect');
+                const snake = snakeObjs[client.sessionId];
+                snake.direction = redirect;
             },
         },
         connect: (client) => {
-            const snake = new Snake(client.sessionId);
-            snakeObjs.push(snake);
-            snakes.push({
-                id: snake.id,
-                body: snake.body,
-                color: snake.color});
-            console.log('-------server------');
-            console.dir(snakes);
+            const snake = new Snake(client.sessionId, undefined, undefined, {
+                head: getRandomColor(),
+                body: getRandomColor(),
+            });
+            snakeObjs[snake.id] = snake;
+            snakes.push(snake.toData());
             protocol.broadcast.updateSnakes(snakes);
+            protocol.broadcast.updateFood(allFood);
         },
-        // TODO: disconnect
+        disconnect: (client) => {
+            delete snakeObjs[client.sessionId];
+            // TODO: update snakes
+            // protocol.broadcast.updateSnakes(snakes);
+        },
     });
+
+    function getRandomColor() : string {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (var i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
 
     server.start();
 };
