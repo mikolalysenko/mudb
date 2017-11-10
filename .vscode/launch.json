@@ -13,8 +13,12 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch file",
-      "program": "${file}"
+      "name": "MuSchema Test",
+      "program": "${file}",
+      "outFiles": [
+        "${workspaceRoot}/muschema/**/*.js"
+      ],
+      "sourceMaps": true
     }
   ]
 }

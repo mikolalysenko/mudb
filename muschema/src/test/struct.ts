@@ -1,4 +1,4 @@
-import tape = require('tape');
+import test = require('tape');
 
 import {
     MuStruct,
@@ -8,7 +8,7 @@ import {
     MuInt8,
 } from '../index';
 
-tape('struct', function (t) {
+test('struct', function (t) {
     const simpleStruct = new MuStruct({
         x: new MuFloat64(1),
         y: new MuBoolean(),

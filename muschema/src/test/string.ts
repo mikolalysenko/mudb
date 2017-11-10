@@ -1,5 +1,5 @@
-import tape = require('tape');
+import test = require('tape');
 
-tape('hel string', function (t) {
+test('hel string', function (t) {
     t.end();
-})
+});

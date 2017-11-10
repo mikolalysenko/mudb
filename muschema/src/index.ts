@@ -13,6 +13,7 @@ import { MuString } from './string';
 import { MuDictionary } from './dictionary';
 import { MuUnion } from './union';
 import { MuStruct } from './struct';
+import { MuArray } from './array';
 
 export {
     MuSchema,
@@ -29,5 +30,6 @@ export {
     MuString,
     MuDictionary,
     MuUnion,
-    MuStruct
+    MuStruct,
+    MuArray,
 };
