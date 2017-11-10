@@ -164,29 +164,16 @@ test('string', (t) => {
     t.equals(rs.readString(), strC);
     t.equals(rs.readString(), strD);
 
-    let largeStr = 'abcdefghijklmnopqrstuvwxyz123456';
-    for (let i = 0; i < 15; ++i) {
-        largeStr += largeStr;
-    }
-    ws = new MuWriteStream(2 ** 21);
-    ws.writeString(largeStr);
-
-    rs = new MuReadStream(ws);
-
-    t.equals(rs.readString(), largeStr, 'able to write and read large strings');
-
     const ascii = 'I <3 you.';
     const twoBytes = 'אני אוהבת אותך';
     const threeBytes = '我♥你';
-    const fourBytes = '👨❤️👩';
-    const varBytes = fourBytes + threeBytes + twoBytes + ascii;
+    const fourBytes = '👩👨❤️👨👩';
 
     ws = new MuWriteStream(256);
     ws.writeString(ascii);
     ws.writeString(twoBytes);
     ws.writeString(threeBytes);
     ws.writeString(fourBytes);
-    ws.writeString(varBytes);
 
     rs = new MuReadStream(ws);
 
@@ -194,7 +181,19 @@ test('string', (t) => {
     t.equals(rs.readString(), twoBytes);
     t.equals(rs.readString(), threeBytes);
     t.equals(rs.readString(), fourBytes);
-    t.equals(rs.readString(), varBytes);
+
+    const varBytes = fourBytes + twoBytes + ascii + threeBytes;
+    let longStr = '';
+    for (let i = 0; i < 100000; ++i) {
+        longStr += varBytes;
+    }
+
+    ws = new MuWriteStream(2 ** 30);
+    ws.writeString(longStr);
+
+    rs = new MuReadStream(ws);
+
+    t.equals(rs.readString(), longStr, 'able to write and read a long string of characters of various bytes');
 
     t.end();
 });

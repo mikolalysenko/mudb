@@ -49,27 +49,28 @@ const TYPES_TO_CONSTS = {
 
 test('alloc() & clone()', (t) => {
     TYPES.forEach((Type) => {
+        const defaultValue = 0;
         let n = new Type();
 
-        t.equals(n.identity, 0);
-        t.equals(n.alloc(), 0);
+        t.equals(n.identity, defaultValue);
+        t.equals(n.alloc(), defaultValue);
         t.equals(n.clone(0), 0);
 
         const muType = n.muType;
-        const minValue = TYPES_TO_CONSTS[muType].MIN;
-        const maxValue = TYPES_TO_CONSTS[muType].MAX;
+        const min = TYPES_TO_CONSTS[muType].MIN;
+        const max = TYPES_TO_CONSTS[muType].MAX;
 
-        n = new Type(minValue);
+        n = new Type(min);
 
-        t.equals(n.identity, minValue);
-        t.equals(n.alloc(), minValue);
-        t.equals(n.clone(minValue), minValue);
+        t.equals(n.identity, min);
+        t.equals(n.alloc(), min);
+        t.equals(n.clone(min), min);
 
-        n = new Type(maxValue);
+        n = new Type(max);
 
-        t.equals(n.identity, maxValue);
-        t.equals(n.alloc(), maxValue);
-        t.equals(n.clone(maxValue), maxValue);
+        t.equals(n.identity, max);
+        t.equals(n.alloc(), max);
+        t.equals(n.clone(max), max);
 
         if (muType.indexOf('int') === 0) {
             n = new Type(-1);
@@ -102,7 +103,7 @@ test('alloc() & clone()', (t) => {
 test('diff() & patch()', (t) => {
     INTS.forEach((Type) => {
         const n = new Type();
-        const ws = new MuWriteStream(8);
+        const ws = new MuWriteStream(2);
 
         const smallNum = 1e-8;
 
@@ -110,31 +111,35 @@ test('diff() & patch()', (t) => {
         t.equals(n.diffBinary(smallNum, 0, ws), false);
         t.equals(n.diffBinary(0, 1 - smallNum, ws), false);
         t.equals(n.diffBinary(1 - smallNum, 0, ws), false);
+
+        const rs = new MuReadStream(ws);
+
+        t.equals(n.patchBinary(123, rs), 123, 'no content to be read, return the base value');
     });
 
     TYPES.forEach((Type) => {
         const n = new Type();
-        const ws = new MuWriteStream(8);
+        const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const minValue = TYPES_TO_CONSTS[muType].MIN;
-        const maxValue = TYPES_TO_CONSTS[muType].MAX;
+        const min = TYPES_TO_CONSTS[muType].MIN;
+        const max = TYPES_TO_CONSTS[muType].MAX;
 
-        t.equals(n.diffBinary(1, minValue, ws), true);
+        t.equals(n.diffBinary(1, min, ws), true);
         t.equals(n.diffBinary(1, 0, ws), true);
-        t.equals(n.diffBinary(1, maxValue, ws), true);
+        t.equals(n.diffBinary(1, max, ws), true);
 
         const rs = new MuReadStream(ws);
 
-        t.equals(n.patchBinary(1, rs), minValue);
-        t.equals(n.patchBinary(1, rs), 0);
-        t.equals(n.patchBinary(1, rs), maxValue);
-        t.equals(n.patchBinary(1, rs), 1, 'run out of content');
+        t.equals(n.patchBinary(123, rs), min);
+        t.equals(n.patchBinary(123, rs), 0);
+        t.equals(n.patchBinary(123, rs), max);
+        t.equals(n.patchBinary(123, rs), 123, 'running out of content, return the base value');
     });
 
     FLOATS.forEach((Type) => {
         const n = new Type();
-        const ws = new MuWriteStream(8);
+        const ws = new MuWriteStream(2);
 
         const muType = n.muType;
         const epsilon = TYPES_TO_CONSTS[muType].EPSILON;
