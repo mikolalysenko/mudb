@@ -26,7 +26,7 @@ export class GameMap {
         }
         canvas.width = this.width;
         canvas.height = this.height;
-        canvas.style.border = '1px solid';
+        canvas.style.border = 'solid 1px';
         context.fillStyle = '#fff';
         return context;
     }
@@ -106,8 +106,7 @@ export class Snake {
                 break;
         }
 
-        // TODO: GAME OVER
-        if (this.body[0].x > config.mapWidth || this.body[0].x < 0 || this.body[0].y > config.mapHeight || this.body[0].y < 0) {
+        if (this.body[0].x * config.size > config.mapWidth || this.body[0].x < 0 || this.body[0].y * config.size > config.mapHeight || this.body[0].y < 0) {
             gameOver();
         }
 

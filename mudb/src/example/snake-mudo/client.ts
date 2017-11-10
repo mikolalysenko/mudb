@@ -8,10 +8,14 @@ export = function (client:MuClient) {
 
     const gameMap = document.createElement('div');
     gameMap.id = 'canvas';
+    gameMap.style.cssFloat = 'left';
+    gameMap.style.width = '800px';
+    gameMap.style.margin = '0px 5px';
+    document.body.appendChild(gameMap);
+
     const canvas = document.createElement('canvas');
     canvas.style.padding = '0px';
     canvas.style.margin = '0px';
-    document.body.appendChild(gameMap);
     gameMap.appendChild(canvas);
     const map = new GameMap();
     const context = map.show(canvas);
@@ -19,6 +23,23 @@ export = function (client:MuClient) {
         document.body.innerText = 'canvas not supported';
         return;
     }
+
+    const board = document.createElement('div');
+    board.style.cssFloat = 'left';
+    board.style.width = '200px';
+    document.body.appendChild(board);
+
+    // const scoreBoard = document.createElement('div');
+    // scoreBoard.style.width = '200px';
+    // scoreBoard.style.height = '400px';
+    // scoreBoard.style.cssFloat = 'left';
+    // board.appendChild(scoreBoard);
+
+    const logBoard = document.createElement('div');
+    logBoard.style.width = '200px';
+    logBoard.style.height = '200px';
+    logBoard.style.cssFloat = 'left';
+    board.appendChild(logBoard);
 
     let localSnakes:{id:string, body:PointInterface[], color:{head:string, body:string}}[] = [];
     let localFood:PointInterface[] = [];
@@ -58,7 +79,16 @@ export = function (client:MuClient) {
             playerDead: (id) => {
                 if (id === protocol.client.sessionId) {
                     gameMap.innerText = 'Game Over! Refresh to play again.';
+                } else {
+                    const textNode = document.createTextNode(id + ' dead');
+                    logBoard.appendChild(textNode);
+                    logBoard.appendChild(document.createElement('br'));
                 }
+            },
+            newPlayer: (id) => {
+                const textNode = document.createTextNode(id + ' joined');
+                logBoard.appendChild(textNode);
+                logBoard.appendChild(document.createElement('br'));
             },
         },
     });

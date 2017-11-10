@@ -32,11 +32,9 @@ export const GameSchema = {
         updateFood: new MuArray(PointSchema),
         updateSnakes: new MuArray(SnakeSchema),
         playerDead: new MuString(),
+        newPlayer: new MuString(),
     },
     server: { // client to server
         redirect: new MuInt8(),
-        // eatFood: new MuString(), // food id
-        // dead: new MuString(), // dead info: touch border, touch own, touch other snake
-        // setName: new MuString(), //TODO: user can set their name and the name can display on the snake head
     },
 };

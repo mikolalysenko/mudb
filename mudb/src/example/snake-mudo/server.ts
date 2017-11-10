@@ -17,7 +17,7 @@ export  = function (server:MuServer) {
                 allFood.push(Food.new());
             }
 
-            window.setInterval(() => {
+            setInterval(() => {
                 snakes = [];
                 Object.keys(snakeObjs).forEach((id) => {
                     let snakeIsDead = false;
@@ -35,12 +35,14 @@ export  = function (server:MuServer) {
                     }
                 });
                 protocol.broadcast.updateSnakes(snakes);
-            },                 timeInterval);
+            },          timeInterval);
         },
         message: { // message from client
             redirect: (client, redirect) => {
                 const snake = snakeObjs[client.sessionId];
-                snake.direction = redirect;
+                if (snake) {
+                    snake.direction = redirect;
+                }
             },
         },
         connect: (client) => {
@@ -50,6 +52,7 @@ export  = function (server:MuServer) {
             });
             snakeObjs[snake.id] = snake;
             snakes.push(snake.toData());
+            protocol.broadcast.newPlayer(client.sessionId);
             protocol.broadcast.updateSnakes(snakes);
             protocol.broadcast.updateFood(allFood);
         },
