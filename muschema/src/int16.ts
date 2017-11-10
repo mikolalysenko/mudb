@@ -5,7 +5,7 @@ export class MuInt16 extends MuNumber {
     public readonly muType = 'int16';
 
     constructor(value?:number) {
-        super((value || 0) | 0);
+        super((value || 0) << 16 >> 16);
     }
 
     public diffBinary (base:number, target:number, stream:MuWriteStream) {
@@ -20,7 +20,7 @@ export class MuInt16 extends MuNumber {
     }
 
     public patchBinary (base:number, stream:MuReadStream) {
-        if (stream.bytesLeft() > 0) {
+        if (stream.bytesLeft() > 1) {
             return stream.readInt16();
         }
         return base;
