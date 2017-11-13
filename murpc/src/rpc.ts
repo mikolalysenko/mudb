@@ -7,8 +7,8 @@ export type MuRPCError = string;
 export type MuAnySchema = MuSchema<any>;
 
 export type MuRPCSchema = {
-    0:MuAnySchema;
-    1:MuAnySchema;
+    0:MuAnySchema; // args
+    1:MuAnySchema; // callback
 } | [ MuAnySchema, MuAnySchema ];
 
 export type MuRPCTable = {
@@ -24,11 +24,13 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
     callAPI:{
         [method in keyof RPCTable]:(
             arg:RPCTable[method]['0']['identity'],
-            next?:(err:MuRPCError|undefined, response?:RPCTable[method]['1']['identity']) => void) => void
+            next?:(err:MuRPCError|undefined, response?:RPCTable[method]['1']['identity']) => void //callback
+        ) => void
     };
     handlerAPI:{
         [method in keyof RPCTable]:(
             arg:RPCTable[method]['0']['identity'],
-            next:(err:MuRPCError|undefined, response?:RPCTable[method]['1']['identity']) => void) => void
+            next:(err:MuRPCError|undefined, response?:RPCTable[method]['1']['identity']) => void //callback
+        ) => void
     };
 }
