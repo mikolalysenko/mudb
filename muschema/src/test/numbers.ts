@@ -1,4 +1,5 @@
 import test = require('tape');
+import CONSTANTS = require('../constants');
 
 import {
     MuInt8,
@@ -28,25 +29,6 @@ const FLOATS = [
     MuFloat64,
 ];
 
-const TYPES_TO_CONSTS = {
-    int8: { MIN: -0x80, MAX: 0x7F },
-    int16: { MIN: -0x8000, MAX: 0x7FFF },
-    int32: { MIN: -0x80000000, MAX: 0x7FFFFFFF },
-    uint8: { MIN: 0, MAX: 0xFF },
-    uint16: { MIN: 0, MAX: 0xFFFF },
-    uint32: { MIN: 0, MAX: 0xFFFFFFFF },
-    float32: {
-        EPSILON: 1.401298464324817e-45,
-        MIN: 1.1754943508222875e-38,
-        MAX: 3.4028234663852886e+38,
-    },
-    float64: {
-        EPSILON: 5e-324,
-        MIN: 2.2250738585072014e-308,
-        MAX: 1.7976931348623157e+308,
-    },
-};
-
 test('alloc() & clone()', (t) => {
     TYPES.forEach((Type) => {
         const defaultValue = 0;
@@ -57,8 +39,8 @@ test('alloc() & clone()', (t) => {
         t.equals(n.clone(0), 0);
 
         const muType = n.muType;
-        const min = TYPES_TO_CONSTS[muType].MIN;
-        const max = TYPES_TO_CONSTS[muType].MAX;
+        const min = CONSTANTS[muType].MIN;
+        const max = CONSTANTS[muType].MAX;
 
         n = new Type(min);
 
@@ -80,8 +62,8 @@ test('alloc() & clone()', (t) => {
             t.equals(n.clone(-1), -1);
         }
 
-        if (TYPES_TO_CONSTS[muType]['EPSILON']) {
-            const epsilon = TYPES_TO_CONSTS[muType]['EPSILON'];
+        if (CONSTANTS[muType]['EPSILON']) {
+            const epsilon = CONSTANTS[muType]['EPSILON'];
 
             n = new Type(-epsilon);
 
@@ -122,8 +104,8 @@ test('diff() & patch()', (t) => {
         const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const min = TYPES_TO_CONSTS[muType].MIN;
-        const max = TYPES_TO_CONSTS[muType].MAX;
+        const min = CONSTANTS[muType].MIN;
+        const max = CONSTANTS[muType].MAX;
 
         t.equals(n.diffBinary(1, min, ws), true);
         t.equals(n.diffBinary(1, 0, ws), true);
@@ -142,7 +124,7 @@ test('diff() & patch()', (t) => {
         const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const epsilon = TYPES_TO_CONSTS[muType].EPSILON;
+        const epsilon = CONSTANTS[muType].EPSILON;
 
         t.equals(n.diffBinary(1.0, -epsilon, ws), true);
         t.equals(n.diffBinary(1.0, epsilon, ws), true);
