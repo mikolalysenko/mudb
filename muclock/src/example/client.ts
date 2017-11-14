@@ -9,17 +9,17 @@ export = function (client:MuClient) {
     const clock = new MuClockClient({
         client,
         tick: (tick) => {
-            console.log('tick', tick);
         },
     });
 
     client.start({
         ready: () => {
+            console.log('client ready');
             function render() {
-                tickDiv.innerText = `tick ${clock.tick()}, ping ${clock.ping}`;
+                tickDiv.innerHTML = `tick ${Math.round(clock.tick() * 100) / 100}<br/> ping ${clock.ping()}`;
                 requestAnimationFrame(render);
             }
             render();
-        }
+        },
     });
-}
+};

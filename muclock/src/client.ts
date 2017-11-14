@@ -2,6 +2,7 @@ import { MuClient, MuClientProtocol } from 'mudb/client';
 import { MuClockProtocol } from './schema';
 import { MuClock } from './clock';
 import { MuPingStatistic } from './ping-statistic';
+import { fitLine } from './fit-line';
 
 // what do we need to know?
 //
@@ -56,10 +57,12 @@ export class MuClockClient {
                 init: ({ tickRate, serverClock }) => {
                     this._localTimeSamples.push(this._lastPingStart);
                     this._remoteTimeSamples.push(serverClock);
-                    this._lastPingStart = 0;
 
                     this._tickRate = tickRate;
                     this._tickCount = Math.floor(serverClock / tickRate);
+                    this._clockShift = serverClock - this._lastPingStart;
+
+                    this._lastPingStart = 0;
 
                     // fire initial ping
                     this._doPing();
@@ -77,11 +80,12 @@ export class MuClockClient {
                         spec.ready();
                     }
                 },
-                ping: this._protocol.server.message.pong,
+                ping: (id) => this._protocol.server.message.pong(id),
                 pong: (serverClock) => {
                     const localClock = this._lastPingStart;
                     const rtt = this._clock.now() - localClock;
                     this._pingStatistic.addSample(rtt);
+                    console.log('got sample:', localClock, serverClock);
                     if (this._localTimeSamples.length < this._clockBufferSize) {
                         this._localTimeSamples.push(localClock);
                         this._remoteTimeSamples.push(serverClock);
@@ -90,9 +94,12 @@ export class MuClockClient {
                         this._localTimeSamples[idx] = localClock;
                         this._localTimeSamples[idx] = localClock;
                     }
+                    const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
+                    this._clockScale = a;
+                    this._clockShift = b;
                     this._lastPingStart = 0;
                 },
-            }
+            },
         });
     }
 

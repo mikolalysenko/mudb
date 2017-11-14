@@ -5,7 +5,7 @@ import { MuPingStatistic } from './ping-statistic';
 
 class MuClockClientPingHandler {
     public protocolClient:MuRemoteClientProtocol<typeof MuClockProtocol.client>;
-    public server:MuClockServer;;
+    public server:MuClockServer;
     public pingCount = 0;
     public connectTime:number = 0;
     public pingRate:number = 1000;
@@ -73,14 +73,14 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
 
-    private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {}
+    private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
 
     constructor (spec:{
         server:MuServer,
         defaultPing?:number,
         pingRate?:number,
         tickRate?:number,
-        tick?: (t:number) => void,
+        tick?:(t:number) => void,
         pingBufferSize?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
@@ -89,7 +89,7 @@ export class MuClockServer {
         if ('tickRate' in spec) {
             this.tickRate = spec.tickRate || 30;
         }
-        if('tick' in spec) {
+        if ('tick' in spec) {
             this._onTick = spec.tick || function () {};
         }
 
