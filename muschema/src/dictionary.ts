@@ -104,29 +104,33 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         stream:MuWriteStream) : boolean {
         const valueSchema = this.muData;
 
-        const removeOffset = stream.offset;
-        stream.writeUint32(0);
-        const patchOffset = stream.offset;
-        stream.writeUint32(0);
+        let numRemove = 0;
+        let numPatch = 0;
 
-        let numDelete = 0;
+        const removeOffset = stream.offset;
+        stream.grow(4);
+        stream.writeUint32(numRemove);
+        const patchOffset = stream.offset;
+        stream.grow(4);
+        stream.writeUint32(numPatch);
+
         const baseProps = Object.keys(base);
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
-                numDelete++;
+                numRemove++;
                 stream.grow(4 + 4 * prop.length);
                 stream.writeString(prop);
             }
         }
 
-        let numPatch = 0;
         const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
             const prop = targetProps[i];
-            if (prop in target) {
-                const prefixOffset = stream.offset;
-                stream.writeString(prop);
+            const prefixOffset = stream.offset;
+            stream.grow(4 + 4 * prop.length);
+            stream.writeString(prop);
+            if (prop in base) {
                 // FIXME: temporary hack, remove when binary serialization is finished
                 if (valueSchema.diffBinary) {
                     const equal = !valueSchema.diffBinary(base[prop], target[prop], stream);
@@ -137,8 +141,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
                     }
                 }
             } else {
-                const prefixOffset = stream.offset;
-                stream.writeString(prop);
                 // FIXME: temporary hack, remove when binary serialization is finished
                 if (valueSchema.diffBinary) {
                     const equal = !valueSchema.diffBinary(valueSchema.identity, target[prop], stream);
@@ -150,10 +152,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
             }
         }
 
-        // FIXME: set patch count and remove count using offset
-        // should use data view api
+        stream.writeUint32At(removeOffset, numRemove);
+        stream.writeUint32At(patchOffset, numPatch);
 
-        return numPatch > 0 || numDelete > 0;
+        return numPatch > 0 || numRemove > 0;
     }
 
     public patchBinary(
@@ -164,15 +166,22 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
             return this.identity;
         }
 
-        const numDelete = stream.readUint32();
+        const numRemove = stream.readUint32();
         const numPatch = stream.readUint32();
 
         const removeProps = {};
-        for (let i = 0; i < numDelete; ++i) {
+        for (let i = 0; i < numRemove; ++i) {
             removeProps[stream.readString()] = true;
         }
 
         const result:Dictionary<ValueSchema> = {};
+        for (const prop in base) {
+            if (removeProps[prop]) {
+                break;
+            }
+            result[prop] = valueSchema.clone(base[prop]);
+        }
+
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = stream.buffer.uint8[stream.offset + 3] & 0x80;
             stream.buffer.uint8[stream.offset + 3] &= ~0x80;
