@@ -12,7 +12,12 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
 
     public readonly clients:MuRemoteRPCClient<Schema['client']>[] = [];
 
+    // private _protocol:MuServerProtocol<Schema>;
+
+
     constructor (server:MuServer, schema:Schema) {
+        this.server = server;
+        this.schema = schema;
     }
 
     public configure(spec:{
@@ -22,5 +27,6 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         disconnect?:(client:MuRemoteRPCClient<Schema['client']>) => void;
         close?:() => void;
     }) {
+
     }
 }

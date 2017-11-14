@@ -1,6 +1,7 @@
 import { MuSchema } from 'muschema/schema';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
+import { MuDictionary } from 'muschema/dictionary';
 
 export type MuRPCError = string;
 

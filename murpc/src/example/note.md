@@ -77,8 +77,8 @@ export const RPCSchema = {
     },
     server: {
         add: new MuStruct({
-            0: new MuArray(new MuInt8());
-            1: new //should be function
+            args: new MuArray(new MuInt8());
+            next: new //should be function
         })
     },
 }
