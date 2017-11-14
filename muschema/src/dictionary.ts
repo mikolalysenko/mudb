@@ -1,16 +1,19 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
+export interface Dictionary<T extends MuSchema<any>> {
+    [key:string]:T['identity'];
+}
+
 /** Dictionary type schema */
-export class MuDictionary<ValueSchema extends MuSchema<any>>
-        implements MuSchema<{[key:string]:ValueSchema['identity']}> {
-    public readonly identity:{[key:string]:ValueSchema['identity']};
+export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema<Dictionary<ValueSchema>> {
+    public readonly identity:Dictionary<ValueSchema>;
 
     public readonly muType = 'dictionary';
     public readonly muData:ValueSchema;
     public readonly json:object;
 
-    constructor (valueSchema:ValueSchema, id?:{[key:string]:ValueSchema['identity']}) {
+    constructor (valueSchema:ValueSchema, id?:Dictionary<ValueSchema>) {
         this.identity = id || {};
         this.muData = valueSchema;
         this.json = {
@@ -22,10 +25,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
     public alloc () { return {}; }
 
-    public free (x:{[key:string]:ValueSchema['identity']}) {}
+    public free (x:Dictionary<ValueSchema>) {}
 
-    public clone (x:{[key:string]:ValueSchema['identity']}) : {[key:string]:ValueSchema['identity']} {
-        const result:{[key:string]:ValueSchema['identity']} = {};
+    public clone (x:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
+        const result:Dictionary<ValueSchema> = {};
         const props = Object.keys(x);
         const schema = this.muData;
         for (let i = 0; i < props.length; ++i) {
@@ -34,7 +37,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diff (base:{[key:string]:ValueSchema['identity']}, target:{[key:string]:ValueSchema['identity']}) {
+    public diff (base:Dictionary<ValueSchema>, target:Dictionary<ValueSchema>) {
         const remove:string[] = [];
         const patch:{ [prop:string]:any } = {};
 
@@ -68,7 +71,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public patch (base:{[key:string]:ValueSchema['identity']}, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
+    public patch (base:Dictionary<ValueSchema>, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
         const result = {};
         const schema = this.muData;
 
@@ -96,8 +99,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public diffBinary (
-        base:{[key:string]:ValueSchema['identity']},
-        target:{[key:string]:ValueSchema['identity']},
+        base:Dictionary<ValueSchema>,
+        target:Dictionary<ValueSchema>,
         stream:MuWriteStream) : boolean {
         const valueSchema = this.muData;
 
@@ -154,8 +157,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public patchBinary(
-        base:{[key:string]:ValueSchema['identity']},
-        stream:MuReadStream) : {[key:string]:ValueSchema['identity']} {
+        base:Dictionary<ValueSchema>,
+        stream:MuReadStream) : Dictionary<ValueSchema> {
         const valueSchema = this.muData;
         if (!valueSchema.patchBinary) {
             return this.identity;
@@ -169,7 +172,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             removeProps[stream.readString()] = true;
         }
 
-        const result:{[key:string]:ValueSchema['identity']} = {};
+        const result:Dictionary<ValueSchema> = {};
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = stream.buffer.uint8[stream.offset + 3] & 0x80;
             stream.buffer.uint8[stream.offset + 3] &= ~0x80;
