@@ -1,5 +1,6 @@
 
 ## Example
+---
 
 The example methods:
 ```js
@@ -17,6 +18,7 @@ function wait(time, next){
 ```
 
 ### Client
+---
 
 ```js
 import { RPCSchema } from './schema';
@@ -27,19 +29,17 @@ export = function (client:MuClient) {
     const protocol = new MuRPCClient({client, RPCSchema});
     protocol.configure({
         ready: () => {
-            let result = protocol.server.message.add(1, 2); //想这么实现来着
-            let success = protocol.server.message.wait(1000, () => {
+            let result = protocol.server.rpc.add(1, 2); //参考mustate.eg.client.46
+            let success = protocol.server.rpc.wait(1000, () => {
                 console.log('done');
             })
-        },
-        message: {
-            
         }
     })
 }
 ```
 
 ### Server
+---
 
 ```js
 import { RPCSchema } from './schema';
@@ -49,13 +49,26 @@ import { MuRPCServer } from '../server';
 export = function (server:MuServer) {
     const protocol = new MuRPCServer({server, RPCSchema});
     protorol.configure({
+        ready: () => {
 
+        },
+
+        rpc: {
+            add: (args, next) => {
+                let result = args[0] + args[1]; // ?
+                next;
+            },
+            wait: (args, next) => {
+
+            }
+        }
     })
 }
 ```
 
 
 ### Schema
+---
 
 ```js
 export const RPCSchema = {
@@ -63,7 +76,10 @@ export const RPCSchema = {
 
     },
     server: {
-
+        add: new MuStruct({
+            0: new MuArray(new MuInt8());
+            1: new //should be function
+        })
     },
 }
 ```

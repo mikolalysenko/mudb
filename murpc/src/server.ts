@@ -3,7 +3,6 @@ import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface } from './rpc';
 
 export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly sessionId:string;
-
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
 }
 
