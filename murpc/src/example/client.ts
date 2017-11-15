@@ -10,9 +10,12 @@ export  = function (client:MuClient) {
         },
         ready: () => {
             console.log('client ready');
-            protocol.server.rpc.combine([1, 2], (result) => {
+            protocol.server.rpc.combine([4, 10], (result) => {
                 console.log('rpc combine result:', result);
             });
+            // protocol.server.rpc.square(5, (result) => {
+            //     console.log('rpc square result:', result);
+            // });
         },
     });
     client.start();

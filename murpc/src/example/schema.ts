@@ -15,5 +15,9 @@ export const RPCSchema = {
             0: new MuArray(new MuInt8()),
             1: new MuVoid(),
         },
+        square: {
+            0: new MuInt8(),
+            1: new MuVoid(),
+        },
     },
 };

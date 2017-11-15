@@ -6,15 +6,11 @@ export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
     private _client:MuRemoteClientProtocol<typeof DefaultRPCSchema['client']>;
 
-    constructor(client:MuRemoteClientProtocol<typeof DefaultRPCSchema['client']>, schema:Schema) {
+    constructor(client:MuRemoteClientProtocol<typeof DefaultRPCSchema['client']>, schema:MuRPCInterface<Schema>['callAPI']) {
         this.sessionId = client.sessionId;
         this._client = client;
 
-        const result = {};
-        Object.keys(schema).forEach((method) => {
-            result[method] = (arg, next?:(err, response?) => { }) => { };
-        });
-        // this.rpc = result; //FIXME:
+        this.rpc = schema;
     }
 }
 
@@ -29,6 +25,19 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         this.schema = schema;
     }
 
+    private createDispatch(client, schema) { //FIXME:
+        const result = {};
+        const methodNames = Object.keys(schema).sort();
+        methodNames.forEach((methodName, messageId) => {
+            result[methodName] = function(arg, next?:() => void) {
+                const d = schema.diff(schema.identity, arg);
+                const str = JSON.stringify(d);
+                client.send(str);
+            };
+        });
+        return result;
+    }
+
     public configure(spec:{
         rpc:MuRPCInterface<Schema['server']>['handlerAPI'],
         ready?:() => void;
@@ -38,8 +47,8 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     }) {
         this.server.protocol(DefaultRPCSchema).configure({
             message: {
-                rpc: (client, method) => {
-                    spec.rpc[method];
+                rpc: (client, {methodName, args, next}) => {
+                    spec.rpc[methodName](args, (err, response) => next);
                 },
             },
             ready: () => {
@@ -48,7 +57,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                 }
             },
             connect: (client_) => {
-                const client = new MuRemoteRPCClient(client_, this.schema.client);
+                const client = new MuRemoteRPCClient(client_, this.createDispatch(client_, this.schema.client));
                 this.clients.push(client);
                 if (spec && spec.connect) {
                     spec.connect(client);

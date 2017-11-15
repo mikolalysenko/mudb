@@ -5,13 +5,20 @@ import { MuRPCServer } from '../server';
 export = function (server:MuServer) {
     const protocol = new MuRPCServer(server, RPCSchema);
     protocol.configure({
+        ready: () => {
+            console.log('server ready');
+        },
         rpc: {
-            combine: (args, next) => {
+            combine: (args, next:(err:string|undefined, response?:any) => void) => {
+                console.log('server: receive combine');
                 let result = '';
                 args.forEach((element) => {
                     result += element;
                 });
-                next(result);
+                next(undefined, result);
+            },
+            square: (arg:number, next:(err:string|undefined, response?:any) => void) => {
+                next(undefined, arg * arg);
             },
         },
         connect: (client) => {
