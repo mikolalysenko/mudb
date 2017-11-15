@@ -18,8 +18,7 @@ export class MuFloat32 extends MuNumber {
     }
 
     public patchBinary (base:number, stream:MuReadStream) {
-        if (stream.bytesLeft() > 0) {
-            console.log('stream.offset', stream.offset);
+        if (stream.bytesLeft() > 3) {
             return stream.readFloat32();
         }
         return base;

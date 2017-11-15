@@ -4,10 +4,13 @@ import { MuBoolean } from '../boolean';
 import { MuReadStream, MuWriteStream } from 'mustreams';
 
 test('boolean', (t) => {
+    const defaultValue = false;
     let b = new MuBoolean();
 
-    t.equals(b.identity, false);
+    t.equals(b.identity, defaultValue);
     t.equals(b.muType, 'boolean');
+    t.equals(b.alloc(), defaultValue);
+    t.equals(b.clone(false), false);
 
     b = new MuBoolean(true);
 

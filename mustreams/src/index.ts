@@ -123,6 +123,10 @@ export class MuWriteStream {
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
     }
+
+    public writeUint32At (offset:number, x:number) {
+        this.buffer.dataView.setUint32(offset, x, LITTLE_ENDIAN);
+    }
 }
 
 export class MuReadStream {

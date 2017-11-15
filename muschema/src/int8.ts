@@ -5,7 +5,7 @@ export class MuInt8 extends MuNumber {
     public readonly muType = 'int8';
 
     constructor(value?:number) {
-        super((value || 0) | 0);
+        super((value || 0) << 24 >> 24);
     }
 
     public diffBinary (base:number, target:number, stream:MuWriteStream) {
