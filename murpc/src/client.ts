@@ -9,19 +9,6 @@ export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     }
 }
 
-function createDispatch(socket, schema) {
-    const result = {};
-    const methodNames = Object.keys(schema).sort();
-    methodNames.forEach((methodName, messageId) => {
-        result[methodName] = function(arg, next?:() => void) {
-            const d = schema.diff(schema.identity, arg);
-            const str = JSON.stringify(d);
-            socket.send(str);
-        };
-    });
-    return result;
-}
-
 export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     public readonly sessionId:string;
     public readonly client:MuClient;

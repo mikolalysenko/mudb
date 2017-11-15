@@ -48,6 +48,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         this.server.protocol(DefaultRPCSchema).configure({
             message: {
                 rpc: (client, {methodName, args, next}) => {
+                    console.log('xxx:', client.sessionId);
                     spec.rpc[methodName](args, (err, response) => next);
                 },
             },
