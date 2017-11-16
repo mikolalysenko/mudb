@@ -102,7 +102,7 @@ export class MuClient {
         const parser = clientFactory.createParser(this._protocolSpec);
 
         this._socket.start({
-            ready:(error) => {
+            ready:() => {
                 this.running = true;
 
                 this._socket.send(JSON.stringify({
