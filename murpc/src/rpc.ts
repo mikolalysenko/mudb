@@ -16,8 +16,8 @@ export type MuRPCError = string;
 export type MuAnySchema = MuSchema<any>;
 
 export type MuRPCSchema = {
-    0:MuAnySchema; // args
-    1:MuAnySchema; // callback
+    0:MuAnySchema; // call args
+    1:MuAnySchema; // response data
 } | [ MuAnySchema, MuAnySchema ];
 
 export type MuRPCTable = {
@@ -68,19 +68,29 @@ const MuAnyType = new MuUnion({
     })),
 });
 
-export const DefaultRPCSchema = {
+export const DefaultRPCSchema = { //FIXME: 需要根据传入的schema来调整arg和response数据
     client: {
-        rpc: new MuStruct({
+        call: new MuStruct({
+            id: new MuString(),
             methodName: new MuString(),
-            args: new MuArray(MuAnyType),
-            next: new MuVoid(),
+            arg: new MuArray(new MuInt8()),
+        }),
+        response: new MuStruct({
+            id: new MuString(),
+            err: new MuString(),
+            response: new MuInt8(),
         }),
     },
     server: {
-        rpc: new MuStruct({
+        call: new MuStruct({
+            id: new MuString(),
             methodName: new MuString(),
-            args: new MuArray(MuAnyType),
-            next: new MuVoid(),
+            arg: new MuArray(new MuInt8()),
+        }),
+        response: new MuStruct({
+            id: new MuString(),
+            err: new MuString(),
+            response: new MuInt8(),
         }),
     },
 };

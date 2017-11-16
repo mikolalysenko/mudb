@@ -17,12 +17,14 @@ export class MuRemoteRPCClient<Schema extends MuRPCTable> {
 export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     public readonly server:MuServer;
     public readonly schema:Schema;
-
     public readonly clients:MuRemoteRPCClient<Schema['client']>[] = [];
+
+    private _protocol:MuServerProtocol<typeof DefaultRPCSchema>;
 
     constructor (server:MuServer, schema:Schema) {
         this.server = server;
         this.schema = schema;
+        this._protocol = server.protocol(DefaultRPCSchema);
     }
 
     private createDispatch(client, schema) { //FIXME:
@@ -45,11 +47,15 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         disconnect?:(client:MuRemoteRPCClient<Schema['client']>) => void;
         close?:() => void;
     }) {
-        this.server.protocol(DefaultRPCSchema).configure({
+        this._protocol.configure({
             message: {
-                rpc: (client, {methodName, args, next}) => {
-                    console.log('xxx:', client.sessionId);
-                    spec.rpc[methodName](args, (err, response) => next);
+                call: (client, {id, methodName, arg}) => {
+                    spec.rpc[methodName](arg, (err, response) => {
+                        this._protocol.broadcast.response({id, err, response});
+                    });
+                },
+                response: (client, {id, err, response}) => {
+
                 },
             },
             ready: () => {

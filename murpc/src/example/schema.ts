@@ -13,7 +13,7 @@ export const RPCSchema = {
     server: {
         combine: {
             0: new MuArray(new MuInt8()),
-            1: new MuVoid(),
+            1: new MuInt8(),
         },
         square: {
             0: new MuInt8(),

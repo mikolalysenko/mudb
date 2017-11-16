@@ -9,13 +9,14 @@ export = function (server:MuServer) {
             console.log('server ready');
         },
         rpc: {
-            combine: (args, next:(err:string|undefined, response?:any) => void) => {
+            combine: (arg, next) => {
                 console.log('server: receive combine');
-                let result = '';
-                args.forEach((element) => {
+                let result = 0;
+                arg.forEach((element) => {
                     result += element;
                 });
-                next(undefined, result);
+                console.log('result', result);
+                next('success', result);
             },
             square: (arg:number, next:(err:string|undefined, response?:any) => void) => {
                 next(undefined, arg * arg);

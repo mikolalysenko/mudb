@@ -17,18 +17,26 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     public server:MuRPCRemoteServer<Schema['server']>;
     private _protocol:MuClientProtocol<typeof DefaultRPCSchema>;
 
+    public callbacks:{[id:string]:(err, response) => void};
+    private counter:number;
+
     constructor (client:MuClient, schema:Schema) {
         this.client = client;
         this.schema = schema;
         this._protocol = client.protocol(DefaultRPCSchema);
         this.server = new MuRPCRemoteServer(this.createSchemaDispatch(this._protocol, schema.server));
+        this.callbacks = {};
+        this.counter = 0;
     }
 
     private createSchemaDispatch(protocol, schema) {
         const result = {};
         Object.keys(schema).forEach((methodName) => {
             result[methodName] = (arg, next) => {
-                protocol.server.message.rpc(methodName, arg, next);
+                this.counter ++;
+                const id = this.client.sessionId + this.counter;
+                this.callbacks[id] = next;
+                protocol.server.message.call({id, methodName, arg});
             };
         });
         return result;
@@ -41,8 +49,13 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     }) {
         this._protocol.configure({
             message: {
-                rpc: (client, method) => {
-                    // FIXME:
+                call: ({id, methodName, arg}) => {
+
+                },
+                response: ({id, err, response}) => {
+                    console.log(this.callbacks);
+                    console.log(id);
+                    this.callbacks[id](err, response);
                 },
             },
             ready: () => {
