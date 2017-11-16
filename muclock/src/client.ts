@@ -85,7 +85,6 @@ export class MuClockClient {
                     const localClock = this._lastPingStart;
                     const rtt = this._clock.now() - localClock;
                     this._pingStatistic.addSample(rtt);
-                    console.log('got sample:', localClock, serverClock);
                     if (this._localTimeSamples.length < this._clockBufferSize) {
                         this._localTimeSamples.push(localClock);
                         this._remoteTimeSamples.push(serverClock);
