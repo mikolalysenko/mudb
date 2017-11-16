@@ -136,7 +136,7 @@ export class MuProtocolFactory {
                 if (!messageSchema) {
                     return;
                 }
-                if (packetData === 'undefined') {
+                if (packetData === undefined) {
                     const m = messageSchema.clone(messageSchema.identity);
                     message[protoId][messageId](m, unreliable);
                     messageSchema.free(m);
