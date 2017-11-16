@@ -136,10 +136,15 @@ export class MuProtocolFactory {
                 if (!messageSchema) {
                     return;
                 }
-
-                const m = messageSchema.patch(messageSchema.identity, packetData);
-                message[protoId][messageId](m, unreliable);
-                messageSchema.free(message);
+                if (packetData === 'undefined') {
+                    const m = messageSchema.clone(messageSchema.identity);
+                    message[protoId][messageId](m, unreliable);
+                    messageSchema.free(m);
+                } else {
+                    const m = messageSchema.patch(messageSchema.identity, packetData);
+                    message[protoId][messageId](m, unreliable);
+                    messageSchema.free(m);
+                }
             }
         };
     }
