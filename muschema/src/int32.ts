@@ -5,12 +5,12 @@ export class MuInt32 extends MuNumber {
     public readonly muType = 'int32';
 
     constructor(value?:number) {
-        super((value || 0) | 0);
+        super((value || 0) << 0);
     }
 
     public diffBinary (base:number, target:number, stream:MuWriteStream) {
-        const bi = Math.floor(base);
-        const ti = Math.floor(target);
+        const bi = base | 0;
+        const ti = target | 0;
         if (bi !== ti) {
             stream.grow(4);
             stream.writeInt32(ti);
@@ -20,7 +20,7 @@ export class MuInt32 extends MuNumber {
     }
 
     public patchBinary (base:number, stream:MuReadStream) {
-        if (stream.bytesLeft() > 0) {
+        if (stream.bytesLeft() > 3) {
             return stream.readInt32();
         }
         return base;

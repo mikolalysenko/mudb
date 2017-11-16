@@ -1,5 +1,5 @@
 {
-  "name": "mustate",
+  "name": "muclock",
   "version": "0.0.0",
   "description": "State replication for mudb",
   "main": "index.js",

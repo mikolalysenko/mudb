@@ -33,19 +33,19 @@ export class MuString implements MuSchema<string> {
         return '';
     }
 
-    public diffBinary (a:string, b:string, stream:MuWriteStream) {
-        if (a !== b) {
-            stream.grow(4 + 4 * b.length);
-            stream.writeString(b);
+    public diffBinary (base:string, target:string, stream:MuWriteStream) {
+        if (base !== target) {
+            stream.grow(4 + 4 * target.length);
+            stream.writeString(target);
             return true;
         }
         return false;
     }
 
-    public patchBinary (a:string, stream:MuReadStream) {
-        if (stream.bytesLeft() > 0) {
+    public patchBinary (base:string, stream:MuReadStream) {
+        if (stream.bytesLeft() > 4) {
             return stream.readString();
         }
-        return a;
+        return base;
     }
 }

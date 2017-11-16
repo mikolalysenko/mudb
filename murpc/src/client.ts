@@ -1,5 +1,5 @@
 import { MuClient, MuClientProtocol } from 'mudb/client';
-import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, DefaultRPCSchema, generateId } from './rpc';
+import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, generateId } from './rpc';
 
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
@@ -19,6 +19,10 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
 
     private callbacks:{[id:string]:(err, response) => void};
 
+    private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
+    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
+    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['1']>;
+
     constructor (client:MuClient, schema:Schema) {
         this.client = client;
         this.schema = schema;
@@ -37,6 +41,9 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             };
         });
         return result;
+        this._protocolSchema = createRPCProtocolSchemas(schema);
+        this._callProtocol = client.protocol(this._protocolSchema['0']);
+        this._responseProtocol = client.protocol(this._protocolSchema['1']);
     }
 
     public configure(spec:{
