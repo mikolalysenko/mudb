@@ -1,5 +1,5 @@
 import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
-import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, DefaultRPCSchema } from './rpc';
+import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, DefaultRPCSchema, generateId } from './rpc';
 
 export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly sessionId:string;
@@ -55,7 +55,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                     });
                 },
                 response: (client, {id, err, response}) => {
-
+                    //FIXME:
                 },
             },
             ready: () => {

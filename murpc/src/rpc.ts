@@ -9,7 +9,7 @@ import {
     MuBoolean,
     MuInt8,
     MuUnion,
- } from 'muschema';
+} from 'muschema';
 
 export type MuRPCError = string;
 
@@ -44,41 +44,17 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
     };
 }
 
-const MuAnyBasicType = new MuUnion({
-    float: new MuFloat32(),
-    string: new MuString(),
-    int: new MuInt8(),
-    boolean: new MuBoolean(),
-});
-
-const MuAnyObjectType = new MuUnion({
-    array: new MuArray(MuAnyBasicType),
-    dictionary: new MuDictionary(MuAnyBasicType),
-});
-
-const MuAnyType = new MuUnion({
-    basic: MuAnyBasicType,
-    array: new MuArray(new MuUnion({
-        basic: MuAnyBasicType,
-        object: MuAnyObjectType,
-    })),
-    dictionary: new MuDictionary(new MuUnion({
-        basic: MuAnyBasicType,
-        object: MuAnyObjectType,
-    })),
-});
-
-export const DefaultRPCSchema = { //FIXME: 需要根据传入的schema来调整arg和response数据
+export const DefaultRPCSchema = {
     client: {
         call: new MuStruct({
             id: new MuString(),
             methodName: new MuString(),
-            arg: new MuArray(new MuInt8()),
+            arg: new MuArray(new MuInt8()), //FIXME: arg type should be same as the schema in examples
         }),
         response: new MuStruct({
             id: new MuString(),
-            err: new MuString(),
-            response: new MuInt8(),
+            err: new MuString(), //FIXME: err maybe undefined
+            response: new MuInt8(), //FIXME: response maybe undefined
         }),
     },
     server: {
@@ -94,3 +70,7 @@ export const DefaultRPCSchema = { //FIXME: 需要根据传入的schema来调整a
         }),
     },
 };
+
+export function generateId() {
+    return (Date.now() + Math.random()).toString();
+}

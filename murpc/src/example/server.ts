@@ -10,20 +10,15 @@ export = function (server:MuServer) {
         },
         rpc: {
             combine: (arg, next) => {
-                console.log('server: receive combine');
                 let result = 0;
                 arg.forEach((element) => {
                     result += element;
                 });
-                console.log('result', result);
                 next('success', result);
-            },
-            square: (arg:number, next:(err:string|undefined, response?:any) => void) => {
-                next(undefined, arg * arg);
             },
         },
         connect: (client) => {
-            console.log('server receive client:', client.sessionId);
+            console.log(client.sessionId, 'connected');
         },
     });
     server.start();
