@@ -54,7 +54,8 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                 Object.keys(schema).forEach((method) => {
                     result[method] = (client_, {base, id}) => {
                         rpc[method](base, (err, response) => {
-                            responseProtocol.clients[client_.sessionId].message[method]({'base': response, id});
+                            const response_base = this.schema.server[method][1].clone(response);
+                            responseProtocol.clients[client_.sessionId].message[method]({'base': response_base, id});
                         });
                     };
                 });
