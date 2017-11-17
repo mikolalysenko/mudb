@@ -6,8 +6,10 @@ export  = function (client:MuClient) {
     const protocol = new MuRPCClient(client, RPCSchema);
     protocol.configure({
         rpc: {
-            combine: () => {
-
+            combine: (arg, next) => {
+                let result = 0;
+                arg.forEach((element) => { result += element; });
+                next('succss', result);
             },
         },
         ready: () => {

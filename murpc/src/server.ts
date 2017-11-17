@@ -1,14 +1,22 @@
 import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
-import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
+import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, generateID } from './rpc';
 import { MuRPCClient } from './client';
 
 export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly sessionId:string;
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
 
-    constructor(client, rpc) {
+    constructor(client, callProtocol, clientSchema, callbacks) {
         this.sessionId = client.sessionId;
-        this.rpc = rpc;
+        this.rpc = {} as {[method in keyof Schema]:(arg, next) => void};
+
+        Object.keys(clientSchema).forEach((method) => {
+            this.rpc[method] = (arg, next) => {
+                const id = generateID();
+                callbacks[id] = next;
+                callProtocol.clients[this.sessionId].message[method]({'base':arg, id});
+            };
+        });
     }
 }
 
@@ -17,6 +25,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     public readonly schema:Schema;
 
     public readonly clients:MuRemoteRPCClient<Schema['client']>[] = [];
+    private _callbacks:{[id:string]:(base) => void};
 
     private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
     private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
@@ -25,20 +34,11 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     constructor (server:MuServer, schema:Schema) {
         this.server = server;
         this.schema = schema;
+        this._callbacks = {};
 
         this._protocolSchema = createRPCProtocolSchemas(schema);
         this._callProtocol = server.protocol(this._protocolSchema['0']);
         this._responseProtocol = server.protocol(this._protocolSchema['1']);
-    }
-
-    private createRPCType(protocol, clientSchema) {
-        const result = {} as {[method in keyof Schema['client']]:(arg, next) => void};
-        Object.keys(clientSchema).forEach((method) => {
-            result[method] = (arg, next) => {
-                //FIXME:
-            };
-        });
-        return result;
     }
 
     public configure(spec:{
@@ -53,7 +53,6 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                 const result = {} as {[method in keyof Schema['server']]:(client_, {base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = (client_, {base, id}) => {
-                        console.log('client:', client_.sessionId, 'method:', method, 'arg:', base, 'id:', id);
                         rpc[method](base, (err, response) => {
                             responseProtocol.clients[client_.sessionId].message[method]({'base': response, id});
                         });
@@ -67,7 +66,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                 }
             },
             connect: (client_) => {
-                const client = new MuRemoteRPCClient(client_, this.createRPCType(this._callProtocol, this.schema.client));
+                const client = new MuRemoteRPCClient(client_, this._callProtocol, this.schema.client, this._callbacks);
                 this.clients.push(client);
                 if (spec && spec.connect) {
                     spec.connect(client);
@@ -84,13 +83,15 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         });
 
         this._responseProtocol.configure({
-            message: ((schema) => {
+            message: ((schema, callbacks) => {
                 const result = {} as {[method in keyof Schema['client']]:(client_, {base, id}) => void};
                 Object.keys(schema).forEach((method) => {
-                    //FIXME:
+                    result[method] = (client_, {base, id}) => {
+                        callbacks[id](base);
+                    };
                 });
                 return result;
-            })(this._protocolSchema['1']['client']),
+            })(this._protocolSchema['1']['client'], this._callbacks),
         });
     }
 }

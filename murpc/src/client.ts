@@ -4,8 +4,8 @@ import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInt
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
 
-    constructor(schema:MuRPCInterface<Schema>['callAPI']) {
-        this.rpc = schema;
+    constructor(rpc:MuRPCInterface<Schema>['callAPI']) {
+        this.rpc = rpc;
     }
 }
 
@@ -52,13 +52,17 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         close?:() => void;
     }) {
         this._callProtocol.configure({
-            message: ((schema) => {
+            message: ((schema, rpc, responseProtocol) => {
                 const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
                 Object.keys(schema).forEach((method) => {
-                    //FIXME:
+                    result[method] = ({base, id}) => {
+                        rpc[method](base, (err, response) => {
+                            responseProtocol.server.message[method]({'base': response, id});
+                        });
+                    };
                 });
                 return result;
-            })(this._protocolSchema['0']['client']),
+            })(this._protocolSchema['0']['client'], spec.rpc, this._responseProtocol),
             ready: () => {
 
             },
@@ -69,15 +73,14 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
 
         this._responseProtocol.configure({
             message: ((schema, callbacks) => {
-                const result = {} as {[method in keyof Schema['server']]:({base, id}) => void};
-
+                const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
                         callbacks[id](base);
                     };
                 });
                 return result;
-            })(this._protocolSchema['1']['server'], this._callbacks),
+            })(this._protocolSchema['1']['client'], this._callbacks),
             ready: () => {
                 if (spec && spec.ready) {
                     spec.ready();
