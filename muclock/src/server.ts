@@ -34,6 +34,7 @@ class MuClockClientPingHandler {
         if (this.pingCount >= targetPing) {
             return;
         }
+        console.log('start ping', this.protocolClient.sessionId, startClock);
 
         // do ping operation
         this.lastPingStart = startClock;
@@ -50,7 +51,11 @@ class MuClockClientPingHandler {
             return;
         }
 
-        const rtt = this.clock.now() - this.lastPingStart;
+        const currentClock = this.now();
+        const lastPingStart = this.lastPingStart;
+
+        const rtt = currentClock - lastPingStart;
+
         this.lastPingUUID = 0;
         this.lastPingStart = 0;
         this.statistic.addSample(rtt);

@@ -17,7 +17,7 @@ export class MuClockClient {
     private _clockScale:number = 1;
     private _clockShift:number = 0;
 
-    private _tickRate:number = 30;
+    public tickRate:number = 30;
     private _pingRate:number = 1000;
 
     private _localTimeSamples:number[] = [];
@@ -52,13 +52,17 @@ export class MuClockClient {
 
         this._lastPingStart = this._clock.now();
 
+        if (spec.tick) {
+            this._doTick = spec.tick;
+        }
+
         this._protocol.configure({
             message: {
                 init: ({ tickRate, serverClock }) => {
                     this._localTimeSamples.push(this._lastPingStart);
                     this._remoteTimeSamples.push(serverClock);
 
-                    this._tickRate = tickRate;
+                    this.tickRate = tickRate;
                     this._tickCount = Math.floor(serverClock / tickRate);
                     this._clockShift = serverClock - this._lastPingStart;
 
@@ -85,7 +89,6 @@ export class MuClockClient {
                     const localClock = this._lastPingStart;
                     const rtt = this._clock.now() - localClock;
                     this._pingStatistic.addSample(rtt);
-                    console.log('got sample:', localClock, serverClock);
                     if (this._localTimeSamples.length < this._clockBufferSize) {
                         this._localTimeSamples.push(localClock);
                         this._remoteTimeSamples.push(serverClock);
@@ -132,7 +135,7 @@ export class MuClockClient {
         this._lastNow = remoteClock;
 
         const targetPingCount = Math.floor(localClock / this._pingCount);
-        const targetTickCount = Math.floor(remoteClock / this._tickRate);
+        const targetTickCount = Math.floor(remoteClock / this.tickRate);
 
         if (this._pingCount < targetPingCount) {
             this._doPing();
@@ -145,7 +148,7 @@ export class MuClockClient {
 
     // queries the clock to get a ping
     public tick () : number {
-        return Math.min(this._tickCount + 1, this._remoteClock() / this._tickRate);
+        return Math.min(this._tickCount + 1, this._remoteClock() / this.tickRate);
     }
 
     public ping () : number {
