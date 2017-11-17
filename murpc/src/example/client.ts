@@ -6,11 +6,13 @@ export  = function (client:MuClient) {
     const protocol = new MuRPCClient(client, RPCSchema);
     protocol.configure({
         rpc: {
+            combine: () => {
 
+            },
         },
         ready: () => {
             console.log('client ready');
-            protocol.server.rpc.combine([4, 10, 15], (err, result) => {
+            protocol.server.rpc.combine([4, 10, 15], (result) => {
                 console.log('rpc combine result:', result);
             });
         },
