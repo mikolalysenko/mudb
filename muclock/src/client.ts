@@ -121,7 +121,7 @@ export class MuClockClient {
     private _remoteClock () : number {
         const localClock = this._clock.now();
         const remoteClock = Math.max(
-            localClock * this._clockScale + this._clockShift,
+            localClock * this._clockScale + this._clockShift + 2 * this._pingStatistic.median + this.tickRate,
             this._lastNow + 1e-6);
         this._lastNow = remoteClock;
         return remoteClock;
@@ -129,10 +129,7 @@ export class MuClockClient {
 
     public poll () {
         const localClock = this._clock.now();
-        const remoteClock = Math.max(
-            localClock * this._clockScale + this._clockShift,
-            this._lastNow + 1e-6);
-        this._lastNow = remoteClock;
+        const remoteClock = this._remoteClock();
 
         const targetPingCount = Math.floor(localClock / this._pingCount);
         const targetTickCount = Math.floor(remoteClock / this.tickRate);
