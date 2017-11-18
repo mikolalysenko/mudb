@@ -59,7 +59,7 @@ export class MuClockClient {
         this._protocol.configure({
             message: {
                 init: ({ tickRate, serverClock }) => {
-                    this._localTimeSamples.push(this._lastPingStart);
+                    this._localTimeSamples.push(this._clock.now());
                     this._remoteTimeSamples.push(serverClock);
 
                     this.tickRate = tickRate;
@@ -138,6 +138,8 @@ export class MuClockClient {
         if (this._pingCount < targetPingCount) {
             this._doPing();
         }
+
+        console.log(this._tickCount, targetTickCount, remoteClock, this._clockScale, this._clockShift);
 
         while (this._tickCount < targetTickCount) {
             this._doTick(++this._tickCount);
