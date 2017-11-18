@@ -83,5 +83,5 @@ export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSch
 }
 
 export function generateID() {
-    return (Date.now() + Math.floor(Math.random() * 10000));
+    return (Date.now() + Math.random()) * 10000;
 }
