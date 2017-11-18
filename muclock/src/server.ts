@@ -6,9 +6,9 @@ import { MuPingStatistic } from './ping-statistic';
 class MuClockClientPingHandler {
     public protocolClient:MuRemoteClientProtocol<typeof MuClockProtocol.client>;
     public server:MuClockServer;
-    public pingCount = 0;
+    public pingCount = -10;
     public connectTime:number = 0;
-    public pingRate:number = 1000;
+    public pingRate:number = 2500;
     public clock:MuClock;
     public statistic:MuPingStatistic;
 
@@ -34,9 +34,9 @@ class MuClockClientPingHandler {
         if (this.pingCount >= targetPing) {
             return;
         }
-        console.log('start ping', this.protocolClient.sessionId, startClock);
 
         // do ping operation
+        this.pingCount += 1;
         this.lastPingStart = startClock;
         this.lastPingUUID = Math.floor(Math.random() * 1e10);
         this.protocolClient.message.ping(this.lastPingUUID);
