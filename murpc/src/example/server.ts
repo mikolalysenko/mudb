@@ -16,12 +16,11 @@ export = function (server:MuServer) {
             combine: (arg, next) => {
                 let result = 0;
                 arg.forEach((element) => { result += element; });
-                next('success', result);
+                next(undefined, result);
             },
             getEnvironment: (arg, next) => {
-                if (arg) {
-                    console.log(arg);
-                }
+                console.log('client browser:', arg);
+                next(undefined, NodeVersion);
             },
         },
         connect: (client) => {

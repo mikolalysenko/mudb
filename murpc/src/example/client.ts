@@ -12,13 +12,13 @@ export  = function (client:MuClient) {
             combine: (arg, next) => {
                 let result = 0;
                 arg.forEach((element) => { result += element; });
-                next('succss', result);
+                next(undefined, result);
             },
             getEnvironment: (arg, next) => {
                 if (arg) {
                     console.log('server node version:', arg);
                     serverEnvironment = arg;
-                    next('success', browser);
+                    next(undefined, browser);
                  }
             },
         },

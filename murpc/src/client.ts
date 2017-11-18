@@ -40,7 +40,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             result[method] = (arg, next) => {
                 const id = generateID();
                 this._callbacks[id] = next;
-                callProtocol.server.message[method]({'base': this.schema.server[method][0].clone(arg), id});
+                callProtocol.server.message[method]({'base': arg, id});
             };
         });
         return result;
@@ -57,7 +57,11 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
                         rpc[method](base, (err, response) => {
-                            responseProtocol.server.message[method]({'base': this.schema.client[method][1].clone(response), id});
+                            if (err) {
+                                responseProtocol.server.message['error']({'base': err, id});
+                            } else {
+                                responseProtocol.server.message[method]({'base': response, id});
+                            }
                         });
                     };
                 });
@@ -70,9 +74,14 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
-                        callbacks[id](this.schema.client[method][1].clone(base));
+                        callbacks[id](base);
+                        delete callbacks[id];
                     };
                 });
+                result['error'] = ({base, id}) => {
+                    console.log('Error:', base);
+                    if (callbacks[id]) { delete callbacks[id]; }
+                };
                 return result;
             })(this._protocolSchema['1']['client'], this._callbacks),
             ready: () => {
