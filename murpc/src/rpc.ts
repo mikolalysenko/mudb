@@ -32,3 +32,47 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
             next:(err:MuRPCError|undefined, response?:RPCTable[method]['1']['identity']) => void) => void
     };
 }
+
+export interface MuRPCProtocolTablePhase<RPCTable extends MuRPCTable, Phase extends '0' | '1'> {
+    schema:{
+        [method in keyof RPCTable]:MuStruct<{
+            base:RPCTable[method][Phase];
+            id:MuUint32;
+        }>;
+    };
+}
+
+export interface MuRPCProtocolSchemaPhase<ProtocolSchema extends MuRPCProtocolSchema, Phase extends '0' | '1'> {
+    client:MuRPCProtocolTablePhase<ProtocolSchema['client'], Phase>['schema'];
+    server:MuRPCProtocolTablePhase<ProtocolSchema['server'], Phase>['schema'];
+}
+
+export interface MuRPCProtocolSchemaInterface<ProtocolSchema extends MuRPCProtocolSchema> {
+    '0':MuRPCProtocolSchemaPhase<ProtocolSchema, '0'>;
+    '1':MuRPCProtocolSchemaPhase<ProtocolSchema, '1'>;
+}
+
+export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSchema>(
+    schema:ProtocolSchema) : MuRPCProtocolSchemaInterface<ProtocolSchema> {
+    const protocolSchema = {};
+    for (let i = 0; i < 2; ++i) {
+        const result = {
+            client: {},
+            server: {},
+        };
+        Object.keys(schema.client).map((method) => result.client[method] = new MuStruct({
+            base: schema.client[method][i],
+            id: new MuUint32(),
+        }));
+        Object.keys(schema.server).map((method) => result.server[method] = new MuStruct({
+            base: schema.server[method][i],
+            id: new MuUint32(),
+        }));
+        protocolSchema[i] = result;
+    }
+    return <MuRPCProtocolSchemaInterface<ProtocolSchema>>protocolSchema;
+}
+
+export function generateID() {
+    return (Date.now() + Math.floor(Math.random() * 10000));
+}

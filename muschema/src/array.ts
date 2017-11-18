@@ -32,8 +32,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diff(base:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
-        const patch:{[index:string]:any} = {};
+    public diff(base:ValueSchema['identity'][], target:ValueSchema['identity'][]|undefined) {
+        let patch:{[index:string]:any} = {};
+        if (!target) {
+            patch = base;
+            return patch;
+        }
         const length:number = (base.length > target.length) ? base.length :target.length;
 
         for (let index = 0; index < length; index++) {
