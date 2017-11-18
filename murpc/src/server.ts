@@ -14,7 +14,7 @@ export class MuRemoteRPCClient<Schema extends MuRPCTable> {
             this.rpc[method] = (arg, next) => {
                 const id = generateID();
                 callbacks[id] = next;
-                callProtocol.clients[this.sessionId].message[method]({'base':arg, id});
+                callProtocol.clients[this.sessionId].message[method]({'base':clientSchema[method][0].clone(arg), id});
             };
         });
     }
@@ -88,7 +88,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                 const result = {} as {[method in keyof Schema['client']]:(client_, {base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = (client_, {base, id}) => {
-                        callbacks[id](base);
+                        callbacks[id](this.schema.client[method][1].clone(base));
                     };
                 });
                 return result;

@@ -40,7 +40,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             result[method] = (arg, next) => {
                 const id = generateID();
                 this._callbacks[id] = next;
-                callProtocol.server.message[method]({'base': arg, id});
+                callProtocol.server.message[method]({'base': this.schema.server[method][0].clone(arg), id});
             };
         });
         return result;
@@ -57,8 +57,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
                         rpc[method](base, (err, response) => {
-                            const response_base = this.schema.client[method][1].clone(response);
-                            responseProtocol.server.message[method]({'base': response_base, id});
+                            responseProtocol.server.message[method]({'base': this.schema.client[method][1].clone(response), id});
                         });
                     };
                 });
@@ -71,7 +70,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
-                        callbacks[id](base);
+                        callbacks[id](this.schema.client[method][1].clone(base));
                     };
                 });
                 return result;
