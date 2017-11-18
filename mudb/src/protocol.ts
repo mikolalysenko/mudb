@@ -136,6 +136,10 @@ export class MuProtocolFactory {
                 if (!messageSchema) {
                     return;
                 }
+                const handler = message[protoId];
+                if (!handler || !handler[messageId]) {
+                    return;
+                }
                 if (packetData === undefined) {
                     const m = messageSchema.clone(messageSchema.identity);
                     message[protoId][messageId](m, unreliable);
