@@ -1,5 +1,5 @@
 import { MuClient, MuClientProtocol } from 'mudb/client';
-import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, generateID } from './rpc';
+import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
 
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
@@ -96,4 +96,10 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             },
         });
     }
+}
+
+function generateID() {
+    const randomArray = new Uint16Array(1);
+    crypto.getRandomValues(randomArray);
+    return (Date.now() >>> 4) * 100000 + randomArray[0];
 }

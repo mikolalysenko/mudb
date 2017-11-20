@@ -81,7 +81,3 @@ export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSch
     });
     return <MuRPCProtocolSchemaInterface<ProtocolSchema>>protocolSchema;
 }
-
-export function generateID() {
-    return (Date.now() + Math.random()) * 10000;
-}

@@ -1,7 +1,8 @@
 import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
-import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, generateID } from './rpc';
+import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
 import { MuRPCClient } from './client';
 import { callbackify } from 'util';
+const crypto = require('crypto');
 
 export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly sessionId:string;
@@ -131,4 +132,9 @@ function findClient<ClientType extends MuRemoteRPCClient<MuRPCTable>>(clients:Cl
 function removeItem (array:any[], index:number) {
     array[index] = array[array.length - 1];
     array.pop();
+}
+
+function generateID() {
+    const buf = crypto.randomBytes(2);
+    return (Date.now() >>> 4) * 100000 + parseInt(buf.toString('hex'), 16);
 }
