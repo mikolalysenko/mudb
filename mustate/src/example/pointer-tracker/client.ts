@@ -1,6 +1,6 @@
 import { GameSchema } from './schema';
 import { MuClient } from 'mudb/client';
-import { MuClientState } from '../client';
+import { MuClientState } from '../../client';
 
 export = function (client:MuClient) {
     const canvas = document.createElement('canvas');
