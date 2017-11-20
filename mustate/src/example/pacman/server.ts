@@ -10,23 +10,15 @@ export = function (server:MuServer) {
     });
 
     protocol.configure({
-        state: (client, { x, y, color }) => {
-            protocol.state[client.sessionId] = { x, y, color };
-            protocol.commit();
+        state: (client, {}) => {
+
         },
         connect: (client) => {
-            protocol.state[client.sessionId] = {
-                x: 0,
-                y: 0,
-                color: '#fff',
-            };
-            protocol.commit();
+
         },
         disconnect: (client) => {
-            delete protocol.state[client.sessionId];
-            protocol.commit();
+
         },
     });
-
     server.start();
 };
