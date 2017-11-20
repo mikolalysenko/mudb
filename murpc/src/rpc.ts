@@ -1,6 +1,7 @@
 import { MuSchema } from 'muschema/schema';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
+import { MuString } from 'muschema/string';
 
 export type MuRPCError = string;
 
@@ -70,9 +71,13 @@ export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSch
         }));
         protocolSchema[i] = result;
     }
+    protocolSchema[1].client['error'] = new MuStruct({
+        base: new MuString(),
+        id: new MuUint32(),
+    });
+    protocolSchema[1].server['error'] = new MuStruct({
+        base: new MuString(),
+        id: new MuUint32(),
+    });
     return <MuRPCProtocolSchemaInterface<ProtocolSchema>>protocolSchema;
-}
-
-export function generateID() {
-    return (Date.now() + Math.floor(Math.random() * 10000));
 }

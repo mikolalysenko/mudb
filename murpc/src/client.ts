@@ -1,5 +1,5 @@
 import { MuClient, MuClientProtocol } from 'mudb/client';
-import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, generateID } from './rpc';
+import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
 
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
@@ -57,8 +57,11 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
                         rpc[method](base, (err, response) => {
-                            const response_base = this.schema.client[method][1].clone(response);
-                            responseProtocol.server.message[method]({'base': response_base, id});
+                            if (err) {
+                                responseProtocol.server.message['error']({'base': err, id});
+                            } else {
+                                responseProtocol.server.message[method]({'base': response, id});
+                            }
                         });
                     };
                 });
@@ -72,8 +75,13 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
                         callbacks[id](base);
+                        delete callbacks[id];
                     };
                 });
+                result['error'] = ({base, id}) => {
+                    console.log('Error:', base);
+                    if (callbacks[id]) { delete callbacks[id]; }
+                };
                 return result;
             })(this._protocolSchema['1']['client'], this._callbacks),
             ready: () => {
@@ -88,4 +96,10 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             },
         });
     }
+}
+
+function generateID() {
+    const randomArray = new Uint16Array(1);
+    crypto.getRandomValues(randomArray);
+    return (Date.now() >>> 4) * 100000 + randomArray[0];
 }

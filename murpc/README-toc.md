@@ -1,6 +1,19 @@
 # murpc
 Remote procedure calls for mudb
 
+# example
+**schema.ts**
+```
+
+```
+
+# table of contents
+
+# install #
+
+# api #
+
+
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 
