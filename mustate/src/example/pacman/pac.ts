@@ -244,12 +244,12 @@ let ghostHouseIndex = 0;
 
 /*======================Pacman====================*/
 export class Pacman {
-  public x;
-  public y;
-  public dir;
-  public nextDir;
-  public radius;
-  public mouthOpen;
+  public x:number;
+  public y:number;
+  public dir:number;
+  public nextDir:number|undefined;
+  public radius:number;
+  public mouthOpen:boolean;
 
   constructor(xCord, yCord, direction) {
     this.x = xCord;
@@ -406,17 +406,17 @@ export class Pacman {
 
 /*=================Ghost================*/
 export class Ghost {
-  public x;
-  public y;
-  public color;
-  public dir;
-  public isWeak;
-  public radius;
-  public isMoving;
-  public isBlinking;
-  public isDead;
-  public speed;
-  public stepCounter;
+  public x:number;
+  public y:number;
+  public color:string;
+  public dir:number;
+  public isWeak:boolean;
+  public radius:number;
+  public isMoving:boolean;
+  public isBlinking:boolean;
+  public isDead:boolean;
+  public speed:number;
+  public stepCounter:number;
 
   constructor(xCord, yCord, gColor, direction) {
     this.x = xCord;
@@ -1351,7 +1351,6 @@ function updateCanvas() {
       sleep(500);
       loseMessage();
     }
-
   } else if (pacmanWon() === true) {
     clearInterval(intervalId);
     sleep(500);
@@ -1588,7 +1587,6 @@ export function initCanvas(width, height, ctx_) {
 
 //listen to keyDown event
 export function onKeyDown(event) {
-  console.log(ctx);
   const keycode = event.keyCode;
   const pauseCode = 81; //q to pause
   const continueCode = 69; //e to resume
