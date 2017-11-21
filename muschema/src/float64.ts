@@ -23,4 +23,8 @@ export class MuFloat64 extends MuNumber {
         }
         return base;
     }
+
+    public getByteLength (x:MuFloat64) {
+        return 8;
+    }
 }

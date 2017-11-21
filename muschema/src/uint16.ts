@@ -25,4 +25,8 @@ export class MuUint16 extends MuNumber {
         }
         return base;
     }
+
+    public getByteLength (x:MuUint16) {
+        return 2;
+    }
 }
