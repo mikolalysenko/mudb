@@ -1,8 +1,8 @@
-import { MuNumber } from './_number';
+import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export class MuInt32 extends MuNumber {
-    public readonly muType = 'int32';
+    public readonly muType:MuNumberType = 'int32';
 
     constructor(value?:number) {
         super((value || 0) << 0);

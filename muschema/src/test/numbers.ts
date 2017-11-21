@@ -124,7 +124,7 @@ test('diff() & patch()', (t) => {
         const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const epsilon = CONSTANTS[muType].EPSILON;
+        const epsilon = CONSTANTS[muType]['EPSILON'];
 
         t.equals(n.diffBinary(1.0, -epsilon, ws), true);
         t.equals(n.diffBinary(1.0, epsilon, ws), true);

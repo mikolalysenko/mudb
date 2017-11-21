@@ -1,8 +1,8 @@
 import { MuSchema } from './schema';
 
 export type MuNumberType =
-    'float64' |
     'float32' |
+    'float64' |
     'int8'    |
     'int16'   |
     'int32'   |
