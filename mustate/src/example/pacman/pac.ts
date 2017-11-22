@@ -8,7 +8,6 @@ GLOBAL['right'] = 4;
 
 export const CANVAS_WIDTH = 510;
 export const CANVAS_HEIGHT = 510;
-let ctx;
 
 // game grid
 GLOBAL['GRID_WIDTH'] = 30;
@@ -38,7 +37,6 @@ GLOBAL['PACMAN_RADIUS'] = 9;
 GLOBAL['GHOST_RADIUS'] = 9;
 
 // game parameters
-let intervalId;
 GLOBAL['restartTimer'] = 0;
 GLOBAL['timerDelay'] = 80;
 GLOBAL['speed'] = 5;
@@ -49,23 +47,11 @@ GLOBAL['life'] = GLOBAL['MAX_LIFE'];
 GLOBAL['weakBonus'] = 200;
 GLOBAL['MAX_BEANS'] = 136;
 GLOBAL['beansLeft'] = GLOBAL['MAX_BEANS'];
-let weakCounter;
 GLOBAL['WEAK_DURATION'] = 10000 / GLOBAL['timerDelay'];
 
 //bean cases
 GLOBAL['NORMAL_BEAN'] = 1;
 GLOBAL['POWER_BEAN'] = 2;
-
-//spirtes instances
-let welcomePacman;
-let welcomeBlinky;
-let welcomeInky;
-let mrPacman;
-let blinky;
-let inky;
-let pinky;
-let clyde;
-let ghosts;
 
 //grid
 GLOBAL['grid_id'] = -1;
@@ -96,8 +82,8 @@ GLOBAL['CLOSED_GRID'] = 15;
 //game state and map
 GLOBAL['gameOn'] = false;
 GLOBAL['gamePaused'] = false;
-const maze = new Array(CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']);
-const mazeContent = [
+export const maze = new Array(CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']);
+export const mazeContent = [
   //row1
   [GLOBAL['LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_BOTTOM'],
     GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_TOP'], GLOBAL['TOP_ONLY'],
@@ -261,7 +247,7 @@ export class Pacman {
     this.mouthOpen = true;
   }
 
-  public draw(color = 'yellow') {
+  public draw(color = 'yellow', ctx) {
     ctx.fillStyle = color;
     ctx.beginPath();
 
@@ -463,7 +449,7 @@ export class Ghost {
     this.stepCounter = 0;
   }
 
-  public draw() {
+  public draw(ctx) {
     if (!this.isDead) {
       // body color
       if (this.isWeak) {
@@ -658,7 +644,7 @@ export class Ghost {
     this.dir = oppositeDir(this.dir);
   }
 
-  public move() {
+  public move(mrPacman, weakCounter) {
     this.isMoving = !this.isMoving; //so the ghost looks like it's moving
     if (this.isWeak) {
       //if weak, reduce speed and make an immediate turn.
@@ -720,7 +706,7 @@ export class Ghost {
           switch (this.color) {
             case GLOBAL['red']:
               //blinky
-              this.blinkyMove();
+              this.blinkyMove(mrPacman);
               break;
 
             case GLOBAL['cyan']:
@@ -731,7 +717,7 @@ export class Ghost {
 
             case GLOBAL['pink']:
               //pinky
-              this.pinkyMove();
+              this.pinkyMove(mrPacman);
               break;
           }
         }
@@ -739,19 +725,19 @@ export class Ghost {
     }
   }
 
-  public blinkyMove() {
-    this.moveToPacman(true);
+  public blinkyMove(mrPacman) {
+    this.moveToPacman(true, mrPacman);
   }
 
-  public pinkyMove() {
-    this.moveToPacman(false);
+  public pinkyMove(mrPacman) {
+    this.moveToPacman(false, mrPacman);
   }
 
   public inkyMove() {
     this.randomMove();
   }
 
-  public moveToPacman(targetPacman) {
+  public moveToPacman(targetPacman, mrPacman) {
     const veryLargeDistance = CANVAS_WIDTH * CANVAS_HEIGHT;
     let leftDist;
     let rightDist;
@@ -763,28 +749,28 @@ export class Ghost {
     if (currDir === GLOBAL['right'] || !canMove(this.x, this.y, GLOBAL['left'])) {
       leftDist = veryLargeDistance;
     } else {
-      leftDist = this.getTestDistance(GLOBAL['left'], targetPacman);
+      leftDist = this.getTestDistance(GLOBAL['left'], targetPacman, mrPacman);
     }
 
     //get distance to right
     if (currDir === GLOBAL['left'] || !canMove(this.x, this.y, GLOBAL['right'])) {
       rightDist = veryLargeDistance;
     } else {
-      rightDist = this.getTestDistance(GLOBAL['right'], targetPacman);
+      rightDist = this.getTestDistance(GLOBAL['right'], targetPacman, mrPacman);
     }
 
     //get distance - up
     if (currDir === GLOBAL['down'] || !canMove(this.x, this.y, GLOBAL['up'])) {
       upDist = veryLargeDistance;
     } else {
-      upDist = this.getTestDistance(GLOBAL['up'], targetPacman);
+      upDist = this.getTestDistance(GLOBAL['up'], targetPacman, mrPacman);
     }
 
     //get distance - down
     if (currDir === GLOBAL['up'] || !canMove(this.x, this.y, GLOBAL['down'])) {
       downDist = veryLargeDistance;
     } else {
-      downDist = this.getTestDistance(GLOBAL['down'], targetPacman);
+      downDist = this.getTestDistance(GLOBAL['down'], targetPacman, mrPacman);
     }
     this.dir = currDir;
     minDist = Math.min(Math.min(leftDist, rightDist), Math.min(upDist, downDist));
@@ -808,7 +794,7 @@ export class Ghost {
     this.moveOneStep();
   }
 
-  public getTestDistance(dir, targetPacman) {
+  public getTestDistance(dir, targetPacman, mrPacman) {
     let toReturn = 0;
     this.dir = dir;
     this.moveOneStep();
@@ -883,125 +869,125 @@ export class Grid {
     return 'Grid (' + this.x + ',' + this.y + ') - Grid Type: ' + this.gridType;
   }
 
-  public draw() {
+  public draw(ctx) {
     ctx.fillStyle = GLOBAL['BG_COLOR'];
     ctx.fillRect(this.x, this.y, GLOBAL['GRID_WIDTH'], GLOBAL['GRID_HEIGHT']);
     const gridType = this.gridType;
     if (gridType === undefined || gridType === GLOBAL['EMPTY_GRID']) {
-      this.drawBean();
+      this.drawBean(ctx);
       return;
     }
 
     switch (gridType) {
 
       case GLOBAL['LEFT_ONLY']:
-        this.addLeftEdge();
+        this.addLeftEdge(ctx);
         break;
 
       case GLOBAL['RIGHT_ONLY']:
-        this.addRightEdge();
+        this.addRightEdge(ctx);
         break;
 
       case GLOBAL['TOP_ONLY']:
-        this.addTopEdge();
+        this.addTopEdge(ctx);
         break;
 
       case GLOBAL['BOTTOM_ONLY']:
-        this.addBottomEdge();
+        this.addBottomEdge(ctx);
         break;
 
       case GLOBAL['LEFT_RIGHT']:
-        this.addLeftEdge();
-        this.addRightEdge();
+        this.addLeftEdge(ctx);
+        this.addRightEdge(ctx);
         break;
 
       case GLOBAL['LEFT_TOP']:
-        this.addLeftEdge();
-        this.addTopEdge();
+        this.addLeftEdge(ctx);
+        this.addTopEdge(ctx);
         break;
 
       case GLOBAL['LEFT_BOTTOM']:
-        this.addLeftEdge();
-        this.addBottomEdge();
+        this.addLeftEdge(ctx);
+        this.addBottomEdge(ctx);
         break;
 
       case GLOBAL['RIGHT_TOP']:
-        this.addRightEdge();
-        this.addTopEdge();
+        this.addRightEdge(ctx);
+        this.addTopEdge(ctx);
         break;
 
       case GLOBAL['RIGHT_BOTTOM']:
-        this.addRightEdge();
-        this.addBottomEdge();
+        this.addRightEdge(ctx);
+        this.addBottomEdge(ctx);
         break;
 
       case GLOBAL['TOP_BOTTOM']:
-        this.addTopEdge();
-        this.addBottomEdge();
+        this.addTopEdge(ctx);
+        this.addBottomEdge(ctx);
         break;
 
       case GLOBAL['CROSS_RD']:
-        this.makeCrossRoad();
+        this.makeCrossRoad(ctx);
         break;
 
       case GLOBAL['LEFT_TOP_RIGHT']:
-        this.addLeftEdge();
-        this.addTopEdge();
-        this.addRightEdge();
+        this.addLeftEdge(ctx);
+        this.addTopEdge(ctx);
+        this.addRightEdge(ctx);
         break;
 
       case GLOBAL['TOP_RIGHT_BOTTOM']:
-        this.addTopEdge();
-        this.addRightEdge();
-        this.addBottomEdge();
+        this.addTopEdge(ctx);
+        this.addRightEdge(ctx);
+        this.addBottomEdge(ctx);
         break;
 
       case GLOBAL['RIGHT_BOTTOM_LEFT']:
-        this.addRightEdge();
-        this.addBottomEdge();
-        this.addLeftEdge();
+        this.addRightEdge(ctx);
+        this.addBottomEdge(ctx);
+        this.addLeftEdge(ctx);
         break;
 
       case GLOBAL['BOTTOM_LEFT_TOP']:
-        this.addBottomEdge();
-        this.addLeftEdge();
-        this.addTopEdge();
+        this.addBottomEdge(ctx);
+        this.addLeftEdge(ctx);
+        this.addTopEdge(ctx);
         break;
 
       case GLOBAL['CLOSED_GRID']:
-        this.addLeftEdge();
-        this.addTopEdge();
-        this.addBottomEdge();
-        this.addRightEdge();
+        this.addLeftEdge(ctx);
+        this.addTopEdge(ctx);
+        this.addBottomEdge(ctx);
+        this.addRightEdge(ctx);
         break;
 
       default:
         break;
     }
-    this.drawBean();
+    this.drawBean(ctx);
   }
 
-  public addLeftEdge() {
+  public addLeftEdge(ctx) {
     ctx.fillStyle = GLOBAL['BORDER_COLOR'];
     ctx.fillRect(this.x, this.y, GLOBAL['WALL_WIDTH'], GLOBAL['GRID_HEIGHT']);
   }
 
-  public addRightEdge() {
+  public addRightEdge(ctx) {
     ctx.fillStyle = GLOBAL['BORDER_COLOR'];
     ctx.fillRect(this.x + GLOBAL['GRID_WIDTH'] - GLOBAL['WALL_WIDTH'], this.y, GLOBAL['WALL_WIDTH'], GLOBAL['GRID_HEIGHT']);
   }
 
-  public addTopEdge() {
+  public addTopEdge(ctx) {
     ctx.fillStyle = GLOBAL['BORDER_COLOR'];
     ctx.fillRect(this.x, this.y, GLOBAL['GRID_WIDTH'], GLOBAL['WALL_WIDTH']);
   }
 
-  public addBottomEdge() {
+  public addBottomEdge(ctx) {
     ctx.fillStyle = GLOBAL['BORDER_COLOR'];
     ctx.fillRect(this.x, this.y + GLOBAL['GRID_HEIGHT'] - GLOBAL['WALL_WIDTH'], GLOBAL['GRID_WIDTH'], GLOBAL['WALL_WIDTH']);
   }
 
-  public makeCrossRoad() {
+  public makeCrossRoad(ctx) {
     ctx.fillStyle = GLOBAL['BORDER_COLOR'];
     ctx.fillRect(this.x, this.y, GLOBAL['WALL_WIDTH'], GLOBAL['WALL_WIDTH']);
     ctx.fillRect(this.x + GLOBAL['GRID_WIDTH'] - GLOBAL['WALL_WIDTH'], this.y, GLOBAL['WALL_WIDTH'], GLOBAL['WALL_WIDTH']);
@@ -1009,7 +995,7 @@ export class Grid {
     ctx.fillRect(this.x + GLOBAL['GRID_WIDTH'] - GLOBAL['WALL_WIDTH'], this.y + GLOBAL['GRID_HEIGHT'] - GLOBAL['WALL_WIDTH'], GLOBAL['WALL_WIDTH'], GLOBAL['WALL_WIDTH']);
   }
 
-  public drawBean() {
+  public drawBean(ctx) {
     const beanType = this.beanType;
     const centerX = this.x + GLOBAL['GRID_WIDTH'] / 2;
     const centerY = this.y + GLOBAL['GRID_HEIGHT'] / 2;
@@ -1059,14 +1045,14 @@ function oppositeDir(dir) {
   }
 }
 
-function getRowIndex(yCord) {
+export function getRowIndex(yCord) {
   if (yCord === undefined) {
     return -1; //err
   }
   return Math.floor(yCord / GLOBAL['GRID_HEIGHT']);
 }
 
-function getColIndex(xCord) {
+export function getColIndex(xCord) {
   if (xCord === undefined) {
     return -1; //err
   }
@@ -1118,592 +1104,14 @@ function canMove(x, y, dir) {
   return canMove_;
 }
 
-function onGridCenter(x, y) {
+export function onGridCenter(x, y) {
   return xOnGridCenter(y) && yOnGridCenter(x);
 }
 
-function xOnGridCenter(y) {
-  return ((y - GLOBAL['GRID_WIDTH'] / 2) % GLOBAL['GRID_WIDTH']) === 0;
+export function xOnGridCenter(y) {
+  return (((y - GLOBAL['GRID_WIDTH'] / 2) % GLOBAL['GRID_WIDTH']) === 0);
 }
 
-function yOnGridCenter(x) {
-  return ((x - GLOBAL['GRID_HEIGHT'] / 2) % GLOBAL['GRID_HEIGHT']) === 0;
-}
-
-/*=================Run Methods================*/
-function initMaze() {
-  for (let i = 0; i < maze.length; i++) {
-    const oneRow = new Array(CANVAS_WIDTH / GLOBAL['GRID_WIDTH']);
-    maze[i] = oneRow;
-  }
-
-  // draw maze with full beans
-  for (let row = 0; row < CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']; row++) {
-    for (let col = 0; col < CANVAS_WIDTH / GLOBAL['GRID_WIDTH']; col++) {
-      const beanType = GLOBAL['NORMAL_BEAN'];
-      const newGrid = new Grid(col * GLOBAL['GRID_WIDTH'], row * GLOBAL['GRID_HEIGHT'], mazeContent[row][col], beanType);
-
-      maze[row][col] = newGrid;
-      newGrid.draw();
-    }
-  }
-
-  //overwrite beans that shouldn't ecist
-  for (let i = 0; i < GLOBAL['noBean'].length; i++) {
-    const x = GLOBAL['noBean'][i][0];
-    const y = GLOBAL['noBean'][i][1];
-    maze[x][y].beanType = undefined;
-    maze[x][y].draw();
-  }
-
-  // draw power beans
-  for (let i = 0; i < GLOBAL['powerBeans'].length; i++) {
-    const x = GLOBAL['powerBeans'][i][0];
-    const y = GLOBAL['powerBeans'][i][1];
-    maze[x][y].beanType = GLOBAL['POWER_BEAN'];
-    maze[x][y].draw();
-  }
-}
-
-function showScore() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(CANVAS_WIDTH - 250, 10, 190, 40);
-  ctx.fillStyle = 'white';
-  ctx.font = '24px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('score: ' + Math.floor(GLOBAL['score']), CANVAS_WIDTH - 250, 37);
-}
-
-function showLives() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(CANVAS_WIDTH - 80, 10, 70, 30);
-  for (let i = 0; i < GLOBAL['life'] - 1; i++) {
-    GLOBAL['lives'][i] = new Pacman(CANVAS_WIDTH - 50 + 25 * i, 30, GLOBAL['right']);
-    GLOBAL['lives'][i].draw();
-  }
-}
-
-function printInstruction() {
-  ctx.fillStyle = 'white';
-  ctx.font = '12px monospace';
-  ctx.textAlign = 'left';
-
-  const txt = 'WELCOME TO \nPACMAN 15-237!\n\n\nArrow keys or\nWASD to move\n\nQ to pause\nE to resume\nR to restart';
-  const x = 12;
-  const y = CANVAS_HEIGHT - 200;
-  const lineheight = 15;
-  const lines = txt.split('\n');
-
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], x, y + (i * lineheight));
-  }
-
-  if (ghosts.length === 0) {
-    ctx.fillStyle = 'black';
-    ctx.fillRect(x, CANVAS_WIDTH - 40, 70, 30);
-    ctx.fillStyle = 'red';
-    ctx.font = '16px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('GOD MODE', x, CANVAS_WIDTH - 20);
-  }
-
-}
-
-function gameOver() {
-  for (let i = 0; i < ghosts.length; i++) {
-    if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
-      !ghosts[i].isWeak) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function staticArrayContains(cord) {
-  const x = cord[0];
-  const y = cord[1];
-  for (let i = 0; i < GLOBAL['staticGrids'].length; i++) {
-    if (x === GLOBAL['staticGrids'][i][0] &&
-      y === GLOBAL['staticGrids'][i][1]) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function sleep(ms) {
-  const dt = new Date();
-  dt.setTime(dt.getTime() + ms);
-  while (new Date().getTime() < dt.getTime()) {  }
-}
-
-function fixGrids(x, y) {
-  const row = getRowIndex(y);
-  const col = getColIndex(x);
-
-  if (xOnGridCenter(y)) {
-    maze[row][col].draw();
-    if (col + 1 < maze.length && !staticArrayContains([row, col + 1])) {
-      maze[row][col + 1].draw();
-    }
-    if (col - 1 >= 0 && !staticArrayContains([row, col - 1])) {
-      maze[row][col - 1].draw();
-    }
-  } else if (yOnGridCenter(x)) {
-    maze[row][col].draw();
-    if (row + 1 < maze.length && !staticArrayContains([row + 1, col])) {
-      maze[row + 1][col].draw();
-    }
-    if (row - 1 >= 0 && !staticArrayContains([row - 1, col])) {
-      maze[row - 1][col].draw();
-    }
-  }
-}
-
-function loseMessage() {
-  //draw popup
-  ctx.fillStyle = 'black';
-  ctx.strokeStyle = 'red';
-  ctx.lineWidth = 5;
-  ctx.fillRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
-  ctx.strokeRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
-
-  //write message
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'red';
-  ctx.font = '26px monospace';
-  ctx.fillText('GAME OVER', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 7);
-  ctx.font = '12px monospace';
-  ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
-}
-
-function pacmanWon() {
-  return GLOBAL['beansLeft'] === 0;
-}
-
-function winMessage() {
-  //draw popup
-  ctx.fillStyle = 'black';
-  ctx.strokeStyle = 'green';
-  ctx.lineWidth = 5;
-  ctx.fillRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
-  ctx.strokeRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
-
-  //write message
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'white';
-  ctx.font = '16px monospace';
-  ctx.fillText('Congratulations, you won!', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 6);
-  ctx.font = '12px monospace';
-  ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
-}
-
-function eatBean() {
-  if (onGridCenter(mrPacman.x, mrPacman.y)) {
-    if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['NORMAL_BEAN']) {
-      GLOBAL['score'] += 10; //modified
-      showScore();
-      GLOBAL['beansLeft']--;
-    } else if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['POWER_BEAN']) {
-      GLOBAL['score'] += 50; //modified
-      showScore();
-      GLOBAL['beansLeft']--;
-
-      //ghosts enter weak mode
-      for (let i = 0; i < ghosts.length; i++) {
-        ghosts[i].isWeak = true;
-      }
-      weakCounter = GLOBAL['WEAK_DURATION'];
-    }
-    maze[mrPacman.getRow()][mrPacman.getCol()].beanType = undefined;
-    maze[mrPacman.getRow()][mrPacman.getCol()].draw();
-  }
-}
-
-function eatGhost() {
-  for (let i = 0; i < ghosts.length; i++) {
-    if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
-      ghosts[i].isWeak && !ghosts[i].isDead) {
-      GLOBAL['score'] += Math.floor(GLOBAL['weakBonus']);
-      GLOBAL['weakBonus'] *= 2;
-      showScore();
-      ghosts[i].isDead = true;
-      ghosts[i].toGhostHouse();
-    }
-  }
-}
-
-function updateCanvas() {
-  GLOBAL['restartTimer']++;
-  if (gameOver() === true) {
-    GLOBAL['life']--;
-    // mrPacman.dieAnimation();
-    showLives(); // show lives on top right corner
-    if (GLOBAL['life'] > 0) {
-      sleep(500);
-      clearInterval(intervalId); // 刷新
-      fixGrids(mrPacman.x, mrPacman.y);
-      for (let i = 0; i < ghosts.length; i++) {
-        fixGrids(ghosts[i].x, ghosts[i].y);
-      }
-      run();
-    } else {
-      clearInterval(intervalId);
-      sleep(500);
-      loseMessage();
-    }
-  } else if (pacmanWon() === true) {
-    clearInterval(intervalId);
-    sleep(500);
-    winMessage();
-  } else { //正常游戏
-    if (weakCounter > 0 && weakCounter < 2000 / GLOBAL['timerDelay']) { //weakcounter: ghosts in weak
-      for (let i = 0; i < ghosts.length; i++) {
-        ghosts[i].isBlinking = !ghosts[i].isBlinking;
-      }
-    }
-    if (weakCounter > 0) {
-      weakCounter--;
-    }
-    if (weakCounter === 0) {
-      for (let i = 0; i < ghosts.length; i++) {
-        ghosts[i].isDead = false;
-        ghosts[i].isWeak = false;
-        ghosts[i].isBlinking = false;
-        GLOBAL['weakBonus'] = 200;
-      }
-    }
-
-    eatBean();
-    eatGhost();
-    mrPacman.move();
-
-    for (let i = 0; i < ghosts.length; i++) {
-      if (ghosts[i].isDead === false) {
-        ghosts[i].move();
-      }
-    }
-
-    fixGrids(mrPacman.x, mrPacman.y);
-    for (let i = 0; i < ghosts.length; i++) {
-      fixGrids(ghosts[i].x, ghosts[i].y);
-    }
-
-    mrPacman.draw();
-    for (let i = 0; i < ghosts.length; i++) {
-      ghosts[i].draw();
-    }
-  }
-}
-
-function countDown() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(CANVAS_HEIGHT - 85, 70, 80, 80);
-  ctx.fillStyle = 'red';
-  ctx.font = '50px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('3', CANVAS_HEIGHT - 43, 130);
-  setTimeout(function() {
-    ctx.fillStyle = 'black';
-    ctx.fillRect(CANVAS_HEIGHT - 85, 70, 80, 80);
-    ctx.fillStyle = 'orange';
-    ctx.fillText('2', CANVAS_HEIGHT - 43, 130);
-    setTimeout(function() {
-      ctx.fillStyle = 'black';
-      ctx.fillRect(CANVAS_HEIGHT - 85, 70, 80, 80);
-      ctx.fillStyle = 'yellow';
-      ctx.fillText('1', CANVAS_HEIGHT - 43, 130);
-      setTimeout(function() {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(CANVAS_HEIGHT - 85, 70, 80, 80);
-        ctx.fillStyle = 'green';
-        ctx.textAlign = 'center';
-        ctx.fillText('GO', CANVAS_HEIGHT - 43, 130);
-        setTimeout(function() {
-          intervalId = setInterval(updateCanvas, GLOBAL['timerDelay']);
-        },         500);
-      },         1000);
-    },         1000);
-  },         1000);
-}
-
-function run(isGodMode = false) {
-  showScore();
-
-  mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, GLOBAL['right']);
-  if (!isGodMode) {
-    blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
-    inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
-    pinky = new Ghost(0, 0, GLOBAL['pink'], GLOBAL['down']);
-    clyde = new Ghost(0, 0, GLOBAL['orange'], GLOBAL['down']);
-
-    blinky.toGhostHouse();
-    inky.toGhostHouse();
-    pinky.toGhostHouse();
-    clyde.toGhostHouse();
-
-    ghosts = [blinky, inky, pinky, clyde];
-
-    inky.draw();
-    blinky.draw();
-    pinky.draw();
-    clyde.draw();
-  } else {
-    ghosts = [];
-  }
-  showLives();
-  printInstruction();
-
-  mrPacman.draw();
-  countDown();
-}
-
-function updateWelcomeScreen() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, CANVAS_HEIGHT / 2, CANVAS_WIDTH, 140);
-  welcomePacman.mouthOpen = !welcomePacman.mouthOpen;
-  welcomeBlinky.isMoving = !welcomeBlinky.isMoving;
-  welcomeInky.isMoving = !welcomeInky.isMoving;
-  welcomePacman.draw();
-  welcomeInky.draw();
-  welcomeBlinky.draw();
-}
-
-export function initFields() {
-  // body...
-  for (let i = 6; i < 10; i++) {
-    GLOBAL['powerBeans'][GLOBAL['ghostHouseIndex']] = [i, 9];
-    GLOBAL['ghostHouseIndex']++;
-  }
-
-  //fill up staticGrids[]
-  for (let i = 0; i < 2; i++) {
-    for (let j = 8; j < 17; j++) {
-      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-      GLOBAL['staticGridsIndex']++;
-    }
-  }
-  for (let i = 9; i < 17; i++) {
-    for (let j = 0; j < 4; j++) {
-      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-      GLOBAL['staticGridsIndex']++;
-    }
-  }
-  for (let i = 2; i < 6; i++) {
-    for (let j = 14; j < 17; j++) {
-      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-      GLOBAL['staticGridsIndex']++;
-    }
-  }
-
-  //fill up noBean[]
-  for (let i = 0; i < 2; i++) {
-    for (let j = 8; j < 17; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let i = 2; i < 6; i++) {
-    for (let j = 14; j < 17; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let i = 9; i < 17; i++) {
-    for (let j = 0; j < 4; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let i = 1; i < 6; i++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 2];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let i = 1; i < 4; i += 2) {
-    for (let j = 4; j < 7; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let j = 8; j < 13; j++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [3, j];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let j = 1; j < 7; j++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let i = 5; i < 10; i++) {
-    for (let j = 8; j < 11; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let j = 12; j < 16; j++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let j = 12; j < 16; j++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [9, j];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let i = 11; i < 16; i += 2) {
-    for (let j = 5; j < 8; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let i = 11; i < 16; i += 2) {
-    for (let j = 9; j < 12; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-  for (let j = 13; j < 16; j++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [11, j];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let i = 12; i < 16; i++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 15];
-    GLOBAL['noBeanIndex']++;
-  }
-  for (let i = 13; i < 17; i++) {
-    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 13];
-    GLOBAL['noBeanIndex']++;
-  }
-}
-
-export function initCanvas(width, height, ctx_) {
-  if (width === undefined || !(width instanceof Number)) {
-    width = CANVAS_WIDTH;
-  }
-  if (height === undefined || !(height instanceof Number)) {
-    height = CANVAS_HEIGHT;
-  }
-
-  ctx = ctx_;
-  ctx_.fillStyle = 'black';
-  ctx_.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-}
-
-//listen to keyDown event
-export function onKeyDown(event) {
-  const keycode = event.keyCode;
-  const pauseCode = 81; //q to pause
-  const continueCode = 69; //e to resume
-  const restartCode = 82; //r to restart
-  const godModeCode = 71; //g to enter god mode
-
-  // wasd
-  const wCode = 87;
-  const aCode = 65;
-  const sCode = 83;
-  const dCode = 68;
-  //arrow keys
-  const leftCode = 37;
-  const upCode = 38;
-  const rightCode = 39;
-  const downCode = 40;
-
-  //start game
-  if (!GLOBAL['gameOn']) {
-    if (keycode === sCode) {
-      clearInterval(intervalId);
-      GLOBAL['gameOn'] = true;
-      GLOBAL['gamePaused'] = false;
-      initMaze();
-      run();
-      return;
-    } else if (keycode === godModeCode) {
-      clearInterval(intervalId);
-      ghosts = [];
-      GLOBAL['gameOn'] = true;
-      GLOBAL['gamePaused'] = false;
-      initMaze();
-      run(true);
-      return;
-    }
-  } else {
-
-    //pause game
-    if (keycode === pauseCode && !GLOBAL['gamePaused']) {
-      clearInterval(intervalId);
-      GLOBAL['gamePaused'] = true;
-      return;
-    }
-
-    //resume game
-    if (keycode === continueCode && GLOBAL['gamePaused']) {
-      intervalId = setInterval(updateCanvas, GLOBAL['timerDelay']);
-      GLOBAL['gamePaused'] = false;
-      return;
-    }
-
-    //restart game
-    if (keycode === restartCode && GLOBAL['restartTimer'] > 0) {
-      //can't restart game if a game was just refreshed.
-      GLOBAL['restartTimer'] = 0;
-      clearInterval(intervalId);
-      GLOBAL['gameOn'] = true;
-      GLOBAL['gamePaused'] = false;
-      GLOBAL['score'] = 0;
-      GLOBAL['life'] = GLOBAL['MAX_LIFE'];
-      GLOBAL['beansLeft'] = GLOBAL['MAX_BEANS'];
-      initMaze();
-      run();
-    }
-
-    //4-way controls
-    switch (keycode) {
-      case upCode:
-      case wCode:
-        mrPacman.nextDir = mrPacman.dir === GLOBAL['up'] ? undefined : GLOBAL['up'];
-        break;
-
-      case rightCode:
-      case dCode:
-        mrPacman.nextDir = mrPacman.dir === GLOBAL['right'] ? undefined : GLOBAL['right'];
-        break;
-
-      case leftCode:
-      case aCode:
-        mrPacman.nextDir = mrPacman.dir === GLOBAL['left'] ? undefined : GLOBAL['left'];
-        break;
-
-      case downCode:
-      case sCode:
-        mrPacman.nextDir = mrPacman.dir === GLOBAL['down'] ? undefined : GLOBAL['down'];
-        break;
-
-      default:
-        break;
-    }
-  }
-}
-
-export function welcomeScreen() {
-  GLOBAL['gameOn'] = false;
-  GLOBAL['gamePaused'] = false;
-  // welcome text
-  ctx.fillStyle = 'white';
-  ctx.font = '80px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('PACMAN', CANVAS_WIDTH / 2, 170);
-  ctx.font = '20px monospace';
-  ctx.fillText('Press s to start', CANVAS_WIDTH / 2, 220);
-  ctx.font = '14px monospace';
-  ctx.fillText('DEVELOPED BY: ZI WANG, BINGYING XIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 20 * 19);
-
-  welcomePacman = new Pacman(CANVAS_WIDTH / 5, CANVAS_HEIGHT / 3 * 2, GLOBAL['right']);
-  welcomePacman.radius = 30;
-  welcomePacman.draw();
-
-  welcomeBlinky = new Ghost(CANVAS_WIDTH / 5 * 3.3, CANVAS_HEIGHT / 3 * 2, GLOBAL['red'], GLOBAL['left']);
-  welcomeBlinky.radius = 30;
-  welcomeBlinky.draw();
-
-  welcomeInky = new Ghost(CANVAS_WIDTH / 5 * 4, CANVAS_HEIGHT / 3 * 2, GLOBAL['cyan'], GLOBAL['right']);
-  welcomeInky.radius = 30;
-  welcomeInky.draw();
-  intervalId = setInterval(updateWelcomeScreen, GLOBAL['timerDelay'] * 2);
+export function yOnGridCenter(x) {
+  return (((x - GLOBAL['GRID_HEIGHT'] / 2) % GLOBAL['GRID_HEIGHT']) === 0);
 }
