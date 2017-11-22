@@ -1,25 +1,31 @@
 import { MuSchema } from './schema';
+import { MuWriteStream, MuReadStream } from 'mustreams';
 
 // tslint:disable-next-line:class-name
-export interface _MuStructT<StructSpec extends { [prop:string]:MuSchema<any> }> {
-    v:{
-        [P in keyof StructSpec]: StructSpec[P]['identity'];
-    };
+export interface _SchemaDictionary {
+    [prop:string]:MuSchema<any>;
 }
 
-export class MuStruct<StructSpec extends { [prop:string]:MuSchema<any> }>
-        implements MuSchema<_MuStructT<StructSpec>['v']> {
+export type _MuStructT<StructSpec extends _SchemaDictionary> = {
+    [P in keyof StructSpec]:StructSpec[P]['identity'];
+};
+
+export class MuStruct<StructSpec extends _SchemaDictionary>
+        implements MuSchema<_MuStructT<StructSpec>> {
     public readonly muType = 'struct';
     public readonly muData:StructSpec;
-    public readonly identity:_MuStructT<StructSpec>['v'];
+    public readonly identity:_MuStructT<StructSpec>;
     public readonly json:object;
 
-    public readonly alloc:() => _MuStructT<StructSpec>['v'];
-    public readonly free:(value:_MuStructT<StructSpec>['v']) => void;
-    public readonly clone:(value:_MuStructT<StructSpec>['v']) => _MuStructT<StructSpec>['v'];
+    public readonly alloc:() => _MuStructT<StructSpec>;
+    public readonly free:(value:_MuStructT<StructSpec>) => void;
+    public readonly clone:(value:_MuStructT<StructSpec>) => _MuStructT<StructSpec>;
 
-    public readonly diff:(base:_MuStructT<StructSpec>['v'], target:_MuStructT<StructSpec>['v']) => any;
-    public readonly patch:(base:_MuStructT<StructSpec>['v'], patch:any) => _MuStructT<StructSpec>['v'];
+    public readonly diff:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>) => any;
+    public readonly patch:(base:_MuStructT<StructSpec>, patch:any) => _MuStructT<StructSpec>;
+
+    public readonly diffBinary:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
+    public readonly patchBinary:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
 
     constructor (spec:StructSpec) {
         const structProps:string[] = Object.keys(spec).sort();
