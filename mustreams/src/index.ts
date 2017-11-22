@@ -124,6 +124,10 @@ export class MuWriteStream {
         this.offset += bytes.length;
     }
 
+    public writeUint8At (offset:number, x:number) {
+        this.buffer.dataView.setUint8(offset, x);
+    }
+
     public writeUint32At (offset:number, x:number) {
         this.buffer.dataView.setUint32(offset, x, LITTLE_ENDIAN);
     }
@@ -192,5 +196,9 @@ export class MuReadStream {
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
         this.offset += byteLength;
         return decodeString(bytes);
+    }
+
+    public readUint8At (offset:number) : number {
+        return this.buffer.dataView.getUint8(offset);
     }
 }

@@ -5,7 +5,7 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-const muTypeToTypedArray = {
+const numType2ArrayType = {
     float32: Float32Array,
     float64: Float64Array,
     int8: Int8Array,
@@ -28,7 +28,7 @@ export type _MuVectorType<ValueSchema extends MuNumber> = {
 }[ValueSchema['muType']];
 
 export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVectorType<ValueSchema>> {
-    private _constructor:typeof muTypeToTypedArray[ValueSchema['muType']];
+    private _constructor:typeof numType2ArrayType[ValueSchema['muType']];
     private _pool:_MuVectorType<ValueSchema>[] = [];
 
     public readonly identity:_MuVectorType<ValueSchema>;
@@ -39,7 +39,7 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     public readonly dimension:number;
 
     constructor (valueSchema:ValueSchema, dimension:number) {
-        this._constructor = muTypeToTypedArray[valueSchema.muType];
+        this._constructor = numType2ArrayType[valueSchema.muType];
 
         this.identity = new this._constructor(dimension);
         for (let i = 0; i < dimension; ++i) {
@@ -77,38 +77,58 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
         const dimension = this.dimension;
         const valueSchema:MuSchema<number> = this.muData;
 
-        let numPatch = 0;
-        stream.grow(4);
-        stream.writeUint32(numPatch);
+        stream.grow(Math.ceil(dimension / 8));
 
+        let tracker = 0;
+        let numDiff = 0;
         for (let i = 0; i < dimension; ++i) {
-            const prefixOffset = stream.offset;
+            if (base[i] !== target[i]) {
+                tracker |= 1 << (i & 7);
+                ++numDiff;
+            }
 
-            stream.grow(4);
-            stream.writeUint32(i);
-
-            const different = valueSchema.diffBinary!(base[i], target[i], stream);
-            if (different) {
-                numPatch++;
-            } else {
-                stream.offset = prefixOffset;
+            if ((i && (i % 7) === 0) || (dimension - i === 1)) {
+                stream.writeUint8(tracker);
+                tracker = 0;
             }
         }
-        stream.writeUint32At(0, numPatch);
 
-        return numPatch > 0;
+        stream.grow(numDiff * valueSchema.getByteLength!(valueSchema));
+
+        const valueType = valueSchema.muType;
+        const write = `write${valueType.charAt(0).toUpperCase()}${valueType.slice(1)}`;
+        for (let i = 0; i < dimension; ++i) {
+            if (base[i] !== target[i]) {
+                stream[write](target[i]);
+            }
+        }
+
+        return numDiff > 0;
     }
 
     public patchBinary (base:_MuVectorType<ValueSchema>, stream:MuReadStream) {
-        const result = this.clone(base);
+        const valueType = this.muData.muType;
+        const read = `read${valueType.charAt(0).toUpperCase()}${valueType.slice(1)}`;
 
-        const numPatch = stream.readUint32();
-        const valueSchema:MuSchema<number> = this.muData;
-        for (let i = 0; i < numPatch; ++i) {
-            const index = stream.readUint32();
-            result[index] = valueSchema.patchBinary!(base[index], stream);
+        const trackerOffset = stream.offset;
+        const trackerBytes = Math.ceil(this.dimension / 8);
+        stream.offset += trackerBytes;
+
+        const result = this.clone(base);
+        for (let i = 0; i < trackerBytes; ++i) {
+            const start = i * 8;
+            const indices = stream.readUint8At(trackerOffset + i);
+            for (let j = 0; j < 8; ++j) {
+                if (indices & (1 << j)) {
+                    result[start + j] = stream[read]();
+                }
+            }
         }
 
         return result;
+    }
+
+    public getByteLength (vec:_MuVectorType<ValueSchema>) {
+        return this.identity.byteLength;
     }
 }
