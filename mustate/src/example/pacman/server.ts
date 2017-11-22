@@ -10,14 +10,17 @@ export = function (server:MuServer) {
     });
 
     protocol.configure({
-        state: (client, {}) => {
-
+        state: (client, {x, y, color, dir, mouthOpen, isLive}) => {
+            protocol.state[client.sessionId] = {x, y, color, dir, mouthOpen, isLive};
+            protocol.commit();
         },
         connect: (client) => {
 
         },
         disconnect: (client) => {
-
+            protocol.state[client.sessionId]['isLive'] = false;
+            protocol.commit();
+            delete protocol.state[client.sessionId];
         },
     });
     server.start();

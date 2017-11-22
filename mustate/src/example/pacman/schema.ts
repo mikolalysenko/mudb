@@ -12,6 +12,7 @@ export const PacmanSchema = new MuStruct({
     color: new MuString(),
     dir: new MuFloat64(),
     mouthOpen: new MuBoolean(),
+    isLive: new MuBoolean(),
 });
 
 export const GhostSchema = new MuStruct({

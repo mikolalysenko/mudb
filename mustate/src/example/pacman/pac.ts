@@ -237,18 +237,20 @@ export class Pacman {
   public nextDir:number|undefined;
   public radius:number;
   public mouthOpen:boolean;
+  public color:string;
 
-  constructor(xCord, yCord, direction) {
+  constructor(xCord, yCord, color='yellow', direction, mouthOpen=true) {
     this.x = xCord;
     this.y = yCord;
     this.dir = direction;
     this.nextDir = undefined; //the direction to turn at next available turning point
     this.radius = 9;
-    this.mouthOpen = true;
+    this.mouthOpen = mouthOpen;
+    this.color = color;
   }
 
-  public draw(color = 'yellow', ctx) {
-    ctx.fillStyle = color;
+  public draw(ctx) {
+    ctx.fillStyle = this.color;
     ctx.beginPath();
 
     if (!this.mouthOpen) {
@@ -582,9 +584,7 @@ export class Ghost {
           ctx.arc(this.x + this.radius / 3 + this.radius / 5, this.y - this.radius / 5, this.radius / 6, 0, Math.PI * 2, true); //black
           ctx.fill();
           break;
-
       }
-
     }
   }
 
@@ -879,7 +879,6 @@ export class Grid {
     }
 
     switch (gridType) {
-
       case GLOBAL['LEFT_ONLY']:
         this.addLeftEdge(ctx);
         break;

@@ -40,14 +40,15 @@ export = function(client:MuClient) {
   let welcomePacman;
   let welcomeBlinky;
   let welcomeInky;
-  let mrPacman;
+  let mrPacman:Pacman;
   let blinky;
   let inky;
   let pinky;
   let clyde;
-  let ghosts;
+  let ghosts:Ghost[];
   let weakCounter;
   let intervalId;
+  const pacman_color = getRandomColor();
 
   protocol.configure({
     ready: () => {
@@ -60,9 +61,137 @@ export = function(client:MuClient) {
     },
   });
 
+  function updateProtocolState() {
+    Object.keys(protocol.server.state).forEach((clientId) => {
+      if (clientId !== client.sessionId) {
+        const {x, y, color, dir, mouthOpen, isLive} = protocol.server.state[clientId];
+        fixGrids(x, y);
+        if (isLive) {
+          const remotePacman = new Pacman(x, y, color, dir, mouthOpen);
+          remotePacman.draw(ctx);
+        }
+      }
+    });
+
+    protocol.state.x = mrPacman.x;
+    protocol.state.y = mrPacman.y;
+    protocol.state.dir = mrPacman.dir;
+    protocol.state.mouthOpen = mrPacman.mouthOpen;
+    protocol.state.color = mrPacman.color;
+    protocol.state.isLive = true;
+    protocol.commit();
+  }
+
   client.start();
 
   /*=================Pacman Run Methods================*/
+  function run(isGodMode = false) {
+    showScore();
+
+    mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, pacman_color, GLOBAL['right']);
+    if (!isGodMode) {
+      blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
+      inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
+      pinky = new Ghost(0, 0, GLOBAL['pink'], GLOBAL['down']);
+      clyde = new Ghost(0, 0, GLOBAL['orange'], GLOBAL['down']);
+
+      blinky.toGhostHouse();
+      inky.toGhostHouse();
+      pinky.toGhostHouse();
+      clyde.toGhostHouse();
+
+      ghosts = [blinky, inky, pinky, clyde];
+
+      inky.draw(ctx);
+      blinky.draw(ctx);
+      pinky.draw(ctx);
+      clyde.draw(ctx);
+    } else {
+      ghosts = [];
+    }
+    showLives();
+    printInstruction();
+
+    mrPacman.draw(ctx);
+    countDown();
+  }
+
+  function updateCanvas() {
+    GLOBAL['restartTimer']++;
+    if (gameOver() === true) {
+      protocol.state.isLive = false;
+      protocol.commit();
+
+      GLOBAL['life']--;
+      // mrPacman.dieAnimation();
+      showLives(); // show lives on top right corner
+      if (GLOBAL['life'] > 0) {
+        sleep(500);
+        clearInterval(intervalId); // 刷新
+        fixGrids(mrPacman.x, mrPacman.y);
+        for (let i = 0; i < ghosts.length; i++) {
+          fixGrids(ghosts[i].x, ghosts[i].y);
+        }
+        run();
+      } else {
+        clearInterval(intervalId);
+        sleep(500);
+        loseMessage();
+      }
+    } else if (pacmanWon() === true) {
+      clearInterval(intervalId);
+      sleep(500);
+      winMessage();
+    } else { //正常游戏
+      if (weakCounter > 0 && weakCounter < 2000 / GLOBAL['timerDelay']) { //weakcounter: ghosts in weak
+        for (let i = 0; i < ghosts.length; i++) {
+          ghosts[i].isBlinking = !ghosts[i].isBlinking;
+        }
+      }
+      if (weakCounter > 0) {
+        weakCounter--;
+      }
+      if (weakCounter === 0) {
+        for (let i = 0; i < ghosts.length; i++) {
+          ghosts[i].isDead = false;
+          ghosts[i].isWeak = false;
+          ghosts[i].isBlinking = false;
+          GLOBAL['weakBonus'] = 200;
+        }
+      }
+
+      eatBean();
+      eatGhost();
+      mrPacman.move();
+
+      for (let i = 0; i < ghosts.length; i++) {
+        if (ghosts[i].isDead === false) {
+          ghosts[i].move(mrPacman, weakCounter);
+        }
+      }
+
+      fixGrids(mrPacman.x, mrPacman.y);
+      for (let i = 0; i < ghosts.length; i++) {
+        fixGrids(ghosts[i].x, ghosts[i].y);
+      }
+
+      mrPacman.draw(ctx);
+      for (let i = 0; i < ghosts.length; i++) {
+        ghosts[i].draw(ctx);
+      }
+    }
+    updateProtocolState();
+  }
+
+  function getRandomColor() : string {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (var i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
   function initMaze() {
     for (let i = 0; i < maze.length; i++) {
       const oneRow = new Array(CANVAS_WIDTH / GLOBAL['GRID_WIDTH']);
@@ -112,7 +241,7 @@ export = function(client:MuClient) {
     ctx.fillStyle = 'black';
     ctx.fillRect(CANVAS_WIDTH - 80, 10, 70, 30);
     for (let i = 0; i < GLOBAL['life'] - 1; i++) {
-      GLOBAL['lives'][i] = new Pacman(CANVAS_WIDTH - 50 + 25 * i, 30, GLOBAL['right']);
+      GLOBAL['lives'][i] = new Pacman(CANVAS_WIDTH - 50 + 25 * i, 30, pacman_color, GLOBAL['right']);
       GLOBAL['lives'][i].draw(ctx);
     }
   }
@@ -270,69 +399,6 @@ export = function(client:MuClient) {
     }
   }
 
-  function updateCanvas() {
-    GLOBAL['restartTimer']++;
-    if (gameOver() === true) {
-      GLOBAL['life']--;
-      // mrPacman.dieAnimation();
-      showLives(); // show lives on top right corner
-      if (GLOBAL['life'] > 0) {
-        sleep(500);
-        clearInterval(intervalId); // 刷新
-        fixGrids(mrPacman.x, mrPacman.y);
-        for (let i = 0; i < ghosts.length; i++) {
-          fixGrids(ghosts[i].x, ghosts[i].y);
-        }
-        run();
-      } else {
-        clearInterval(intervalId);
-        sleep(500);
-        loseMessage();
-      }
-    } else if (pacmanWon() === true) {
-      clearInterval(intervalId);
-      sleep(500);
-      winMessage();
-    } else { //正常游戏
-      if (weakCounter > 0 && weakCounter < 2000 / GLOBAL['timerDelay']) { //weakcounter: ghosts in weak
-        for (let i = 0; i < ghosts.length; i++) {
-          ghosts[i].isBlinking = !ghosts[i].isBlinking;
-        }
-      }
-      if (weakCounter > 0) {
-        weakCounter--;
-      }
-      if (weakCounter === 0) {
-        for (let i = 0; i < ghosts.length; i++) {
-          ghosts[i].isDead = false;
-          ghosts[i].isWeak = false;
-          ghosts[i].isBlinking = false;
-          GLOBAL['weakBonus'] = 200;
-        }
-      }
-
-      eatBean();
-      eatGhost();
-      mrPacman.move();
-
-      for (let i = 0; i < ghosts.length; i++) {
-        if (ghosts[i].isDead === false) {
-          ghosts[i].move(mrPacman, weakCounter);
-        }
-      }
-
-      fixGrids(mrPacman.x, mrPacman.y);
-      for (let i = 0; i < ghosts.length; i++) {
-        fixGrids(ghosts[i].x, ghosts[i].y);
-      }
-
-      mrPacman.draw(ctx);
-      for (let i = 0; i < ghosts.length; i++) {
-        ghosts[i].draw(ctx);
-      }
-    }
-  }
-
   function countDown() {
     if (!ctx) { return; }
     ctx.fillStyle = 'black';
@@ -363,37 +429,6 @@ export = function(client:MuClient) {
         },         1000);
       },         1000);
     },         1000);
-  }
-
-  function run(isGodMode = false) {
-    showScore();
-
-    mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, GLOBAL['right']);
-    if (!isGodMode) {
-      blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
-      inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
-      pinky = new Ghost(0, 0, GLOBAL['pink'], GLOBAL['down']);
-      clyde = new Ghost(0, 0, GLOBAL['orange'], GLOBAL['down']);
-
-      blinky.toGhostHouse();
-      inky.toGhostHouse();
-      pinky.toGhostHouse();
-      clyde.toGhostHouse();
-
-      ghosts = [blinky, inky, pinky, clyde];
-
-      inky.draw(ctx);
-      blinky.draw(ctx);
-      pinky.draw(ctx);
-      clyde.draw(ctx);
-    } else {
-      ghosts = [];
-    }
-    showLives();
-    printInstruction();
-
-    mrPacman.draw(ctx);
-    countDown();
   }
 
   function updateWelcomeScreen() {
@@ -633,7 +668,7 @@ export = function(client:MuClient) {
     ctx.font = '14px monospace';
     ctx.fillText('DEVELOPED BY: ZI WANG, BINGYING XIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 20 * 19);
 
-    welcomePacman = new Pacman(CANVAS_WIDTH / 5, CANVAS_HEIGHT / 3 * 2, GLOBAL['right']);
+    welcomePacman = new Pacman(CANVAS_WIDTH / 5, CANVAS_HEIGHT / 3 * 2, pacman_color, GLOBAL['right']);
     welcomePacman.radius = 30;
     welcomePacman.draw(ctx);
 
@@ -646,5 +681,4 @@ export = function(client:MuClient) {
     welcomeInky.draw(ctx);
     intervalId = setInterval(updateWelcomeScreen, GLOBAL['timerDelay'] * 2);
   }
-
 };
