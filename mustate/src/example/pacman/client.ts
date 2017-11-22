@@ -8,6 +8,7 @@ import {
   initCanvas,
   onKeyDown,
   welcomeScreen,
+  GLOBAL,
 } from './pac';
 
 export = function(client:MuClient) {

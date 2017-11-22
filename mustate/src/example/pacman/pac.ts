@@ -1,5 +1,5 @@
 /*======================GLOBAL lets====================*/
-const GLOBAL = {};
+export const GLOBAL = {};
 // directions
 GLOBAL['up'] = 1;
 GLOBAL['down'] = 2;
@@ -53,8 +53,8 @@ let weakCounter;
 GLOBAL['WEAK_DURATION'] = 10000 / GLOBAL['timerDelay'];
 
 //bean cases
-const NORMAL_BEAN = 1;
-const POWER_BEAN = 2;
+GLOBAL['NORMAL_BEAN'] = 1;
+GLOBAL['POWER_BEAN'] = 2;
 
 //spirtes instances
 let welcomePacman;
@@ -68,149 +68,149 @@ let clyde;
 let ghosts;
 
 //grid
-const id = -1;
+GLOBAL['grid_id'] = -1;
 
 //wall cases
-const CROSS_RD = -1; //no wall
-const LEFT_ONLY = 0;
-const TOP_ONLY = 1;
-const RIGHT_ONLY = 2;
-const BOTTOM_ONLY = 3;
+GLOBAL['CROSS_RD'] = -1; //no wall
+GLOBAL['LEFT_ONLY'] = 0;
+GLOBAL['TOP_ONLY'] = 1;
+GLOBAL['RIGHT_ONLY'] = 2;
+GLOBAL['BOTTOM_ONLY'] = 3;
 
-const LEFT_RIGHT = 4;
-const LEFT_TOP = 5;
-const LEFT_BOTTOM = 6;
+GLOBAL['LEFT_RIGHT'] = 4;
+GLOBAL['LEFT_TOP'] = 5;
+GLOBAL['LEFT_BOTTOM'] = 6;
 
-const RIGHT_TOP = 7;
-const RIGHT_BOTTOM = 8;
-const TOP_BOTTOM = 9;
+GLOBAL['RIGHT_TOP'] = 7;
+GLOBAL['RIGHT_BOTTOM'] = 8;
+GLOBAL['TOP_BOTTOM'] = 9;
 
-const BOTTOM_LEFT_TOP = 10;
-const LEFT_TOP_RIGHT = 11;
-const TOP_RIGHT_BOTTOM = 12;
-const RIGHT_BOTTOM_LEFT = 13;
+GLOBAL['BOTTOM_LEFT_TOP'] = 10;
+GLOBAL['LEFT_TOP_RIGHT'] = 11;
+GLOBAL['TOP_RIGHT_BOTTOM'] = 12;
+GLOBAL['RIGHT_BOTTOM_LEFT'] = 13;
 
-const EMPTY_GRID = 14;
-const CLOSED_GRID = 15;
+GLOBAL['EMPTY_GRID'] = 14;
+GLOBAL['CLOSED_GRID'] = 15;
 
 //game state and map
-let gameOn = false;
-let gamePaused = false;
+GLOBAL['gameOn'] = false;
+GLOBAL['gamePaused'] = false;
 const maze = new Array(CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']);
 const mazeContent = [
   //row1
-  [LEFT_TOP, TOP_BOTTOM, TOP_BOTTOM, TOP_ONLY, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_BOTTOM, RIGHT_TOP, LEFT_TOP, TOP_ONLY,
-    TOP_ONLY, TOP_ONLY, TOP_ONLY, TOP_ONLY, TOP_ONLY,
-    TOP_ONLY, RIGHT_TOP,
+  [GLOBAL['LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_TOP'], GLOBAL['TOP_ONLY'],
+    GLOBAL['TOP_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_ONLY'],
+    GLOBAL['TOP_ONLY'], GLOBAL['RIGHT_TOP'],
   ],
   //row2
-  [LEFT_RIGHT, BOTTOM_LEFT_TOP, RIGHT_TOP, LEFT_RIGHT, LEFT_TOP,
-    TOP_BOTTOM, TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_BOTTOM, BOTTOM_ONLY,
-    BOTTOM_ONLY, BOTTOM_ONLY, BOTTOM_ONLY, BOTTOM_ONLY, EMPTY_GRID,
-    EMPTY_GRID, RIGHT_ONLY,
+  [GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_TOP'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_BOTTOM'], GLOBAL['BOTTOM_ONLY'],
+    GLOBAL['BOTTOM_ONLY'], GLOBAL['BOTTOM_ONLY'], GLOBAL['BOTTOM_ONLY'], GLOBAL['BOTTOM_ONLY'], GLOBAL['EMPTY_GRID'],
+    GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'],
   ],
   //row3
-  [LEFT_BOTTOM, RIGHT_TOP, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT,
-    BOTTOM_LEFT_TOP, TOP_BOTTOM, EMPTY_GRID, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM, RIGHT_TOP, LEFT_ONLY,
-    EMPTY_GRID, RIGHT_ONLY,
+  [GLOBAL['LEFT_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['EMPTY_GRID'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_ONLY'],
+    GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'],
   ],
   //row4
-  [CLOSED_GRID, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT, LEFT_BOTTOM,
-    TOP_BOTTOM, RIGHT_TOP, LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_BOTTOM, TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_ONLY,
-    EMPTY_GRID, RIGHT_ONLY,
+  [GLOBAL['CLOSED_GRID'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'],
+    GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'],
   ],
   //row5
-  [LEFT_TOP, RIGHT_BOTTOM, LEFT_RIGHT, LEFT_BOTTOM, TOP_ONLY,
-    TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_ONLY, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_ONLY, TOP_BOTTOM, RIGHT_BOTTOM, LEFT_ONLY,
-    EMPTY_GRID, RIGHT_ONLY,
+  [GLOBAL['LEFT_TOP'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_BOTTOM'], GLOBAL['TOP_ONLY'],
+    GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_ONLY'],
+    GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'],
   ],
   //row6
-  [LEFT_RIGHT, BOTTOM_LEFT_TOP, BOTTOM_ONLY, TOP_RIGHT_BOTTOM, LEFT_RIGHT,
-    BOTTOM_LEFT_TOP, RIGHT_BOTTOM, LEFT_RIGHT, LEFT_TOP, TOP_BOTTOM,
-    RIGHT_TOP, LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM, BOTTOM_ONLY,
-    BOTTOM_ONLY, RIGHT_BOTTOM,
+  [GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['BOTTOM_ONLY'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_TOP'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['BOTTOM_ONLY'],
+    GLOBAL['BOTTOM_ONLY'], GLOBAL['RIGHT_BOTTOM'],
   ],
   //row7
-  [LEFT_ONLY, TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM, BOTTOM_ONLY,
-    TOP_BOTTOM, TOP_BOTTOM, RIGHT_ONLY, LEFT_RIGHT, LEFT_TOP_RIGHT,
-    LEFT_RIGHT, LEFT_ONLY, TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, RIGHT_TOP,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['BOTTOM_ONLY'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_TOP_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'],
   ],
   //row8
-  [LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT,
-    LEFT_RIGHT, LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_RIGHT_BOTTOM, LEFT_RIGHT,
+  [GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'],
   ],
   //row9
-  [LEFT_BOTTOM, TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM, TOP_ONLY,
-    TOP_BOTTOM, TOP_BOTTOM, RIGHT_ONLY, LEFT_RIGHT, LEFT_RIGHT,
-    LEFT_RIGHT, LEFT_ONLY, TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, RIGHT_ONLY,
+  [GLOBAL['LEFT_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_ONLY'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_ONLY'],
   ],
   //row10
-  [LEFT_TOP, TOP_ONLY, TOP_ONLY, RIGHT_TOP, LEFT_RIGHT,
-    BOTTOM_LEFT_TOP, TOP_RIGHT_BOTTOM, LEFT_RIGHT, RIGHT_BOTTOM_LEFT, LEFT_RIGHT,
-    RIGHT_BOTTOM_LEFT, LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_RIGHT_BOTTOM, LEFT_RIGHT,
+  [GLOBAL['LEFT_TOP'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['RIGHT_BOTTOM_LEFT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['RIGHT_BOTTOM_LEFT'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'],
   ],
   //row11
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_ONLY,
-    TOP_BOTTOM, TOP_BOTTOM, BOTTOM_ONLY, TOP_ONLY, BOTTOM_ONLY,
-    TOP_BOTTOM, BOTTOM_ONLY, TOP_ONLY, TOP_BOTTOM, TOP_BOTTOM,
-    TOP_BOTTOM, RIGHT_ONLY,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_ONLY'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['BOTTOM_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['BOTTOM_ONLY'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['BOTTOM_ONLY'], GLOBAL['TOP_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_ONLY'],
   ],
   //row12
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_RIGHT,
-    BOTTOM_LEFT_TOP, TOP_BOTTOM, RIGHT_TOP, LEFT_RIGHT, BOTTOM_LEFT_TOP,
-    TOP_BOTTOM, RIGHT_TOP, LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM,
-    RIGHT_TOP, LEFT_RIGHT,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['RIGHT_TOP'], GLOBAL['LEFT_RIGHT'],
   ],
   //row13
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_ONLY,
-    TOP_BOTTOM, TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_ONLY, TOP_BOTTOM,
-    TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_ONLY, TOP_BOTTOM, RIGHT_TOP,
-    LEFT_RIGHT, LEFT_RIGHT,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_ONLY'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_ONLY'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_TOP'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
   ],
   //row14
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_RIGHT,
-    LEFT_TOP, TOP_BOTTOM, RIGHT_BOTTOM, LEFT_RIGHT, BOTTOM_LEFT_TOP,
-    TOP_BOTTOM, RIGHT_ONLY, LEFT_RIGHT, LEFT_TOP_RIGHT, LEFT_RIGHT,
-    LEFT_RIGHT, LEFT_RIGHT,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_TOP_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
   ],
   //row15
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_RIGHT,
-    LEFT_RIGHT, BOTTOM_LEFT_TOP, TOP_BOTTOM, EMPTY_GRID, TOP_BOTTOM,
-    TOP_RIGHT_BOTTOM, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT,
-    LEFT_RIGHT, LEFT_RIGHT,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'], GLOBAL['TOP_BOTTOM'], GLOBAL['EMPTY_GRID'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
   ],
   //row16
-  [LEFT_ONLY, EMPTY_GRID, EMPTY_GRID, RIGHT_ONLY, LEFT_RIGHT,
-    LEFT_BOTTOM, TOP_BOTTOM, TOP_RIGHT_BOTTOM, LEFT_RIGHT, BOTTOM_LEFT_TOP,
-    TOP_BOTTOM, RIGHT_BOTTOM, LEFT_RIGHT, LEFT_RIGHT, LEFT_RIGHT,
-    RIGHT_BOTTOM_LEFT, LEFT_RIGHT,
+  [GLOBAL['LEFT_ONLY'], GLOBAL['EMPTY_GRID'], GLOBAL['EMPTY_GRID'], GLOBAL['RIGHT_ONLY'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['LEFT_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['BOTTOM_LEFT_TOP'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'], GLOBAL['LEFT_RIGHT'],
+    GLOBAL['RIGHT_BOTTOM_LEFT'], GLOBAL['LEFT_RIGHT'],
   ],
   //row17
-  [LEFT_BOTTOM, BOTTOM_ONLY, BOTTOM_ONLY, RIGHT_BOTTOM, LEFT_BOTTOM,
-    TOP_BOTTOM, TOP_BOTTOM, TOP_BOTTOM, BOTTOM_ONLY, TOP_BOTTOM,
-    TOP_BOTTOM, TOP_BOTTOM, RIGHT_BOTTOM, RIGHT_BOTTOM_LEFT, LEFT_BOTTOM,
-    TOP_BOTTOM, RIGHT_BOTTOM,
+  [GLOBAL['LEFT_BOTTOM'], GLOBAL['BOTTOM_ONLY'], GLOBAL['BOTTOM_ONLY'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['LEFT_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['BOTTOM_ONLY'], GLOBAL['TOP_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_BOTTOM'], GLOBAL['RIGHT_BOTTOM_LEFT'], GLOBAL['LEFT_BOTTOM'],
+    GLOBAL['TOP_BOTTOM'], GLOBAL['RIGHT_BOTTOM'],
   ],
 ];
 
 // grids that don't redraw
-const staticGrids:number[][] = [];
-let staticGridsIndex = 0;
+GLOBAL['staticGrids'] = [];
+GLOBAL['staticGridsIndex'] = 0;
 
 // start location of pacman
-const pacmanStartLoc = [4, 9];
+GLOBAL['pacmanStartLoc'] = [4, 9];
 
 // grids with no beans
-const noBean = [pacmanStartLoc, [5, 12],
+GLOBAL['noBean'] = [GLOBAL['pacmanStartLoc'], [5, 12],
   [5, 13],
   [5, 3],
   [9, 5],
@@ -227,10 +227,10 @@ const noBean = [pacmanStartLoc, [5, 12],
   [12, 11],
   [14, 11],
 ];
-let noBeanIndex = noBean.length;
+GLOBAL['noBeanIndex'] = GLOBAL['noBean'].length;
 
 // power beans in maze
-const powerBeans = [
+GLOBAL['powerBeans'] = [
   [0, 0],
   [2, 13],
   [16, 4],
@@ -240,8 +240,8 @@ const powerBeans = [
 ];
 
 // ghost house
-const ghostHouse:number[][] = [];
-let ghostHouseIndex = 0;
+GLOBAL['powerBeans'] = [];
+GLOBAL['ghostHouseIndex'] = 0;
 
 /*======================Pacman====================*/
 export class Pacman {
@@ -438,23 +438,23 @@ export class Ghost {
     let initY;
     switch (this.color) {
       case GLOBAL['orange']:
-        initX = ghostHouse[0][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
-        initY = ghostHouse[0][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initX = GLOBAL['powerBeans'][0][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initY = GLOBAL['powerBeans'][0][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
         break;
 
       case GLOBAL['cyan']:
-        initX = ghostHouse[1][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
-        initY = ghostHouse[1][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initX = GLOBAL['powerBeans'][1][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initY = GLOBAL['powerBeans'][1][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
         break;
 
       case GLOBAL['pink']:
-        initX = ghostHouse[2][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
-        initY = ghostHouse[2][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initX = GLOBAL['powerBeans'][2][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initY = GLOBAL['powerBeans'][2][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
         break;
 
       case GLOBAL['red']:
-        initX = ghostHouse[3][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
-        initY = ghostHouse[3][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initX = GLOBAL['powerBeans'][3][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
+        initY = GLOBAL['powerBeans'][3][0] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2;
         break;
     }
     this.x = initX;
@@ -671,16 +671,16 @@ export class Ghost {
         this.moveOneStep();
       } else {
         const currGrid = maze[getRowIndex(this.y)][getColIndex(this.x)];
-        if (currGrid.gridType === LEFT_TOP_RIGHT) {
+        if (currGrid.gridType === GLOBAL['LEFT_TOP_RIGHT']) {
           this.dir = GLOBAL['down'];
           this.moveOneStep();
-        } else if (currGrid.gridType === TOP_RIGHT_BOTTOM) {
+        } else if (currGrid.gridType === GLOBAL['TOP_RIGHT_BOTTOM']) {
           this.dir = GLOBAL['left'];
           this.moveOneStep();
-        } else if (currGrid.gridType === RIGHT_BOTTOM_LEFT) {
+        } else if (currGrid.gridType === GLOBAL['RIGHT_BOTTOM_LEFT']) {
           this.dir = GLOBAL['up'];
           this.moveOneStep();
-        } else if (currGrid.gridType === BOTTOM_LEFT_TOP) {
+        } else if (currGrid.gridType === GLOBAL['BOTTOM_LEFT_TOP']) {
           this.dir = GLOBAL['right'];
           this.moveOneStep();
         } else {
@@ -704,16 +704,16 @@ export class Ghost {
         // on grid center
         //first check if dead end
         const currGrid_ = maze[getRowIndex(this.y)][getColIndex(this.x)];
-        if (currGrid_.gridType === LEFT_TOP_RIGHT) {
+        if (currGrid_.gridType === GLOBAL['LEFT_TOP_RIGHT']) {
           this.dir = GLOBAL['down'];
           this.moveOneStep();
-        } else if (currGrid_.gridType === TOP_RIGHT_BOTTOM) {
+        } else if (currGrid_.gridType === GLOBAL['TOP_RIGHT_BOTTOM']) {
           this.dir = GLOBAL['left'];
           this.moveOneStep();
-        } else if (currGrid_.gridType === RIGHT_BOTTOM_LEFT) {
+        } else if (currGrid_.gridType === GLOBAL['RIGHT_BOTTOM_LEFT']) {
           this.dir = GLOBAL['up'];
           this.moveOneStep();
-        } else if (currGrid_.gridType === BOTTOM_LEFT_TOP) {
+        } else if (currGrid_.gridType === GLOBAL['BOTTOM_LEFT_TOP']) {
           this.dir = GLOBAL['right'];
           this.moveOneStep();
         } else {
@@ -867,7 +867,7 @@ export class Grid {
   constructor(xCord, yCord, gridType, beanType) {
     this.x = xCord;
     this.y = yCord;
-    this.gridType = gridType === undefined ? EMPTY_GRID : gridType;
+    this.gridType = gridType === undefined ? GLOBAL['EMPTY_GRID'] : gridType;
     this.beanType = beanType;
   }
 
@@ -887,88 +887,88 @@ export class Grid {
     ctx.fillStyle = GLOBAL['BG_COLOR'];
     ctx.fillRect(this.x, this.y, GLOBAL['GRID_WIDTH'], GLOBAL['GRID_HEIGHT']);
     const gridType = this.gridType;
-    if (gridType === undefined || gridType === EMPTY_GRID) {
+    if (gridType === undefined || gridType === GLOBAL['EMPTY_GRID']) {
       this.drawBean();
       return;
     }
 
     switch (gridType) {
 
-      case LEFT_ONLY:
+      case GLOBAL['LEFT_ONLY']:
         this.addLeftEdge();
         break;
 
-      case RIGHT_ONLY:
+      case GLOBAL['RIGHT_ONLY']:
         this.addRightEdge();
         break;
 
-      case TOP_ONLY:
+      case GLOBAL['TOP_ONLY']:
         this.addTopEdge();
         break;
 
-      case BOTTOM_ONLY:
+      case GLOBAL['BOTTOM_ONLY']:
         this.addBottomEdge();
         break;
 
-      case LEFT_RIGHT:
+      case GLOBAL['LEFT_RIGHT']:
         this.addLeftEdge();
         this.addRightEdge();
         break;
 
-      case LEFT_TOP:
+      case GLOBAL['LEFT_TOP']:
         this.addLeftEdge();
         this.addTopEdge();
         break;
 
-      case LEFT_BOTTOM:
+      case GLOBAL['LEFT_BOTTOM']:
         this.addLeftEdge();
         this.addBottomEdge();
         break;
 
-      case RIGHT_TOP:
+      case GLOBAL['RIGHT_TOP']:
         this.addRightEdge();
         this.addTopEdge();
         break;
 
-      case RIGHT_BOTTOM:
+      case GLOBAL['RIGHT_BOTTOM']:
         this.addRightEdge();
         this.addBottomEdge();
         break;
 
-      case TOP_BOTTOM:
+      case GLOBAL['TOP_BOTTOM']:
         this.addTopEdge();
         this.addBottomEdge();
         break;
 
-      case CROSS_RD:
+      case GLOBAL['CROSS_RD']:
         this.makeCrossRoad();
         break;
 
-      case LEFT_TOP_RIGHT:
+      case GLOBAL['LEFT_TOP_RIGHT']:
         this.addLeftEdge();
         this.addTopEdge();
         this.addRightEdge();
         break;
 
-      case TOP_RIGHT_BOTTOM:
+      case GLOBAL['TOP_RIGHT_BOTTOM']:
         this.addTopEdge();
         this.addRightEdge();
         this.addBottomEdge();
         break;
 
-      case RIGHT_BOTTOM_LEFT:
+      case GLOBAL['RIGHT_BOTTOM_LEFT']:
         this.addRightEdge();
         this.addBottomEdge();
         this.addLeftEdge();
         break;
 
-      case BOTTOM_LEFT_TOP:
+      case GLOBAL['BOTTOM_LEFT_TOP']:
         this.addBottomEdge();
         this.addLeftEdge();
         this.addTopEdge();
         break;
 
-      case CLOSED_GRID:
+      case GLOBAL['CLOSED_GRID']:
         this.addLeftEdge();
         this.addTopEdge();
         this.addBottomEdge();
@@ -1019,9 +1019,9 @@ export class Grid {
       return;
     }
 
-    if (beanType === NORMAL_BEAN) {
+    if (beanType === GLOBAL['NORMAL_BEAN']) {
       circle(ctx, centerX, centerY, GLOBAL['NORMAL_BEAN_RADIUS']);
-    } else if (beanType === POWER_BEAN) {
+    } else if (beanType === GLOBAL['POWER_BEAN']) {
       circle(ctx, centerX, centerY, GLOBAL['POWER_BEAN_RADIUS']);
     } else {
       //unkwon bean type
@@ -1082,33 +1082,33 @@ function canMove(x, y, dir) {
   const gridType = currGrid.gridType;
   switch (dir) {
     case GLOBAL['up']:
-      if (gridType != LEFT_TOP && gridType != RIGHT_TOP && gridType != TOP_BOTTOM &&
-        gridType != TOP_ONLY && gridType != LEFT_TOP_RIGHT &&
-        gridType != TOP_RIGHT_BOTTOM && gridType != BOTTOM_LEFT_TOP) {
+      if (gridType != GLOBAL['LEFT_TOP'] && gridType != GLOBAL['RIGHT_TOP'] && gridType != GLOBAL['TOP_BOTTOM'] &&
+        gridType != GLOBAL['TOP_ONLY'] && gridType != GLOBAL['LEFT_TOP_RIGHT'] &&
+        gridType != GLOBAL['TOP_RIGHT_BOTTOM'] && gridType != GLOBAL['BOTTOM_LEFT_TOP']) {
         canMove_ = true;
       }
       break;
 
     case GLOBAL['down']:
-      if (gridType != LEFT_BOTTOM && gridType != TOP_BOTTOM && gridType != RIGHT_BOTTOM &&
-        gridType != BOTTOM_ONLY && gridType != RIGHT_BOTTOM_LEFT &&
-        gridType != BOTTOM_LEFT_TOP && gridType != TOP_RIGHT_BOTTOM) {
+      if (gridType != GLOBAL['LEFT_BOTTOM'] && gridType != GLOBAL['TOP_BOTTOM'] && gridType != GLOBAL['RIGHT_BOTTOM'] &&
+        gridType != GLOBAL['BOTTOM_ONLY'] && gridType != GLOBAL['RIGHT_BOTTOM_LEFT'] &&
+        gridType != GLOBAL['BOTTOM_LEFT_TOP'] && gridType != GLOBAL['TOP_RIGHT_BOTTOM']) {
         canMove_ = true;
       }
       break;
 
     case GLOBAL['left']:
-      if (gridType != LEFT_BOTTOM && gridType != LEFT_TOP && gridType != LEFT_ONLY &&
-        gridType != LEFT_RIGHT && gridType != LEFT_TOP_RIGHT &&
-        gridType != BOTTOM_LEFT_TOP && gridType != RIGHT_BOTTOM_LEFT) {
+      if (gridType != GLOBAL['LEFT_BOTTOM'] && gridType != GLOBAL['LEFT_TOP'] && gridType != GLOBAL['LEFT_ONLY'] &&
+        gridType != GLOBAL['LEFT_RIGHT'] && gridType != GLOBAL['LEFT_TOP_RIGHT'] &&
+        gridType != GLOBAL['BOTTOM_LEFT_TOP'] && gridType != GLOBAL['RIGHT_BOTTOM_LEFT']) {
         canMove_ = true;
       }
       break;
 
     case GLOBAL['right']:
-      if (gridType != RIGHT_BOTTOM && gridType != RIGHT_TOP && gridType != RIGHT_ONLY &&
-        gridType != LEFT_RIGHT && gridType != RIGHT_BOTTOM_LEFT &&
-        gridType != TOP_RIGHT_BOTTOM && gridType != LEFT_TOP_RIGHT) {
+      if (gridType != GLOBAL['RIGHT_BOTTOM'] && gridType != GLOBAL['RIGHT_TOP'] && gridType != GLOBAL['RIGHT_ONLY'] &&
+        gridType != GLOBAL['LEFT_RIGHT'] && gridType != GLOBAL['RIGHT_BOTTOM_LEFT'] &&
+        gridType != GLOBAL['TOP_RIGHT_BOTTOM'] && gridType != GLOBAL['LEFT_TOP_RIGHT']) {
         canMove_ = true;
       }
       break;
@@ -1140,7 +1140,7 @@ function initMaze() {
   // draw maze with full beans
   for (let row = 0; row < CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']; row++) {
     for (let col = 0; col < CANVAS_WIDTH / GLOBAL['GRID_WIDTH']; col++) {
-      const beanType = NORMAL_BEAN;
+      const beanType = GLOBAL['NORMAL_BEAN'];
       const newGrid = new Grid(col * GLOBAL['GRID_WIDTH'], row * GLOBAL['GRID_HEIGHT'], mazeContent[row][col], beanType);
 
       maze[row][col] = newGrid;
@@ -1149,18 +1149,18 @@ function initMaze() {
   }
 
   //overwrite beans that shouldn't ecist
-  for (let i = 0; i < noBean.length; i++) {
-    const x = noBean[i][0];
-    const y = noBean[i][1];
+  for (let i = 0; i < GLOBAL['noBean'].length; i++) {
+    const x = GLOBAL['noBean'][i][0];
+    const y = GLOBAL['noBean'][i][1];
     maze[x][y].beanType = undefined;
     maze[x][y].draw();
   }
 
   // draw power beans
-  for (let i = 0; i < powerBeans.length; i++) {
-    const x = powerBeans[i][0];
-    const y = powerBeans[i][1];
-    maze[x][y].beanType = POWER_BEAN;
+  for (let i = 0; i < GLOBAL['powerBeans'].length; i++) {
+    const x = GLOBAL['powerBeans'][i][0];
+    const y = GLOBAL['powerBeans'][i][1];
+    maze[x][y].beanType = GLOBAL['POWER_BEAN'];
     maze[x][y].draw();
   }
 }
@@ -1222,9 +1222,9 @@ function gameOver() {
 function staticArrayContains(cord) {
   const x = cord[0];
   const y = cord[1];
-  for (let i = 0; i < staticGrids.length; i++) {
-    if (x === staticGrids[i][0] &&
-      y === staticGrids[i][1]) {
+  for (let i = 0; i < GLOBAL['staticGrids'].length; i++) {
+    if (x === GLOBAL['staticGrids'][i][0] &&
+      y === GLOBAL['staticGrids'][i][1]) {
       return true;
     }
   }
@@ -1300,11 +1300,11 @@ function winMessage() {
 
 function eatBean() {
   if (onGridCenter(mrPacman.x, mrPacman.y)) {
-    if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === NORMAL_BEAN) {
+    if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['NORMAL_BEAN']) {
       GLOBAL['score'] += 10; //modified
       showScore();
       GLOBAL['beansLeft']--;
-    } else if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === POWER_BEAN) {
+    } else if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['POWER_BEAN']) {
       GLOBAL['score'] += 50; //modified
       showScore();
       GLOBAL['beansLeft']--;
@@ -1430,7 +1430,7 @@ function countDown() {
 function run(isGodMode = false) {
   showScore();
 
-  mrPacman = new Pacman(pacmanStartLoc[1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, pacmanStartLoc[0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, GLOBAL['right']);
+  mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, GLOBAL['right']);
   if (!isGodMode) {
     blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
     inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
@@ -1472,104 +1472,104 @@ function updateWelcomeScreen() {
 export function initFields() {
   // body...
   for (let i = 6; i < 10; i++) {
-    ghostHouse[ghostHouseIndex] = [i, 9];
-    ghostHouseIndex++;
+    GLOBAL['powerBeans'][GLOBAL['ghostHouseIndex']] = [i, 9];
+    GLOBAL['ghostHouseIndex']++;
   }
 
   //fill up staticGrids[]
   for (let i = 0; i < 2; i++) {
     for (let j = 8; j < 17; j++) {
-      staticGrids[staticGridsIndex] = [i, j];
-      staticGridsIndex++;
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
     }
   }
   for (let i = 9; i < 17; i++) {
     for (let j = 0; j < 4; j++) {
-      staticGrids[staticGridsIndex] = [i, j];
-      staticGridsIndex++;
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
     }
   }
   for (let i = 2; i < 6; i++) {
     for (let j = 14; j < 17; j++) {
-      staticGrids[staticGridsIndex] = [i, j];
-      staticGridsIndex++;
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
     }
   }
 
   //fill up noBean[]
   for (let i = 0; i < 2; i++) {
     for (let j = 8; j < 17; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let i = 2; i < 6; i++) {
     for (let j = 14; j < 17; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let i = 9; i < 17; i++) {
     for (let j = 0; j < 4; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let i = 1; i < 6; i++) {
-    noBean[noBeanIndex] = [i, 2];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 2];
+    GLOBAL['noBeanIndex']++;
   }
   for (let i = 1; i < 4; i += 2) {
     for (let j = 4; j < 7; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let j = 8; j < 13; j++) {
-    noBean[noBeanIndex] = [3, j];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [3, j];
+    GLOBAL['noBeanIndex']++;
   }
   for (let j = 1; j < 7; j++) {
-    noBean[noBeanIndex] = [7, j];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
+    GLOBAL['noBeanIndex']++;
   }
   for (let i = 5; i < 10; i++) {
     for (let j = 8; j < 11; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let j = 12; j < 16; j++) {
-    noBean[noBeanIndex] = [7, j];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
+    GLOBAL['noBeanIndex']++;
   }
   for (let j = 12; j < 16; j++) {
-    noBean[noBeanIndex] = [9, j];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [9, j];
+    GLOBAL['noBeanIndex']++;
   }
   for (let i = 11; i < 16; i += 2) {
     for (let j = 5; j < 8; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let i = 11; i < 16; i += 2) {
     for (let j = 9; j < 12; j++) {
-      noBean[noBeanIndex] = [i, j];
-      noBeanIndex++;
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
     }
   }
   for (let j = 13; j < 16; j++) {
-    noBean[noBeanIndex] = [11, j];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [11, j];
+    GLOBAL['noBeanIndex']++;
   }
   for (let i = 12; i < 16; i++) {
-    noBean[noBeanIndex] = [i, 15];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 15];
+    GLOBAL['noBeanIndex']++;
   }
   for (let i = 13; i < 17; i++) {
-    noBean[noBeanIndex] = [i, 13];
-    noBeanIndex++;
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 13];
+    GLOBAL['noBeanIndex']++;
   }
 }
 
@@ -1606,19 +1606,19 @@ export function onKeyDown(event) {
   const downCode = 40;
 
   //start game
-  if (!gameOn) {
+  if (!GLOBAL['gameOn']) {
     if (keycode === sCode) {
       clearInterval(intervalId);
-      gameOn = true;
-      gamePaused = false;
+      GLOBAL['gameOn'] = true;
+      GLOBAL['gamePaused'] = false;
       initMaze();
       run();
       return;
     } else if (keycode === godModeCode) {
       clearInterval(intervalId);
       ghosts = [];
-      gameOn = true;
-      gamePaused = false;
+      GLOBAL['gameOn'] = true;
+      GLOBAL['gamePaused'] = false;
       initMaze();
       run(true);
       return;
@@ -1626,16 +1626,16 @@ export function onKeyDown(event) {
   } else {
 
     //pause game
-    if (keycode === pauseCode && !gamePaused) {
+    if (keycode === pauseCode && !GLOBAL['gamePaused']) {
       clearInterval(intervalId);
-      gamePaused = true;
+      GLOBAL['gamePaused'] = true;
       return;
     }
 
     //resume game
-    if (keycode === continueCode && gamePaused) {
+    if (keycode === continueCode && GLOBAL['gamePaused']) {
       intervalId = setInterval(updateCanvas, GLOBAL['timerDelay']);
-      gamePaused = false;
+      GLOBAL['gamePaused'] = false;
       return;
     }
 
@@ -1644,8 +1644,8 @@ export function onKeyDown(event) {
       //can't restart game if a game was just refreshed.
       GLOBAL['restartTimer'] = 0;
       clearInterval(intervalId);
-      gameOn = true;
-      gamePaused = false;
+      GLOBAL['gameOn'] = true;
+      GLOBAL['gamePaused'] = false;
       GLOBAL['score'] = 0;
       GLOBAL['life'] = GLOBAL['MAX_LIFE'];
       GLOBAL['beansLeft'] = GLOBAL['MAX_BEANS'];
@@ -1682,8 +1682,8 @@ export function onKeyDown(event) {
 }
 
 export function welcomeScreen() {
-  gameOn = false;
-  gamePaused = false;
+  GLOBAL['gameOn'] = false;
+  GLOBAL['gamePaused'] = false;
   // welcome text
   ctx.fillStyle = 'white';
   ctx.font = '80px monospace';
