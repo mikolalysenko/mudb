@@ -45,18 +45,9 @@ test('vector diffBinary()', (t) => {
 
     let ws = new MuWriteStream(2);
     t.false(vec.diffBinary(new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), ws));
-    let rs = new MuReadStream(ws);
-    t.equals(rs.readUint8(), 0);
 
     ws = new MuWriteStream(2);
     t.true(vec.diffBinary(new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), new Int32Array([1, 0, 0, 0, 2, 0, 3, 0, 4]), ws));
-    rs = new MuReadStream(ws);
-    t.equals(rs.readUint8(), 81);
-    t.equals(rs.readUint8(), 1);
-    t.equals(rs.readUint32(), 1);
-    t.equals(rs.readUint32(), 2);
-    t.equals(rs.readUint32(), 3);
-    t.equals(rs.readUint32(), 4);
 
     t.end();
 });

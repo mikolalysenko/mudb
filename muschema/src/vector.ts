@@ -74,10 +74,14 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     public patch () { return new Uint8Array(0); }
 
     public diffBinary (base:_MuVectorType<ValueSchema>, target:_MuVectorType<ValueSchema>, stream:MuWriteStream) {
-        const dimension = this.dimension;
         const valueSchema:MuSchema<number> = this.muData;
+        const byteLength = valueSchema.getByteLength!(valueSchema);
+        const dimension = this.dimension * byteLength;
 
-        stream.grow(Math.ceil(dimension / 8));
+        stream.grow(Math.ceil(dimension * 9 / 8));
+
+        base = new Uint8Array(base.buffer);
+        target = new Uint8Array(target.buffer);
 
         let tracker = 0;
         let numDiff = 0;
@@ -87,19 +91,19 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
                 ++numDiff;
             }
 
-            if ((i && (i % 7) === 0) || (dimension - i === 1)) {
+            if ((i & 7) === 7) {
                 stream.writeUint8(tracker);
                 tracker = 0;
             }
         }
 
-        stream.grow(numDiff * valueSchema.getByteLength!(valueSchema));
+        if (dimension & 7) {
+            stream.writeUint8(tracker);
+        }
 
-        const valueType = valueSchema.muType;
-        const write = `write${valueType.charAt(0).toUpperCase()}${valueType.slice(1)}`;
         for (let i = 0; i < dimension; ++i) {
             if (base[i] !== target[i]) {
-                stream[write](target[i]);
+                stream.writeUint8(target[i]);
             }
         }
 
@@ -107,25 +111,26 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     }
 
     public patchBinary (base:_MuVectorType<ValueSchema>, stream:MuReadStream) {
-        const valueType = this.muData.muType;
-        const read = `read${valueType.charAt(0).toUpperCase()}${valueType.slice(1)}`;
+        const valueSchema:MuSchema<number> = this.muData;
+        const byteLength = valueSchema.getByteLength!(valueSchema);
 
         const trackerOffset = stream.offset;
-        const trackerBytes = Math.ceil(this.dimension / 8);
+        const trackerBytes = Math.ceil(this.dimension * byteLength / 8);
         stream.offset += trackerBytes;
 
-        const result = this.clone(base);
+        let result = this.clone(base);
+        result = new Uint8Array(result.buffer);
         for (let i = 0; i < trackerBytes; ++i) {
             const start = i * 8;
             const indices = stream.readUint8At(trackerOffset + i);
             for (let j = 0; j < 8; ++j) {
                 if (indices & (1 << j)) {
-                    result[start + j] = stream[read]();
+                    result[start + j] = stream.readUint8();
                 }
             }
         }
 
-        return result;
+        return new this._constructor(result.buffer);
     }
 
     public getByteLength (vec:_MuVectorType<ValueSchema>) {
