@@ -73,15 +73,14 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     public diff () {}
     public patch () { return new Uint8Array(0); }
 
-    public diffBinary (base:_MuVectorType<ValueSchema>, target:_MuVectorType<ValueSchema>, stream:MuWriteStream) {
+    public diffBinary (base_:_MuVectorType<ValueSchema>, target_:_MuVectorType<ValueSchema>, stream:MuWriteStream) {
         const valueSchema:MuSchema<number> = this.muData;
-        const byteLength = valueSchema.getByteLength!(valueSchema);
-        const dimension = this.dimension * byteLength;
+        const dimension = this.dimension * this.identity.BYTES_PER_ELEMENT;
 
         stream.grow(Math.ceil(dimension * 9 / 8));
 
-        base = new Uint8Array(base.buffer);
-        target = new Uint8Array(target.buffer);
+        const base = new Uint8Array(base_.buffer);
+        const target = new Uint8Array(target_.buffer);
 
         let tracker = 0;
         let numDiff = 0;
@@ -111,15 +110,11 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     }
 
     public patchBinary (base:_MuVectorType<ValueSchema>, stream:MuReadStream) {
-        const valueSchema:MuSchema<number> = this.muData;
-        const byteLength = valueSchema.getByteLength!(valueSchema);
-
         const trackerOffset = stream.offset;
-        const trackerBytes = Math.ceil(this.dimension * byteLength / 8);
+        const trackerBytes = Math.ceil(this.dimension * this.identity.BYTES_PER_ELEMENT / 8);
         stream.offset += trackerBytes;
 
-        let result = this.clone(base);
-        result = new Uint8Array(result.buffer);
+        const result = new Uint8Array(this.clone(base).buffer);
         for (let i = 0; i < trackerBytes; ++i) {
             const start = i * 8;
             const indices = stream.readUint8At(trackerOffset + i);
@@ -130,7 +125,7 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
             }
         }
 
-        return new this._constructor(result.buffer);
+        return result;
     }
 
     public getByteLength (vec:_MuVectorType<ValueSchema>) {
