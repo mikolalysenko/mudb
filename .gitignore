@@ -10,3 +10,4 @@ node_modules/*
 !*/src/*.js
 !*/types/*.d.ts
 !bin/*
+.jsbeautifyrc
