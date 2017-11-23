@@ -139,8 +139,6 @@ export class MuClockClient {
             this._doPing();
         }
 
-        console.log(this._tickCount, targetTickCount, remoteClock, this._clockScale, this._clockShift);
-
         while (this._tickCount < targetTickCount) {
             this._doTick(++this._tickCount);
         }
