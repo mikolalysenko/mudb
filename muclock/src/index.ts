@@ -1,4 +1,4 @@
-import { MuClockClient } from './client'
+import { MuClockClient } from './client';
 import { MuClockServer } from './server';
 
 export = {

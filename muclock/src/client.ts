@@ -18,7 +18,7 @@ export class MuClockClient {
     private _clockShift:number = 0;
 
     public tickRate:number = 30;
-    private _pingRate:number = 2500;
+    private _pingRate:number = 1000;
 
     private _localTimeSamples:number[] = [];
     private _remoteTimeSamples:number[] = [];
@@ -49,6 +49,7 @@ export class MuClockClient {
 
         this._pingStatistic = new MuPingStatistic(spec.pingBufferSize || 1024);
         this._clockBufferSize = spec.clockBufferSize || 1024;
+        this._pingRate = spec.pingRate || 500;
 
         this._lastPingStart = this._clock.now();
 
@@ -66,7 +67,7 @@ export class MuClockClient {
                     this._tickCount = Math.floor(serverClock / tickRate);
                     this._clockShift = serverClock - this._lastPingStart;
 
-                    this._pingCount = Math.floor(serverClock / this._pingRate) - 10;
+                    this._pingCount = Math.floor(serverClock / this._pingRate);
 
                     this._lastPingStart = 0;
 
@@ -100,6 +101,7 @@ export class MuClockClient {
                         this._localTimeSamples[idx] = localClock;
                     }
                     const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
+                    console.log('pong', a, b);
                     this._clockScale = a;
                     this._clockShift = b;
                     this._lastPingStart = 0;
