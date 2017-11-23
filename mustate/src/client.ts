@@ -33,7 +33,7 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
 
     // state history
     public tick:number = 0;
-    public history:MuStateSet<Schema['client']>;
+    public history:MuStateSet<Schema['client']['identity']>;
     public state:Schema['client']['identity'];
     public windowSize:number = Infinity;
 
