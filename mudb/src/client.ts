@@ -3,7 +3,7 @@ import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolF
 
 export class MuRemoteServer<Schema extends MuAnyMessageTable> {
     public message:MuMessageInterface<Schema>['userAPI'];
-    public sendRaw:(bytes:Uint8Array, unreliable?:boolean) => void;
+    public sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
 }
 
 export type MuAnyClientProtocol = MuClientProtocol<MuAnyProtocolSchema>;
