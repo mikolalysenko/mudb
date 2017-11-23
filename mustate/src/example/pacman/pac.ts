@@ -407,16 +407,16 @@ export class Ghost {
   public speed:number;
   public stepCounter:number;
 
-  constructor(xCord, yCord, gColor, direction) {
+  constructor(xCord, yCord, gColor, direction, isWeak=false, isBlinking=false, isDead=false) {
     this.x = xCord;
     this.y = yCord;
     this.color = gColor;
     this.dir = direction;
-    this.isWeak = false;
+    this.isWeak = isWeak;
     this.radius = GLOBAL['GHOST_RADIUS'];
     this.isMoving = false;
-    this.isBlinking = false;
-    this.isDead = false;
+    this.isBlinking = isBlinking;
+    this.isDead = isDead;
     this.speed = GLOBAL['speed'];
     this.stepCounter = 0;
   }
@@ -682,7 +682,7 @@ export class Ghost {
         this.speed = GLOBAL['speed'] / 2;
         this.stepCounter = 0;
       } else {
-        this.speed = GLOBAL['speed'];
+        this.speed = GLOBAL['speed'] / 20; //FIXME: in normal game is global['speed']
       }
       if (onGridCenter(this.x, this.y) === false) {
         this.moveOneStep();

@@ -16,6 +16,8 @@ import {
   yOnGridCenter,
   mazeContent,
 } from './pac';
+import { isDate } from 'util';
+import { isWorker } from 'cluster';
 
 export = function(client:MuClient) {
   const canvas = document.createElement('canvas');
@@ -48,7 +50,9 @@ export = function(client:MuClient) {
   let ghosts:Ghost[];
   let weakCounter;
   let intervalId;
+  let isGhostHoster = false;
   const pacman_color = getRandomColor();
+  const ghostNumber = 4;
 
   protocol.configure({
     ready: () => {
@@ -58,28 +62,93 @@ export = function(client:MuClient) {
       canvas.setAttribute('tabindex', '0');
       canvas.focus();
       welcomeScreen();
+      for (let i = 0; i < ghostNumber; i++) {
+        protocol.state.ghosts[i] = {} as {x:number, y:number, color:string, dir:number, isWeak:boolean, isBlinking:boolean, isDead:boolean};
+      }
     },
   });
 
-  function updateProtocolState() {
-    Object.keys(protocol.server.state).forEach((clientId) => {
+  function updateCanvas() {
+    const spacman = protocol.server.state.pacman;
+    const sghosts = protocol.server.state.ghosts;
+
+    // -------- roles move -------- //
+    mrPacman.move();
+    if (isGhostHoster) {
+      ghosts.forEach((ghost) => {
+        ghost.move(mrPacman, weakCounter);
+      });
+    }
+
+    // -------- update data -------- //
+    updatePacman();
+    if (isGhostHoster) { updateGhosts(); }
+    protocol.state.pacman.isLive = true;
+    protocol.commit();
+
+    // -------- fixGrids -------- //
+    fixGrids(mrPacman.x, mrPacman.y);
+    Object.keys(spacman).forEach((clientId) => {
       if (clientId !== client.sessionId) {
-        const {x, y, color, dir, mouthOpen, isLive} = protocol.server.state[clientId];
+        const {x, y} = spacman[clientId];
         fixGrids(x, y);
+      }
+    });
+    if (isGhostHoster) {
+      ghosts.forEach((ghost) => {
+        fixGrids(ghost.x, ghost.y);
+      });
+    } else {
+      sghosts.forEach((ghost_data) => {
+        const {x, y} = ghost_data;
+        fixGrids(x, y);
+      });
+    }
+
+    // -------- draw roles -------- //
+    mrPacman.draw(ctx);
+    Object.keys(spacman).forEach((clientId) => {
+      if (clientId !== client.sessionId) {
+        const {x, y, color, dir, mouthOpen, isLive} = spacman[clientId];
         if (isLive) {
           const remotePacman = new Pacman(x, y, color, dir, mouthOpen);
           remotePacman.draw(ctx);
         }
       }
     });
+    if (isGhostHoster) {
+      ghosts.forEach((ghost) => {
+        ghost.draw(ctx);
+      });
+    } else {
+      ghosts = [];
+      sghosts.forEach((ghost_data) => {
+        const {x, y, color, dir, isWeak, isBlinking, isDead} = ghost_data;
+        const ghost = new Ghost(x, y, color, dir, isWeak, isBlinking, isDead);
+        ghost.draw(ctx);
+        ghosts.push(ghost);
+      });
+    }
+  }
 
-    protocol.state.x = mrPacman.x;
-    protocol.state.y = mrPacman.y;
-    protocol.state.dir = mrPacman.dir;
-    protocol.state.mouthOpen = mrPacman.mouthOpen;
-    protocol.state.color = mrPacman.color;
-    protocol.state.isLive = true;
-    protocol.commit();
+  function updateGhosts() {
+    for (let i = 0; i < ghosts.length; i++) {
+      protocol.state.ghosts[i]['x'] = ghosts[i].x;
+      protocol.state.ghosts[i]['y'] = ghosts[i].y;
+      protocol.state.ghosts[i]['color'] = ghosts[i].color;
+      protocol.state.ghosts[i]['dir'] = ghosts[i].dir;
+      protocol.state.ghosts[i]['isWeak'] = ghosts[i].isWeak;
+      protocol.state.ghosts[i]['isBlinking'] = ghosts[i].isBlinking;
+      protocol.state.ghosts[i]['isDead'] = ghosts[i].isDead;
+    }
+  }
+
+  function updatePacman() {
+    protocol.state.pacman.x = mrPacman.x;
+    protocol.state.pacman.y = mrPacman.y;
+    protocol.state.pacman.dir = mrPacman.dir;
+    protocol.state.pacman.mouthOpen = mrPacman.mouthOpen;
+    protocol.state.pacman.color = mrPacman.color;
   }
 
   client.start();
@@ -87,9 +156,12 @@ export = function(client:MuClient) {
   /*=================Pacman Run Methods================*/
   function run(isGodMode = false) {
     showScore();
+    console.log(client.sessionId, protocol.server.state.ghostHoster); //FIXME:
 
     mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, pacman_color, GLOBAL['right']);
-    if (!isGodMode) {
+    // only generate ghosts when the it is the only one client in server
+    if (!isGodMode && (protocol.server.state.ghostHoster === '' || protocol.server.state.ghostHoster === client.sessionId)) {
+      isGhostHoster = true;
       blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
       inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
       pinky = new Ghost(0, 0, GLOBAL['pink'], GLOBAL['down']);
@@ -102,13 +174,18 @@ export = function(client:MuClient) {
 
       ghosts = [blinky, inky, pinky, clyde];
 
-      inky.draw(ctx);
       blinky.draw(ctx);
+      inky.draw(ctx);
       pinky.draw(ctx);
       clyde.draw(ctx);
+
+      updateGhosts();
+      protocol.commit();
     } else {
       ghosts = [];
     }
+    console.log('hoster:', isGhostHoster);
+
     showLives();
     printInstruction();
 
@@ -116,10 +193,10 @@ export = function(client:MuClient) {
     countDown();
   }
 
-  function updateCanvas() {
+  function runningLogic() {
     GLOBAL['restartTimer']++;
     if (gameOver() === true) {
-      protocol.state.isLive = false;
+      protocol.state.pacman.isLive = false;
       protocol.commit();
 
       GLOBAL['life']--;
@@ -127,7 +204,7 @@ export = function(client:MuClient) {
       showLives(); // show lives on top right corner
       if (GLOBAL['life'] > 0) {
         sleep(500);
-        clearInterval(intervalId); // 刷新
+        clearInterval(intervalId); // refresh
         fixGrids(mrPacman.x, mrPacman.y);
         for (let i = 0; i < ghosts.length; i++) {
           fixGrids(ghosts[i].x, ghosts[i].y);
@@ -162,25 +239,8 @@ export = function(client:MuClient) {
 
       eatBean();
       eatGhost();
-      mrPacman.move();
-
-      for (let i = 0; i < ghosts.length; i++) {
-        if (ghosts[i].isDead === false) {
-          ghosts[i].move(mrPacman, weakCounter);
-        }
-      }
-
-      fixGrids(mrPacman.x, mrPacman.y);
-      for (let i = 0; i < ghosts.length; i++) {
-        fixGrids(ghosts[i].x, ghosts[i].y);
-      }
-
-      mrPacman.draw(ctx);
-      for (let i = 0; i < ghosts.length; i++) {
-        ghosts[i].draw(ctx);
-      }
+      updateCanvas();
     }
-    updateProtocolState();
   }
 
   function getRandomColor() : string {
@@ -424,7 +484,7 @@ export = function(client:MuClient) {
           ctx.textAlign = 'center';
           ctx.fillText('GO', CANVAS_HEIGHT - 43, 130);
           setTimeout(function() {
-            intervalId = setInterval(updateCanvas, GLOBAL['timerDelay']);
+            intervalId = setInterval(runningLogic, GLOBAL['timerDelay']);
           },         500);
         },         1000);
       },         1000);
@@ -607,7 +667,7 @@ export = function(client:MuClient) {
 
       //resume game
       if (keycode === continueCode && GLOBAL['gamePaused']) {
-        intervalId = setInterval(updateCanvas, GLOBAL['timerDelay']);
+        intervalId = setInterval(runningLogic, GLOBAL['timerDelay']);
         GLOBAL['gamePaused'] = false;
         return;
       }
