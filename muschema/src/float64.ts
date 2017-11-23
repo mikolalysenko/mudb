@@ -1,8 +1,8 @@
-import { MuNumber } from './_number';
+import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export class MuFloat64 extends MuNumber {
-    public readonly muType = 'float64';
+    public readonly muType:MuNumberType = 'float64';
 
     constructor(value?:number) {
         super(+(value || 0));
@@ -22,5 +22,9 @@ export class MuFloat64 extends MuNumber {
             return stream.readFloat64();
         }
         return base;
+    }
+
+    public getByteLength (x:MuFloat64) {
+        return 8;
     }
 }

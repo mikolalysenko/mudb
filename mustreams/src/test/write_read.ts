@@ -10,11 +10,6 @@ const {
 } = StringCodec;
 
 test('buffer allocation', (t) => {
-    t.throws(() => allocBuffer(-1));
-    t.throws(() => allocBuffer(0));
-    t.equals(allocBuffer(1e-8).buffer.byteLength, 2);
-    t.equals(allocBuffer(1).buffer.byteLength, 2);
-    t.equals(allocBuffer(2).buffer.byteLength, 2);
     t.equals(allocBuffer(8).buffer.byteLength, 8);
     t.equals(allocBuffer(9).buffer.byteLength, 16);
     t.equals(allocBuffer(15).buffer.byteLength, 16);

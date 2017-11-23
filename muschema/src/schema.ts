@@ -33,4 +33,6 @@ export interface MuSchema<Value> {
 
     /** Apply a patch to an object */
     patchBinary? (base:Value, inp:MuReadStream) : Value;
+
+    getByteLength? (x:any) : number;
 }

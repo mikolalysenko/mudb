@@ -1,8 +1,8 @@
-import { MuNumber } from './_number';
+import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export class MuUint32 extends MuNumber {
-    public readonly muType = 'uint32';
+    public readonly muType:MuNumberType = 'uint32';
 
     constructor(value?:number) {
         super((value || 0) >>> 0);
@@ -24,5 +24,9 @@ export class MuUint32 extends MuNumber {
             return stream.readUint32();
         }
         return base;
+    }
+
+    public getByteLength (x:MuUint32) {
+        return 4;
     }
 }

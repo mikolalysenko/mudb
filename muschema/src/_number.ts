@@ -1,9 +1,19 @@
 import { MuSchema } from './schema';
 
+export type MuNumberType =
+    'float32' |
+    'float64' |
+    'int8'    |
+    'int16'   |
+    'int32'   |
+    'uint8'   |
+    'uint16'  |
+    'uint32';
+
 /** Number type schema */
 export class MuNumber implements MuSchema<number> {
     public readonly identity:number;
-    public readonly muType:string;
+    public readonly muType:MuNumberType;
     public readonly json:object;
 
     constructor (value:number) {
@@ -24,5 +34,5 @@ export class MuNumber implements MuSchema<number> {
         }
         return;
     }
-    public patch(s:number, p:number) { return p; }
+    public patch (s:number, p:number) { return p; }
 }

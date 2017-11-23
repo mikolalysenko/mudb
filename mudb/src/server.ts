@@ -4,7 +4,7 @@ import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolF
 export class MuRemoteClientProtocol<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
     public readonly message:MuMessageInterface<Schema>['userAPI'];
-    public readonly sendRaw:(bytes:Uint8Array, unreliable?:boolean) => void;
+    public readonly sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
 
     private _socket:MuSocket;
 
@@ -41,7 +41,7 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly clients:{ [sessionId:string]:MuRemoteClientProtocol<Schema['client']> } = {};
 
     public broadcast:MuMessageInterface<Schema['client']>['userAPI'];
-    public broadcastRaw:(bytes:Uint8Array, unreliable?:boolean) => void;
+    public broadcastRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
 
     public configured:boolean = false;
 
