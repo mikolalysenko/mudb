@@ -222,6 +222,7 @@ export = function(client:MuClient) {
   function runningLogic() {
     GLOBAL['restartTimer']++;
     if (gameOver(mrPacman, ghosts) === true) {
+      console.log('gameover');
       clearInterval(intervalId); // refresh
       stateProtocol.state.pacman.isLive = false;
       isGhostHoster = false;
@@ -231,12 +232,11 @@ export = function(client:MuClient) {
       // mrPacman.dieAnimation();
       showLives(ctx, pacman_color); // show lives on top right orner
       if (GLOBAL['life'] > 0) {
-        sleep(1000);
         fixGrids(mrPacman.x, mrPacman.y, ctx);
         for (let i = 0; i < ghosts.length; i++) {
           fixGrids(ghosts[i].x, ghosts[i].y, ctx);
         }
-        run();
+        setTimeout(run, 500);
       } else {
         sleep(500);
         loseMessage(ctx);

@@ -21,10 +21,10 @@ export = function(server:MuServer) {
           ghostHoster = client.sessionId;
           stateProtocol.state.ghosts = ghosts;
         } else {
+          console.log(client.sessionId, 'is dead');
           resetGhostHoster();
         }
       }
-
       stateProtocol.commit();
     },
     connect: (client) => {
