@@ -71,6 +71,11 @@ export = function(client:MuClient) {
   function updateCanvas() {
     const spacman = protocol.server.state.pacman;
     const sghosts = protocol.server.state.ghosts;
+    console.log('id:', client.sessionId, 'ghostHoster:', protocol.server.state.ghostHoster, 'local:', isGhostHoster, 'state:', protocol.state.isGhostHoster);
+
+    if (protocol.server.state.ghostHoster === client.sessionId) {
+      isGhostHoster = true;
+    }
 
     // -------- roles move -------- //
     mrPacman.move();
@@ -83,7 +88,6 @@ export = function(client:MuClient) {
     // -------- update data -------- //
     updatePacman();
     if (isGhostHoster) { updateGhosts(); }
-    protocol.state.pacman.isLive = true;
     protocol.commit();
 
     // -------- fixGrids -------- //
@@ -141,6 +145,7 @@ export = function(client:MuClient) {
       protocol.state.ghosts[i]['isBlinking'] = ghosts[i].isBlinking;
       protocol.state.ghosts[i]['isDead'] = ghosts[i].isDead;
     }
+    protocol.state.isGhostHoster = isGhostHoster;
   }
 
   function updatePacman() {
@@ -156,11 +161,12 @@ export = function(client:MuClient) {
   /*=================Pacman Run Methods================*/
   function run(isGodMode = false) {
     showScore();
-    console.log(client.sessionId, protocol.server.state.ghostHoster); //FIXME:
 
+    console.log('ghostHoster:', protocol.server.state.ghostHoster);
     mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, pacman_color, GLOBAL['right']);
     // only generate ghosts when the it is the only one client in server
     if (!isGodMode && (protocol.server.state.ghostHoster === '' || protocol.server.state.ghostHoster === client.sessionId)) {
+      console.log('generate new ghosts');
       isGhostHoster = true;
       blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
       inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
@@ -180,11 +186,11 @@ export = function(client:MuClient) {
       clyde.draw(ctx);
 
       updateGhosts();
+      protocol.state.pacman.isLive = true;
       protocol.commit();
     } else {
       ghosts = [];
     }
-    console.log('hoster:', isGhostHoster);
 
     showLives();
     printInstruction();
@@ -196,27 +202,32 @@ export = function(client:MuClient) {
   function runningLogic() {
     GLOBAL['restartTimer']++;
     if (gameOver() === true) {
+      clearInterval(intervalId); // refresh
       protocol.state.pacman.isLive = false;
+      isGhostHoster = false;
+      protocol.state.isGhostHoster = isGhostHoster;
       protocol.commit();
 
       GLOBAL['life']--;
       // mrPacman.dieAnimation();
-      showLives(); // show lives on top right corner
+      showLives(); // show lives on top right orner
       if (GLOBAL['life'] > 0) {
-        sleep(500);
-        clearInterval(intervalId); // refresh
+        sleep(1000);
         fixGrids(mrPacman.x, mrPacman.y);
         for (let i = 0; i < ghosts.length; i++) {
           fixGrids(ghosts[i].x, ghosts[i].y);
         }
         run();
       } else {
-        clearInterval(intervalId);
         sleep(500);
         loseMessage();
       }
     } else if (pacmanWon() === true) {
       clearInterval(intervalId);
+      protocol.state.pacman.isLive = false;
+      isGhostHoster = false;
+      protocol.state.isGhostHoster = isGhostHoster;
+      protocol.commit();
       sleep(500);
       winMessage();
     } else { //正常游戏
@@ -236,7 +247,6 @@ export = function(client:MuClient) {
           GLOBAL['weakBonus'] = 200;
         }
       }
-
       eatBean();
       eatGhost();
       updateCanvas();

@@ -10,13 +10,17 @@ export = function(server:MuServer) {
   });
 
   protocol.configure({
-    state: (client, {pacman, ghostHoster, ghosts}) => {
+    state: (client, {pacman, isGhostHoster, ghosts}) => {
       protocol.state.pacman[client.sessionId] = pacman;
-      if (pacman.isLive) {
+
+      if (isGhostHoster || protocol.state.ghostHoster === client.sessionId) {
         protocol.state.ghostHoster = client.sessionId;
-        protocol.state.ghosts = ghosts;
-      } else {
-        protocol.state.ghostHoster = '';
+        console.log(protocol.state.ghostHoster);
+        if (pacman.isLive) {
+          protocol.state.ghosts = ghosts;
+        } else {
+          resetGhostHoster();
+        }
       }
       protocol.commit();
     },
@@ -24,11 +28,30 @@ export = function(server:MuServer) {
     disconnect: (client) => {
       if (protocol.state.pacman[client.sessionId]) {
         protocol.state.pacman[client.sessionId]['isLive'] = false;
-        protocol.state.ghostHoster = '';
+        if (protocol.state.ghostHoster === client.sessionId) {
+          resetGhostHoster();
+        }
         protocol.commit();
         delete protocol.state.pacman[client.sessionId];
       }
     },
   });
   server.start();
+
+  function getRandomClient() {
+    return protocol.clients[Math.floor(Math.random() * protocol.clients.length)];
+  }
+
+  function resetGhostHoster() {
+    if (protocol.clients.length > 1) {
+      let randomClient = getRandomClient();
+      while (randomClient.sessionId === protocol.state.ghostHoster) {
+        randomClient = getRandomClient();
+      }
+      protocol.state.ghostHoster = randomClient.sessionId;
+    } else {
+      protocol.state.ghostHoster = '';
+    }
+    console.log('change hoster', protocol.state.ghostHoster);
+  }
 };

@@ -30,7 +30,7 @@ export const GhostSchema = new MuStruct({
 export const GameSchema = {
   client: new MuStruct({
     pacman: PacmanSchema,
-    ghostHoster: new MuString(),
+    isGhostHoster: new MuBoolean(),
     ghosts: new MuArray(GhostSchema),
   }),
   server: new MuStruct({
