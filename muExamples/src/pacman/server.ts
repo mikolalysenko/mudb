@@ -1,6 +1,6 @@
 import { GameSchema } from './schema';
 import { MuServer } from 'mudb/server';
-import {  MuServerState } from '../../server';
+import {  MuServerState } from 'mustate/server';
 
 export = function(server:MuServer) {
   const protocol = new MuServerState({
