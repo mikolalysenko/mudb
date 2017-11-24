@@ -64,14 +64,18 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         const result:any = [];
         const schema = this.muData;
-        const patchProps:string[] = Object.keys(patch);
-        const length = parseInt(patchProps[patchProps.length - 1]);
+        const patchProps:string[] = Object.keys(patch); // keys of patch, shows the indexs where are different
+        const length = parseInt(patchProps[patchProps.length - 1]); // last index number in patch
 
         for (let i = 0; i <= length; i++) {
-            if (patchProps.indexOf(i.toString()) < 0) {
-                result.push(base[i]);
-            } else if (patch[i]) {
-                result.push(patch[i]);
+            if (patchProps.indexOf(i.toString()) < 0) { // no difference
+                result.push(schema.clone(base[i]));
+            } else if (patch[i]) { // different part
+                if (!base[i] || Object.keys(base[i]).length === 0) {
+                    result.push(schema.clone(patch[i]));
+                } else {
+                    result.push(schema.patch(base[i], patch[i]));
+                }
             }
         }
 
