@@ -1,4 +1,8 @@
 /*======================GLOBAL lets====================*/
+let welcomePacman;
+let welcomeBlinky;
+let welcomeInky;
+
 export const GLOBAL = {};
 // directions
 GLOBAL['up'] = 1;
@@ -682,7 +686,7 @@ export class Ghost {
         this.speed = GLOBAL['speed'] / 2;
         this.stepCounter = 0;
       } else {
-        this.speed = GLOBAL['speed'] / 20; //FIXME: in normal game is global['speed']
+        this.speed = GLOBAL['speed'];
       }
       if (onGridCenter(this.x, this.y) === false) {
         this.moveOneStep();
@@ -1113,4 +1117,365 @@ export function xOnGridCenter(y) {
 
 export function yOnGridCenter(x) {
   return (((x - GLOBAL['GRID_HEIGHT'] / 2) % GLOBAL['GRID_HEIGHT']) === 0);
+}
+
+export function initMaze(ctx) {
+  for (let i = 0; i < maze.length; i++) {
+    const oneRow = new Array(CANVAS_WIDTH / GLOBAL['GRID_WIDTH']);
+    maze[i] = oneRow;
+  }
+
+  // draw maze with full beans
+  for (let row = 0; row < CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']; row++) {
+    for (let col = 0; col < CANVAS_WIDTH / GLOBAL['GRID_WIDTH']; col++) {
+      const beanType = GLOBAL['NORMAL_BEAN'];
+      const newGrid = new Grid(col * GLOBAL['GRID_WIDTH'], row * GLOBAL['GRID_HEIGHT'], mazeContent[row][col], beanType);
+
+      maze[row][col] = newGrid;
+      newGrid.draw(ctx);
+    }
+  }
+
+  //overwrite beans that shouldn't ecist
+  for (let i = 0; i < GLOBAL['noBean'].length; i++) {
+    const x = GLOBAL['noBean'][i][0];
+    const y = GLOBAL['noBean'][i][1];
+    maze[x][y].beanType = undefined;
+    maze[x][y].draw(ctx);
+  }
+
+  // draw power beansx
+  for (let i = 0; i < GLOBAL['powerBeans'].length; i++) {
+    const x = GLOBAL['powerBeans'][i][0];
+    const y = GLOBAL['powerBeans'][i][1];
+    maze[x][y].beanType = GLOBAL['POWER_BEAN'];
+    maze[x][y].draw(ctx);
+  }
+}
+
+export function showScore(ctx) {
+  if (!ctx) { return; }
+  ctx.fillStyle = 'black';
+  ctx.fillRect(CANVAS_WIDTH - 250, 10, 190, 40);
+  ctx.fillStyle = 'white';
+  ctx.font = '24px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('score: ' + Math.floor(GLOBAL['score']), CANVAS_WIDTH - 250, 37);
+}
+
+export function showLives(ctx, pacman_color) {
+  if (!ctx) { return; }
+  ctx.fillStyle = 'black';
+  ctx.fillRect(CANVAS_WIDTH - 80, 10, 70, 30);
+  for (let i = 0; i < GLOBAL['life'] - 1; i++) {
+    GLOBAL['lives'][i] = new Pacman(CANVAS_WIDTH - 50 + 25 * i, 30, pacman_color, GLOBAL['right']);
+    GLOBAL['lives'][i].draw(ctx);
+  }
+}
+
+export function printInstruction(ctx, ghosts) {
+  if (!ctx) { return; }
+  ctx.fillStyle = 'white';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+
+  const txt = 'WELCOME TO \nPACMAN 15-237!\n\n\nArrow keys or\nWASD to move\n\nHAVE FUN!'; //Q to pause\nE to resume\nR to restart
+  const x = 12;
+  const y = CANVAS_HEIGHT - 200;
+  const lineheight = 15;
+  const lines = txt.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x, y + (i * lineheight));
+  }
+
+  if (ghosts.length === 0) {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(x, CANVAS_WIDTH - 40, 70, 30);
+    ctx.fillStyle = 'red';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('GOD MODE', x, CANVAS_WIDTH - 20);
+  }
+}
+
+export function fixGrids(x, y, ctx) {
+  const row = getRowIndex(y);
+  const col = getColIndex(x);
+
+  if (xOnGridCenter(y)) {
+    maze[row][col].draw(ctx);
+    if (col + 1 < maze.length && !staticArrayContains([row, col + 1])) {
+      maze[row][col + 1].draw(ctx);
+    }
+    if (col - 1 >= 0 && !staticArrayContains([row, col - 1])) {
+      maze[row][col - 1].draw(ctx);
+    }
+  } else if (yOnGridCenter(x)) {
+    maze[row][col].draw(ctx);
+    if (row + 1 < maze.length && !staticArrayContains([row + 1, col])) {
+      maze[row + 1][col].draw(ctx);
+    }
+    if (row - 1 >= 0 && !staticArrayContains([row - 1, col])) {
+      maze[row - 1][col].draw(ctx);
+    }
+  }
+}
+
+function staticArrayContains(cord) {
+  const x = cord[0];
+  const y = cord[1];
+  for (let i = 0; i < GLOBAL['staticGrids'].length; i++) {
+    if (x === GLOBAL['staticGrids'][i][0] &&
+      y === GLOBAL['staticGrids'][i][1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function loseMessage(ctx) {
+  if (!ctx) { return; }
+  //draw popup
+  ctx.fillStyle = 'black';
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 5;
+  ctx.fillRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
+  ctx.strokeRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
+
+  //write message
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'red';
+  ctx.font = '26px monospace';
+  ctx.fillText('GAME OVER', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 7);
+  ctx.font = '12px monospace';
+  ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
+}
+
+export function pacmanWon() {
+  return GLOBAL['beansLeft'] === 0;
+}
+
+export function winMessage(ctx) {
+  if (!ctx) { return; }
+  //draw popup
+  ctx.fillStyle = 'black';
+  ctx.strokeStyle = 'green';
+  ctx.lineWidth = 5;
+  ctx.fillRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
+  ctx.strokeRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
+
+  //write message
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'white';
+  ctx.font = '16px monospace';
+  ctx.fillText('Congratulations, you won!', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 6);
+  ctx.font = '12px monospace';
+  ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
+}
+
+export function eatBean(ctx, mrPacman, ghosts, weakCounter) {
+  if (onGridCenter(mrPacman.x, mrPacman.y)) {
+    if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['NORMAL_BEAN']) {
+      GLOBAL['score'] += 10; //modified
+      showScore(ctx);
+      GLOBAL['beansLeft']--;
+    } else if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['POWER_BEAN']) {
+      GLOBAL['score'] += 50; //modified
+      showScore(ctx);
+      GLOBAL['beansLeft']--;
+
+      //ghosts enter weak mode
+      for (let i = 0; i < ghosts.length; i++) {
+        ghosts[i].isWeak = true;
+      }
+      weakCounter = GLOBAL['WEAK_DURATION'];
+    }
+    maze[mrPacman.getRow()][mrPacman.getCol()].beanType = undefined;
+    maze[mrPacman.getRow()][mrPacman.getCol()].draw(ctx);
+  }
+}
+
+export function eatGhost(ctx, mrPacman, ghosts) {
+  for (let i = 0; i < ghosts.length; i++) {
+    if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
+      ghosts[i].isWeak && !ghosts[i].isDead) {
+      GLOBAL['score'] += Math.floor(GLOBAL['weakBonus']);
+      GLOBAL['weakBonus'] *= 2;
+      showScore(ctx);
+      ghosts[i].isDead = true;
+      ghosts[i].toGhostHouse();
+    }
+  }
+}
+
+export function initFields() {
+  // body...
+  for (let i = 6; i < 10; i++) {
+    GLOBAL['powerBeans'][GLOBAL['ghostHouseIndex']] = [i, 9];
+    GLOBAL['ghostHouseIndex']++;
+  }
+
+  //fill up staticGrids[]
+  for (let i = 0; i < 2; i++) {
+    for (let j = 8; j < 17; j++) {
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
+    }
+  }
+  for (let i = 9; i < 17; i++) {
+    for (let j = 0; j < 4; j++) {
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
+    }
+  }
+  for (let i = 2; i < 6; i++) {
+    for (let j = 14; j < 17; j++) {
+      GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
+      GLOBAL['staticGridsIndex']++;
+    }
+  }
+
+  //fill up noBean[]
+  for (let i = 0; i < 2; i++) {
+    for (let j = 8; j < 17; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let i = 2; i < 6; i++) {
+    for (let j = 14; j < 17; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let i = 9; i < 17; i++) {
+    for (let j = 0; j < 4; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let i = 1; i < 6; i++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 2];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let i = 1; i < 4; i += 2) {
+    for (let j = 4; j < 7; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let j = 8; j < 13; j++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [3, j];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let j = 1; j < 7; j++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let i = 5; i < 10; i++) {
+    for (let j = 8; j < 11; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let j = 12; j < 16; j++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let j = 12; j < 16; j++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [9, j];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let i = 11; i < 16; i += 2) {
+    for (let j = 5; j < 8; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let i = 11; i < 16; i += 2) {
+    for (let j = 9; j < 12; j++) {
+      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
+      GLOBAL['noBeanIndex']++;
+    }
+  }
+  for (let j = 13; j < 16; j++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [11, j];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let i = 12; i < 16; i++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 15];
+    GLOBAL['noBeanIndex']++;
+  }
+  for (let i = 13; i < 17; i++) {
+    GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 13];
+    GLOBAL['noBeanIndex']++;
+  }
+}
+
+export function initCanvas(width, height, ctx) {
+  if (width === undefined || !(width instanceof Number)) {
+    width = CANVAS_WIDTH;
+  }
+  if (height === undefined || !(height instanceof Number)) {
+    height = CANVAS_HEIGHT;
+  }
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+export function welcomeScreen(ctx, intervalId, pacman_color) {
+  if (!ctx) { return; }
+  GLOBAL['gameOn'] = false;
+  GLOBAL['gamePaused'] = false;
+  // welcome text
+  ctx.fillStyle = 'white';
+  ctx.font = '80px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('PACMAN', CANVAS_WIDTH / 2, 170);
+  ctx.font = '20px monospace';
+  ctx.fillText('Press s to start', CANVAS_WIDTH / 2, 220);
+  ctx.font = '14px monospace';
+  ctx.fillText('DEVELOPED BY: Codemao.cn', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 20 * 19);
+
+  welcomePacman = new Pacman(CANVAS_WIDTH / 5, CANVAS_HEIGHT / 3 * 2, pacman_color, GLOBAL['right']);
+  welcomePacman.radius = 30;
+  welcomePacman.draw(ctx);
+
+  welcomeBlinky = new Ghost(CANVAS_WIDTH / 5 * 3.3, CANVAS_HEIGHT / 3 * 2, GLOBAL['red'], GLOBAL['left']);
+  welcomeBlinky.radius = 30;
+  welcomeBlinky.draw(ctx);
+
+  welcomeInky = new Ghost(CANVAS_WIDTH / 5 * 4, CANVAS_HEIGHT / 3 * 2, GLOBAL['cyan'], GLOBAL['right']);
+  welcomeInky.radius = 30;
+  welcomeInky.draw(ctx);
+  intervalId = setInterval(updateWelcomeScreen, GLOBAL['timerDelay'] * 2);
+}
+
+export function gameOver(mrPacman, ghosts) {
+  for (let i = 0; i < ghosts.length; i++) {
+    if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
+      !ghosts[i].isWeak) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function sleep(ms) {
+  const dt = new Date();
+  dt.setTime(dt.getTime() + ms);
+  while (new Date().getTime() < dt.getTime()) {  }
+}
+
+function updateWelcomeScreen(ctx) {
+  if (!ctx) { return; }
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, CANVAS_HEIGHT / 2, CANVAS_WIDTH, 140);
+  welcomePacman.mouthOpen = !welcomePacman.mouthOpen;
+  welcomeBlinky.isMoving = !welcomeBlinky.isMoving;
+  welcomeInky.isMoving = !welcomeInky.isMoving;
+  welcomePacman.draw(ctx);
+  welcomeInky.draw(ctx);
+  welcomeBlinky.draw(ctx);
 }

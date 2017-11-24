@@ -1,4 +1,4 @@
-import { GameSchema } from './schema';
+import { StateSchema, DBSchema } from './schema';
 import { MuClient } from 'mudb/client';
 import { MuClientState } from 'mustate/client';
 import {
@@ -15,6 +15,21 @@ import {
   xOnGridCenter,
   yOnGridCenter,
   mazeContent,
+  initMaze,
+  showScore,
+  showLives,
+  printInstruction,
+  eatBean,
+  eatGhost,
+  winMessage,
+  pacmanWon,
+  sleep,
+  loseMessage,
+  gameOver,
+  fixGrids,
+  welcomeScreen,
+  initFields,
+  initCanvas,
 } from './pac';
 import { isDate } from 'util';
 import { isWorker } from 'cluster';
@@ -33,15 +48,14 @@ export = function(client:MuClient) {
     return;
   }
 
-  const protocol = new MuClientState({
-    schema: GameSchema,
+  const stateProtocol = new MuClientState({
+    schema: StateSchema,
     client,
   });
 
+  const dbProtocol = client.protocol(DBSchema);
+
   //spirtes instances
-  let welcomePacman;
-  let welcomeBlinky;
-  let welcomeInky;
   let mrPacman:Pacman;
   let blinky;
   let inky;
@@ -54,28 +68,37 @@ export = function(client:MuClient) {
   const pacman_color = getRandomColor();
   const ghostNumber = 4;
 
-  protocol.configure({
+  stateProtocol.configure({
     ready: () => {
       initFields();
-      initCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+      initCanvas(CANVAS_WIDTH, CANVAS_HEIGHT, ctx);
       canvas.addEventListener('keydown', onKeyDown, false);
       canvas.setAttribute('tabindex', '0');
       canvas.focus();
-      welcomeScreen();
+      welcomeScreen(ctx, intervalId, pacman_color);
       for (let i = 0; i < ghostNumber; i++) {
-        protocol.state.ghosts[i] = {} as {x:number, y:number, color:string, dir:number, isWeak:boolean, isBlinking:boolean, isDead:boolean};
+        stateProtocol.state.ghosts[i] = {} as {x:number, y:number, color:string, dir:number, isWeak:boolean, isBlinking:boolean, isDead:boolean};
       }
     },
   });
 
-  function updateCanvas() {
-    const spacman = protocol.server.state.pacman;
-    const sghosts = protocol.server.state.ghosts;
-    console.log('id:', client.sessionId, 'ghostHoster:', protocol.server.state.ghostHoster, 'local:', isGhostHoster, 'state:', protocol.state.isGhostHoster);
+  dbProtocol.configure({
+    message: {
+      ghostHoster: (id) => {
+        console.log('get message:', id);
+        if (id === client.sessionId || id === '') {
+          console.log('is hoster');
+          isGhostHoster = true;
+        } else {
+          isGhostHoster = false;
+        }
+      },
+    },
+  });
 
-    if (protocol.server.state.ghostHoster === client.sessionId) {
-      isGhostHoster = true;
-    }
+  function updateCanvas() {
+    const spacman = stateProtocol.server.state.pacman;
+    const sghosts = stateProtocol.server.state.ghosts;
 
     // -------- roles move -------- //
     mrPacman.move();
@@ -88,24 +111,24 @@ export = function(client:MuClient) {
     // -------- update data -------- //
     updatePacman();
     if (isGhostHoster) { updateGhosts(); }
-    protocol.commit();
+    stateProtocol.commit();
 
     // -------- fixGrids -------- //
-    fixGrids(mrPacman.x, mrPacman.y);
+    fixGrids(mrPacman.x, mrPacman.y, ctx);
     Object.keys(spacman).forEach((clientId) => {
       if (clientId !== client.sessionId) {
         const {x, y} = spacman[clientId];
-        fixGrids(x, y);
+        fixGrids(x, y, ctx);
       }
     });
     if (isGhostHoster) {
       ghosts.forEach((ghost) => {
-        fixGrids(ghost.x, ghost.y);
+        fixGrids(ghost.x, ghost.y, ctx);
       });
     } else {
       sghosts.forEach((ghost_data) => {
         const {x, y} = ghost_data;
-        fixGrids(x, y);
+        fixGrids(x, y, ctx);
       });
     }
 
@@ -137,37 +160,33 @@ export = function(client:MuClient) {
 
   function updateGhosts() {
     for (let i = 0; i < ghosts.length; i++) {
-      protocol.state.ghosts[i]['x'] = ghosts[i].x;
-      protocol.state.ghosts[i]['y'] = ghosts[i].y;
-      protocol.state.ghosts[i]['color'] = ghosts[i].color;
-      protocol.state.ghosts[i]['dir'] = ghosts[i].dir;
-      protocol.state.ghosts[i]['isWeak'] = ghosts[i].isWeak;
-      protocol.state.ghosts[i]['isBlinking'] = ghosts[i].isBlinking;
-      protocol.state.ghosts[i]['isDead'] = ghosts[i].isDead;
+      stateProtocol.state.ghosts[i]['x'] = ghosts[i].x;
+      stateProtocol.state.ghosts[i]['y'] = ghosts[i].y;
+      stateProtocol.state.ghosts[i]['color'] = ghosts[i].color;
+      stateProtocol.state.ghosts[i]['dir'] = ghosts[i].dir;
+      stateProtocol.state.ghosts[i]['isWeak'] = ghosts[i].isWeak;
+      stateProtocol.state.ghosts[i]['isBlinking'] = ghosts[i].isBlinking;
+      stateProtocol.state.ghosts[i]['isDead'] = ghosts[i].isDead;
     }
-    protocol.state.isGhostHoster = isGhostHoster;
   }
 
   function updatePacman() {
-    protocol.state.pacman.x = mrPacman.x;
-    protocol.state.pacman.y = mrPacman.y;
-    protocol.state.pacman.dir = mrPacman.dir;
-    protocol.state.pacman.mouthOpen = mrPacman.mouthOpen;
-    protocol.state.pacman.color = mrPacman.color;
+    stateProtocol.state.pacman.x = mrPacman.x;
+    stateProtocol.state.pacman.y = mrPacman.y;
+    stateProtocol.state.pacman.dir = mrPacman.dir;
+    stateProtocol.state.pacman.mouthOpen = mrPacman.mouthOpen;
+    stateProtocol.state.pacman.color = mrPacman.color;
   }
 
   client.start();
 
   /*=================Pacman Run Methods================*/
   function run(isGodMode = false) {
-    showScore();
+    showScore(ctx);
 
-    console.log('ghostHoster:', protocol.server.state.ghostHoster);
     mrPacman = new Pacman(GLOBAL['pacmanStartLoc'][1] * GLOBAL['GRID_WIDTH'] + GLOBAL['GRID_WIDTH'] / 2, GLOBAL['pacmanStartLoc'][0] * GLOBAL['GRID_HEIGHT'] + GLOBAL['GRID_HEIGHT'] / 2, pacman_color, GLOBAL['right']);
     // only generate ghosts when the it is the only one client in server
-    if (!isGodMode && (protocol.server.state.ghostHoster === '' || protocol.server.state.ghostHoster === client.sessionId)) {
-      console.log('generate new ghosts');
-      isGhostHoster = true;
+    if (!isGodMode && isGhostHoster) {
       blinky = new Ghost(0, 0, GLOBAL['red'], GLOBAL['down']);
       inky = new Ghost(0, 0, GLOBAL['cyan'], GLOBAL['down']);
       pinky = new Ghost(0, 0, GLOBAL['pink'], GLOBAL['down']);
@@ -186,14 +205,15 @@ export = function(client:MuClient) {
       clyde.draw(ctx);
 
       updateGhosts();
-      protocol.state.pacman.isLive = true;
-      protocol.commit();
+      stateProtocol.state.pacman.isLive = true;
+      stateProtocol.commit();
+      dbProtocol.server.message.isGhostHoster(isGhostHoster);
     } else {
       ghosts = [];
     }
 
-    showLives();
-    printInstruction();
+    showLives(ctx, pacman_color);
+    printInstruction(ctx, ghosts);
 
     mrPacman.draw(ctx);
     countDown();
@@ -201,35 +221,32 @@ export = function(client:MuClient) {
 
   function runningLogic() {
     GLOBAL['restartTimer']++;
-    if (gameOver() === true) {
+    if (gameOver(mrPacman, ghosts) === true) {
       clearInterval(intervalId); // refresh
-      protocol.state.pacman.isLive = false;
+      stateProtocol.state.pacman.isLive = false;
       isGhostHoster = false;
-      protocol.state.isGhostHoster = isGhostHoster;
-      protocol.commit();
+      stateProtocol.commit();
 
       GLOBAL['life']--;
       // mrPacman.dieAnimation();
-      showLives(); // show lives on top right orner
+      showLives(ctx, pacman_color); // show lives on top right orner
       if (GLOBAL['life'] > 0) {
         sleep(1000);
-        fixGrids(mrPacman.x, mrPacman.y);
+        fixGrids(mrPacman.x, mrPacman.y, ctx);
         for (let i = 0; i < ghosts.length; i++) {
-          fixGrids(ghosts[i].x, ghosts[i].y);
+          fixGrids(ghosts[i].x, ghosts[i].y, ctx);
         }
         run();
       } else {
         sleep(500);
-        loseMessage();
+        loseMessage(ctx);
       }
     } else if (pacmanWon() === true) {
       clearInterval(intervalId);
-      protocol.state.pacman.isLive = false;
-      isGhostHoster = false;
-      protocol.state.isGhostHoster = isGhostHoster;
-      protocol.commit();
+      stateProtocol.state.pacman.isLive = false;
+      stateProtocol.commit();
       sleep(500);
-      winMessage();
+      winMessage(ctx);
     } else { //正常游戏
       if (weakCounter > 0 && weakCounter < 2000 / GLOBAL['timerDelay']) { //weakcounter: ghosts in weak
         for (let i = 0; i < ghosts.length; i++) {
@@ -247,226 +264,19 @@ export = function(client:MuClient) {
           GLOBAL['weakBonus'] = 200;
         }
       }
-      eatBean();
-      eatGhost();
+      eatBean(ctx, mrPacman, ghosts, weakCounter);
+      eatGhost(ctx, mrPacman, ghosts);
       updateCanvas();
     }
   }
 
   function getRandomColor() : string {
-    const letters = '0123456789ABCDEF';
+    const letters = 'BCDEF'.split('');
     let color = '#';
-    for (var i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
+    for (let i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * letters.length)];
     }
     return color;
-}
-
-  function initMaze() {
-    for (let i = 0; i < maze.length; i++) {
-      const oneRow = new Array(CANVAS_WIDTH / GLOBAL['GRID_WIDTH']);
-      maze[i] = oneRow;
-    }
-
-    // draw maze with full beans
-    for (let row = 0; row < CANVAS_HEIGHT / GLOBAL['GRID_HEIGHT']; row++) {
-      for (let col = 0; col < CANVAS_WIDTH / GLOBAL['GRID_WIDTH']; col++) {
-        const beanType = GLOBAL['NORMAL_BEAN'];
-        const newGrid = new Grid(col * GLOBAL['GRID_WIDTH'], row * GLOBAL['GRID_HEIGHT'], mazeContent[row][col], beanType);
-
-        maze[row][col] = newGrid;
-        newGrid.draw(ctx);
-      }
-    }
-
-    //overwrite beans that shouldn't ecist
-    for (let i = 0; i < GLOBAL['noBean'].length; i++) {
-      const x = GLOBAL['noBean'][i][0];
-      const y = GLOBAL['noBean'][i][1];
-      maze[x][y].beanType = undefined;
-      maze[x][y].draw(ctx);
-    }
-
-    // draw power beansx
-    for (let i = 0; i < GLOBAL['powerBeans'].length; i++) {
-      const x = GLOBAL['powerBeans'][i][0];
-      const y = GLOBAL['powerBeans'][i][1];
-      maze[x][y].beanType = GLOBAL['POWER_BEAN'];
-      maze[x][y].draw(ctx);
-    }
-  }
-
-  function showScore() {
-    if (!ctx) { return; }
-    ctx.fillStyle = 'black';
-    ctx.fillRect(CANVAS_WIDTH - 250, 10, 190, 40);
-    ctx.fillStyle = 'white';
-    ctx.font = '24px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('score: ' + Math.floor(GLOBAL['score']), CANVAS_WIDTH - 250, 37);
-  }
-
-  function showLives() {
-    if (!ctx) { return; }
-    ctx.fillStyle = 'black';
-    ctx.fillRect(CANVAS_WIDTH - 80, 10, 70, 30);
-    for (let i = 0; i < GLOBAL['life'] - 1; i++) {
-      GLOBAL['lives'][i] = new Pacman(CANVAS_WIDTH - 50 + 25 * i, 30, pacman_color, GLOBAL['right']);
-      GLOBAL['lives'][i].draw(ctx);
-    }
-  }
-
-  function printInstruction() {
-    if (!ctx) { return; }
-    ctx.fillStyle = 'white';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
-
-    const txt = 'WELCOME TO \nPACMAN 15-237!\n\n\nArrow keys or\nWASD to move\n\nQ to pause\nE to resume\nR to restart';
-    const x = 12;
-    const y = CANVAS_HEIGHT - 200;
-    const lineheight = 15;
-    const lines = txt.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], x, y + (i * lineheight));
-    }
-
-    if (ghosts.length === 0) {
-      ctx.fillStyle = 'black';
-      ctx.fillRect(x, CANVAS_WIDTH - 40, 70, 30);
-      ctx.fillStyle = 'red';
-      ctx.font = '16px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('GOD MODE', x, CANVAS_WIDTH - 20);
-    }
-
-  }
-
-  function gameOver() {
-    for (let i = 0; i < ghosts.length; i++) {
-      if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
-        !ghosts[i].isWeak) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function staticArrayContains(cord) {
-    const x = cord[0];
-    const y = cord[1];
-    for (let i = 0; i < GLOBAL['staticGrids'].length; i++) {
-      if (x === GLOBAL['staticGrids'][i][0] &&
-        y === GLOBAL['staticGrids'][i][1]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function sleep(ms) {
-    const dt = new Date();
-    dt.setTime(dt.getTime() + ms);
-    while (new Date().getTime() < dt.getTime()) {  }
-  }
-
-  function fixGrids(x, y) {
-    const row = getRowIndex(y);
-    const col = getColIndex(x);
-
-    if (xOnGridCenter(y)) {
-      maze[row][col].draw(ctx);
-      if (col + 1 < maze.length && !staticArrayContains([row, col + 1])) {
-        maze[row][col + 1].draw(ctx);
-      }
-      if (col - 1 >= 0 && !staticArrayContains([row, col - 1])) {
-        maze[row][col - 1].draw(ctx);
-      }
-    } else if (yOnGridCenter(x)) {
-      maze[row][col].draw(ctx);
-      if (row + 1 < maze.length && !staticArrayContains([row + 1, col])) {
-        maze[row + 1][col].draw(ctx);
-      }
-      if (row - 1 >= 0 && !staticArrayContains([row - 1, col])) {
-        maze[row - 1][col].draw(ctx);
-      }
-    }
-  }
-
-  function loseMessage() {
-    if (!ctx) { return; }
-    //draw popup
-    ctx.fillStyle = 'black';
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 5;
-    ctx.fillRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
-    ctx.strokeRect(CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT / 2 - 40, 200, 100);
-
-    //write message
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'red';
-    ctx.font = '26px monospace';
-    ctx.fillText('GAME OVER', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 7);
-    ctx.font = '12px monospace';
-    ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
-  }
-
-  function pacmanWon() {
-    return GLOBAL['beansLeft'] === 0;
-  }
-
-  function winMessage() {
-    if (!ctx) { return; }
-    //draw popup
-    ctx.fillStyle = 'black';
-    ctx.strokeStyle = 'green';
-    ctx.lineWidth = 5;
-    ctx.fillRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
-    ctx.strokeRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 40, 300, 100);
-
-    //write message
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'white';
-    ctx.font = '16px monospace';
-    ctx.fillText('Congratulations, you won!', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 6);
-    ctx.font = '12px monospace';
-    ctx.fillText('press R to play again', CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2 + 28);
-  }
-
-  function eatBean() {
-    if (onGridCenter(mrPacman.x, mrPacman.y)) {
-      if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['NORMAL_BEAN']) {
-        GLOBAL['score'] += 10; //modified
-        showScore();
-        GLOBAL['beansLeft']--;
-      } else if (maze[mrPacman.getRow()][mrPacman.getCol()].beanType === GLOBAL['POWER_BEAN']) {
-        GLOBAL['score'] += 50; //modified
-        showScore();
-        GLOBAL['beansLeft']--;
-
-        //ghosts enter weak mode
-        for (let i = 0; i < ghosts.length; i++) {
-          ghosts[i].isWeak = true;
-        }
-        weakCounter = GLOBAL['WEAK_DURATION'];
-      }
-      maze[mrPacman.getRow()][mrPacman.getCol()].beanType = undefined;
-      maze[mrPacman.getRow()][mrPacman.getCol()].draw(ctx);
-    }
-  }
-
-  function eatGhost() {
-    for (let i = 0; i < ghosts.length; i++) {
-      if (Math.abs(mrPacman.x - ghosts[i].x) <= 5 && Math.abs(mrPacman.y - ghosts[i].y) <= 5 &&
-        ghosts[i].isWeak && !ghosts[i].isDead) {
-        GLOBAL['score'] += Math.floor(GLOBAL['weakBonus']);
-        GLOBAL['weakBonus'] *= 2;
-        showScore();
-        ghosts[i].isDead = true;
-        ghosts[i].toGhostHouse();
-      }
-    }
   }
 
   function countDown() {
@@ -494,139 +304,13 @@ export = function(client:MuClient) {
           ctx.textAlign = 'center';
           ctx.fillText('GO', CANVAS_HEIGHT - 43, 130);
           setTimeout(function() {
+            stateProtocol.state.pacman.isLive = true;
+            stateProtocol.commit();
             intervalId = setInterval(runningLogic, GLOBAL['timerDelay']);
           },         500);
         },         1000);
       },         1000);
     },         1000);
-  }
-
-  function updateWelcomeScreen() {
-    if (!ctx) { return; }
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, CANVAS_HEIGHT / 2, CANVAS_WIDTH, 140);
-    welcomePacman.mouthOpen = !welcomePacman.mouthOpen;
-    welcomeBlinky.isMoving = !welcomeBlinky.isMoving;
-    welcomeInky.isMoving = !welcomeInky.isMoving;
-    welcomePacman.draw(ctx);
-    welcomeInky.draw(ctx);
-    welcomeBlinky.draw(ctx);
-  }
-
-  function initFields() {
-    // body...
-    for (let i = 6; i < 10; i++) {
-      GLOBAL['powerBeans'][GLOBAL['ghostHouseIndex']] = [i, 9];
-      GLOBAL['ghostHouseIndex']++;
-    }
-
-    //fill up staticGrids[]
-    for (let i = 0; i < 2; i++) {
-      for (let j = 8; j < 17; j++) {
-        GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-        GLOBAL['staticGridsIndex']++;
-      }
-    }
-    for (let i = 9; i < 17; i++) {
-      for (let j = 0; j < 4; j++) {
-        GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-        GLOBAL['staticGridsIndex']++;
-      }
-    }
-    for (let i = 2; i < 6; i++) {
-      for (let j = 14; j < 17; j++) {
-        GLOBAL['staticGrids'][GLOBAL['staticGridsIndex']] = [i, j];
-        GLOBAL['staticGridsIndex']++;
-      }
-    }
-
-    //fill up noBean[]
-    for (let i = 0; i < 2; i++) {
-      for (let j = 8; j < 17; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let i = 2; i < 6; i++) {
-      for (let j = 14; j < 17; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let i = 9; i < 17; i++) {
-      for (let j = 0; j < 4; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let i = 1; i < 6; i++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 2];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let i = 1; i < 4; i += 2) {
-      for (let j = 4; j < 7; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let j = 8; j < 13; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [3, j];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let j = 1; j < 7; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let i = 5; i < 10; i++) {
-      for (let j = 8; j < 11; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let j = 12; j < 16; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [7, j];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let j = 12; j < 16; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [9, j];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let i = 11; i < 16; i += 2) {
-      for (let j = 5; j < 8; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let i = 11; i < 16; i += 2) {
-      for (let j = 9; j < 12; j++) {
-        GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, j];
-        GLOBAL['noBeanIndex']++;
-      }
-    }
-    for (let j = 13; j < 16; j++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [11, j];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let i = 12; i < 16; i++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 15];
-      GLOBAL['noBeanIndex']++;
-    }
-    for (let i = 13; i < 17; i++) {
-      GLOBAL['noBean'][GLOBAL['noBeanIndex']] = [i, 13];
-      GLOBAL['noBeanIndex']++;
-    }
-  }
-
-  function initCanvas(width, height) {
-    if (!ctx) { return; }
-    if (width === undefined || !(width instanceof Number)) {
-      width = CANVAS_WIDTH;
-    }
-    if (height === undefined || !(height instanceof Number)) {
-      height = CANVAS_HEIGHT;
-    }
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }
 
   //listen to keyDown event
@@ -654,17 +338,17 @@ export = function(client:MuClient) {
         clearInterval(intervalId);
         GLOBAL['gameOn'] = true;
         GLOBAL['gamePaused'] = false;
-        initMaze();
+        initMaze(ctx);
         run();
         return;
-      } else if (keycode === godModeCode) {
-        clearInterval(intervalId);
-        ghosts = [];
-        GLOBAL['gameOn'] = true;
-        GLOBAL['gamePaused'] = false;
-        initMaze();
-        run(true);
-        return;
+      // } else if (keycode === godModeCode) {
+      //   clearInterval(intervalId);
+      //   ghosts = [];
+      //   GLOBAL['gameOn'] = true;
+      //   GLOBAL['gamePaused'] = false;
+      //   initMaze(ctx);
+      //   run(true);
+      //   return;
       }
     } else {
 
@@ -692,7 +376,7 @@ export = function(client:MuClient) {
         GLOBAL['score'] = 0;
         GLOBAL['life'] = GLOBAL['MAX_LIFE'];
         GLOBAL['beansLeft'] = GLOBAL['MAX_BEANS'];
-        initMaze();
+        initMaze(ctx);
         run();
       }
 
@@ -722,33 +406,5 @@ export = function(client:MuClient) {
           break;
       }
     }
-  }
-
-  function welcomeScreen() {
-    if (!ctx) { return; }
-    GLOBAL['gameOn'] = false;
-    GLOBAL['gamePaused'] = false;
-    // welcome text
-    ctx.fillStyle = 'white';
-    ctx.font = '80px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('PACMAN', CANVAS_WIDTH / 2, 170);
-    ctx.font = '20px monospace';
-    ctx.fillText('Press s to start', CANVAS_WIDTH / 2, 220);
-    ctx.font = '14px monospace';
-    ctx.fillText('DEVELOPED BY: ZI WANG, BINGYING XIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 20 * 19);
-
-    welcomePacman = new Pacman(CANVAS_WIDTH / 5, CANVAS_HEIGHT / 3 * 2, pacman_color, GLOBAL['right']);
-    welcomePacman.radius = 30;
-    welcomePacman.draw(ctx);
-
-    welcomeBlinky = new Ghost(CANVAS_WIDTH / 5 * 3.3, CANVAS_HEIGHT / 3 * 2, GLOBAL['red'], GLOBAL['left']);
-    welcomeBlinky.radius = 30;
-    welcomeBlinky.draw(ctx);
-
-    welcomeInky = new Ghost(CANVAS_WIDTH / 5 * 4, CANVAS_HEIGHT / 3 * 2, GLOBAL['cyan'], GLOBAL['right']);
-    welcomeInky.radius = 30;
-    welcomeInky.draw(ctx);
-    intervalId = setInterval(updateWelcomeScreen, GLOBAL['timerDelay'] * 2);
   }
 };

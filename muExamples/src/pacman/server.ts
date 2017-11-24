@@ -1,57 +1,82 @@
-import { GameSchema } from './schema';
+import { StateSchema, DBSchema } from './schema';
 import { MuServer } from 'mudb/server';
 import {  MuServerState } from 'mustate/server';
 
 export = function(server:MuServer) {
-  const protocol = new MuServerState({
-    schema: GameSchema,
+  const stateProtocol = new MuServerState({
+    schema: StateSchema,
     server,
     windowSize: 0,
   });
 
-  protocol.configure({
-    state: (client, {pacman, isGhostHoster, ghosts}) => {
-      protocol.state.pacman[client.sessionId] = pacman;
+  const dbProtocol = server.protocol(DBSchema);
+  let ghostHoster:string = '';
 
-      if (isGhostHoster || protocol.state.ghostHoster === client.sessionId) {
-        protocol.state.ghostHoster = client.sessionId;
-        console.log(protocol.state.ghostHoster);
+  stateProtocol.configure({
+    state: (client, {pacman, ghosts}) => {
+      stateProtocol.state.pacman[client.sessionId] = pacman;
+
+      if (ghostHoster === client.sessionId) {
         if (pacman.isLive) {
-          protocol.state.ghosts = ghosts;
+          ghostHoster = client.sessionId;
+          stateProtocol.state.ghosts = ghosts;
         } else {
           resetGhostHoster();
         }
       }
-      protocol.commit();
+
+      stateProtocol.commit();
     },
-    connect: (client) => {},
+    connect: (client) => {
+      console.log('ghostHoster:', ghostHoster);
+      dbProtocol.broadcast.ghostHoster(ghostHoster);
+    },
     disconnect: (client) => {
-      if (protocol.state.pacman[client.sessionId]) {
-        protocol.state.pacman[client.sessionId]['isLive'] = false;
-        if (protocol.state.ghostHoster === client.sessionId) {
+      if (stateProtocol.state.pacman[client.sessionId]) {
+        stateProtocol.state.pacman[client.sessionId]['isLive'] = false;
+        if (ghostHoster === client.sessionId) {
           resetGhostHoster();
         }
-        protocol.commit();
-        delete protocol.state.pacman[client.sessionId];
+        stateProtocol.commit();
+        delete stateProtocol.state.pacman[client.sessionId];
       }
+    },
+  });
+
+  dbProtocol.configure({
+    message: {
+      isGhostHoster: (client, isHoster) => {
+        if (isHoster) {
+          ghostHoster = client.sessionId;
+          dbProtocol.broadcast.ghostHoster(ghostHoster);
+        }
+      },
     },
   });
   server.start();
 
   function getRandomClient() {
-    return protocol.clients[Math.floor(Math.random() * protocol.clients.length)];
+    return stateProtocol.clients[Math.floor(Math.random() * stateProtocol.clients.length)];
   }
 
   function resetGhostHoster() {
-    if (protocol.clients.length > 1) {
-      let randomClient = getRandomClient();
-      while (randomClient.sessionId === protocol.state.ghostHoster) {
-        randomClient = getRandomClient();
+    if (stateProtocol.clients.length > 1) {
+      let livePacman;
+      Object.keys(stateProtocol.state.pacman).forEach((id) => {
+        if (stateProtocol.state.pacman[id]['isLive']) {
+          livePacman = id;
+        }
+      });
+
+      if (livePacman) {
+        ghostHoster = livePacman;
+      } else {
+        ghostHoster = '';
       }
-      protocol.state.ghostHoster = randomClient.sessionId;
     } else {
-      protocol.state.ghostHoster = '';
+      ghostHoster = '';
     }
-    console.log('change hoster', protocol.state.ghostHoster);
+    dbProtocol.broadcast.ghostHoster(ghostHoster);
+    console.log('change hoster', ghostHoster);
   }
 };

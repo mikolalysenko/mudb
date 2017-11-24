@@ -27,15 +27,22 @@ export const GhostSchema = new MuStruct({
   isDead: new MuBoolean(),
 });
 
-export const GameSchema = {
+export const StateSchema = {
   client: new MuStruct({
     pacman: PacmanSchema,
-    isGhostHoster: new MuBoolean(),
     ghosts: new MuArray(GhostSchema),
   }),
   server: new MuStruct({
     pacman: new MuDictionary(PacmanSchema),
-    ghostHoster: new MuString(),
     ghosts: new MuArray(GhostSchema),
   }),
+};
+
+export const DBSchema = {
+  client: {
+    ghostHoster: new MuString(),
+  },
+  server: {
+    isGhostHoster: new MuBoolean(),
+  },
 };
