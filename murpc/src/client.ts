@@ -1,5 +1,12 @@
 import { MuClient, MuClientProtocol } from 'mudb/client';
-import { MuRPCProtocolSchema, MuRPCTable, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
+import {
+    MuRPCProtocolSchema,
+    MuRPCErrorProtocol,
+    MuRPCTable,
+    MuRPCInterface,
+    MuRPCProtocolSchemaInterface,
+    createRPCProtocolSchemas,
+} from './rpc';
 
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
@@ -19,6 +26,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
     private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['1']>;
+    private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
 
     private _callbacks:{[id:string]:(base) => void};
 
@@ -30,6 +38,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         this._protocolSchema = createRPCProtocolSchemas(schema);
         this._callProtocol = client.protocol(this._protocolSchema['0']);
         this._responseProtocol = client.protocol(this._protocolSchema['1']);
+        this._errorProtocol = client.protocol(MuRPCErrorProtocol);
 
         this.server = new MuRPCRemoteServer(this.createServerPRC(this._callProtocol, schema.server));
     }
@@ -78,10 +87,6 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                         delete callbacks[id];
                     };
                 });
-                result['error'] = ({base, id}) => {
-                    console.log('Error:', base);
-                    if (callbacks[id]) { delete callbacks[id]; }
-                };
                 return result;
             })(this._protocolSchema['1']['client'], this._callbacks),
             ready: () => {
@@ -93,6 +98,15 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 if (spec && spec.close) {
                     spec.close();
                 }
+            },
+        });
+
+        this._errorProtocol.configure({
+            message: {
+                error: ({ message, id }) => {
+                    console.log('Error:', message);
+                    if (this._callbacks[id]) { delete this._callbacks[id]; }
+                },
             },
         });
     }

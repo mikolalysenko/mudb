@@ -1,9 +1,7 @@
 import {
-    MuStruct,
     MuInt8,
     MuString,
     MuArray,
-    MuVoid,
     MuDictionary,
 } from 'muschema';
 
