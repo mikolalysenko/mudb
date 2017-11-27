@@ -1,5 +1,5 @@
 import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
-import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas } from './rpc';
+import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, MuRPCErrorProtocol } from './rpc';
 import { MuRPCClient } from './client';
 import { callbackify } from 'util';
 const crypto = require('crypto');
@@ -24,6 +24,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
     private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
     private _responseProtocol:MuServerProtocol<MuRPCProtocolSchemaInterface<Schema>['1']>;
+    private _errorProtocol:MuServerProtocol<typeof MuRPCErrorProtocol>;
 
     constructor (server:MuServer, schema:Schema) {
         this.server = server;
@@ -33,6 +34,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         this._protocolSchema = createRPCProtocolSchemas(schema);
         this._callProtocol = server.protocol(this._protocolSchema['0']);
         this._responseProtocol = server.protocol(this._protocolSchema['1']);
+        this._errorProtocol = server.protocol(MuRPCErrorProtocol);
     }
 
     public configure(spec:{
@@ -95,15 +97,20 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                         }
                     };
                 });
-                result['error'] = (client_, {base, id}) => {
-                    const clientId = client_.sessionId;
-                    console.log(clientId, ': Error!', base);
-                    if (callbacks[clientId] && callbacks[clientId][id]) {
-                        delete callbacks[clientId][id];
-                    }
-                };
                 return result;
             })(this._protocolSchema['1']['client'], this._callbacks),
+        });
+
+        this._errorProtocol.configure({
+            message: {
+                error: (client, {message, id}) => {
+                    const clientId = client.sessionId;
+                    console.log(clientId, ': Error!', message);
+                    if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
+                        delete this._callbacks[clientId][id];
+                    }
+                },
+            },
         });
     }
 
