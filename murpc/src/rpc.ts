@@ -2,6 +2,7 @@ import { MuSchema } from 'muschema/schema';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
 import { MuString } from 'muschema/string';
+import { MuAnyMessageTable } from '../../mudb/protocol';
 
 export type MuRPCError = string;
 
@@ -71,13 +72,19 @@ export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSch
         }));
         protocolSchema[i] = result;
     }
-    protocolSchema[1].client['error'] = new MuStruct({
-        base: new MuString(),
-        id: new MuUint32(),
-    });
-    protocolSchema[1].server['error'] = new MuStruct({
-        base: new MuString(),
-        id: new MuUint32(),
-    });
     return <MuRPCProtocolSchemaInterface<ProtocolSchema>>protocolSchema;
 }
+
+export const MuRPCErrorSchema = new MuStruct({
+    message: new MuString(),
+    id: new MuUint32(),
+});
+
+export const MuRPCErrorProtocol = {
+    client: {
+        error: MuRPCErrorSchema,
+    },
+    server: {
+        error: MuRPCErrorSchema,
+    },
+};

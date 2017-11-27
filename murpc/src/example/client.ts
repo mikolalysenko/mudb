@@ -36,7 +36,7 @@ export  = function (client:MuClient) {
         if ((!!(<any>window).opr && !!(<any>window).opr.addons) || !!(<any>window).opera || navigator.userAgent.indexOf(' OPR/') >= 0) { return 'Opera'; }
 
         // Firefox 1.0+
-        if (typeof InstallTrigger !== 'undefined') { return 'FireBox'; }
+        if (typeof window['InstallTrigger'] !== 'undefined') { return 'FireBox'; }
 
         // Safari 3.0+ "[object HTMLElementConstructor]"
         if (/constructor/i.test((<any>window).HTMLElement) || (function (p) { return p.toString() === '[object SafariRemoteNotification]'; })(!window['safari'] || (typeof (<any>window).safari !== 'undefined' && (<any>window).safari.pushNotification))) { return 'safari'; }
