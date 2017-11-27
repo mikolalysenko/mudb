@@ -93,12 +93,12 @@ export class MuClockClient {
                     const rtt = this._clock.now() - localClock;
                     this._pingStatistic.addSample(rtt);
                     if (this._localTimeSamples.length < this._clockBufferSize) {
-                        this._localTimeSamples.push(localClock);
+                        this._localTimeSamples.push(localClock + 0.5 * rtt);
                         this._remoteTimeSamples.push(serverClock);
                     } else {
                         const idx = (this._pingCount - 1) % this._clockBufferSize;
-                        this._localTimeSamples[idx] = localClock;
-                        this._localTimeSamples[idx] = localClock;
+                        this._localTimeSamples[idx] = localClock + 0.5 * rtt;
+                        this._remoteTimeSamples[idx] = serverClock;
                     }
                     const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
                     console.log('pong', a, b);
