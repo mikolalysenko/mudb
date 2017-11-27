@@ -39,7 +39,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
 
         const args:string[] = [];
-        const props:any[] = [];
+        const props:MuSchema<any>[] = [];
 
         let tokenCounter = 0;
 
@@ -47,15 +47,15 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             return '_v' + (++tokenCounter);
         }
 
-        function inject (x) : string {
+        function inject (schema) : string {
             for (let i = 0; i < props.length; ++i) {
-                if (props[i] === x) {
+                if (props[i] === schema) {
                     return args[i];
                 }
             }
             const result = token();
             args.push(result);
-            props.push(x);
+            props.push(schema);
             return result;
         }
 
@@ -67,14 +67,11 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             return {
                 vars,
                 body,
-                toString() { //vars and body in string
-                    const result:string[] = [];
-                    if (vars.length > 0) {
-                        result.push(`var ${vars.join()};`);
-                    }
-                    return result.join('') + body.join('');
+                toString () { //vars and body in string
+                    const localVars = (vars.length > 0) ? `var ${vars.join()};` : '';
+                    return localVars + body.join('');
                 },
-                def(value) { //vars.push('_vN'), body.push('_vN=value')
+                def (value) { //vars.push('_vN'), body.push('_vN=value')
                     const tok = token();
                     vars.push(tok);
                     if (value) {
@@ -82,8 +79,8 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     }
                     return tok;
                 },
-                push(...args:string[]) {
-                    body.push.apply(this.body, args);
+                push (...funcText:string[]) {
+                    body.push.apply(body, funcText);
                 },
             };
         }
@@ -91,11 +88,11 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const prelude = block();
         const epilog = block();
 
-        function func (name:string, args:string[]) {
+        function func (name:string, params:string[]) {
             const b = block();
             const baseToString = b.toString;
             b.toString = function () {
-                return `function ${name}(${args.join()}){${baseToString()}}`;
+                return `function ${name}(${params.join()}){${baseToString()}}`;
             };
             return b;
         }
@@ -106,10 +103,12 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             clone: func('clone', ['x']),
             diff: func('diff', ['x', 'y']),
             patch: func('patch', ['x', 'p']),
+            diffBinary: func('diffBinary', ['b', 't', 's']),
+            patchBinary: func('patchBinary', ['b', 's']),
         };
 
         const poolRef = prelude.def('[]');
-        prelude.push('function HelStruct(){');
+        prelude.push('function MuStruct(){');
         structProps.forEach((name, i) => {
             const type = structTypes[i];
             switch (type.muType) {
@@ -132,7 +131,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     break;
             }
         });
-        prelude.push(`}; function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new HelStruct(); }`);
+        prelude.push(`} function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new MuStruct(); }`);
 
         const identityRef = prelude.def('_alloc()');
         structProps.forEach((propName, i) => {
@@ -176,7 +175,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     break;
             }
         });
-        methods.alloc.push(`return result`);
+        methods.alloc.push(`return result;`);
 
         // free subroutine
         methods.free.push(`${poolRef}.push(x);`);
@@ -222,7 +221,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     break;
             }
         });
-        methods.clone.push('return result');
+        methods.clone.push('return result;');
 
         // diff subroutine
         const diffReqdRefs = structProps.map((name, i) => {
@@ -290,11 +289,70 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.patch.push('return result;');
 
+        // diffBinary subroutine
+        const numProps = structProps.length;
+        const trackerBytes = Math.ceil(numProps / 8);
+        methods.diffBinary.push(`var numPatch=0;var tracker=0;var trackerOffset = s.offset;s.grow(${trackerBytes}); s.offset+=${trackerBytes};`);
+        structProps.forEach((name, i) => {
+            const type = structTypes[i];
+            const muType = type.muType;
+
+            switch (muType) {
+                case 'boolean':
+                    methods.diffBinary.push(`if(b["${name}"]!==t["${name}"]){s.grow(1); s.writeUint8(t[name]?1:0); ++numPatch; tracker|=${1 << (i & 7)}}`);
+                    break;
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                    methods.diffBinary.push(`if(b["${name}"]!==t["${name}"]){s.grow(${+/\d+$/.exec(muType)![0] / 8}); s["${`write${muType.charAt(0).toUpperCase()}${muType.slice(1)}`}"](t[propName]); ++numPatch; tracker|=${1 << (i & 7)}}`);
+                    break;
+                default:
+                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${name}"],t["${name}"],s)){++numPatch; tracker|=${1 << (i & 7)}}`);
+            }
+
+            if ((i & 7) === 7) {
+                methods.diffBinary.push(`s.writeUint8At(trackerOffset+${i >> 3},tracker); tracker=0;`);
+            }
+        });
+        if (numProps & 7) {
+            methods.diffBinary.push(`s.writeUint8At(trackerOffset+${trackerBytes - 1},tracker);`);
+        }
+        methods.diffBinary.push('return numPatch>0;');
+
+        // patchBinary subroutine
+        methods.patchBinary.push(`
+            var trackerOffset=s.offset;
+            s.offset+=${trackerBytes};
+            var result=clone(b);
+            var i;
+            var j;
+            var start;
+            var valueSchema=this.muData;
+            var props=Object.keys(valueSchema).sort();
+            var propName;
+            for(i=0;i<${trackerBytes};++i){
+                start=i*8;
+                tracker=s.readUint8At(trackerOffset+i);
+                for(j=0;j<8;++j){
+                    if(tracker&(1<<j)){
+                        propName=props[start+j];
+                        result[propName]=valueSchema[propName].patchBinary(b[propName],s)
+                    }
+                }
+            }
+            return result`
+        );
+
         // write result
         epilog.push(`return {identity:${identityRef},`);
         Object.keys(methods).forEach((name) => {
             prelude.push(methods[name].toString());
-            epilog.push(`${name}:${name},`);
+            epilog.push(`${name},`);
         });
         epilog.push('}');
         prelude.push(epilog.toString());
@@ -311,5 +369,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         this.clone = compiled.clone;
         this.patch = compiled.patch;
         this.diff = compiled.diff;
+        this.diffBinary = compiled.diffBinary;
+        this.patchBinary = compiled.patchBinary;
     }
 }

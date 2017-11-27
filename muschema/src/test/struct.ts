@@ -7,8 +7,12 @@ import {
     MuString,
     MuInt8,
 } from '../index';
+import {
+    MuWriteStream,
+    MuReadStream,
+} from 'mustreams';
 
-test('struct', function (t) {
+test('simple struct identity', function (t) {
     const simpleStruct = new MuStruct({
         x: new MuFloat64(1),
         y: new MuBoolean(),
@@ -30,6 +34,73 @@ test('struct', function (t) {
         b: simpleStruct,
         q: new MuInt8(11),
     });
+
+    t.end();
+});
+
+test('simple struct diffBinary()', (t) => {
+    const simpleStruct = new MuStruct({
+        x: new MuFloat64(1),
+        y: new MuBoolean(),
+        str: new MuString('foo'),
+    });
+
+    const ws = new MuWriteStream(2);
+
+    t.equals(
+        simpleStruct.diffBinary(
+            { x: 1, y: false, str: 'foo' },
+            { x: 1, y: false, str: 'foo' },
+            ws,
+        ),
+        false,
+    );
+
+    t.equals(
+        simpleStruct.diffBinary(
+            { x: 1, y: false, str: 'foo' },
+            { x: 1, y: false, str: 'bar' },
+            ws,
+        ),
+        true,
+    );
+
+    t.end();
+});
+
+test('simple struct patchBinary()', (t) => {
+    const simpleStruct = new MuStruct({
+        x: new MuFloat64(1),
+        y: new MuBoolean(),
+        str: new MuString('foo'),
+    });
+
+    let ws = new MuWriteStream(2);
+    simpleStruct.diffBinary(
+        { x: 1, y: false, str: 'foo' },
+        { x: 1, y: false, str: 'foo' },
+        ws,
+    );
+    let rs = new MuReadStream(ws);
+    t.deepEquals(
+        simpleStruct.patchBinary(
+            { x: 1, y: false, str: 'foo' },
+            rs,
+        ),
+        { x: 1, y: false, str: 'foo' },
+    );
+
+    ws = new MuWriteStream(2);
+    simpleStruct.diffBinary(
+        { x: 1, y: false, str: 'foo' },
+        { x: 1, y: false, str: 'bar' },
+        ws,
+    );
+    rs = new MuReadStream(ws);
+    t.deepEquals(
+        simpleStruct.patchBinary({ x: 1, y: false, str: 'foo' }, rs),
+        { x: 1, y: false, str: 'bar' },
+    );
 
     t.end();
 });

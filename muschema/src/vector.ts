@@ -83,11 +83,11 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
         const target = new Uint8Array(target_.buffer);
 
         let tracker = 0;
-        let numDiff = 0;
+        let numPatch = 0;
         for (let i = 0; i < dimension; ++i) {
             if (base[i] !== target[i]) {
                 tracker |= 1 << (i & 7);
-                ++numDiff;
+                ++numPatch;
             }
 
             if ((i & 7) === 7) {
@@ -106,7 +106,7 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
             }
         }
 
-        return numDiff > 0;
+        return numPatch > 0;
     }
 
     public patchBinary (base:_MuVectorType<ValueSchema>, stream:MuReadStream) {
@@ -117,9 +117,10 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
         const result = new Uint8Array(this.clone(base).buffer);
         for (let i = 0; i < trackerBytes; ++i) {
             const start = i * 8;
-            const indices = stream.readUint8At(trackerOffset + i);
+            const tracker = stream.readUint8At(trackerOffset + i);
+
             for (let j = 0; j < 8; ++j) {
-                if (indices & (1 << j)) {
+                if (tracker & (1 << j)) {
                     result[start + j] = stream.readUint8();
                 }
             }
