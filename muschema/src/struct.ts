@@ -1,6 +1,32 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
+const type2WriteMethod = {
+    boolean: 'writeUint8',
+    float32: 'writeFloat32',
+    float64: 'writeFloat64',
+    int8: 'writeInt8',
+    int16: 'writeInt16',
+    int32: 'writeInt32',
+    string: 'writeString',
+    uint8: 'writeUint8',
+    uint16: 'writeUint16',
+    uint32: 'writeUint32',
+};
+
+const type2ReadMethod = {
+    boolean: 'readUint8',
+    float32: 'readFloat32',
+    float64: 'readFloat64',
+    int8: 'readInt8',
+    int16: 'readInt16',
+    int32: 'readInt32',
+    string: 'readString',
+    uint8: 'readUint8',
+    uint16: 'readUint16',
+    uint32: 'readUint32',
+};
+
 // tslint:disable-next-line:class-name
 export interface _SchemaDictionary {
     [prop:string]:MuSchema<any>;
@@ -39,7 +65,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
 
         const args:string[] = [];
-        const props:MuSchema<any>[] = [];
+        const props:any[] = [];
 
         let tokenCounter = 0;
 
@@ -47,15 +73,15 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             return '_v' + (++tokenCounter);
         }
 
-        function inject (schema) : string {
+        function inject (x) : string {
             for (let i = 0; i < props.length; ++i) {
-                if (props[i] === schema) {
+                if (props[i] === x) {
                     return args[i];
                 }
             }
             const result = token();
             args.push(result);
-            props.push(schema);
+            props.push(x);
             return result;
         }
 
@@ -109,7 +135,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
         const poolRef = prelude.def('[]');
         prelude.push('function MuStruct(){');
-        structProps.forEach((name, i) => {
+        structProps.forEach((propName, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'int8':
@@ -121,17 +147,17 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float32':
                 case 'float64':
                 case 'boolean':
-                    prelude.push(`this["${name}"]=${type.identity};`);
+                    prelude.push(`this["${propName}"]=${type.identity};`);
                     break;
                 case 'string':
-                    prelude.push(`this["${name}"]=${inject(type.identity)};`);
+                    prelude.push(`this["${propName}"]=${inject(type.identity)};`);
                     break;
                 default:
-                    prelude.push(`this["${name}"]=null;`);
+                    prelude.push(`this["${propName}"]=null;`);
                     break;
             }
         });
-        prelude.push(`} function _alloc() { if(${poolRef}.length > 0) { return ${poolRef}.pop(); } return new MuStruct(); }`);
+        prelude.push(`}function _alloc(){if(${poolRef}.length > 0){return ${poolRef}.pop()}return new MuStruct()}`);
 
         const identityRef = prelude.def('_alloc()');
         structProps.forEach((propName, i) => {
@@ -156,7 +182,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
         // alloc subroutine
         methods.alloc.push(`var result=_alloc();`);
-        structProps.forEach((name, i) => {
+        structProps.forEach((propName, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'int8':
@@ -171,15 +197,15 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'boolean':
                     break;
                 default:
-                    methods.alloc.push(`result["${name}"]=${typeRefs[i]}.alloc();`);
+                    methods.alloc.push(`result["${propName}"]=${typeRefs[i]}.alloc();`);
                     break;
             }
         });
-        methods.alloc.push(`return result;`);
+        methods.alloc.push(`return result`);
 
         // free subroutine
         methods.free.push(`${poolRef}.push(x);`);
-        structProps.forEach((name, i) => {
+        structProps.forEach((propName, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'int8':
@@ -194,14 +220,14 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'boolean':
                     break;
                 default:
-                    methods.free.push(`${typeRefs[i]}.free(x["${name}"]);`);
+                    methods.free.push(`${typeRefs[i]}.free(x["${propName}"]);`);
                     break;
             }
         });
 
         // clone subroutine
-        methods.clone.push(`var result = _alloc();`);
-        structProps.forEach((name, i) => {
+        methods.clone.push(`var result=_alloc();`);
+        structProps.forEach((propName, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'int8':
@@ -214,14 +240,14 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float64':
                 case 'string':
                 case 'boolean':
-                    methods.clone.push(`result["${name}"] = x["${name}"];`);
+                    methods.clone.push(`result["${propName}"]=x["${propName}"];`);
                     break;
                 default:
-                    methods.clone.push(`result["${name}"] = ${typeRefs[i]}.clone(x["${name}"]);`);
+                    methods.clone.push(`result["${propName}"]=${typeRefs[i]}.clone(x["${propName}"]);`);
                     break;
             }
         });
-        methods.clone.push('return result;');
+        methods.clone.push('return result');
 
         // diff subroutine
         const diffReqdRefs = structProps.map((name, i) => {
@@ -292,14 +318,13 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         // diffBinary subroutine
         const numProps = structProps.length;
         const trackerBytes = Math.ceil(numProps / 8);
-        methods.diffBinary.push(`var numPatch=0;var tracker=0;var trackerOffset = s.offset;s.grow(${trackerBytes}); s.offset+=${trackerBytes};`);
-        structProps.forEach((name, i) => {
-            const type = structTypes[i];
-            const muType = type.muType;
+        methods.diffBinary.push(`var numPatch=0;var tracker=0;var trackerOffset = s.offset;s.grow(${trackerBytes});s.offset+=${trackerBytes};`);
+        structProps.forEach((propName, i) => {
+            const muType = structTypes[i].muType;
 
             switch (muType) {
                 case 'boolean':
-                    methods.diffBinary.push(`if(b["${name}"]!==t["${name}"]){s.grow(1); s.writeUint8(t[name]?1:0); ++numPatch; tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.grow(1);s.writeUint8(t["${propName}"]?1:0);++numPatch;tracker|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -309,44 +334,50 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.diffBinary.push(`if(b["${name}"]!==t["${name}"]){s.grow(${+/\d+$/.exec(muType)![0] / 8}); s["${`write${muType.charAt(0).toUpperCase()}${muType.slice(1)}`}"](t[propName]); ++numPatch; tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.grow(${+/\d+$/.exec(muType)![0] / 8});s.${type2WriteMethod[muType]}(t["${propName}"]);++numPatch;tracker|=${1 << (i & 7)}}`);
                     break;
                 default:
-                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${name}"],t["${name}"],s)){++numPatch; tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${propName}"],t["${propName}"],s)){++numPatch;tracker|=${1 << (i & 7)}}`);
             }
 
             if ((i & 7) === 7) {
-                methods.diffBinary.push(`s.writeUint8At(trackerOffset+${i >> 3},tracker); tracker=0;`);
+                methods.diffBinary.push(`s.writeUint8At(trackerOffset+${i >> 3},tracker);tracker=0;`);
             }
         });
+
         if (numProps & 7) {
             methods.diffBinary.push(`s.writeUint8At(trackerOffset+${trackerBytes - 1},tracker);`);
         }
-        methods.diffBinary.push('return numPatch>0;');
+        methods.diffBinary.push('return numPatch>0');
 
         // patchBinary subroutine
-        methods.patchBinary.push(`
-            var trackerOffset=s.offset;
-            s.offset+=${trackerBytes};
-            var result=clone(b);
-            var i;
-            var j;
-            var start;
-            var valueSchema=this.muData;
-            var props=Object.keys(valueSchema).sort();
-            var propName;
-            for(i=0;i<${trackerBytes};++i){
-                start=i*8;
-                tracker=s.readUint8At(trackerOffset+i);
-                for(j=0;j<8;++j){
-                    if(tracker&(1<<j)){
-                        propName=props[start+j];
-                        result[propName]=valueSchema[propName].patchBinary(b[propName],s)
-                    }
-                }
+        methods.patchBinary.push(`var trackerOffset=s.offset;s.offset+=${trackerBytes};var tracker;var result=clone(b);`);
+        structProps.forEach((propName, i) => {
+            if (!(i & 7)) {
+                methods.patchBinary.push(`tracker=s.readUint8At(trackerOffset+${i >> 3});`);
             }
-            return result`
-        );
+
+            const muType = structTypes[i].muType;
+            switch (muType) {
+                case 'boolean':
+                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=!!s.readUint8()}`);
+                    break;
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'string':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=s.${type2ReadMethod[muType]}()}`);
+                    break;
+                default:
+                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=${typeRefs[i]}.patchBinary(b["${propName}"],s)}`);
+            }
+        });
+        methods.patchBinary.push(`return result`);
 
         // write result
         epilog.push(`return {identity:${identityRef},`);
