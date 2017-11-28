@@ -379,8 +379,13 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.patchBinary.push(`return result`);
 
+        const muDataRef = prelude.def('{}');
+        structProps.forEach((propName, i) => {
+            prelude.push(`${muDataRef}["${propName}"]=${typeRefs[i]};`);
+        });
+
         // write result
-        epilog.push(`return {identity:${identityRef},`);
+        epilog.push(`return {identity:${identityRef},muData:${muDataRef},`);
         Object.keys(methods).forEach((name) => {
             prelude.push(methods[name].toString());
             epilog.push(`${name},`);
@@ -393,7 +398,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const compiled = proc.apply(null, props);
 
         this.json = structJSON;
-        this.muData = compiled;
+        this.muData = compiled.muData;
         this.identity = compiled.identity;
         this.alloc = compiled.alloc;
         this.free = compiled.free;
