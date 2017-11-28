@@ -19,7 +19,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     public readonly schema:Schema;
 
     public readonly clients:MuRemoteRPCClient<Schema['client']>[] = [];
-    private _callbacks:{[sessionId:string]:{[id:string]:(base) => void}};
+    private _callbacks:{[sessionId:string]:{[id:string]:(err, base) => void}};
 
     private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
     private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
@@ -92,7 +92,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                     result[method] = (client_, {base, id}) => {
                         const clientId = client_.sessionId;
                         if (callbacks[clientId] && callbacks[clientId][id]) {
-                            callbacks[clientId][id](this.schema.client[method][1].clone(base));
+                            callbacks[clientId][id](undefined, this.schema.client[method][1].clone(base));
                             delete callbacks[clientId][id];
                         }
                     };

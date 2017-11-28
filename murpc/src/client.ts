@@ -28,7 +28,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['1']>;
     private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
 
-    private _callbacks:{[id:string]:(base) => void};
+    private _callbacks:{[id:string]:(err, base) => void};
 
     constructor (client:MuClient, schema:Schema) {
         this.client = client;
@@ -83,7 +83,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
                 Object.keys(schema).forEach((method) => {
                     result[method] = ({base, id}) => {
-                        callbacks[id](base);
+                        callbacks[id](undefined, base);
                         delete callbacks[id];
                     };
                 });

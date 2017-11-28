@@ -4,10 +4,6 @@ import { MuRPCServer } from '../server';
 
 export = function (server:MuServer) {
     const protocol = new MuRPCServer(server, RPCSchema);
-
-    const NodeVersion = 'v9.0.0';
-    const clientBrowser = {};
-
     protocol.configure({
         ready: () => {
             console.log('server ready');
@@ -18,19 +14,11 @@ export = function (server:MuServer) {
                 arg.forEach((element) => { result += element; });
                 next(undefined, result);
             },
-            getEnvironment: (arg, next) => {
-                console.log('client browser:', arg);
-                next(undefined, NodeVersion);
-            },
         },
         connect: (client) => {
             console.log(client.sessionId, 'connected');
-            client.rpc.combine([1, 2, 3], (result) => {
+            client.rpc.combine([1, 2, 3], (err, result) => {
                 console.log('receive combine result:', result);
-            });
-            client.rpc.getEnvironment(NodeVersion, (result) => {
-                console.log(client.sessionId, ':', result);
-                clientBrowser[client.sessionId] = result;
             });
         },
     });
