@@ -104,3 +104,15 @@ test('simple struct patchBinary()', (t) => {
 
     t.end();
 });
+
+test('struct getByteLength()', (t) => {
+    const simpleStruct = new MuStruct({
+        x: new MuFloat64(1),
+        y: new MuBoolean(),
+        str: new MuString('foo'),
+    });
+
+    t.equals(simpleStruct.getByteLength({ x: 1, y: false, str: 'foo' }), 8 + 1 + 4 + 3 * 1);
+
+    t.end();
+});
