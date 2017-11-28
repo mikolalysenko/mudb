@@ -32,6 +32,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
+<<<<<<< HEAD
     public diff(base:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
         const schema = this.muData;
         const result = new Array(target.length);
@@ -41,6 +42,25 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 const p = schema.diff(base[i], target[i])
                 if (typeof p !== undefined) {
                     changed = true;
+=======
+    public diff(base:ValueSchema['identity'][], target:ValueSchema['identity'][]|undefined) {
+        let patch:{[index:string]:any} = {};
+        if (!target) {
+            patch = base;
+            return patch;
+        }
+        const length:number = (base.length > target.length) ? base.length :target.length;
+
+        for (let index = 0; index < length; index++) {
+            if (base[index] === undefined && target[index] !== undefined) {
+                patch[index] = this.muData.diff(this.muData.identity, target[index]);
+            } else if (target[index] === undefined && base[index] !== undefined) {
+                patch[index] = undefined;
+            } else {
+                const delta = this.muData.diff(base[index], target[index]);
+                if (delta) {
+                    patch[index] = delta;
+>>>>>>> 127f187e626da0083bcd19444369bdcaf742a38c
                 }
                 result[i] = p;
             } else {
@@ -59,11 +79,23 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
         const result:ValueSchema['identity'][] = new Array(patch.length);
         const schema = this.muData;
+<<<<<<< HEAD
         for (let i = 0; i < patch.length; ++i) {
             const x = patch[i];
             if (x === undefined || x === null) {
                 if (i < base.length) {
                     result[i] = schema.clone(base[i]);
+=======
+        const patchProps:string[] = Object.keys(patch); // keys of patch, shows the indexs where are different
+        const length = parseInt(patchProps[patchProps.length - 1]); // last index number in patch
+
+        for (let i = 0; i <= length; i++) {
+            if (patchProps.indexOf(i.toString()) < 0) { // no difference
+                result.push(schema.clone(base[i]));
+            } else if (patch[i]) { // different part
+                if (base[i] === undefined || Object.keys(base[i]).length === 0) {
+                    result.push(schema.clone(patch[i]));
+>>>>>>> 127f187e626da0083bcd19444369bdcaf742a38c
                 } else {
                     result[i] = schema.clone(schema.identity);
                 }
