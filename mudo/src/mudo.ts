@@ -79,6 +79,9 @@ export type MudoSpec = {
     // path to server module
     server:string,
 
+    // file name to server
+    serve?:string,
+
     // socket type
     socket?:MUDO_SOCKET_TYPES,
     socketPort?:number,
@@ -130,7 +133,6 @@ export function createMudo (spec:MudoSpec) {
                         const budoSpec = {
                             live: false,
                             debug: true,
-                            forceDefaultIndex: true,
                             errorHandler: true,
                             verbose: true,
                             stream: process.stdout,

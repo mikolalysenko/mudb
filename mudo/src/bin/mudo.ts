@@ -35,5 +35,8 @@ if ('cert' in argv) {
 if ('open' in argv) {
     mudoSpec.open = argv.open;
 }
+if ('bundle' in argv) {
+    mudoSpec.serve = argv.bundle;
+}
 
 createMudo(mudoSpec);
