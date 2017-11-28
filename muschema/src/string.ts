@@ -1,5 +1,3 @@
-declare const Buffer;
-
 import { MuSchema } from './schema';
 import { MuReadStream, MuWriteStream } from 'mustreams';
 
@@ -52,6 +50,6 @@ export class MuString implements MuSchema<string> {
     }
 
     public getByteLength (str:string) {
-        return Buffer.byteLength(str);
+        return 4 + str.length * 4;
     }
 }

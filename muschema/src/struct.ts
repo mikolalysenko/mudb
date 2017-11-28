@@ -101,7 +101,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 def (value) { //vars.push('_vN'), body.push('_vN=value')
                     const tok = token();
                     vars.push(tok);
-                    if (value) {
+                    if (value != undefined) {
                         body.push(`${tok}=${value};`);
                     }
                     return tok;
@@ -320,13 +320,17 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         // diffBinary subroutine
         const numProps = structProps.length;
         const trackerBytes = Math.ceil(numProps / 8);
-        methods.diffBinary.push(`var numPatch=0;var tracker=0;var trackerOffset = s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
+
+        const dTrackerOffset = methods.diffBinary.def(0);
+        const dTracker = methods.diffBinary.def(0);
+        const numPatch = methods.diffBinary.def(0);
+        methods.diffBinary.push(`${dTrackerOffset} = s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
         structProps.forEach((propName, i) => {
             const muType = structTypes[i].muType;
 
             switch (muType) {
                 case 'boolean':
-                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.writeUint8(t["${propName}"]?1:0);++numPatch;tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.writeUint8(t["${propName}"]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -336,33 +340,35 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.${type2WriteMethod[muType]}(t["${propName}"]);++numPatch;tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.${type2WriteMethod[muType]}(t["${propName}"]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
-                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${propName}"],t["${propName}"],s)){++numPatch;tracker|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${propName}"],t["${propName}"],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
             }
 
             if ((i & 7) === 7) {
-                methods.diffBinary.push(`s.writeUint8At(trackerOffset+${i >> 3},tracker);tracker=0;`);
+                methods.diffBinary.push(`s.writeUint8At(${dTrackerOffset}+${i >> 3},${dTracker});${dTracker}=0;`);
             }
         });
 
         if (numProps & 7) {
-            methods.diffBinary.push(`s.writeUint8At(trackerOffset+${trackerBytes - 1},tracker);`);
+            methods.diffBinary.push(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
         }
-        methods.diffBinary.push('return numPatch>0');
+        methods.diffBinary.push(`return ${numPatch}>0`);
 
         // patchBinary subroutine
-        methods.patchBinary.push(`var trackerOffset=s.offset;s.offset+=${trackerBytes};var tracker;var result=clone(b);`);
+        const pTrackerOffset = methods.patchBinary.def(0);
+        const pTracker = methods.patchBinary.def(0);
+        methods.patchBinary.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=clone(b);`);
         structProps.forEach((propName, i) => {
             if (!(i & 7)) {
-                methods.patchBinary.push(`tracker=s.readUint8At(trackerOffset+${i >> 3});`);
+                methods.patchBinary.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
             }
 
             const muType = structTypes[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=!!s.readUint8()}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=!!s.readUint8()}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -373,48 +379,48 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=s.${type2ReadMethod[muType]}()}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=s.${type2ReadMethod[muType]}()}`);
                     break;
                 default:
-                    methods.patchBinary.push(`if(tracker&${1 << (i & 7)}){result["${propName}"]=${typeRefs[i]}.patchBinary(b["${propName}"],s)}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=${typeRefs[i]}.patchBinary(b["${propName}"],s)}`);
             }
         });
         methods.patchBinary.push(`return result`);
 
         // getByteLength subroutine
-        methods.getByteLength.push('var result=0;');
-        let byteLength = 0;
+        const byteLength = methods.getByteLength.def(0);
+        let partialByteLength = 0;
         structProps.forEach((propName, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'boolean':
                 case 'int8':
                 case 'uint8':
-                    ++byteLength;
+                    ++partialByteLength;
                     break;
                 case 'int16':
                 case 'uint16':
-                    byteLength += 2;
+                    partialByteLength += 2;
                     break;
                 case 'float32':
                 case 'int32':
                 case 'uint32':
-                    byteLength += 4;
+                    partialByteLength += 4;
                     break;
                 case 'float64':
-                    byteLength += 8;
+                    partialByteLength += 8;
                     break;
                 case 'vector':
-                    byteLength += type.identity.byteLength;
+                    partialByteLength += type.identity.byteLength;
                     break;
                 case 'string':
-                    methods.getByteLength.push(`result+=4+Buffer.byteLength(x["${propName}"]);`);
+                    methods.getByteLength.push(`${byteLength}+=4+x["${propName}"].length*4;`);
                     break;
                 default:
-                    methods.getByteLength.push(`result+=${typeRefs[i]}.getByteLength(x["${propName}"]);`);
+                    methods.getByteLength.push(`${byteLength}+=${typeRefs[i]}.getByteLength(x["${propName}"]);`);
             }
         });
-        methods.getByteLength.push(`result+=${byteLength};return result`);
+        methods.getByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
         const muDataRef = prelude.def('{}');
         structProps.forEach((propName, i) => {

@@ -112,7 +112,7 @@ test('struct getByteLength()', (t) => {
         str: new MuString('foo'),
     });
 
-    t.equals(simpleStruct.getByteLength({ x: 1, y: false, str: 'foo' }), 8 + 1 + 4 + 3 * 1);
+    t.equals(simpleStruct.getByteLength({ x: 1, y: false, str: 'foo' }), 1 + 8 + 1 + 4 + 3 * 4);
 
     t.end();
 });
