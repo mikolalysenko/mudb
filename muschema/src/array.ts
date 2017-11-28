@@ -41,9 +41,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const length:number = (base.length > target.length) ? base.length :target.length;
 
         for (let index = 0; index < length; index++) {
-            if (!base[index] && target[index]) {
+            if (base[index] === undefined && target[index] !== undefined) {
                 patch[index] = this.muData.diff(this.muData.identity, target[index]);
-            } else if (!target[index] && base[index]) {
+            } else if (target[index] === undefined && base[index] !== undefined) {
                 patch[index] = undefined;
             } else {
                 const delta = this.muData.diff(base[index], target[index]);
@@ -71,7 +71,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             if (patchProps.indexOf(i.toString()) < 0) { // no difference
                 result.push(schema.clone(base[i]));
             } else if (patch[i]) { // different part
-                if (!base[i] || Object.keys(base[i]).length === 0) {
+                if (base[i] === undefined || Object.keys(base[i]).length === 0) {
                     result.push(schema.clone(patch[i]));
                 } else {
                     result.push(schema.patch(base[i], patch[i]));
