@@ -6,25 +6,32 @@ export enum Direction {
 }
 
 export enum Team {
-  top,
+  top = 1,
   bottom,
 }
 
+export const Config = {
+  canvas_width: 700,
+  canvas_height: 500,
+  player_size: 10,
+};
+
 export class Player {
-  private readonly speed = 0.5;
-  private readonly r = 23; //radius of face
+  private readonly speed = 3;
+  private readonly r = Config.player_size; //radius of face
   private readonly lineWidth = this.r / 8;
 
   public x:number;
   public y:number;
   public color:string;
   public team:Team;
+  public direction:number;
 
-  constructor(x, y, color, team:Team) {
+  constructor(x, y, team) {
     this.x = x;
     this.y = y;
-    this.color = color;
     this.team = team;
+    this.color = (team === Team.top) ? 'yellow' : '#00ffde';
   }
 
   public draw(ctx) {
@@ -35,7 +42,7 @@ export class Player {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, true); // face circle
     ctx.moveTo(this.x + this.r * 2 / 3, this.y);
-    ctx.arc(this.x, this.y, this.r * 2 / 3, 0, Math.PI * 2, false); // mouth
+    ctx.arc(this.x, this.y, this.r * 2 / 3, 0, Math.PI, false); // mouth
     ctx.stroke();
 
     ctx.beginPath();
@@ -44,21 +51,25 @@ export class Player {
     ctx.fill();
   }
 
-  public move(direction, ctx) {
-    const maxr = this.r + this.lineWidth;
-    ctx.clearRect(this.x - maxr, this.y - maxr, 2 * maxr, 2 * maxr);
-    switch (direction) {
+  public move(ctx) {
+    // const maxr = this.r + this.lineWidth;
+    // ctx.clearRect(this.x - maxr, this.y - maxr, 2 * maxr, 2 * maxr);
+    switch (this.direction) {
       case Direction.up:
         this.y -= this.speed;
+        if (this.y < this.r) { this.y = this.r; }
         break;
       case Direction.left:
         this.x -= this.speed;
+        if (this.x < this.r) { this.x = this.r; }
         break;
       case Direction.right:
         this.x += this.speed;
+        if (this.x > Config.canvas_width - this.r) { this.x = Config.canvas_width - this.r; }
         break;
       case Direction.down:
         this.y += this.speed;
+        if (this.y > Config.canvas_height - this.r) { this.y = Config.canvas_height - this.r; }
         break;
       default:
         break;
@@ -68,17 +79,17 @@ export class Player {
 }
 
 export class Flag {
-  private readonly tall = 50;
+  private readonly tall = 15;
 
   public color:string;
   public team:Team;
   public x:number;
   public y:number;
 
-  constructor(x, y, color, team:Team) {
+  constructor(x, y, team:Team) {
     this.x = x;
     this.y = y;
-    this.color = color;
+    this.color = (team === Team.top) ? 'yellow' : '#00ffde';
     this.team = team;
   }
 
@@ -107,13 +118,14 @@ export class Map {
   }
 
   public draw(ctx) {
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, this.width, this.height);
+    // ctx.fillStyle = 'black';
+    // ctx.fillRect(0, 0, this.width, this.height);
 
-    ctx.strokeStyle = 'white';
+    ctx.strokeStyle = 'red';
     ctx.beginPath();
     ctx.moveTo(0, this.height / 2);
     ctx.lineTo(this.width, this.height / 2);
     ctx.stroke();
+    ctx.closePath();
   }
 }
