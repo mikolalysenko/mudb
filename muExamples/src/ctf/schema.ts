@@ -32,7 +32,7 @@ export const StateSchema = {
 
 export const MsgSchema = {
   client: {
-    // score
+    score: new MuArray(new MuInt8()),
   },
   server: {
 

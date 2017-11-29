@@ -19,37 +19,46 @@ export = function(server:MuServer) {
     'players':string[],
     'flags':{x:number, y:number, team:number}[],
   };
-  const teamTop:TeamStruct = {players:[], flags:[]};
-  const teamBottom:TeamStruct = {players:[], flags:[]};
+  const teamdb:TeamStruct[] = [{players:[], flags:[]}, {players:[], flags:[]}];
   const capFlag:{[playerId:string]:number} = {};
+  const score = [0, 0];
+  const flagNumber = 3;
 
   stateProtocol.configure({
     state: (client, {team, x, y}) => {
       stateProtocol.state.player[client.sessionId] = {team, x, y};
-      const enermyTeam = (team === Team.top) ? teamBottom : teamTop;
+      const enermy = (team === Team.top) ? Team.bottom : Team.top;
 
-      // if this player hold a flag, update this flag
-      updateCapFlag(client.sessionId, x, y, enermyTeam);
-
-      // player can only hold one flag
+      // player not holding a flag
       if (Object.keys(capFlag).indexOf(client.sessionId) === -1) {
-        // if touchs enermy's flag
-        for (let i = 0; i < enermyTeam.flags.length; i++) {
-          // any board of the player touchs the flag
-          if (x <= enermyTeam.flags[i]['x'] + Config.player_size &&
-              x >= enermyTeam.flags[i]['x'] - Config.player_size &&
-              y <= enermyTeam.flags[i]['y'] + Config.player_size &&
-              y >= enermyTeam.flags[i]['y'] - Config.player_size) {
+        for (let i = 0; i < teamdb[enermy].flags.length; i++) {
+          // if player touchs the flag
+          if (x <= teamdb[enermy].flags[i]['x'] + Config.player_size &&
+              x >= teamdb[enermy].flags[i]['x'] - Config.player_size &&
+              y <= teamdb[enermy].flags[i]['y'] + Config.player_size &&
+              y >= teamdb[enermy].flags[i]['y'] - Config.player_size) {
             capFlag[client.sessionId] = i;
-            updateCapFlag(client.sessionId, x, y, enermyTeam);
+            updateCapFlag(client.sessionId, x, y, enermy);
           }
+        }
+      } else {
+        // when player hold the flag, let the flag position to same as this player
+        updateCapFlag(client.sessionId, x, y, enermy);
+        if (atHomeMap(team, y)) {
+          score[team] ++;
+          msgProtocol.broadcast.score(score);
+
+          // init this flag
+          const flagIndex = capFlag[client.sessionId];
+          delete capFlag[client.sessionId];
+          teamdb[enermy].flags[flagIndex] = getInitFlag(enermy, flagIndex);
+          updateStateFlag();
         }
       }
 
       // if touchs enermy
       // TODO:
 
-      updateStateFlag();
       stateProtocol.commit();
     },
     connect: (client) => {
@@ -57,8 +66,7 @@ export = function(server:MuServer) {
 
       // when the first player joined, init flags
       if (Object.keys(stateProtocol.state.player).length === 0) {
-        initFlags(3); //init flag number set to 3
-        updateStateFlag();
+        initFlags(); //init flag number set to 3
         stateProtocol.commit();
       }
     },
@@ -70,10 +78,9 @@ export = function(server:MuServer) {
       stateProtocol.commit();
 
       // delete the player
-      const hisTeam = (team === Team.top) ? teamTop : teamBottom;
-      const index = hisTeam.players.indexOf(client.sessionId);
+      const index = teamdb[team].players.indexOf(client.sessionId);
       if (index > -1) {
-        hisTeam.players.slice(index, 1);
+        teamdb[team].players.slice(index, 1);
       } else {
         console.log('cannot find', client.sessionId);
       }
@@ -89,11 +96,11 @@ export = function(server:MuServer) {
   rpcProtocol.configure({
     rpc: {
       joinTeam: (arg, next) => {
-        if (teamTop.players.length < teamBottom.players.length) {
-          teamTop.players.push(arg);
+        if (teamdb[Team.top].players.length < teamdb[Team.bottom].players.length) {
+          teamdb[Team.top].players.push(arg);
           next(undefined, Team.top);
         } else {
-          teamBottom.players.push(arg);
+          teamdb[Team.bottom].players.push(arg);
           next(undefined, Team.bottom);
         }
       },
@@ -102,30 +109,39 @@ export = function(server:MuServer) {
 
   server.start();
 
-  function updateCapFlag(clientId, x, y, enermyTeam) {
-    const capFlagIndex = Object.keys(capFlag).indexOf(clientId);
-    if (capFlagIndex > -1) {
-      enermyTeam.flags[capFlag[clientId]]['x'] = x;
-      enermyTeam.flags[capFlag[clientId]]['y'] = y;
-    }
+  function updateCapFlag(clientId, x, y, enermy) {
+    teamdb[enermy].flags[capFlag[clientId]]['x'] = x;
+    teamdb[enermy].flags[capFlag[clientId]]['y'] = y;
   }
 
-  function initFlags(flagNumber) {
+  function initFlags() {
     for (let i = 0; i < flagNumber; i++) {
-      teamTop.flags.push({x: i * 200 + 80, y: 15, team:Team.top});
-      teamBottom.flags.push({x: i * 200 + 80, y: Config.canvas_height, team:Team.bottom});
+      teamdb[Team.top].flags[i] = getInitFlag(Team.top, i);
+      teamdb[Team.bottom].flags[i] = getInitFlag(Team.bottom, i);
     }
     stateProtocol.state.flag = new Array(flagNumber * 2);
+
+    for (let i = 0; i < flagNumber; i++) {
+      stateProtocol.state.flag[i] = teamdb[Team.top].flags[i];
+      stateProtocol.state.flag[i + flagNumber] = teamdb[Team.bottom].flags[i];
+    }
   }
 
   function updateStateFlag() {
-    const flagNumber = stateProtocol.state.flag.length;
-    for (let i = 0; i < flagNumber / 2; i++) {
-      stateProtocol.state.flag[i] = teamTop.flags[i];
-      stateProtocol.state.flag[i + flagNumber / 2] = teamBottom.flags[i];
+    for (let i = 0; i < flagNumber; i++) {
+      stateProtocol.state.flag[i] = teamdb[Team.top].flags[i];
+      stateProtocol.state.flag[i + flagNumber] = teamdb[Team.bottom].flags[i];
     }
-    console.log('capFlag', capFlag);
-    console.log('teamBottom', teamBottom);
-    console.log('state.flag', stateProtocol.state.flag);
+  }
+
+  function atHomeMap(team, y) {
+    if (team === Team.top) { return y < Config.canvas_height / 2; }
+    return y > Config.canvas_height / 2;
+  }
+
+  function getInitFlag(team, index) {
+    const y = (team === Team.top) ? Config.flag_size : Config.canvas_height;
+    const x = (index + 1) * Config.canvas_width / (flagNumber + 1);
+    return {x, y, team};
   }
 };

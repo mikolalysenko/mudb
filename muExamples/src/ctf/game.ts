@@ -6,7 +6,7 @@ export enum Direction {
 }
 
 export enum Team {
-  top = 1,
+  top,
   bottom,
 }
 
@@ -14,6 +14,7 @@ export const Config = {
   canvas_width: 700,
   canvas_height: 500,
   player_size: 10,
+  flag_size: 15,
 };
 
 export class Player {
@@ -79,7 +80,7 @@ export class Player {
 }
 
 export class Flag {
-  private readonly tall = 15;
+  private readonly tall = Config.flag_size;
 
   public color:string;
   public team:Team;

@@ -30,6 +30,7 @@ export = function(client:MuClient) {
   let myPlayer;
   let players = {};
   let raf;
+  let score:number[] = [0, 0];
 
   stateProtocol.configure({
     ready: () => {
@@ -43,6 +44,7 @@ export = function(client:MuClient) {
         myPlayer.draw(ctx);
         updateState();
         drawFlags();
+        showScore();
 
         document.addEventListener('keydown', function(e) {
           if (e.keyCode === 27) { // ESC
@@ -59,7 +61,9 @@ export = function(client:MuClient) {
 
   msgProtocol.configure({
     message: {
-
+      score: (_score) => {
+        score = _score;
+      },
     },
   });
 
@@ -77,6 +81,7 @@ export = function(client:MuClient) {
 
     // draw map
     map.draw(ctx);
+    showScore();
 
     // draw remote players
     players = stateProtocol.server.state.player;
@@ -98,6 +103,14 @@ export = function(client:MuClient) {
     updateState();
 
     raf = window.requestAnimationFrame(updateCanvas);
+  }
+
+  function showScore() {
+    if (!ctx) { return; }
+    ctx.font = '48px serif';
+    ctx.fillStyle = 'white';
+    ctx.fillText(score[0].toString(), Config.canvas_width - 40, 35);
+    ctx.fillText(score[1].toString(), Config.canvas_width - 40, Config.canvas_height - 5);
   }
 
   function updateState() {
