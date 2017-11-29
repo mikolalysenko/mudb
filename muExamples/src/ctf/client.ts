@@ -37,9 +37,8 @@ export = function(client:MuClient) {
       console.log(client.sessionId);
 
       rpcProtocol.server.rpc.joinTeam(client.sessionId, (err, teamGroup) => {
-        const initx = getRandomInt(10, canvas.width - 10);
-        const inity = (teamGroup === Team.top) ? 10 : canvas.height - 10;
-        myPlayer = new Player(initx, inity, teamGroup);
+        const {x, y} = getInitPosition(teamGroup);
+        myPlayer = new Player(x, y, teamGroup);
         map.draw(ctx);
         myPlayer.draw(ctx);
         updateState();
@@ -63,6 +62,14 @@ export = function(client:MuClient) {
     message: {
       score: (_score) => {
         score = _score;
+      },
+      dead: (id) => {
+        if (client.sessionId === id) {
+          const {x, y} = getInitPosition(myPlayer.team);
+          myPlayer.x = x;
+          myPlayer.y = y;
+          myPlayer.direction = undefined;
+        }
       },
     },
   });
@@ -130,5 +137,12 @@ export = function(client:MuClient) {
 
   function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
+  function getInitPosition(teamGroup) {
+    return {
+      x: getRandomInt(10, canvas.width - 10),
+      y: (teamGroup === Team.top) ? 10 : canvas.height - 10,
+    };
   }
 };

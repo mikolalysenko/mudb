@@ -53,8 +53,6 @@ export class Player {
   }
 
   public move(ctx) {
-    // const maxr = this.r + this.lineWidth;
-    // ctx.clearRect(this.x - maxr, this.y - maxr, 2 * maxr, 2 * maxr);
     switch (this.direction) {
       case Direction.up:
         this.y -= this.speed;
@@ -119,9 +117,6 @@ export class Map {
   }
 
   public draw(ctx) {
-    // ctx.fillStyle = 'black';
-    // ctx.fillRect(0, 0, this.width, this.height);
-
     ctx.strokeStyle = 'red';
     ctx.beginPath();
     ctx.moveTo(0, this.height / 2);

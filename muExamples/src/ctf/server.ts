@@ -28,36 +28,44 @@ export = function(server:MuServer) {
     state: (client, {team, x, y}) => {
       stateProtocol.state.player[client.sessionId] = {team, x, y};
       const enermy = (team === Team.top) ? Team.bottom : Team.top;
+      const isHoldFlag = Object.keys(capFlag).indexOf(client.sessionId) > -1;
+      const r = Config.player_size;
 
-      // player not holding a flag
-      if (Object.keys(capFlag).indexOf(client.sessionId) === -1) {
-        for (let i = 0; i < teamdb[enermy].flags.length; i++) {
-          // if player touchs the flag
-          if (x <= teamdb[enermy].flags[i]['x'] + Config.player_size &&
-              x >= teamdb[enermy].flags[i]['x'] - Config.player_size &&
-              y <= teamdb[enermy].flags[i]['y'] + Config.player_size &&
-              y >= teamdb[enermy].flags[i]['y'] - Config.player_size) {
-            capFlag[client.sessionId] = i;
-            updateCapFlag(client.sessionId, x, y, enermy);
+      if (!atHomeMap(team, y)) {
+        if (!isHoldFlag) {
+          for (let i = 0; i < teamdb[enermy].flags.length; i++) {
+            // if player touchs the flag
+            if (x <= teamdb[enermy].flags[i]['x'] + r &&
+                x >= teamdb[enermy].flags[i]['x'] - r &&
+                y <= teamdb[enermy].flags[i]['y'] + r &&
+                y >= teamdb[enermy].flags[i]['y'] - r) {
+              capFlag[client.sessionId] = i;
+              updateCapFlag(client.sessionId, x, y, enermy);
+            }
+          }
+        } else {
+          // update the flag point to be same as the player
+          updateCapFlag(client.sessionId, x, y, enermy);
+        }
+
+        // if touchs enermy, player dead and returns the flag
+        for (let i = 0; i < teamdb[enermy].players.length; i++) {
+          const enermyPlayer = stateProtocol.state.player[teamdb[enermy].players[i]];
+          if (enermyPlayer &&
+              x <= enermyPlayer.x + r * 2 &&
+              x >= enermyPlayer.x - r * 2 &&
+              y <= enermyPlayer.y + r * 2 &&
+              y >= enermyPlayer.y - r * 2) {
+            msgProtocol.clients[client.sessionId].message.dead(client.sessionId);
+            if (isHoldFlag) { returnFlag(client.sessionId, enermy); }
           }
         }
-      } else {
-        // when player hold the flag, let the flag position to same as this player
-        updateCapFlag(client.sessionId, x, y, enermy);
-        if (atHomeMap(team, y)) {
-          score[team] ++;
-          msgProtocol.broadcast.score(score);
-
-          // init this flag
-          const flagIndex = capFlag[client.sessionId];
-          delete capFlag[client.sessionId];
-          teamdb[enermy].flags[flagIndex] = getInitFlag(enermy, flagIndex);
-          updateStateFlag();
-        }
+      } else if (isHoldFlag) {
+        // win the score
+        score[team] ++;
+        msgProtocol.broadcast.score(score);
+        returnFlag(client.sessionId, enermy);
       }
-
-      // if touchs enermy
-      // TODO:
 
       stateProtocol.commit();
     },
@@ -108,6 +116,13 @@ export = function(server:MuServer) {
   });
 
   server.start();
+
+  function returnFlag(clientId, enermy) {
+    const flagIndex = capFlag[clientId];
+    delete capFlag[clientId];
+    teamdb[enermy].flags[flagIndex] = getInitFlag(enermy, flagIndex);
+    updateStateFlag();
+  }
 
   function updateCapFlag(clientId, x, y, enermy) {
     teamdb[enermy].flags[capFlag[clientId]]['x'] = x;

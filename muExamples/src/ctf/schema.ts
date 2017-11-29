@@ -5,6 +5,7 @@ import {
   MuFloat64,
   MuInt8,
   MuArray,
+  MuBoolean,
 } from 'muschema';
 import {
   MuFloat32,
@@ -33,6 +34,7 @@ export const StateSchema = {
 export const MsgSchema = {
   client: {
     score: new MuArray(new MuInt8()),
+    dead: new MuString(),
   },
   server: {
 
