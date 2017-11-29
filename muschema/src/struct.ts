@@ -269,7 +269,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     return methods.diff.def(`${typeRefs[i]}.diff(x["${name}"],y["${name}"])`);
             }
         });
-        methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&')}) return;var result = {};`);
+        methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&') || 'true'}) return;var result = {};`);
         structProps.map((name, i) => {
             methods.diff.push(`if(${diffReqdRefs[i]}!==void 0){result["${name}"]=${diffReqdRefs[i]};}`);
         });

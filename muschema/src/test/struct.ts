@@ -12,6 +12,12 @@ import {
     MuReadStream,
 } from 'mustreams';
 
+test('struct muType', (t) => {
+    const struct = new MuStruct({});
+    t.equals(struct.muType, 'struct');
+    t.end();
+});
+
 test('simple struct identity', function (t) {
     const simpleStruct = new MuStruct({
         x: new MuFloat64(1),
