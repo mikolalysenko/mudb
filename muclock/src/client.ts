@@ -101,7 +101,6 @@ export class MuClockClient {
                         this._remoteTimeSamples[idx] = serverClock;
                     }
                     const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
-                    console.log('pong', a, b);
                     this._clockScale = a;
                     this._clockShift = b;
                     this._lastPingStart = 0;
