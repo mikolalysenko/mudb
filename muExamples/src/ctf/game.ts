@@ -110,10 +110,12 @@ export class Flag {
 export class Map {
   public width:number;
   public height:number;
+  public score:number[];
 
   constructor(width, height) {
     this.width = width;
     this.height = height;
+    this.score = [0, 0];
   }
 
   public draw(ctx) {
@@ -123,5 +125,11 @@ export class Map {
     ctx.lineTo(this.width, this.height / 2);
     ctx.stroke();
     ctx.closePath();
+
+    // show score
+    ctx.font = '48px serif';
+    ctx.fillStyle = 'white';
+    ctx.fillText(this.score[0].toString(), Config.canvas_width - 40, 35);
+    ctx.fillText(this.score[1].toString(), Config.canvas_width - 40, Config.canvas_height - 5);
   }
 }

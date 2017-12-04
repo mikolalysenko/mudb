@@ -7,9 +7,6 @@ import {
   MuArray,
   MuBoolean,
 } from 'muschema';
-import {
-  MuFloat32,
-} from '../../../muschema/float32';
 
 export const PlayerSchema = new MuStruct({
   team: new MuInt8(),

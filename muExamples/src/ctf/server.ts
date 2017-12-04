@@ -1,10 +1,9 @@
-import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { MuServer } from 'mudb/server';
 import { MuServerState } from 'mustate/server';
 import { MuRPCServer } from 'murpc/server';
+
+import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { Team, Config } from './game';
-import { endianness } from 'os';
-import { log } from 'util';
 
 export = function(server:MuServer) {
   const stateProtocol = new MuServerState({
@@ -35,10 +34,7 @@ export = function(server:MuServer) {
         if (!isHoldFlag) {
           for (let i = 0; i < teamdb[enermy].flags.length; i++) {
             // if player touchs the flag
-            if (x <= teamdb[enermy].flags[i]['x'] + r &&
-                x >= teamdb[enermy].flags[i]['x'] - r &&
-                y <= teamdb[enermy].flags[i]['y'] + r &&
-                y >= teamdb[enermy].flags[i]['y'] - r) {
+            if (touchFlag(x, y, teamdb[enermy].flags[i])) {
               capFlag[client.sessionId] = i;
               updateCapFlag(client.sessionId, x, y, enermy);
             }
@@ -51,11 +47,7 @@ export = function(server:MuServer) {
         // if touchs enermy, player dead and returns the flag
         for (let i = 0; i < teamdb[enermy].players.length; i++) {
           const enermyPlayer = stateProtocol.state.player[teamdb[enermy].players[i]];
-          if (enermyPlayer &&
-              x <= enermyPlayer.x + r * 2 &&
-              x >= enermyPlayer.x - r * 2 &&
-              y <= enermyPlayer.y + r * 2 &&
-              y >= enermyPlayer.y - r * 2) {
+          if (touchEnermy(x, y, enermyPlayer)) {
             msgProtocol.clients[client.sessionId].message.dead(client.sessionId);
             if (isHoldFlag) { returnFlag(client.sessionId, enermy); }
           }
@@ -116,6 +108,27 @@ export = function(server:MuServer) {
   });
 
   server.start();
+
+  /* ---------- running methods ---------- */
+
+  function touchEnermy(x, y, enermyPlayer) {
+    return (
+      enermyPlayer &&
+      x <= enermyPlayer.x + Config.player_size * 2 &&
+      x >= enermyPlayer.x - Config.player_size * 2 &&
+      y <= enermyPlayer.y + Config.player_size * 2 &&
+      y >= enermyPlayer.y - Config.player_size * 2
+    );
+  }
+
+  function touchFlag(x, y, flag) {
+    return (
+      x <= flag['x'] + Config.player_size &&
+      x >= flag['x'] - Config.player_size &&
+      y <= flag['y'] + Config.player_size &&
+      y >= flag['y'] - Config.player_size
+    );
+  }
 
   function returnFlag(clientId, enermy) {
     const flagIndex = capFlag[clientId];

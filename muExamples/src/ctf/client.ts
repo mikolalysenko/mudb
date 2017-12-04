@@ -1,8 +1,9 @@
-import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { MuClient } from 'mudb/client';
 import { MuClientState } from 'mustate/client';
-import { Map, Player, Flag, Team, Direction, Config } from './game';
 import { MuRPCClient } from 'murpc/client';
+
+import { StateSchema, MsgSchema, RpcSchema } from './schema';
+import { Map, Player, Flag, Team, Direction, Config } from './game';
 
 export = function(client:MuClient) {
   const canvas = document.createElement('canvas');
@@ -30,7 +31,6 @@ export = function(client:MuClient) {
   let myPlayer;
   let players = {};
   let raf;
-  let score:number[] = [0, 0];
 
   stateProtocol.configure({
     ready: () => {
@@ -39,11 +39,7 @@ export = function(client:MuClient) {
       rpcProtocol.server.rpc.joinTeam(client.sessionId, (err, teamGroup) => {
         const {x, y} = getInitPosition(teamGroup);
         myPlayer = new Player(x, y, teamGroup);
-        map.draw(ctx);
-        myPlayer.draw(ctx);
-        updateState();
-        drawFlags();
-        showScore();
+        runGame();
 
         document.addEventListener('keydown', function(e) {
           if (e.keyCode === 27) { // ESC
@@ -60,8 +56,8 @@ export = function(client:MuClient) {
 
   msgProtocol.configure({
     message: {
-      score: (_score) => {
-        score = _score;
+      score: (score) => {
+        map.score = score;
       },
       dead: (id) => {
         if (client.sessionId === id) {
@@ -82,13 +78,17 @@ export = function(client:MuClient) {
 
   client.start();
 
-  function updateCanvas() {
-    if (!ctx) { return; }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  /* ---------- running methods ---------- */
 
-    // draw map
+  function runGame() {
     map.draw(ctx);
-    showScore();
+
+    // draw flags
+    for (let i = 0; i < stateProtocol.server.state.flag.length; i++) {
+      const {x, y, team}  = stateProtocol.server.state.flag[i];
+      const flag = new Flag(x, y, team);
+      flag.draw(ctx);
+    }
 
     // draw remote players
     players = stateProtocol.server.state.player;
@@ -101,38 +101,22 @@ export = function(client:MuClient) {
       }
     }
 
-    drawFlags();
-
     // move local player
     myPlayer.move(ctx);
+    myPlayer.draw(ctx);
 
-    // update local player states
-    updateState();
-
-    raf = window.requestAnimationFrame(updateCanvas);
-  }
-
-  function showScore() {
-    if (!ctx) { return; }
-    ctx.font = '48px serif';
-    ctx.fillStyle = 'white';
-    ctx.fillText(score[0].toString(), Config.canvas_width - 40, 35);
-    ctx.fillText(score[1].toString(), Config.canvas_width - 40, Config.canvas_height - 5);
-  }
-
-  function updateState() {
+    // update state
     stateProtocol.state.team = myPlayer.team;
     stateProtocol.state.x = myPlayer.x;
     stateProtocol.state.y = myPlayer.y;
     stateProtocol.commit();
   }
 
-  function drawFlags() {
-    for (let i = 0; i < stateProtocol.server.state.flag.length; i++) {
-      const {x, y, team}  = stateProtocol.server.state.flag[i];
-      const flag = new Flag(x, y, team);
-      flag.draw(ctx);
-    }
+  function updateCanvas() {
+    if (!ctx) { return; }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    runGame();
+    raf = window.requestAnimationFrame(updateCanvas);
   }
 
   function getRandomInt(min, max) {
