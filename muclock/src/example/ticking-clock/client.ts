@@ -2,12 +2,31 @@ import { MuClient } from 'mudb/client';
 import { MuClockClient } from '../../client';
 
 export = function(client:MuClient) {
-  const tickDiv = document.createElement('div');
-  document.body.appendChild(tickDiv);
-  tickDiv.innerHTML = `<canvas id="canvas" width="400" height="400" style="background-color:#333"></canvas>`;
+  document.body.innerHTML =
+  `
+  <style>
+    #connect, #disconnect {
+      width: 100px;
+      height: 40px;
+      background: lightblue;
+      text-align: center;
+      line-height: 40px;
+      margin: 5px;
+      pointer: cursor;
+    }
+  </style>
+  <div>
+  <canvas id="canvas" width="400" height="400" style="background-color:#333"></canvas>
+  <div id='tick-number'></div>
+  <div id=connect>start</div>
+  <div id=disconnect>stop</div>
+  </div>
+  `;
   const canvas = <HTMLCanvasElement>document.getElementById('canvas');
-
-  if (!canvas) {
+  const start_btn = <HTMLButtonElement>document.getElementById('connect');
+  const stop_btn = <HTMLButtonElement>document.getElementById('disconnect');
+  const tick_num = document.getElementById('tick-number');
+  if (!canvas || ! tick_num) {
     return;
   }
   const ctx = canvas.getContext('2d');
@@ -35,12 +54,13 @@ export = function(client:MuClient) {
         return;
       }
       drawClock(_last_tick);
+      tick_num.innerHTML = `tick ${Math.round(clock.tick() * 100) / 100}<br/> ping ${clock.ping()}`;
     },
   });
 
   let is_close = false;
 
-  client.start({
+  const config = {
     ready: () => {
         console.log('client ready');
         function render() {
@@ -56,6 +76,13 @@ export = function(client:MuClient) {
       console.log('CLOSE');
       is_close = true;
     },
+  };
+  client.start(config);
+  start_btn.addEventListener('click', () => {
+    // client.restart(config);
+  });
+  stop_btn.addEventListener('click', () => {
+    client.destroy();
   });
 };
 

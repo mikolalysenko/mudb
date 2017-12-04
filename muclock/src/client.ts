@@ -60,11 +60,9 @@ export class MuClockClient {
         this._protocol.configure({
             message: {
                 init: ({ tickRate, serverClock }) => {
-                    this._localTimeSamples.push(this._clock.now());
-                    this._remoteTimeSamples.push(serverClock);
 
                     this.tickRate = tickRate;
-                    this._tickCount = Math.floor(serverClock / tickRate);
+                    this._tickCount = Math.floor(this._clock.now() / tickRate);
                     this._clockShift = serverClock - this._lastPingStart;
 
                     this._pingCount = Math.floor(serverClock / this._pingRate);
@@ -133,7 +131,7 @@ export class MuClockClient {
     public poll () {
         const remoteClock = this._remoteClock();
 
-        const targetPingCount = Math.floor(remoteClock / this._pingCount);
+        const targetPingCount = Math.floor(this._clock.now() / this._pingCount);
         const targetTickCount = Math.floor(remoteClock / this.tickRate);
 
         if (this._pingCount < targetPingCount) {
