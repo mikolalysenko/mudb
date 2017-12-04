@@ -35,6 +35,9 @@ export = function (server:MuServer) {
                 text: `${clientNames[client.sessionId]} left`,
             });
         },
+        close: () => {
+            console.log('server closed');
+        },
     });
 
     server.start();

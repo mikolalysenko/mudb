@@ -180,12 +180,12 @@ export function parseState<Schema extends MuAnySchema> (
 }
 
 export function publishState<Schema extends MuAnySchema> (
-    schema:Schema,
-    observations:number[][],
-    replica:MuStateReplica<Schema>,
-    raw:(data:Uint8Array|string, unreliable?:boolean) => void,
-    forget:(horizon:number, unreliable?:boolean) => void,
-    reliable:boolean) {
+        schema:Schema,
+        observations:number[][],
+        replica:MuStateReplica<Schema>,
+        raw:(data:Uint8Array|string, unreliable?:boolean) => void,
+        forget:(horizon:number, unreliable?:boolean) => void,
+        reliable:boolean) {
     const { history, state, tick, windowSize } = replica;
 
     observations.push(history.ticks);
