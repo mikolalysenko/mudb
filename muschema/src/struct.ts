@@ -324,7 +324,9 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const dTrackerOffset = methods.diffBinary.def(0);
         const dTracker = methods.diffBinary.def(0);
         const numPatch = methods.diffBinary.def(0);
-        methods.diffBinary.push(`${dTrackerOffset} = s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
+
+        // TODO Nested structs should not grow the stream multiple times
+        methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
         structProps.forEach((propName, i) => {
             const muType = structTypes[i].muType;
 
@@ -337,6 +339,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'int8':
                 case 'int16':
                 case 'int32':
+                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
@@ -354,7 +357,8 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         if (numProps & 7) {
             methods.diffBinary.push(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
         }
-        methods.diffBinary.push(`return ${numPatch}>0`);
+        // return the number of tracker bytes plus content bytes
+        methods.diffBinary.push(`if(${numPatch}){return s.offset-${dTrackerOffset}+${trackerBytes}}else{s.offset=${dTrackerOffset};return 0}`);
 
         // patchBinary subroutine
         const pTrackerOffset = methods.patchBinary.def(0);
