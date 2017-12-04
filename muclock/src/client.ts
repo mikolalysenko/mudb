@@ -62,10 +62,10 @@ export class MuClockClient {
                 init: ({ tickRate, serverClock }) => {
 
                     this.tickRate = tickRate;
-                    this._tickCount = Math.floor(this._clock.now() / tickRate);
+                    this._tickCount = Math.floor(serverClock / tickRate);
                     this._clockShift = serverClock - this._lastPingStart;
 
-                    this._pingCount = Math.floor(serverClock / this._pingRate);
+                    this._pingCount = Math.floor(this._clock.now() / this._pingRate);
 
                     this._lastPingStart = 0;
 
@@ -119,8 +119,8 @@ export class MuClockClient {
     // call this once per-frame on the client to ensure that clocks are synchronized
     private _lastNow:number = 0;
 
-    private _remoteClock () : number {
-        const localClock = this._clock.now();
+    private _remoteClock (localClock) : number {
+        // const localClock = this._clock.now();
         const remoteClock = Math.max(
             localClock * this._clockScale + this._clockShift + 2 * this._pingStatistic.median + this.tickRate,
             this._lastNow + 1e-6);
@@ -129,9 +129,10 @@ export class MuClockClient {
     }
 
     public poll () {
-        const remoteClock = this._remoteClock();
+        const localClock = this._clock.now();
+        const remoteClock = this._remoteClock(localClock);
 
-        const targetPingCount = Math.floor(this._clock.now() / this._pingCount);
+        const targetPingCount = Math.floor(localClock / this._pingCount);
         const targetTickCount = Math.floor(remoteClock / this.tickRate);
 
         if (this._pingCount < targetPingCount) {
@@ -145,7 +146,8 @@ export class MuClockClient {
 
     // queries the clock to get a ping
     public tick () : number {
-        return Math.min(this._tickCount + 1, this._remoteClock() / this.tickRate);
+        const localClock = this._clock.now();
+        return Math.min(this._tickCount + 1, this._remoteClock(localClock) / this.tickRate);
     }
 
     public ping () : number {

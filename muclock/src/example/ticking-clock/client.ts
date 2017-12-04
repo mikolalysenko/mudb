@@ -50,6 +50,7 @@ export = function(client:MuClient) {
     client: client,
     tick: (t) => {
       _last_tick = Math.round(t * 100) / 100;
+      console.log(t);
       if (is_close) {
         return;
       }
