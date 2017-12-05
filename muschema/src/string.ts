@@ -48,4 +48,8 @@ export class MuString implements MuSchema<string> {
         }
         return base;
     }
+
+    public getByteLength (str:string) {
+        return 4 + str.length * 4;
+    }
 }
