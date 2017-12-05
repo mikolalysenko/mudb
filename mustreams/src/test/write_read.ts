@@ -106,16 +106,26 @@ test('float', (t) => {
 
     const ws = new MuWriteStream(0x100);
 
+    const floatNum = Math.random();
+
     ws.writeFloat32(FLOAT32_MIN);
     ws.writeFloat32(-FLOAT32_EPSILON);
     ws.writeFloat32(0);
     ws.writeFloat32(FLOAT32_EPSILON);
     ws.writeFloat32(FLOAT32_MAX);
+    ws.writeFloat32(floatNum);
     ws.writeFloat64(FLOAT64_MIN);
     ws.writeFloat64(-FLOAT64_EPSILON);
     ws.writeFloat64(0);
     ws.writeFloat64(FLOAT64_EPSILON);
     ws.writeFloat64(FLOAT64_MAX);
+    ws.writeFloat64(floatNum);
+
+    function fround (num) {
+        const arr = new Float32Array(1);
+        arr[0] = num;
+        return arr[0];
+    }
 
     const rs = new MuReadStream(ws);
 
@@ -124,11 +134,13 @@ test('float', (t) => {
     t.equals(rs.readFloat32(), 0);
     t.equals(rs.readFloat32(), FLOAT32_EPSILON);
     t.equals(rs.readFloat32(), FLOAT32_MAX);
+    t.equals(rs.readFloat32(), fround(floatNum));
     t.equals(rs.readFloat64(), FLOAT64_MIN);
     t.equals(rs.readFloat64(), -FLOAT64_EPSILON);
     t.equals(rs.readFloat64(), 0);
     t.equals(rs.readFloat64(), FLOAT64_EPSILON);
     t.equals(rs.readFloat64(), FLOAT64_MAX);
+    t.equals(rs.readFloat64(), floatNum);
 
     t.end();
 });
