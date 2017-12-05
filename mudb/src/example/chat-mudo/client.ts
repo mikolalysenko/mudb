@@ -59,6 +59,9 @@ export = function (client:MuClient) {
                 messageDiv.appendChild(document.createElement('br'));
             },
         },
+        close: () => {
+            console.log('client closed');
+        },
     });
 
     client.start();
