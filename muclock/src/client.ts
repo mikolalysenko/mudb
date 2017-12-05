@@ -38,8 +38,6 @@ export class MuClockClient {
     private _doPause:(t:number) => void = function () {};
     private _doResume:(t:number) => void = function () {};
 
-    private _isPause:boolean = false;
-
     constructor(spec:{
         client:MuClient,
         ready?:() => void,
@@ -71,7 +69,7 @@ export class MuClockClient {
 
         this._protocol.configure({
             message: {
-                init: ({ tickRate, serverClock }) => {
+                init: ({ tickRate, serverClock, isPause }) => {
 
                     this.tickRate = tickRate;
                     this._tickCount = Math.floor(serverClock / tickRate);
@@ -96,12 +94,37 @@ export class MuClockClient {
                     if (spec.ready) {
                         spec.ready();
                     }
+                    if (isPause) {
+                        this._clock.pauseClock();
+                    }
                 },
                 pause: (serverTick) => {
+                    const estimateRtt = this._pingStatistic.median;
                     this.pause(serverTick);
+                    const shouldPauseTime = this._clock.now() - estimateRtt / 2;
+                    const remoteTime = serverTick * this.tickRate ;
+                    if (this._localTimeSamples.length < this._clockBufferSize) {
+                        this._localTimeSamples.push(shouldPauseTime);
+                        this._remoteTimeSamples.push(remoteTime);
+                    } else {
+                        const idx = (this._pingCount - 1) % this._clockBufferSize;
+                        this._localTimeSamples[idx] = shouldPauseTime;
+                        this._remoteTimeSamples[idx] = remoteTime;
+                    }
                 },
                 resume: (serverTick) => {
+                    const estimateRtt = this._pingStatistic.median;
                     this.resume(serverTick);
+                    const shouldResumeTime = this._clock.now() - estimateRtt / 2;
+                    const remoteTime = serverTick * this.tickRate ;
+                    if (this._localTimeSamples.length < this._clockBufferSize) {
+                        this._localTimeSamples.push(shouldResumeTime);
+                        this._remoteTimeSamples.push(remoteTime);
+                    } else {
+                        const idx = (this._pingCount - 1) % this._clockBufferSize;
+                        this._localTimeSamples[idx] = shouldResumeTime;
+                        this._remoteTimeSamples[idx] = remoteTime;
+                    }
                 },
                 ping: (id) => this._protocol.server.message.pong(id),
                 pong: (serverClock) => {
@@ -138,27 +161,44 @@ export class MuClockClient {
     private _lastNow:number = 0;
 
     private pause (serverTick) {
-        this._clock.pauseClock();
+        this._clock.pauseClock(this._pingStatistic.median / 2);
         this._doPause(serverTick);
+        this._localTimeSamples = [];
+        this._remoteTimeSamples = [];
+        // ajdust client _clockShift and _clockScale
+        this._clockScale = 1;
+        if (serverTick !== this._tickCount) {
+            this._clockShift = serverTick * this.tickRate - this._clock.now();
+        }
     }
 
     private resume (serverTick) {
-        this._clock.resumeClock();
+        this._clock.resumeClock(this._pingStatistic.median / 2);
         this._doResume(serverTick);
+        // because timeSample were clear when pause, so a bit more ping won't do harm
+        this._pingCount = ~~(this._pingCount * 0.7);
+        this._clockScale = 1;
+        if (serverTick !==  this._tickCount) {
+            this._clockShift = serverTick * this.tickRate - this._clock.now() + this._pingStatistic.median / 2;
+        }
     }
 
     private _remoteClock (localClock) : number {
+        if (this._clock.isFrozen()) {
+            return this._clockShift + this._clock.now();
+        }
         const remoteClock = Math.max(
             localClock * this._clockScale + this._clockShift + 2 * this._pingStatistic.median + this.tickRate,
             this._lastNow + 1e-6);
+        // if client not just receive init, then an huge error is very likly occured
+        if (remoteClock - this._lastNow > 200) {
+            console.warn('remoteClock grow way too fast');
+        }
         this._lastNow = remoteClock;
         return remoteClock;
     }
 
     public poll () {
-        if (this._isPause) {
-            return;
-        }
         const localClock = this._clock.now();
         const remoteClock = this._remoteClock(localClock);
 

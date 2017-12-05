@@ -8,9 +8,13 @@ export = function (server:MuServer) {
     tick: (t) => {
       console.log('tick:', t, ' ; ping:', clock.ping);
     },
+    onLostClient: (sessionId) => {
+      console.log('client :', sessionId, 'is offline');
+    },
   });
   server.start();
 
+  // randomly pause and resume server's clock
   const pause_resume_interval = setInterval(() => {
     console.log('clock.isTicking', clock.isTicking());
     if (clock.isTicking()) {
@@ -18,5 +22,5 @@ export = function (server:MuServer) {
     } else {
       clock.resume();
     }
-  }, 1000);
+  }, (Math.random() + 1 ) * 3000);
 };

@@ -14,6 +14,7 @@ class MuClockClientPingHandler {
 
     public lastPingStart:number = 0;
     public lastPingUUID:number = 0;
+    public continuousFailCount:number = 0;
 
     constructor (clock:MuClock, client, server:MuClockServer, connectTime:number, pingRate:number, statistic:MuPingStatistic) {
         this.clock = clock;
@@ -26,8 +27,12 @@ class MuClockClientPingHandler {
 
     public pollPing () {
         if (this.lastPingStart) {
+            this.continuousFailCount++;
+            if (this.continuousFailCount > 200) {
+            }
             return;
         }
+        this.continuousFailCount = 0;
         const startClock = this.now();
 
         const targetPing = Math.floor(startClock / this.pingRate);
@@ -78,19 +83,16 @@ export class MuClockServer {
 
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
+    private _onLostClient:(sessionId:string) => void  = function() {};
 
-    // private _isPause:boolean = false;
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
-
-    // private _totalPauseTime = 0;
-    // private _pasueTime = 0;
-
     constructor (spec:{
         server:MuServer,
         defaultPing?:number,
         pingRate?:number,
         tickRate?:number,
         tick?:(t:number) => void,
+        onLostClient?:(sId:string) => void,
         pingBufferSize?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
@@ -101,6 +103,9 @@ export class MuClockServer {
         }
         if ('tick' in spec) {
             this._onTick = spec.tick || function () {};
+        }
+        if ('onLostClient' in spec) {
+            this._onLostClient = spec.onLostClient || function() {};
         }
 
         this._protocol.configure({
@@ -121,6 +126,7 @@ export class MuClockServer {
                 client.message.init({
                     tickRate: this.tickRate,
                     serverClock: this._clock.now(),
+                    isPause: this._clock.isFrozen(),
                 });
 
                 const pingClient = new MuClockClientPingHandler(
@@ -135,6 +141,7 @@ export class MuClockServer {
                 this._clientPingHandlers[client.sessionId] = pingClient;
             },
             disconnect: (client) => {
+                this._onLostClient(client.sessionId);
                 delete this.ping[client.sessionId];
                 delete this._clientPingHandlers[client.sessionId];
             },

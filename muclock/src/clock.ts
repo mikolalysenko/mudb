@@ -21,22 +21,22 @@ export class MuClock {
         return this._freezing_time - this.startTime;
     }
 
-    public pauseClock() {
+    public pauseClock(timeOffset = 0) {
         if (this._isFrozen) {
             console.log('clock has already paused');
             return;
         }
         this._isFrozen = true;
-        this._freezing_time = Date.now();
+        this._freezing_time = Date.now() - timeOffset;
         this.now = this.frozenClock;
     }
-    public resumeClock() {
+    public resumeClock(timeOffset = 0) {
         if (!this._isFrozen) {
             console.log('clock already runnig');
             return;
         }
         this._isFrozen = false;
-        this.startTime += Date.now() - this._freezing_time;
+        this.startTime += Date.now() - this._freezing_time - timeOffset;
         this.now = this.livelyClock;
 
         this._freezing_time = -1;
