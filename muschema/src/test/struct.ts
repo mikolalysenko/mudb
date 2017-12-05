@@ -92,7 +92,7 @@ test('struct diff() & patch()', (t) => {
         'int8': MuInt8,
         'int16': MuInt16,
         'int32': MuInt32,
-        // 'string': MuString,
+        'string': MuString,
         'uint8': MuUint8,
         'uint16': MuUint16,
         'uint32': MuUint32,
@@ -143,7 +143,7 @@ test('struct diff() & patch()', (t) => {
         const length = Math.random() * 20 + 1 | 0;
         const charCodes:number[] = [];
         for (let i = 0; i < length; ++i) {
-            charCodes.push(Math.random() * 0xFFFF | 0);
+            charCodes.push(Math.random() * 0xD7FF | 0);
         }
         return String.fromCharCode.apply(null, charCodes);
     }
