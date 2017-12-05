@@ -46,7 +46,7 @@ export = function(client:MuClient) {
     client: client,
     tick: (t) => {
       _last_tick = Math.round(t * 100) / 100;
-      if (is_close || is_pause) {
+      if (is_close) {
         return;
       }
       drawClock(_last_tick);
@@ -54,16 +54,13 @@ export = function(client:MuClient) {
     },
     pause: (t) => {
       console.log('P server pause at tick:', t);
-      is_pause = true;
     },
     resume: (t) => {
       console.log('R server resume at tick:', t);
-      is_pause = false;
     },
   });
 
   let is_close = false;
-  let is_pause = false;
 
   const config = {
     ready: () => {
