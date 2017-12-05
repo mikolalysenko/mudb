@@ -86,6 +86,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             return result;
         }
 
+        const propRefs:string[] = structProps.map(inject);
         const typeRefs:string[] = structTypes.map(inject);
 
         function block () {
@@ -137,69 +138,89 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
         const poolRef = prelude.def('[]');
         prelude.push('function MuStruct(){');
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'float32':
-                case 'float64':
-                case 'boolean':
-                    prelude.push(`this["${propName}"]=${type.identity};`);
+                    prelude.push(`this[${propRef}]=${type.identity};`);
                     break;
                 case 'string':
-                    prelude.push(`this["${propName}"]=${inject(type.identity)};`);
+                    prelude.push(`this[${propRef}]=${inject(type.identity)};`);
                     break;
                 default:
-                    prelude.push(`this["${propName}"]=null;`);
+                    prelude.push(`this[${propRef}]=null;`);
+            }
+        });
+        propRefs.forEach((propRef, i) => {
+            const type = structTypes[i];
+            switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                    prelude.push(`this[${propRef}]=${type.identity};`);
                     break;
+                case 'string':
+                    prelude.push(`this[${propRef}]=${inject(type.identity)};`);
+                    break;
+                default:
+                    prelude.push(`this[${propRef}]=null;`);
             }
         });
         prelude.push(`}function _alloc(){if(${poolRef}.length > 0){return ${poolRef}.pop()}return new MuStruct()}`);
 
         const identityRef = prelude.def('_alloc()');
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
+                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'float32':
-                case 'float64':
-                case 'boolean':
-                case 'string':
                     break;
                 default:
-                    prelude.push(`${identityRef}["${propName}"]=${typeRefs[i]}.clone(${inject(type.identity)});`);
+                    prelude.push(`${identityRef}[${propRef}]=${typeRefs[i]}.clone(${inject(type.identity)});`);
                     break;
             }
         });
 
         // alloc subroutine
         methods.alloc.push(`var result=_alloc();`);
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
+                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'float32':
-                case 'float64':
-                case 'string':
-                case 'boolean':
                     break;
                 default:
-                    methods.alloc.push(`result["${propName}"]=${typeRefs[i]}.alloc();`);
+                    methods.alloc.push(`result[${propRef}]=${typeRefs[i]}.alloc();`);
                     break;
             }
         });
@@ -207,52 +228,52 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
         // free subroutine
         methods.free.push(`${poolRef}.push(x);`);
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
+                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'float32':
-                case 'float64':
-                case 'string':
-                case 'boolean':
                     break;
                 default:
-                    methods.free.push(`${typeRefs[i]}.free(x["${propName}"]);`);
+                    methods.free.push(`${typeRefs[i]}.free(x[${propRef}]);`);
                     break;
             }
         });
 
         // clone subroutine
         methods.clone.push(`var result=_alloc();`);
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
+                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'float32':
-                case 'float64':
-                case 'string':
-                case 'boolean':
-                    methods.clone.push(`result["${propName}"]=x["${propName}"];`);
+                    methods.clone.push(`result[${propRef}]=x[${propRef}];`);
                     break;
                 default:
-                    methods.clone.push(`result["${propName}"]=${typeRefs[i]}.clone(x["${propName}"]);`);
+                    methods.clone.push(`result[${propRef}]=${typeRefs[i]}.clone(x[${propRef}]);`);
                     break;
             }
         });
         methods.clone.push('return result');
 
         // diff subroutine
-        const diffReqdRefs = structProps.map((name, i) => {
+        const diffReqdRefs = propRefs.map((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'int8':
@@ -264,22 +285,22 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float32':
                 case 'float64':
                 case 'boolean':
-                    return methods.diff.def(`x["${name}"] !== y["${name}"]?y["${name}"]:void 0`);
+                    return methods.diff.def(`x[${propRef}] !== y[${propRef}]?y[${propRef}]:void 0`);
                 default:
-                    return methods.diff.def(`${typeRefs[i]}.diff(x["${name}"],y["${name}"])`);
+                    return methods.diff.def(`${typeRefs[i]}.diff(x[${propRef}],y[${propRef}])`);
             }
         });
         methods.diff.push(`if(${diffReqdRefs.map((x) => x + '===void 0').join('&&') || 'true'}) return;var result = {};`);
-        structProps.map((name, i) => {
-            methods.diff.push(`if(${diffReqdRefs[i]}!==void 0){result["${name}"]=${diffReqdRefs[i]};}`);
+        propRefs.map((propRef, i) => {
+            methods.diff.push(`if(${diffReqdRefs[i]}!==void 0){result[${propRef}]=${diffReqdRefs[i]};}`);
         });
         methods.diff.push('return result;');
 
         // patch subroutine
         methods.patch.push(`if (!p) { return clone(x); } var result=_alloc();`);
-        structProps.forEach((name, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
-            methods.patch.push(`if("${name}" in p){`);
+            methods.patch.push(`if(${propRef} in p){`);
             switch (type.muType) {
                 case 'int8':
                 case 'int16':
@@ -290,10 +311,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float32':
                 case 'float64':
                 case 'boolean':
-                    methods.patch.push(`result["${name}"]=p["${name}"];`);
+                    methods.patch.push(`result[${propRef}]=p[${propRef}];`);
                     break;
                 default:
-                    methods.patch.push(`result["${name}"]=${typeRefs[i]}.patch(x["${name}"], p["${name}"]);`);
+                    methods.patch.push(`result[${propRef}]=${typeRefs[i]}.patch(x[${propRef}], p[${propRef}]);`);
                     break;
             }
             methods.patch.push(`}else{`);
@@ -307,10 +328,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float32':
                 case 'float64':
                 case 'boolean':
-                    methods.patch.push(`result["${name}"]=x["${name}"];`);
+                    methods.patch.push(`result[${propRef}]=x[${propRef}];`);
                     break;
                 default:
-                    methods.patch.push(`result["${name}"]=${typeRefs[i]}.clone(x["${name}"]);`);
+                    methods.patch.push(`result[${propRef}]=${typeRefs[i]}.clone(x[${propRef}]);`);
                     break;
             }
             methods.patch.push('}');
@@ -327,12 +348,12 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
         // TODO Nested structs should not grow the stream multiple times
         methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const muType = structTypes[i].muType;
 
             switch (muType) {
                 case 'boolean':
-                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.writeUint8(t["${propName}"]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.writeUint8(t[${propRef}]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -343,10 +364,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.diffBinary.push(`if(b["${propName}"]!==t["${propName}"]){s.${type2WriteMethod[muType]}(t["${propName}"]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.${type2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
-                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b["${propName}"],t["${propName}"],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
             }
 
             if ((i & 7) === 7) {
@@ -364,7 +385,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const pTrackerOffset = methods.patchBinary.def(0);
         const pTracker = methods.patchBinary.def(0);
         methods.patchBinary.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=clone(b);`);
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             if (!(i & 7)) {
                 methods.patchBinary.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
             }
@@ -372,7 +393,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             const muType = structTypes[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=!!s.readUint8()}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -383,10 +404,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=s.${type2ReadMethod[muType]}()}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${type2ReadMethod[muType]}()}`);
                     break;
                 default:
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result["${propName}"]=${typeRefs[i]}.patchBinary(b["${propName}"],s)}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=${typeRefs[i]}.patchBinary(b[${propRef}],s)}`);
             }
         });
         methods.patchBinary.push(`return result`);
@@ -394,7 +415,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         // getByteLength subroutine
         const byteLength = methods.getByteLength.def(0);
         let partialByteLength = 0;
-        structProps.forEach((propName, i) => {
+        propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'boolean':
@@ -418,17 +439,17 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     partialByteLength += type.identity.byteLength;
                     break;
                 case 'string':
-                    methods.getByteLength.push(`${byteLength}+=4+x["${propName}"].length*4;`);
+                    methods.getByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
                     break;
                 default:
-                    methods.getByteLength.push(`${byteLength}+=${typeRefs[i]}.getByteLength(x["${propName}"]);`);
+                    methods.getByteLength.push(`${byteLength}+=${typeRefs[i]}.getByteLength(x[${propRef}]);`);
             }
         });
         methods.getByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
         const muDataRef = prelude.def('{}');
-        structProps.forEach((propName, i) => {
-            prelude.push(`${muDataRef}["${propName}"]=${typeRefs[i]};`);
+        propRefs.forEach((propRef, i) => {
+            prelude.push(`${muDataRef}[${propRef}]=${typeRefs[i]};`);
         });
 
         // write result

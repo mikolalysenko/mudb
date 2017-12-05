@@ -71,30 +71,6 @@ test('struct alloc()', (t) => {
     t.end();
 });
 
-test('struct free()', (t) => {
-    const struct = new MuStruct({
-        v: new MuFloat64(0.233),
-        vs: new MuVector(new MuFloat64(0.233), 2),
-        s: new MuString('foo'),
-        b: new MuBoolean(),
-    });
-
-    struct.free({
-        v: 0.466,
-        vs: new Float64Array([0.466, 0.466]),
-        s: 'bar',
-        b: true,
-    });
-    const freedStruct = struct.alloc();
-
-    t.equals(freedStruct.v, 0.466);
-    t.equals(freedStruct.vs[0], 0.466);
-    t.equals(freedStruct.s, 'bar');
-    t.equals(freedStruct.b, true);
-
-    t.end();
-});
-
 test('struct getByteLength()', (t) => {
     const struct = new MuStruct({
         v: new MuFloat64(0.233),
@@ -108,7 +84,7 @@ test('struct getByteLength()', (t) => {
     t.end();
 });
 
-test('struct diff() and patch()', (t) => {
+test('struct diff() & patch()', (t) => {
     const myType2MuSchema = {
         'boolean': MuBoolean,
         // 'float32': MuFloat32,
