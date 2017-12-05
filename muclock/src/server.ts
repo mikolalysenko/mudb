@@ -70,6 +70,7 @@ export class MuClockServer {
 
     private _clock:MuClock;
     private _tickCount:number = 0;
+    // private _absoluteTick:number = 0;
     private _protocol:MuServerProtocol<typeof MuClockProtocol>;
 
     private _pingRate:number = 1000;
@@ -78,7 +79,11 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
 
+    // private _isPause:boolean = false;
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
+
+    // private _totalPauseTime = 0;
+    // private _pasueTime = 0;
 
     constructor (spec:{
         server:MuServer,
@@ -138,7 +143,6 @@ export class MuClockServer {
 
     public poll () {
         const targetTick = this.tick();
-
         while (this._tickCount < targetTick) {
             this._onTick(++this._tickCount);
         }
@@ -150,5 +154,25 @@ export class MuClockServer {
 
     public tick () {
         return this._clock.now() / this.tickRate;
+    }
+
+    public pause () {
+        this._clock.pauseClock();
+        this._call_all_clients('pause', this._tickCount);
+    }
+
+    public resume () {
+        this._clock.resumeClock();
+        this._call_all_clients('resume', this._tickCount);
+    }
+
+    public isTicking() {
+        return !this._clock.isFrozen();
+    }
+
+    private _call_all_clients(event, data) {
+        Object.keys(this._clientPingHandlers).forEach((id) => {
+            this._clientPingHandlers[id].protocolClient.message[event](data);
+        });
     }
 }

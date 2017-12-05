@@ -18,13 +18,9 @@ export = function(client:MuClient) {
   <div>
   <canvas id="canvas" width="400" height="400" style="background-color:#333"></canvas>
   <div id='tick-number'></div>
-  <div id=connect>start</div>
-  <div id=disconnect>stop</div>
   </div>
   `;
   const canvas = <HTMLCanvasElement>document.getElementById('canvas');
-  const start_btn = <HTMLButtonElement>document.getElementById('connect');
-  const stop_btn = <HTMLButtonElement>document.getElementById('disconnect');
   const tick_num = document.getElementById('tick-number');
   if (!canvas || ! tick_num) {
     return;
@@ -50,16 +46,24 @@ export = function(client:MuClient) {
     client: client,
     tick: (t) => {
       _last_tick = Math.round(t * 100) / 100;
-      console.log(t);
-      if (is_close) {
+      if (is_close || is_pause) {
         return;
       }
       drawClock(_last_tick);
       tick_num.innerHTML = `tick ${Math.round(clock.tick() * 100) / 100}<br/> ping ${clock.ping()}`;
     },
+    pause: (t) => {
+      console.log('P server pause at tick:', t);
+      is_pause = true;
+    },
+    resume: (t) => {
+      console.log('R server resume at tick:', t);
+      is_pause = false;
+    },
   });
 
   let is_close = false;
+  let is_pause = false;
 
   const config = {
     ready: () => {
@@ -79,12 +83,6 @@ export = function(client:MuClient) {
     },
   };
   client.start(config);
-  start_btn.addEventListener('click', () => {
-    // client.restart(config);
-  });
-  stop_btn.addEventListener('click', () => {
-    client.destroy();
-  });
 };
 
 function drawFace(ctx, radius) {

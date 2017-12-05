@@ -35,10 +35,16 @@ export class MuClockClient {
     private _tickCount:number = 0;
 
     private _doTick:(t:number) => void = function () {};
+    private _doPause:(t:number) => void = function () {};
+    private _doResume:(t:number) => void = function () {};
+
+    private _isPause:boolean = false;
 
     constructor(spec:{
         client:MuClient,
         ready?:() => void,
+        pause?:(t:number) => void,
+        resume?:(t:number) => void,
         tick?:(t:number) => void,
         pingRate?:number,
         pollRate?:number,
@@ -55,6 +61,12 @@ export class MuClockClient {
 
         if (spec.tick) {
             this._doTick = spec.tick;
+        }
+        if (spec.pause) {
+            this._doPause = spec.pause;
+        }
+        if (spec.resume) {
+            this._doResume = spec.resume;
         }
 
         this._protocol.configure({
@@ -84,6 +96,12 @@ export class MuClockClient {
                     if (spec.ready) {
                         spec.ready();
                     }
+                },
+                pause: (serverTick) => {
+                    this.pause(serverTick);
+                },
+                resume: (serverTick) => {
+                    this.resume(serverTick);
                 },
                 ping: (id) => this._protocol.server.message.pong(id),
                 pong: (serverClock) => {
@@ -119,8 +137,17 @@ export class MuClockClient {
     // call this once per-frame on the client to ensure that clocks are synchronized
     private _lastNow:number = 0;
 
+    private pause (serverTick) {
+        this._clock.pauseClock();
+        this._doPause(serverTick);
+    }
+
+    private resume (serverTick) {
+        this._clock.resumeClock();
+        this._doResume(serverTick);
+    }
+
     private _remoteClock (localClock) : number {
-        // const localClock = this._clock.now();
         const remoteClock = Math.max(
             localClock * this._clockScale + this._clockShift + 2 * this._pingStatistic.median + this.tickRate,
             this._lastNow + 1e-6);
@@ -129,6 +156,9 @@ export class MuClockClient {
     }
 
     public poll () {
+        if (this._isPause) {
+            return;
+        }
         const localClock = this._clock.now();
         const remoteClock = this._remoteClock(localClock);
 
