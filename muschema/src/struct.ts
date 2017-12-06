@@ -1,31 +1,11 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-const type2WriteMethod = {
-    boolean: 'writeUint8',
-    float32: 'writeFloat32',
-    float64: 'writeFloat64',
-    int8: 'writeInt8',
-    int16: 'writeInt16',
-    int32: 'writeInt32',
-    string: 'writeString',
-    uint8: 'writeUint8',
-    uint16: 'writeUint16',
-    uint32: 'writeUint32',
-};
-
-const type2ReadMethod = {
-    boolean: 'readUint8',
-    float32: 'readFloat32',
-    float64: 'readFloat64',
-    int8: 'readInt8',
-    int16: 'readInt16',
-    int32: 'readInt32',
-    string: 'readString',
-    uint8: 'readUint8',
-    uint16: 'readUint16',
-    uint32: 'readUint32',
-};
+import Constants = require('./constants');
+const {
+    muType2ReadMethod,
+    muType2WriteMethod,
+} = Constants;
 
 // tslint:disable-next-line:class-name
 export interface _SchemaDictionary {
@@ -364,7 +344,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.${type2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.${muType2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
                     methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
@@ -404,7 +384,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${type2ReadMethod[muType]}()}`);
+                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
                     break;
                 default:
                     methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=${typeRefs[i]}.patchBinary(b[${propRef}],s)}`);
