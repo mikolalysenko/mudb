@@ -47,7 +47,7 @@ class MuClockClientPingHandler {
                 () => {
                     if (startPingClock === env.lastPingStart && startPingClock !== 0) {
                         env.timeoutRecord.push(startPingClock);
-                        env.server.onClientTimeout(env);
+                        env.server.detectedClientTimeout(env);
                     }
             },  env._pingTimeout);
         })(startClock, this);
@@ -157,7 +157,7 @@ export class MuClockServer {
         });
     }
 
-    private _detectedClientTimeout (client) {
+    public detectedClientTimeout (client) {
         this._onClientTimeout(client.protocolClient.sessionId, client.timeoutRecord);
     }
 

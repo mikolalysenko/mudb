@@ -17,7 +17,6 @@ tape('linear regression', (t) => {
         t.ok(Math.abs(b - intercept) < 1e-6, `expect intercept ${intercept}, got ${b}`);
     }
 
-
     testLine(1, 0);
     testLine(0.1, 0);
     testLine(1, 2);
