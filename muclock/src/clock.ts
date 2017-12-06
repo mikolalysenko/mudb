@@ -2,7 +2,7 @@
 export class MuClock {
     public startTime:number;
     private _freezing_time:number;
-    public now:Function;
+    public _now:Function;
 
     private _isFrozen:boolean;
 
@@ -11,6 +11,10 @@ export class MuClock {
         this._freezing_time = -1;
         this.now = this._livelyClock;
         this._isFrozen = false;
+    }
+
+    public now() {
+        return this._now();
     }
 
     private _livelyClock() {
@@ -28,7 +32,7 @@ export class MuClock {
         }
         this._isFrozen = true;
         this._freezing_time = Date.now() - timeOffset;
-        this.now = this._frozenClock;
+        this._now = this._frozenClock;
     }
     public resumeClock(timeOffset = 0) {
         if (!this._isFrozen) {
@@ -37,7 +41,7 @@ export class MuClock {
         }
         this._isFrozen = false;
         this.startTime += Date.now() - this._freezing_time - timeOffset;
-        this.now = this._livelyClock;
+        this._now = this._livelyClock;
 
         this._freezing_time = -1;
     }

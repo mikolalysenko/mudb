@@ -102,13 +102,13 @@ export class MuClockClient {
                 },
                 pause: (serverClock) => {
                     const estimateRtt = this._pingStatistic.median;
-                    this.pause(serverClock);
+                    this._pause(serverClock);
                     const shouldPauseTime = this._clock.now() - estimateRtt / 2;
                     this._updateTimeSamples(serverClock, shouldPauseTime);
                 },
                 resume: (serverClock) => {
                     const estimateRtt = this._pingStatistic.median;
-                    this.resume(serverClock);
+                    this._resume(serverClock);
                     const shouldResumeTime = this._clock.now() - estimateRtt / 2;
                     this._updateTimeSamples(serverClock, shouldResumeTime);
                 },
@@ -150,16 +150,19 @@ export class MuClockClient {
     // call this once per-frame on the client to ensure that clocks are synchronized
     private _lastNow:number = 0;
 
-    private pause (serverClock) {
+    private _pause (serverClock) {
         const serverTick = serverClock / this.tickRate;
         this._clock.pauseClock(this._pingStatistic.median / 2);
         this._doPause(serverTick);
+        // with a lot testing, still clear samples when pause could predict remoteClock more accurate >_<
+        this._remoteTimeSamples = [];
+        this._localTimeSamples = [];
         this._remoteClock = () => {
             return serverClock;
         };
     }
 
-    private resume (serverClock) {
+    private _resume (serverClock) {
         const serverTick = serverClock / this.tickRate;
         this._clock.resumeClock(this._pingStatistic.median / 2);
         this._doResume(serverTick);

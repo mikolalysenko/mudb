@@ -32,7 +32,6 @@ class MuClockClientPingHandler {
             return;
         }
         const startClock = this.now();
-
         const targetPing = Math.floor(startClock / this.pingRate);
         if (this.pingCount >= targetPing) {
             return;
@@ -46,7 +45,7 @@ class MuClockClientPingHandler {
         (function(startPingClock, env) {
             setTimeout(
                 () => {
-                    if (startPingClock === env.lastPingStart) {
+                    if (startPingClock === env.lastPingStart && startPingClock !== 0) {
                         env.timeoutRecord.push(startPingClock);
                         env.server.onClientTimeout(env);
                     }
@@ -89,6 +88,7 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
     private _onLostClient:(sessionId:string) => void  = function() {};
+    private _onClientTimeout:(sessionId:string, timeoutRecord:number[]) => void = function() {};
 
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
     constructor (spec:{
@@ -98,6 +98,7 @@ export class MuClockServer {
         tickRate?:number,
         tick?:(t:number) => void,
         onLostClient?:(sId:string) => void,
+        onClientTimeout?:(sId:string, timeoutRecord:number[]) => void,
         pingBufferSize?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
@@ -111,6 +112,9 @@ export class MuClockServer {
         }
         if ('onLostClient' in spec) {
             this._onLostClient = spec.onLostClient || function() {};
+        }
+        if ('onClientTimeout' in spec) {
+            this._onClientTimeout = spec.onClientTimeout || function() {};
         }
 
         this._protocol.configure({
@@ -153,8 +157,8 @@ export class MuClockServer {
         });
     }
 
-    public onClientTimeout (client) {
-        console.log('client Timeout:', client.protocolClient.sessionId, client.timeoutRecord);
+    private _detectedClientTimeout (client) {
+        this._onClientTimeout(client.protocolClient.sessionId, client.timeoutRecord);
     }
 
     public poll () {
