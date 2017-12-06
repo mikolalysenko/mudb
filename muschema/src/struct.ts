@@ -1,11 +1,10 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-import Constants = require('./constants');
-const {
+import {
     muType2ReadMethod,
     muType2WriteMethod,
-} = Constants;
+} from '../constants';
 
 // tslint:disable-next-line:class-name
 export interface _SchemaDictionary {

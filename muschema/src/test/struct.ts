@@ -18,7 +18,11 @@ import {
     MuWriteStream,
     MuReadStream,
 } from 'mustreams';
-import Constants = require('../constants');
+
+import {
+    randomString,
+    randomValue,
+} from './_helper';
 
 test('struct muType', (t) => {
     const struct = new MuStruct({});
@@ -100,47 +104,12 @@ test('struct diff() & patch()', (t) => {
     const muTypes = Object.keys(myType2MuSchema);
     const muSchemas = muTypes.map((type) => myType2MuSchema[type]);
 
-    function randomString () {
-        const length = Math.random() * 20 + 1 | 0;
-        const charCodes:number[] = [];
-        for (let i = 0; i < length; ++i) {
-            charCodes.push(Math.random() * 0xD7FF | 0);
-        }
-        return String.fromCharCode.apply(null, charCodes);
-    }
-
     function structSpec () {
         const result = {};
         for (const Schema of muSchemas) {
-            result[randomString()] = new Schema();
+            result[randomString(20)] = new Schema();
         }
         return result;
-    }
-
-    function randomSign () {
-        return Math.random() < 0.5 ? -1 : 1;
-    }
-
-    function randomValue (typeName) {
-        const MAX = Constants[typeName] && Constants[typeName].MAX;
-        switch (typeName) {
-            case 'boolean':
-                return Math.random() < 0.5 ? false : true;
-            case 'float32':
-                return Math.random();
-            case 'float64':
-                return randomSign() * Math.random() * MAX;
-            case 'int8':
-            case 'int16':
-            case 'int32':
-                return randomSign() * Math.random() * MAX | 0;
-            case 'string':
-                return randomString();
-            case 'uint8':
-            case 'uint16':
-            case 'uint32':
-                return Math.random() * MAX >>> 0;
-        }
     }
 
     for (let i = 0; i < 100; ++i) {
@@ -164,22 +133,8 @@ test('struct diff() & patch()', (t) => {
                 const ws = new MuWriteStream(2);
                 structSchema.diffBinary(a, b, ws);
                 const rs = new MuReadStream(ws);
-                const patched = structSchema.patchBinary(a, rs);
 
-                const propNames = Object.keys(spec);
-                propNames.forEach((propName) => {
-                    function fround (num) {
-                        const arr = new Float32Array(1);
-                        arr[0] = num;
-                        return arr[0];
-                    }
-
-                    if (spec[propName].muType === 'float32') {
-                        t.equals(patched[propName], fround(b[propName]));
-                    } else {
-                        t.equals(patched[propName], b[propName]);
-                    }
-                });
+                t.same(structSchema.patchBinary(a, rs), b);
             }
 
             doTest(structA, structB);

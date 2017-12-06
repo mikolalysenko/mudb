@@ -1,11 +1,10 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-import Constants = require('./constants');
-const {
+import {
     muType2ReadMethod,
     muType2WriteMethod,
-} = Constants;
+} from './constants';
 
 export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
 
@@ -110,6 +109,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint8':
             case 'uint16':
             case 'uint32':
+                // TODO do code generation instead
                 const writeMethod = muType2WriteMethod[valueMuType];
                 for (let i = 0; i < targetLength; ++i) {
                     if (target[i] !== base[i]) {
@@ -172,6 +172,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint8':
             case 'uint16':
             case 'uint32':
+                // TODO do code generation instead
                 const readMethod = muType2ReadMethod[valueMuType];
                 for (let i = 0; i < trackerBytes; ++i) {
                     if (!(i & 7)) {
