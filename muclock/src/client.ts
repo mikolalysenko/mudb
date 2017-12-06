@@ -38,8 +38,6 @@ export class MuClockClient {
     private _doPause:(t:number) => void = function () {};
     private _doResume:(t:number) => void = function () {};
 
-    private _isPause:boolean = false;
-
     constructor(spec:{
         client:MuClient,
         ready?:() => void,
@@ -156,9 +154,6 @@ export class MuClockClient {
     }
 
     public poll () {
-        if (this._isPause) {
-            return;
-        }
         const localClock = this._clock.now();
         const remoteClock = this._remoteClock(localClock);
 

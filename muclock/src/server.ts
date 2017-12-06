@@ -14,6 +14,9 @@ class MuClockClientPingHandler {
 
     public lastPingStart:number = 0;
     public lastPingUUID:number = 0;
+    private _pingTimeout:number = 10000;
+
+    public timeoutRecord:number[] = [];
 
     constructor (clock:MuClock, client, server:MuClockServer, connectTime:number, pingRate:number, statistic:MuPingStatistic) {
         this.clock = clock;
@@ -40,6 +43,14 @@ class MuClockClientPingHandler {
         this.lastPingStart = startClock;
         this.lastPingUUID = Math.floor(Math.random() * 1e10);
         this.protocolClient.message.ping(this.lastPingUUID);
+        (function(lastPingStart, env) {
+            setTimeout(
+                () => {
+                if (lastPingStart === env.lastPingStart) {
+                    env.timeoutRecord.push(lastPingStart);
+                }
+            },  env._pingTimeout);
+        })(this.lastPingStart, this);
     }
 
     public now () {
@@ -79,11 +90,7 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
 
-    // private _isPause:boolean = false;
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
-
-    // private _totalPauseTime = 0;
-    // private _pasueTime = 0;
 
     constructor (spec:{
         server:MuServer,
@@ -139,6 +146,10 @@ export class MuClockServer {
                 delete this._clientPingHandlers[client.sessionId];
             },
         });
+    }
+
+    public onClientTimeout (client) {
+        console.log('client:', client.sessionId, client.timeoutRecord);
     }
 
     public poll () {
