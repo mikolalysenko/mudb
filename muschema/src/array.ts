@@ -1,15 +1,24 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-/** Array type schema */
+import Constants = require('./constants');
+const {
+    muType2ReadMethod,
+    muType2WriteMethod,
+} = Constants;
+
+export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
+
 export class MuArray<ValueSchema extends MuSchema<any>>
-        implements MuSchema<ValueSchema['identity'][]> {
-    public readonly identity:ValueSchema['identity'][] = [];
+        implements MuSchema<_MuArrayType<ValueSchema>> {
+    private _pool:_MuArrayType<ValueSchema>[] = [];
+
+    public readonly identity:_MuArrayType<ValueSchema> = [];
     public readonly muType = 'array';
     public readonly muData:ValueSchema;
     public readonly json:object;
 
-    constructor(valueSchema:ValueSchema, id?:ValueSchema['identity'][]) {
+    constructor(valueSchema:ValueSchema, id?:_MuArrayType<ValueSchema>) {
         this.identity = id || [];
         this.muData = valueSchema;
         this.json = {
@@ -19,20 +28,180 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc() { return this.identity.slice(); }
+    public alloc () : _MuArrayType<ValueSchema> {
+        return this._pool.pop() || this.identity.slice();
+    }
 
-    public free(x:ValueSchema['identity'][]) { }
+    public free (x:_MuArrayType<ValueSchema>) : void {
+        this._pool.push(x);
 
-    public clone(x:ValueSchema['identity'][]) : ValueSchema['identity'][] {
-        const result:ValueSchema['identity'][] = new Array(x.length);
-        const schema = this.muData;
-        for (let i = 0; i < x.length; ++i) {
-            result[i] = schema.clone(x[i]);
+        const valueSchema = this.muData;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'float32':
+            case 'float64':
+            case 'int8':
+            case 'int16':
+            case 'int32':
+            case 'string':
+            case 'uint8':
+            case 'uint16':
+            case 'uint32':
+                break;
+            default:
+                for (let i = 0; i < x.length; ++i) {
+                    valueSchema.free(x[i]);
+                }
         }
+    }
+
+    public clone (x:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
+        const result = this._pool.pop() || new Array(x.length);
+
+        const schema = this.muData;
+        switch (schema.muType) {
+            case 'boolean':
+            case 'float32':
+            case 'float64':
+            case 'int8':
+            case 'int16':
+            case 'int32':
+            case 'string':
+            case 'uint8':
+            case 'uint16':
+            case 'uint32':
+                for (let i = 0; i < x.length; ++i) {
+                    result[i] = x[i];
+                }
+                break;
+            default:
+                for (let i = 0; i < x.length; ++i) {
+                    result[i] = schema.clone(x[i]);
+                }
+        }
+
         return result;
     }
 
-    public diff(base:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
+    public diffBinary (base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>, ws:MuWriteStream) {
+        const targetLength = target.length;
+        const lengthDiff = base.length - target.length;
+        const numDelete = lengthDiff > 0 ? lengthDiff : 0;
+        ws.writeUint32(numDelete);
+
+        const trackerBytes = Math.ceil(targetLength / 8);
+        ws.writeUint32(trackerBytes);
+
+        let trackerOffset = ws.offset;
+        ws.offset = trackerOffset + trackerBytes;
+
+        let numPatch = 0;
+        let tracker = 0;
+
+        const valueSchema = this.muData;
+        const valueMuType = valueSchema.muType;
+        switch (valueMuType) {
+            case 'float32':
+            case 'float64':
+            case 'int8':
+            case 'int16':
+            case 'int32':
+            case 'string':
+            case 'uint8':
+            case 'uint16':
+            case 'uint32':
+                const writeMethod = muType2WriteMethod[valueMuType];
+                for (let i = 0; i < targetLength; ++i) {
+                    if (target[i] !== base[i]) {
+                        ws[writeMethod](target[i]);
+                        ++numPatch;
+                        tracker |= 1 << (i & 7);
+                    }
+
+                    if ((i & 7) === 7) {
+                        ws.writeUint8At(trackerOffset, i);
+                        ++trackerOffset;
+                        tracker = 0;
+                    }
+                }
+                break;
+            default:
+                for (let i = 0; i < targetLength; ++i) {
+                    if (target[i] !== base[i]) {
+                        valueSchema.diffBinary!(base[i], target[i], ws);
+                        ++numPatch;
+                        tracker |= 1 << (i & 7);
+                    }
+
+                    if ((i & 7) === 7) {
+                        ws.writeUint8At(trackerOffset, tracker);
+                        ++trackerOffset;
+                        tracker = 0;
+                    }
+                }
+        }
+
+        if (targetLength & 7) {
+            ws.writeUint8At(trackerOffset, tracker);
+        }
+
+        return numDelete > 0 || numPatch > 0;
+    }
+
+    public patchBinary (base:_MuArrayType<ValueSchema>, rs:MuReadStream) {
+        const result = this.clone(base);
+
+        const numDelete = rs.readUint32();
+        result.length -= numDelete;
+
+        const trackerBytes = rs.readUint32();
+
+        let trackerOffset = rs.offset;
+        rs.offset = trackerOffset + trackerBytes;
+
+        const valueSchema = this.muData;
+        const valueMuType = valueSchema.muType;
+        let tracker = 0;
+        switch (valueMuType) {
+            case 'float32':
+            case 'float64':
+            case 'int8':
+            case 'int16':
+            case 'int32':
+            case 'string':
+            case 'uint8':
+            case 'uint16':
+            case 'uint32':
+                const readMethod = muType2ReadMethod[valueMuType];
+                for (let i = 0; i < trackerBytes; ++i) {
+                    if (!(i & 7)) {
+                        tracker = rs.readUint8At(trackerOffset);
+                        ++trackerOffset;
+                    }
+
+                    if ((1 << (i & 7)) & tracker) {
+                        result[i] = rs[readMethod]();
+                    }
+                }
+                break;
+
+            default:
+                for (let i = 0; i < trackerBytes; ++i) {
+                    if (!(i & 7)) {
+                        tracker = rs.readUint8At(trackerOffset);
+                        ++trackerOffset;
+                    }
+
+                    if ((1 << (i & 7)) & tracker) {
+                        result[i] = valueSchema.patchBinary!(base[i], rs);
+                    }
+                }
+        }
+
+        return result;
+    }
+
+    public diff(base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {
         const schema = this.muData;
         const result = new Array(target.length);
         let changed = base.length !== target.length;
@@ -53,11 +222,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return;
      }
 
-    public patch(base:ValueSchema['identity'][], patch:any[]|undefined) {
+    public patch(base:_MuArrayType<ValueSchema>, patch:any[]|undefined) {
         if (!patch) {
             return this.clone(base);
         }
-        const result:ValueSchema['identity'][] = new Array(patch.length);
+        const result:_MuArrayType<ValueSchema> = new Array(patch.length);
         const schema = this.muData;
         for (let i = 0; i < patch.length; ++i) {
             const x = patch[i];
@@ -77,8 +246,4 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
         return result;
      }
-
-    // public diffBinary() { return false; } //TODO:
-
-    // public patchBinary() { return false; } //TODO:
 }
