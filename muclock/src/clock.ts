@@ -9,35 +9,35 @@ export class MuClock {
     constructor () {
         this.startTime = Date.now();
         this._freezing_time = -1;
-        this.now = this.livelyClock;
+        this.now = this._livelyClock;
         this._isFrozen = false;
     }
 
-    private livelyClock() {
+    private _livelyClock() {
         return Date.now() - this.startTime;
     }
 
-    private frozenClock() {
+    private _frozenClock() {
         return this._freezing_time - this.startTime;
     }
 
-    public pauseClock() {
+    public pauseClock(timeOffset = 0) {
         if (this._isFrozen) {
             console.log('clock has already paused');
             return;
         }
         this._isFrozen = true;
-        this._freezing_time = Date.now();
-        this.now = this.frozenClock;
+        this._freezing_time = Date.now() - timeOffset;
+        this.now = this._frozenClock;
     }
-    public resumeClock() {
+    public resumeClock(timeOffset = 0) {
         if (!this._isFrozen) {
             console.log('clock already runnig');
             return;
         }
         this._isFrozen = false;
-        this.startTime += Date.now() - this._freezing_time;
-        this.now = this.livelyClock;
+        this.startTime += Date.now() - this._freezing_time - timeOffset;
+        this.now = this._livelyClock;
 
         this._freezing_time = -1;
     }

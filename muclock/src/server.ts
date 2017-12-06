@@ -14,9 +14,9 @@ class MuClockClientPingHandler {
 
     public lastPingStart:number = 0;
     public lastPingUUID:number = 0;
-    private _pingTimeout:number = 10000;
-
     public timeoutRecord:number[] = [];
+
+    private _pingTimeout:number = 5000;
 
     constructor (clock:MuClock, client, server:MuClockServer, connectTime:number, pingRate:number, statistic:MuPingStatistic) {
         this.clock = clock;
@@ -43,14 +43,15 @@ class MuClockClientPingHandler {
         this.lastPingStart = startClock;
         this.lastPingUUID = Math.floor(Math.random() * 1e10);
         this.protocolClient.message.ping(this.lastPingUUID);
-        (function(lastPingStart, env) {
+        (function(startPingClock, env) {
             setTimeout(
                 () => {
-                if (lastPingStart === env.lastPingStart) {
-                    env.timeoutRecord.push(lastPingStart);
-                }
+                    if (startPingClock === env.lastPingStart) {
+                        env.timeoutRecord.push(startPingClock);
+                        env.server.onClientTimeout(env);
+                    }
             },  env._pingTimeout);
-        })(this.lastPingStart, this);
+        })(startClock, this);
     }
 
     public now () {
@@ -64,7 +65,6 @@ class MuClockClientPingHandler {
 
         const currentClock = this.now();
         const lastPingStart = this.lastPingStart;
-
         const rtt = currentClock - lastPingStart;
 
         this.lastPingUUID = 0;
@@ -81,7 +81,6 @@ export class MuClockServer {
 
     private _clock:MuClock;
     private _tickCount:number = 0;
-    // private _absoluteTick:number = 0;
     private _protocol:MuServerProtocol<typeof MuClockProtocol>;
 
     private _pingRate:number = 1000;
@@ -89,15 +88,16 @@ export class MuClockServer {
 
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
+    private _onLostClient:(sessionId:string) => void  = function() {};
 
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
-
     constructor (spec:{
         server:MuServer,
         defaultPing?:number,
         pingRate?:number,
         tickRate?:number,
         tick?:(t:number) => void,
+        onLostClient?:(sId:string) => void,
         pingBufferSize?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
@@ -108,6 +108,9 @@ export class MuClockServer {
         }
         if ('tick' in spec) {
             this._onTick = spec.tick || function () {};
+        }
+        if ('onLostClient' in spec) {
+            this._onLostClient = spec.onLostClient || function() {};
         }
 
         this._protocol.configure({
@@ -128,6 +131,7 @@ export class MuClockServer {
                 client.message.init({
                     tickRate: this.tickRate,
                     serverClock: this._clock.now(),
+                    isPause: this._clock.isFrozen(),
                 });
 
                 const pingClient = new MuClockClientPingHandler(
@@ -142,6 +146,7 @@ export class MuClockServer {
                 this._clientPingHandlers[client.sessionId] = pingClient;
             },
             disconnect: (client) => {
+                this._onLostClient(client.sessionId);
                 delete this.ping[client.sessionId];
                 delete this._clientPingHandlers[client.sessionId];
             },
@@ -149,7 +154,7 @@ export class MuClockServer {
     }
 
     public onClientTimeout (client) {
-        console.log('client:', client.sessionId, client.timeoutRecord);
+        console.log('client Timeout:', client.protocolClient.sessionId, client.timeoutRecord);
     }
 
     public poll () {
@@ -169,12 +174,12 @@ export class MuClockServer {
 
     public pause () {
         this._clock.pauseClock();
-        this._call_all_clients('pause', this._tickCount);
+        this._call_all_clients('pause', this._clock.now());
     }
 
     public resume () {
         this._clock.resumeClock();
-        this._call_all_clients('resume', this._tickCount);
+        this._call_all_clients('resume', this._clock.now());
     }
 
     public isTicking() {

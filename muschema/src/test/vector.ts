@@ -58,22 +58,22 @@ test('vector patchBinary()', (t) => {
     let ws = new MuWriteStream(2);
     vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), ws);
     let rs = new MuReadStream(ws);
-    t.deepEquals(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
+    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
 
     ws = new MuWriteStream(2);
     vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.233, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), ws);
     rs = new MuReadStream(ws);
-    t.deepEquals(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.233, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
+    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.233, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
 
     ws = new MuWriteStream(2);
     vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.999]), ws);
     rs = new MuReadStream(ws);
-    t.deepEquals(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.999]));
+    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.999]));
 
     ws = new MuWriteStream(2);
     vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.168, 0.233, 0.3344, 0.4416, 0.5525, 0.699, 0.711, 0.888, 0.999]), ws);
     rs = new MuReadStream(ws);
-    t.deepEquals(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.168, 0.233, 0.3344, 0.4416, 0.5525, 0.699, 0.711, 0.888, 0.999]));
+    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.168, 0.233, 0.3344, 0.4416, 0.5525, 0.699, 0.711, 0.888, 0.999]));
 
     t.end();
 });

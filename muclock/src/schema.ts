@@ -1,3 +1,4 @@
+import { MuBoolean } from 'muschema/boolean';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
 import { MuVoid } from 'muschema/void';
@@ -8,6 +9,7 @@ export const MuClockProtocol = {
         init: new MuStruct({
             tickRate:new MuUint32(),
             serverClock:new MuFloat64(),
+            isPause:new MuBoolean(),
         }),
         ping: new MuUint32(),
         pong: new MuFloat64(),
@@ -17,6 +19,5 @@ export const MuClockProtocol = {
     server: {
         ping: new MuVoid(),
         pong: new MuUint32(),
-        // pause: new MuUint32(),
     },
 };
