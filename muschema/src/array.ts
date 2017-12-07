@@ -84,17 +84,17 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
     public diffBinary (base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>, ws:MuWriteStream) : boolean {
         const targetLength = target.length;
-        const trackerBytes = Math.ceil(targetLength / 8);
-        ws.grow(8 + trackerBytes + this.getByteLength(target));
+        const numTrackers = Math.ceil(targetLength / 8);
+        ws.grow(8 + numTrackers + this.getByteLength(target));
 
         const lengthDiff = base.length - targetLength;
         const numDelete = lengthDiff > 0 ? lengthDiff : 0;
 
         ws.writeUint32(numDelete);
-        ws.writeUint32(trackerBytes);
+        ws.writeUint32(numTrackers);
 
         let trackerOffset = ws.offset;
-        ws.offset = trackerOffset + trackerBytes;
+        ws.offset = trackerOffset + numTrackers;
 
         let numPatch = 0;
         let tracker = 0;
@@ -127,9 +127,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const numDelete = rs.readUint32();
         result.length -= numDelete;
 
-        const trackerBytes = rs.readUint32();
+        const numTrackers = rs.readUint32();
         const trackerOffset = rs.offset;
-        rs.offset = trackerOffset + trackerBytes;
+        rs.offset = trackerOffset + numTrackers;
 
         const valueSchema = this.muData;
         const valueMuType = valueSchema.muType;
@@ -145,7 +145,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint32':
                 // TODO remove duplication
                 const readMethod = muType2ReadMethod[valueMuType];
-                for (let i = 0; i < trackerBytes; ++i) {
+                for (let i = 0; i < numTrackers; ++i) {
                     const start = i * 8;
                     const tracker = rs.readUint8At(trackerOffset + i);
 
@@ -158,7 +158,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 break;
 
             default:
-                for (let i = 0; i < trackerBytes; ++i) {
+                for (let i = 0; i < numTrackers; ++i) {
                     const start = i * 8;
                     const tracker = rs.readUint8At(trackerOffset + i);
 

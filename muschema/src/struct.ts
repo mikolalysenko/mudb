@@ -4,7 +4,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 import {
     muType2ReadMethod,
     muType2WriteMethod,
-} from '../constants';
+} from './constants';
 
 // tslint:disable-next-line:class-name
 export interface _SchemaDictionary {

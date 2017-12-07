@@ -83,11 +83,13 @@ test('array - clone array of primitive', (t) => {
     for (const muType of primitiveMuTypes) {
         const valueSchema = new muType2MuSchema[muType]();
         const arraySchema = new MuArray(valueSchema);
-        const arr = randomArrayOfType(muType);
-        const copy = arraySchema.clone(arr);
+        for (let i = 0; i < 100; ++i) {
+            const arr = randomArrayOfType(muType);
+            const copy = arraySchema.clone(arr);
 
-        t.notEquals(copy, arr);
-        t.same(copy, arr);
+            t.notEquals(copy, arr);
+            t.same(copy, arr);
+        }
     }
 
     t.end();
@@ -104,27 +106,29 @@ test('array - clone nested array', (t) => {
             ),
         );
 
-        const array4D = (function nDArray (dimension:number) {
-            const length = Math.random() * 20 | 0;
-            const result = new Array(length);
+        for (let j = 0; j < 20; ++j) {
+            const array4D = (function nDArray (dimension:number) {
+                const length = Math.random() * 20 | 0;
+                const result = new Array(length);
 
-            if (dimension <= 1) {
-                for (let i = 0; i < length; ++i) {
-                    result[i] = randomValue(muType);
+                if (dimension <= 1) {
+                    for (let i = 0; i < length; ++i) {
+                        result[i] = randomValue(muType);
+                    }
+                    return result;
                 }
+
+                for (let i = 0; i < length; ++i) {
+                    result[i] = nDArray(dimension - 1);
+                }
+
                 return result;
-            }
+            })(4);
+            const copy = arraySchema.clone(array4D);
 
-            for (let i = 0; i < length; ++i) {
-                result[i] = nDArray(dimension - 1);
-            }
-
-            return result;
-        })(4);
-        const copy = arraySchema.clone(array4D);
-
-        t.notEquals(copy, array4D);
-        t.same(copy, array4D);
+            t.notEquals(copy, array4D);
+            t.same(copy, array4D);
+        }
     }
 
     t.end();
