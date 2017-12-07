@@ -87,10 +87,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const numTrackers = Math.ceil(targetLength / 8);
         ws.grow(8 + numTrackers + this.getByteLength(target));
 
-        const lengthDiff = base.length - targetLength;
-        const numDelete = lengthDiff > 0 ? lengthDiff : 0;
-
-        ws.writeUint32(numDelete);
+        ws.writeUint32(targetLength);
         ws.writeUint32(numTrackers);
 
         let trackerOffset = ws.offset;
@@ -118,14 +115,14 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             ws.writeUint8At(trackerOffset, tracker);
         }
 
-        return numDelete > 0 || numPatch > 0;
+        return numPatch > 0 || (base.length !== targetLength);
     }
 
     public patchBinary (base:_MuArrayType<ValueSchema>, rs:MuReadStream) : _MuArrayType<ValueSchema> {
         const result = this.clone(base);
 
-        const numDelete = rs.readUint32();
-        result.length -= numDelete;
+        const newLength = rs.readUint32();
+        result.length = newLength;
 
         const numTrackers = rs.readUint32();
         const trackerOffset = rs.offset;
