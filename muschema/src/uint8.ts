@@ -9,11 +9,9 @@ export class MuUint8 extends MuNumber {
     }
 
     public diffBinary (base:number, target:number, stream:MuWriteStream) {
-        const bi = base | 0;
-        const ti = target | 0;
-        if (bi !== ti) {
+        if (base !== target) {
             stream.grow(1);
-            stream.writeUint8(ti);
+            stream.writeUint8(target);
             return true;
         }
         return false;
