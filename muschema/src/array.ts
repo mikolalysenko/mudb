@@ -82,13 +82,15 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diffBinary (base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>, ws:MuWriteStream) {
+    public diffBinary (base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>, ws:MuWriteStream) : boolean {
         const targetLength = target.length;
-        const lengthDiff = base.length - target.length;
-        const numDelete = lengthDiff > 0 ? lengthDiff : 0;
-        ws.writeUint32(numDelete);
-
         const trackerBytes = Math.ceil(targetLength / 8);
+        ws.grow(8 + trackerBytes + this.getByteLength(target));
+
+        const lengthDiff = base.length - targetLength;
+        const numDelete = lengthDiff > 0 ? lengthDiff : 0;
+
+        ws.writeUint32(numDelete);
         ws.writeUint32(trackerBytes);
 
         let trackerOffset = ws.offset;
@@ -99,46 +101,17 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         const valueSchema = this.muData;
         const valueMuType = valueSchema.muType;
-        switch (valueMuType) {
-            case 'float32':
-            case 'float64':
-            case 'int8':
-            case 'int16':
-            case 'int32':
-            case 'string':
-            case 'uint8':
-            case 'uint16':
-            case 'uint32':
-                // TODO do code generation instead
-                const writeMethod = muType2WriteMethod[valueMuType];
-                for (let i = 0; i < targetLength; ++i) {
-                    if (target[i] !== base[i]) {
-                        ws[writeMethod](target[i]);
-                        ++numPatch;
-                        tracker |= 1 << (i & 7);
-                    }
+        for (let i = 0; i < targetLength; ++i) {
+            if (valueSchema.diffBinary!(base[i], target[i], ws)) {
+                tracker |= 1 << (i & 7);
+                ++numPatch;
+            }
 
-                    if ((i & 7) === 7) {
-                        ws.writeUint8At(trackerOffset, i);
-                        ++trackerOffset;
-                        tracker = 0;
-                    }
-                }
-                break;
-            default:
-                for (let i = 0; i < targetLength; ++i) {
-                    if (target[i] !== base[i]) {
-                        valueSchema.diffBinary!(base[i], target[i], ws);
-                        ++numPatch;
-                        tracker |= 1 << (i & 7);
-                    }
-
-                    if ((i & 7) === 7) {
-                        ws.writeUint8At(trackerOffset, tracker);
-                        ++trackerOffset;
-                        tracker = 0;
-                    }
-                }
+            if ((i & 7) === 7) {
+                ws.writeUint8At(trackerOffset, tracker);
+                ++trackerOffset;
+                tracker = 0;
+            }
         }
 
         if (targetLength & 7) {
@@ -148,20 +121,18 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return numDelete > 0 || numPatch > 0;
     }
 
-    public patchBinary (base:_MuArrayType<ValueSchema>, rs:MuReadStream) {
+    public patchBinary (base:_MuArrayType<ValueSchema>, rs:MuReadStream) : _MuArrayType<ValueSchema> {
         const result = this.clone(base);
 
         const numDelete = rs.readUint32();
         result.length -= numDelete;
 
         const trackerBytes = rs.readUint32();
-
-        let trackerOffset = rs.offset;
+        const trackerOffset = rs.offset;
         rs.offset = trackerOffset + trackerBytes;
 
         const valueSchema = this.muData;
         const valueMuType = valueSchema.muType;
-        let tracker = 0;
         switch (valueMuType) {
             case 'float32':
             case 'float64':
@@ -172,34 +143,61 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint8':
             case 'uint16':
             case 'uint32':
-                // TODO do code generation instead
+                // TODO remove duplication
                 const readMethod = muType2ReadMethod[valueMuType];
                 for (let i = 0; i < trackerBytes; ++i) {
-                    if (!(i & 7)) {
-                        tracker = rs.readUint8At(trackerOffset);
-                        ++trackerOffset;
-                    }
+                    const start = i * 8;
+                    const tracker = rs.readUint8At(trackerOffset + i);
 
-                    if ((1 << (i & 7)) & tracker) {
-                        result[i] = rs[readMethod]();
+                    for (let j = 0; j < 8; ++j) {
+                        if ((1 << j) & tracker) {
+                            result[start + j] = rs[readMethod]();
+                        }
                     }
                 }
                 break;
 
             default:
                 for (let i = 0; i < trackerBytes; ++i) {
-                    if (!(i & 7)) {
-                        tracker = rs.readUint8At(trackerOffset);
-                        ++trackerOffset;
-                    }
+                    const start = i * 8;
+                    const tracker = rs.readUint8At(trackerOffset + i);
 
-                    if ((1 << (i & 7)) & tracker) {
-                        result[i] = valueSchema.patchBinary!(base[i], rs);
+                    for (let j = 0; j < 8; ++j) {
+                        if ((1 << j) & tracker) {
+                            const index = start + j;
+                            result[index] = valueSchema.patchBinary!(base[index], rs);
+                        }
                     }
                 }
         }
 
         return result;
+    }
+
+    public getByteLength (x:_MuArrayType<ValueSchema>) : number {
+        const valueSchema = this.muData;
+        const length = x.length;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'int8':
+            case 'uint8':
+                return length;
+            case 'int16':
+            case 'uint16':
+                return length * 2;
+            case 'float32':
+            case 'int32':
+            case 'uint32':
+                return length * 4;
+            case 'float64':
+                return length * 8;
+            default:
+                let result = 0;
+                for (let i = 0; i < length; ++i) {
+                    result += valueSchema.getByteLength!(x[i]);
+                }
+                return result;
+        }
     }
 
     public diff(base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {

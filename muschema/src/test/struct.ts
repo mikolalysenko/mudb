@@ -116,6 +116,18 @@ test('struct diff() & patch()', (t) => {
         const spec = structSpec();
         const structSchema = new MuStruct(spec);
 
+        const patch = (structA, structB) => {
+            const ws = new MuWriteStream(2);
+            structSchema.diffBinary(structA, structB, ws);
+            const rs = new MuReadStream(ws);
+            return structSchema.patchBinary(structA, rs);
+        };
+
+        const testPair = (a, b) => {
+            t.same(patch(a, b), b);
+            t.same(patch(b, a), a);
+        };
+
         const randomStruct = () => {
             const result = {};
 
@@ -126,19 +138,6 @@ test('struct diff() & patch()', (t) => {
             });
 
             return result;
-        };
-
-        const testPair = (structA, structB) => {
-            function doTest (a, b) {
-                const ws = new MuWriteStream(2);
-                structSchema.diffBinary(a, b, ws);
-                const rs = new MuReadStream(ws);
-
-                t.same(structSchema.patchBinary(a, rs), b);
-            }
-
-            doTest(structA, structB);
-            doTest(structB, structA);
         };
 
         testPair(randomStruct(), randomStruct());

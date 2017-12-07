@@ -1,120 +1,156 @@
-import tape = require('tape');
+import test = require('tape');
+
 import {
-    MuStruct,
+    MuArray,
     MuBoolean,
+    MuDictionary,
     MuFloat32,
     MuFloat64,
-    MuUint8,
-    MuUint16,
+    MuInt8,
+    MuInt16,
     MuInt32,
     MuString,
-    MuUnion,
-    MuDictionary,
-    MuArray,
-  } from '../index';
+    MuStruct,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVector,
+} from '../';
+import {
+    MuReadStream,
+    MuWriteStream,
+} from 'mustreams';
 
-tape('---- array and base types ----', function(t) {
-    const Gplus = new MuArray(
-        new MuString('name'),
-        ['gintama', 'haruka'],
+import { randomValue } from './_helper';
+import { primitiveMuTypes } from '../constants';
+
+test('array - identity', (t) => {
+    let arraySchema = new MuArray(new MuString());
+    t.same(arraySchema.identity, []);
+
+    arraySchema = new MuArray(
+        new MuString(),
+        ['foo', 'bar'],
     );
-
-    const g1 = Gplus.alloc();
-    console.log('Gplus', Gplus);
-    console.log('g', g1);
-
-    const g2 = Gplus.clone(g1);
-    g2.length = 2;
-    g2[0] = 'kagura';
-    g2[2] = 'yamasaki';
-    console.log('g2', g2);
-
-    const patch = Gplus.diff(g1, g2);
-    console.log('patch:', patch);
-    const retar = Gplus.patch(g1, patch);
-    console.log('re-target:', retar);
-
-    t.same(g2, retar);
+    t.same(arraySchema.identity, ['foo', 'bar']);
 
     t.end();
 });
 
-tape(' ---- array and dict ----', function(t) {
-    const schema = new MuStruct({
-        x: new MuFloat64(),
-        y: new MuFloat64(),
-        color: new MuString(),
-    });
+test('array - allocation', (t) => {
+    let arraySchema = new MuArray(new MuFloat64());
+    t.same(arraySchema.alloc(), []);
 
-    const ba = schema.alloc();
-    const ta = schema.alloc();
-    console.log('ba', ba);
-    console.log('ta', ta);
-
-    const patch = schema.diff(ba, ta);
-    console.log('patch', patch);
-    const retar = schema.patch(ba, patch);
-    console.log('re-target', retar);
-    t.same(ta, retar);
+    arraySchema = new MuArray(
+        new MuUint32(),
+        [233, 666],
+    );
+    t.same(arraySchema.alloc(), [233, 666]);
 
     t.end();
 });
 
-tape(' ---- array and empty ----', function(t) {
-    const schema = new MuArray(new MuStruct({
-        x: new MuFloat64(),
-        y: new MuFloat64(),
-        color: new MuString(),
-    }));
+function randomArrayOfType (muType) {
+    const length = Math.random() * 20 | 0;
+    const result = new Array(length);
+    for (let i = 0; i < length; ++i) {
+        result[i] = randomValue(muType);
+    }
+    return result;
+}
 
-    type ArrayType = typeof schema.identity;
+const muType2MuSchema = {
+    // primitive
+    'boolean': MuBoolean,
+    'float32': MuFloat32,
+    'float64': MuFloat64,
+    'int8': MuInt8,
+    'int16': MuInt16,
+    'int32': MuInt32,
+    'string': MuString,
+    'uint8': MuUint8,
+    'uint16': MuUint16,
+    'uint32': MuUint32,
 
-    const ba:ArrayType = [];
-    const ta:ArrayType = [];
-    console.log('ba', ba);
-    console.log('ta', ta);
+    // non-primitive
+    'array': MuArray,
+    'dictionary': MuDictionary,
+    'struct': MuStruct,
+    'vector': MuVector,
+};
 
-    const patch = schema.diff(ba, ta);
-    console.log('patch', patch);
-    const retar = schema.patch(ba, patch);
-    console.log('re-target', retar);
+test('array - clone array of primitive', (t) => {
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(valueSchema);
+        const arr = randomArrayOfType(muType);
+        const copy = arraySchema.clone(arr);
 
-    t.same(ta, retar);
+        t.notEquals(copy, arr);
+        t.same(copy, arr);
+    }
 
     t.end();
 });
 
-tape('number array', function (t) {
-    const schema = new MuArray(new MuFloat64());
+test('array - clone nested array', (t) => {
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(
+            new MuArray(
+                new MuArray(
+                    new MuArray(valueSchema),
+                ),
+            ),
+        );
 
-    function patch (a:number[], b:number[]) {
-        const x = schema.diff(a, b);
-        if (x) {
-            const p = JSON.parse(JSON.stringify(x));
-            return schema.patch(a, p);
+        const array4D = (function nDArray (dimension:number) {
+            const length = Math.random() * 20 | 0;
+            const result = new Array(length);
+
+            if (dimension <= 1) {
+                for (let i = 0; i < length; ++i) {
+                    result[i] = randomValue(muType);
+                }
+                return result;
+            }
+
+            for (let i = 0; i < length; ++i) {
+                result[i] = nDArray(dimension - 1);
+            }
+
+            return result;
+        })(4);
+        const copy = arraySchema.clone(array4D);
+
+        t.notEquals(copy, array4D);
+        t.same(copy, array4D);
+    }
+
+    t.end();
+});
+
+test('array - diffing & patching', (t) => {
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(valueSchema);
+
+        const patch = (arrayA, arrayB) => {
+            const ws = new MuWriteStream(2);
+            arraySchema.diffBinary(arrayA, arrayB, ws);
+            const rs = new MuReadStream(ws);
+            return arraySchema.patchBinary(arrayA, rs);
+        };
+
+        const testPair = (a, b) => {
+            t.same(patch(a, b), b);
+            t.same(patch(b, a), a);
+        };
+
+        for (let i = 0; i < 100; ++i) {
+            testPair(randomArrayOfType(muType), randomArrayOfType(muType));
         }
-        return schema.clone(a);
     }
-
-    function testPair (a:number[], b:number[]) {
-        t.same(patch(b, a), a, `${b} -> ${a}`);
-        t.same(patch(a, b), b, `${a} -> ${b}`);
-    }
-
-    function randomArray () {
-        const l = (Math.random() * 20) | 0;
-        const r = new Array(l);
-        for (let i = 0; i < l; ++i) {
-            r[i] = (Math.random() * 10) | 0;
-        }
-        return r;
-    }
-
-    for (let i = 0; i < 100; ++i) {
-        testPair(randomArray(), randomArray());
-    }
-
-    testPair([1, 2, 3], [1, 1]);
 
     t.end();
 });
