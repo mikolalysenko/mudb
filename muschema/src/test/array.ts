@@ -28,11 +28,9 @@ test('array - identity', (t) => {
     let arraySchema = new MuArray(new MuString());
     t.same(arraySchema.identity, []);
 
-    arraySchema = new MuArray(
-        new MuString(),
-        ['foo', 'bar'],
-    );
-    t.same(arraySchema.identity, ['foo', 'bar']);
+    const id = ['foo', 'bar'];
+    arraySchema = new MuArray(new MuString(), id);
+    t.equals(arraySchema.identity, id);
 
     t.end();
 });
@@ -45,7 +43,7 @@ test('array - allocation', (t) => {
         new MuUint32(),
         [233, 666],
     );
-    t.same(arraySchema.alloc(), [233, 666]);
+    t.same(arraySchema.alloc(), []);
 
     t.end();
 });
