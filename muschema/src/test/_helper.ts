@@ -2,6 +2,10 @@ import {
     Constants,
     primitiveMuTypes,
 } from '../constants';
+import {
+    MuReadStream,
+    MuWriteStream,
+} from 'mustreams';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
@@ -51,4 +55,18 @@ export function randomValue (muType:string) {
         default:
             return;
     }
+}
+
+export function testPairFactory (t, schema) {
+    function patch (a, b) {
+        const ws = new MuWriteStream(2);
+        schema.diffBinary(a, b, ws);
+        const rs = new MuReadStream(ws);
+        return schema.patchBinary(a, rs);
+    }
+
+    return (a, b) => {
+        t.same(patch(a, b), b);
+        t.same(patch(b, a), a);
+    };
 }

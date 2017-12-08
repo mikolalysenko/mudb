@@ -21,7 +21,10 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-import { randomValue } from './_helper';
+import {
+    randomValue,
+    testPairFactory,
+} from './_helper';
 import { primitiveMuTypes } from '../constants';
 
 test('array - identity', (t) => {
@@ -137,17 +140,7 @@ test('array - diffing & patching', (t) => {
         const valueSchema = new muType2MuSchema[muType]();
         const arraySchema = new MuArray(valueSchema);
 
-        const patch = (arrayA, arrayB) => {
-            const ws = new MuWriteStream(2);
-            arraySchema.diffBinary(arrayA, arrayB, ws);
-            const rs = new MuReadStream(ws);
-            return arraySchema.patchBinary(arrayA, rs);
-        };
-
-        const testPair = (a, b) => {
-            t.same(patch(a, b), b);
-            t.same(patch(b, a), a);
-        };
+        const testPair = testPairFactory(t, arraySchema);
 
         for (let i = 0; i < 100; ++i) {
             testPair(randomArrayOfType(muType), randomArrayOfType(muType));
