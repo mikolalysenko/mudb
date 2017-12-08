@@ -121,36 +121,26 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:Dictionary<ValueSchema>,
         stream:MuWriteStream,
     ) : boolean {
-        const valueSchema = this.muData;
+        stream.grow(this.getByteLength(base) + this.getByteLength(target));
 
-        let numDelete = 0;
+        let numRemove = 0;
         let numPatch = 0;
 
-        function calcByteLength (strs) {
-            let result = 0;
-            for (const s of strs) {
-                result += 4 + 4 * s.length;
-            }
-            return result;
-        }
+        const removeOffset = stream.offset;
+        const patchOffset = removeOffset + 4;
+        stream.offset = removeOffset + 8;
 
         const baseProps = Object.keys(base);
-        const targetProps = Object.keys(target);
-        stream.grow(8 + calcByteLength(baseProps) + calcByteLength(targetProps));
-
-        const deleteOffset = stream.offset;
-        stream.writeUint32(numDelete);
-        const patchOffset = stream.offset;
-        stream.writeUint32(numPatch);
-
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
                 stream.writeString(prop);
-                ++numDelete;
+                ++numRemove;
             }
         }
 
+        const valueSchema = this.muData;
+        const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
             const prop = targetProps[i];
             const prefixOffset = stream.offset;
@@ -166,34 +156,38 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 const equal = !valueSchema.diffBinary!(valueSchema.identity, target[prop], stream);
                 if (equal) {
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+                    if (valueSchema.muType === 'dictionary') {
+                        stream.offset -= 8;
+                    }
                 }
                 ++numPatch;
             }
         }
 
-        stream.writeUint32At(deleteOffset, numDelete);
+        stream.writeUint32At(removeOffset, numRemove);
         stream.writeUint32At(patchOffset, numPatch);
 
-        return numPatch > 0 || numDelete > 0;
+        return numPatch > 0 || numRemove > 0;
     }
 
     public patchBinary (
         base:Dictionary<ValueSchema>,
         stream:MuReadStream,
     ) : Dictionary<ValueSchema> {
-        const valueSchema = this.muData;
-        const numDelete = stream.readUint32();
+        const result:Dictionary<ValueSchema> = {};
+
+        const numRemove = stream.readUint32();
         const numPatch = stream.readUint32();
 
-        const propsToDelete = {};
-        for (let i = 0; i < numDelete; ++i) {
-            propsToDelete[stream.readString()] = true;
+        const propsToRemove = {};
+        for (let i = 0; i < numRemove; ++i) {
+            propsToRemove[stream.readString()] = true;
         }
 
-        const result:Dictionary<ValueSchema> = {};
+        const valueSchema = this.muData;
         for (const prop in base) {
-            if (propsToDelete[prop]) {
-                break;
+            if (propsToRemove[prop]) {
+                continue;
             }
             result[prop] = valueSchema.clone(base[prop]);
         }
@@ -215,28 +209,45 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public getByteLength (x:Dictionary<ValueSchema>) : number {
+        function calcStringsByteLength (strs:string[]) {
+            let r = 0;
+            for (const s of strs) {
+                r += 4 + 4 * s.length;
+            }
+            return r;
+        }
+
+        let result = 8;
+
+        const props = Object.keys(x);
+        const numProps = props.length;
+        result += calcStringsByteLength(props);
+
         const valueSchema = this.muData;
-        const numProps = Object.keys(x).length;
         switch (valueSchema.muType) {
             case 'boolean':
             case 'int8':
             case 'uint8':
-                return numProps;
+                result += numProps;
+                break;
             case 'int16':
             case 'uint16':
-                return numProps * 2;
+                result += numProps * 2;
+                break;
             case 'float32':
             case 'int32':
             case 'uint32':
-                return numProps * 4;
+                result += numProps * 4;
+                break;
             case 'float64':
-                return numProps * 8;
+                result += numProps * 8;
+                break;
             default:
-                let result = 0;
                 for (const key in x) {
                     result += valueSchema.getByteLength!(x[key]);
                 }
-                return result;
         }
+
+        return result;
     }
 }

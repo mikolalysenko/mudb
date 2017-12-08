@@ -20,7 +20,7 @@ import {
 } from 'mustreams';
 
 import {
-    randomString,
+    randomStr,
     randomValue,
     testPairFactory,
 } from './_helper';
@@ -108,7 +108,7 @@ test('struct diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const Schema of muSchemas) {
-            result[randomString(20)] = new Schema();
+            result[randomStr()] = new Schema();
         }
         return result;
     }

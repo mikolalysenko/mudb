@@ -23,11 +23,23 @@ function randomCodePoint () {
     return Math.random() * MAX_CODE_POINT | 0;
 }
 
-export function randomString (maxLength:number) {
-    const length = Math.random() * maxLength | 0;
+export function randomStr () {
+    const length = Math.random() * 20 + 1 | 0;
     const charCodes = new Array(length);
     for (let i = 0; i < length; ++i) {
         charCodes[i] = randomCodePoint();
+    }
+    return String.fromCharCode.apply(null, charCodes);
+}
+
+export function randomShortStr () {
+    const ingredient = 'abc';
+    const ingredientLeng = ingredient.length;
+
+    const length = Math.random() * 3 + 1 | 0;
+    const charCodes = new Array(length);
+    for (let i = 0; i < length; ++i) {
+        charCodes[i] = ingredient.charCodeAt(Math.random() * ingredientLeng | 0);
     }
     return String.fromCharCode.apply(null, charCodes);
 }
@@ -47,7 +59,7 @@ export function randomValue (muType:string) {
         case 'int32':
             return randomSign() * Math.random() * MAX | 0;
         case 'string':
-            return randomString(20);
+            return randomStr();
         case 'uint8':
         case 'uint16':
         case 'uint32':
