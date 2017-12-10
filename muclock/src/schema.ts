@@ -7,14 +7,11 @@ import { MuFloat64 } from 'muschema/float64';
 export const MuClockProtocol = {
     client: {
         init: new MuStruct({
-            tickRate:new MuUint32(),
-            serverClock:new MuFloat64(),
-            isPause:new MuBoolean(),
+            tickRate: new MuUint32(),
+            serverClock: new MuFloat64(),
         }),
         ping: new MuUint32(),
         pong: new MuFloat64(),
-        pause: new MuUint32(),
-        resume: new MuUint32(),
     },
     server: {
         ping: new MuVoid(),

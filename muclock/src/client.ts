@@ -4,47 +4,38 @@ import { MuClock } from './clock';
 import { MuPingStatistic } from './ping-statistic';
 import { fitLine } from './fit-line';
 
-// what do we need to know?
-//
-//  ping
-//  current tick
-//  process ticks as they occur
-//
+const DEFAULT_PING_RATE = 500;
+const DEFAULT_PING_BUFFER_SIZE = 1024;
+const DEFAULT_CLOCK_BUFFER_SIZE = 1024;
 
 export class MuClockClient {
-    private _clock:MuClock = new MuClock();
-
-    private _clockScale:number = 1;
-    private _clockShift:number = 0;
-
-    public tickRate:number = 30;
-    private _pingRate:number = 1000;
-
-    private _localTimeSamples:number[] = [];
-    private _remoteTimeSamples:number[] = [];
-    private _clockBufferSize:number = 1024;
-
-    private _pingStatistic:MuPingStatistic;
-
     private _protocol:MuClientProtocol<typeof MuClockProtocol>;
 
-    private _lastPingStart:number = 0;
+    private _clock:MuClock = new MuClock();
+    private _clockScale:number = 1;
+    private _clockShift:number = 0;
+    private _localTimeSamples:number[] = [];
+    private _remoteTimeSamples:number[] = [];
+    private _clockBufferSize:number;
+
     private _pollInterval:any;
 
+    private _pingStatistic:MuPingStatistic;
     private _pingCount:number = 0;
+    private _lastPing:number = 0;
+    private _lastPong:number = 0;
+    private _pingRate:number;
+
+    public tickRate:number = 30;
     private _tickCount:number = 0;
 
-    private _doTick:(t:number) => void = function () {};
-    private _doPause:(t:number) => void = function () {};
-    private _doResume:(t:number) => void = function () {};
+    private _started = false;
 
-    private _remoteClock:Function;
+    private _onTick:(t:number) => void = function () {};
 
     constructor(spec:{
         client:MuClient,
         ready?:() => void,
-        pause?:(t:number) => void,
-        resume?:(t:number) => void,
         tick?:(t:number) => void,
         pingRate?:number,
         pollRate?:number,
@@ -52,78 +43,58 @@ export class MuClockClient {
         clockBufferSize?:number,
     }) {
         this._protocol = spec.client.protocol(MuClockProtocol);
-
-        this._pingStatistic = new MuPingStatistic(spec.pingBufferSize || 1024);
-        this._clockBufferSize = spec.clockBufferSize || 1024;
-        this._pingRate = spec.pingRate || 500;
-
-        this._lastPingStart = this._clock.now();
+        this._clockBufferSize = spec.clockBufferSize || DEFAULT_CLOCK_BUFFER_SIZE;
+        this._pingStatistic = new MuPingStatistic(spec.pingBufferSize || DEFAULT_PING_BUFFER_SIZE);
+        this._pingRate = spec.pingRate || DEFAULT_PING_RATE;
 
         if (spec.tick) {
-            this._doTick = spec.tick;
+            this._onTick = spec.tick;
         }
-        if (spec.pause) {
-            this._doPause = spec.pause;
-        }
-        if (spec.resume) {
-            this._doResume = spec.resume;
-        }
-        this._remoteClock = this._estimateRemoteClock;
+
         this._protocol.configure({
             message: {
-                init: ({ tickRate, serverClock, isPause }) => {
+                init: ({ tickRate, serverClock }) => {
+                    this._clock.reset();
+
+                    this._started = true;
 
                     this.tickRate = tickRate;
                     this._tickCount = Math.floor(serverClock / tickRate);
-                    this._clockShift = serverClock - this._lastPingStart;
-
-                    this._pingCount = Math.floor(this._clock.now() / this._pingRate);
-
-                    this._lastPingStart = 0;
+                    this._clockShift = serverClock;
 
                     // fire initial ping
                     this._doPing();
 
-                    // start poll interval
+                    // start poll interval unless spec.pollRate == 0
+                    let pollRate = Math.floor(this.tickRate / 2);
                     if ('pollRate' in spec) {
-                        if (spec.pollRate) {
-                            this._pollInterval = setInterval(() => this.poll(), spec.pollRate);
-                        }
-                    } else {
-                        this._pollInterval = setInterval(() => this.poll(), 10);
+                        pollRate = spec.pollRate || 0;
+                    }
+                    if (pollRate) {
+                        this._pollInterval = setInterval(() => this.poll(), pollRate);
                     }
 
                     if (spec.ready) {
                         spec.ready();
                     }
-                    if (isPause) {
-                        this._clock.pauseClock();
-                    }
-                },
-                pause: (serverClock) => {
-                    const estimateRtt = this._pingStatistic.median;
-                    this._pause(serverClock);
-                    const shouldPauseTime = this._clock.now() - estimateRtt / 2;
-                    this._updateTimeSamples(serverClock, shouldPauseTime);
-                },
-                resume: (serverClock) => {
-                    const estimateRtt = this._pingStatistic.median;
-                    this._resume(serverClock);
-                    const shouldResumeTime = this._clock.now() - estimateRtt / 2;
-                    this._updateTimeSamples(serverClock, shouldResumeTime);
                 },
                 ping: (id) => this._protocol.server.message.pong(id),
                 pong: (serverClock) => {
-                    const localClock = this._lastPingStart;
-                    const rtt = this._clock.now() - localClock;
+                    this._lastPong = this._clock.now();
+                    const rtt = this._lastPong - this._lastPing;
                     this._pingStatistic.addSample(rtt);
-                    this._updateTimeSamples(serverClock, localClock + 0.5 * rtt);
+                    this._addTimeObservation(serverClock, this._lastPong + 0.5 * rtt);
                 },
+            },
+            close: () => {
+                if (this._pollInterval) {
+                    clearInterval(this._pollInterval);
+                }
             },
         });
     }
 
-    private _updateTimeSamples (serverClock, localClock) {
+    private _addTimeObservation (serverClock, localClock) {
         if (this._localTimeSamples.length < this._clockBufferSize) {
             this._localTimeSamples.push(localClock);
             this._remoteTimeSamples.push(serverClock);
@@ -135,74 +106,53 @@ export class MuClockClient {
         const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
         this._clockScale = a;
         this._clockShift = b;
-        this._lastPingStart = 0;
     }
 
     private _doPing () {
-        if (this._lastPingStart) {
-            return;
-        }
-        this._lastPingStart = this._clock.now();
+        this._lastPing = this._clock.now();
         this._protocol.server.message.ping(void 0);
         this._pingCount += 1;
     }
 
     // call this once per-frame on the client to ensure that clocks are synchronized
     private _lastNow:number = 0;
-
-    private _pause (serverClock) {
-        const serverTick = serverClock / this.tickRate;
-        this._clock.pauseClock(this._pingStatistic.median / 2);
-        this._doPause(serverTick);
-        // with a lot testing, still clear samples when pause could predict remoteClock more accurate >_<
-        this._remoteTimeSamples = [];
-        this._localTimeSamples = [];
-        this._remoteClock = () => {
-            return serverClock;
-        };
-    }
-
-    private _resume (serverClock) {
-        const serverTick = serverClock / this.tickRate;
-        this._clock.resumeClock(this._pingStatistic.median / 2);
-        this._doResume(serverTick);
-        // use pause and resume to adjust localtick, a bit more ping won't do harm
-        this._pingCount = ~~(this._pingCount * 0.7);
-        this._remoteClock = this._estimateRemoteClock;
-    }
-
-    private _estimateRemoteClock(localClock) : number {
+    private _simulationClock() : number {
         const remoteClock = Math.max(
-            localClock * this._clockScale + this._clockShift + 2 * this._pingStatistic.median + this.tickRate,
+            this._clock.now() * this._clockScale + this._clockShift + this._pingStatistic.median,
             this._lastNow + 1e-6);
-        // if client not just receive init, then an huge error is very likly occured
-        if (remoteClock - this._lastNow > 200) {
-            console.warn('remoteClock grow way too fast');
-        }
         this._lastNow = remoteClock;
         return remoteClock;
     }
 
     public poll () {
-        const localClock = this._clock.now();
-        const remoteClock = this._remoteClock(localClock);
+        if (!this._started) {
+            return;
+        }
 
-        const targetPingCount = Math.floor(localClock / this._pingCount);
-        const targetTickCount = Math.floor(remoteClock / this.tickRate);
-
-        if (this._pingCount < targetPingCount) {
+        if (this._lastPong + this._pingRate < this._clock.now()) {
             this._doPing();
         }
 
+        const targetTickCount = Math.floor(this._simulationClock() / this.tickRate);
         while (this._tickCount < targetTickCount) {
-            this._doTick(++this._tickCount);
+            this._onTick(++this._tickCount);
         }
     }
 
-    // queries the clock to get a ping
+    // System clock
+    public now () : number {
+        if (!this._started) {
+            return 0;
+        }
+        return this._clock.now();
+    }
+
+    // Simulation clock
     public tick () : number {
-        const localClock = this._clock.now();
-        return Math.min(this._tickCount + 1, this._remoteClock(localClock) / this.tickRate);
+        if (!this._started) {
+            return 0;
+        }
+        return Math.min(this._tickCount + 1, this._simulationClock() / this.tickRate);
     }
 
     public ping () : number {

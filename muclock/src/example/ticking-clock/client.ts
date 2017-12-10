@@ -52,12 +52,6 @@ export = function(client:MuClient) {
       drawClock(_last_tick);
       tick_num.innerHTML = `tick ${Math.round(clock.tick() * 100) / 100}<br/> ping ${clock.ping()}`;
     },
-    pause: (t) => {
-      console.log('P server pause at tick:', t);
-    },
-    resume: (t) => {
-      console.log('R server resume at tick:', t);
-    },
   });
 
   let is_close = false;
