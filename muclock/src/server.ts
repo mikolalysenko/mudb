@@ -12,10 +12,8 @@ class MuClockClientPingHandler {
     public clock:MuClock;
     public statistic:MuPingStatistic;
 
-    public lastPingStart:number = 0;
-    public lastPingUUID:number = 0;
-    public timeoutRecord:number[] = [];
-
+    private _lastPingUUID:number = 0;
+    private _lastPingStart:number = 0;
     private _pingTimeout:number = 5000;
 
     constructor (clock:MuClock, client, server:MuClockServer, connectTime:number, pingRate:number, statistic:MuPingStatistic) {
@@ -28,7 +26,7 @@ class MuClockClientPingHandler {
     }
 
     public pollPing () {
-        if (this.lastPingStart) {
+        if (this._lastPingStart) {
             return;
         }
         const startClock = this.now();
@@ -39,17 +37,16 @@ class MuClockClientPingHandler {
 
         // do ping operation
         this.pingCount += 1;
-        this.lastPingStart = startClock;
-        this.lastPingUUID = Math.floor(Math.random() * 1e10);
-        this.protocolClient.message.ping(this.lastPingUUID);
-        (function(startPingClock, env) {
+        this._lastPingStart = startClock;
+        this._lastPingUUID = Math.floor(Math.random() * 1e10);
+        this.protocolClient.message.ping(this._lastPingUUID);
+        (function(startPingClock, pingHandler) {
             setTimeout(
                 () => {
-                    if (startPingClock === env.lastPingStart && startPingClock !== 0) {
-                        env.timeoutRecord.push(startPingClock);
-                        env.server.detectedClientTimeout(env);
+                    if (startPingClock === pingHandler._lastPingStart && startPingClock !== 0) {
+                        pingHandler.server.timeout(pingHandler.protocolClient.sessionId);
                     }
-            },  env._pingTimeout);
+            },  pingHandler._pingTimeout);
         })(startClock, this);
     }
 
@@ -58,16 +55,16 @@ class MuClockClientPingHandler {
     }
 
     public doPong (uuid:number) {
-        if (uuid !== this.lastPingUUID || this.lastPingUUID === 0) {
+        if (uuid !== this._lastPingUUID || this._lastPingUUID === 0) {
             return;
         }
 
         const currentClock = this.now();
-        const lastPingStart = this.lastPingStart;
-        const rtt = currentClock - lastPingStart;
+        const _lastPingStart = this._lastPingStart;
+        const rtt = currentClock - _lastPingStart;
 
-        this.lastPingUUID = 0;
-        this.lastPingStart = 0;
+        this._lastPingUUID = 0;
+        this._lastPingStart = 0;
         this.statistic.addSample(rtt);
         this.server.ping[this.protocolClient.sessionId] = this.statistic.median;
     }
@@ -77,6 +74,7 @@ export class MuClockServer {
     public tickRate:number = 30;
 
     public ping:{ [sessionId:string]:number } = {};
+    public isTicking:boolean;
 
     private _clock:MuClock;
     private _tickCount:number = 0;
@@ -88,7 +86,7 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
     private _onLostClient:(sessionId:string) => void  = function() {};
-    private _onClientTimeout:(sessionId:string, timeoutRecord:number[]) => void = function() {};
+    public timeout:(sessionId:string) => void = function() {};
 
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
     constructor (spec:{
@@ -97,8 +95,7 @@ export class MuClockServer {
         pingRate?:number,
         tickRate?:number,
         tick?:(t:number) => void,
-        onLostClient?:(sId:string) => void,
-        onClientTimeout?:(sId:string, timeoutRecord:number[]) => void,
+        timeout?:(sId:string) => void,
         pingBufferSize?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
@@ -110,17 +107,15 @@ export class MuClockServer {
         if ('tick' in spec) {
             this._onTick = spec.tick || function () {};
         }
-        if ('onLostClient' in spec) {
-            this._onLostClient = spec.onLostClient || function() {};
-        }
-        if ('onClientTimeout' in spec) {
-            this._onClientTimeout = spec.onClientTimeout || function() {};
+        if ('timeout' in spec) {
+            this.timeout = spec.timeout || function() {};
         }
 
         this._protocol.configure({
             ready: () => {
                 this._clock = new MuClock();
                 this._pollInterval = setInterval(() => this.poll(), Math.min(this.tickRate, this._pingRate) / 2);
+                this.isTicking = true;
             },
             message: {
                 ping: (client) => {
@@ -157,10 +152,6 @@ export class MuClockServer {
         });
     }
 
-    public detectedClientTimeout (client) {
-        this._onClientTimeout(client.protocolClient.sessionId, client.timeoutRecord);
-    }
-
     public poll () {
         const targetTick = this.tick();
         while (this._tickCount < targetTick) {
@@ -178,21 +169,13 @@ export class MuClockServer {
 
     public pause () {
         this._clock.pauseClock();
-        this._call_all_clients('pause', this._clock.now());
+        this._protocol.broadcast.pause(this._clock.now());
+        this.isTicking = false;
     }
 
     public resume () {
         this._clock.resumeClock();
-        this._call_all_clients('resume', this._clock.now());
-    }
-
-    public isTicking() {
-        return !this._clock.isFrozen();
-    }
-
-    private _call_all_clients(event, data) {
-        Object.keys(this._clientPingHandlers).forEach((id) => {
-            this._clientPingHandlers[id].protocolClient.message[event](data);
-        });
+        this._protocol.broadcast.resume(this._clock.now());
+        this.isTicking = true;
     }
 }
