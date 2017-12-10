@@ -4,6 +4,8 @@ import { MuClock } from './clock';
 import { MuPingStatistic } from './ping-statistic';
 import { fitLine } from './fit-line';
 
+const SAMPLE_CUTOFF = 32;
+
 const DEFAULT_PING_RATE = 500;
 const DEFAULT_PING_BUFFER_SIZE = 1024;
 const DEFAULT_CLOCK_BUFFER_SIZE = 1024;
@@ -84,6 +86,7 @@ export class MuClockClient {
                     const rtt = this._lastPong - this._lastPing;
                     this._pingStatistic.addSample(rtt);
                     this._addTimeObservation(serverClock, this._lastPong + 0.5 * rtt);
+                    this._lastPing = 0;
                 },
             },
             close: () => {
@@ -103,9 +106,18 @@ export class MuClockClient {
             this._localTimeSamples[idx] = localClock;
             this._remoteTimeSamples[idx] = serverClock;
         }
-        const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
-        this._clockScale = a;
-        this._clockShift = b;
+        if (this._localTimeSamples.length < SAMPLE_CUTOFF) {
+            let avgShift = 0;
+            for (let i = 0; i < this._localTimeSamples.length; ++i) {
+                avgShift += this._remoteTimeSamples[i] - this._localTimeSamples[i];
+            }
+            this._clockScale = 1;
+            this._clockShift = avgShift / this._localTimeSamples.length;
+        } else {
+            const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
+            this._clockScale = a;
+            this._clockShift = b;
+        }
     }
 
     private _doPing () {
@@ -118,7 +130,7 @@ export class MuClockClient {
     private _lastNow:number = 0;
     private _simulationClock() : number {
         const remoteClock = Math.max(
-            this._clock.now() * this._clockScale + this._clockShift + this._pingStatistic.median,
+            this._clock.now() * this._clockScale + this._clockShift + 2 * this._pingStatistic.median,
             this._lastNow + 1e-6);
         this._lastNow = remoteClock;
         return remoteClock;
@@ -129,7 +141,8 @@ export class MuClockClient {
             return;
         }
 
-        if (this._lastPong + this._pingRate < this._clock.now()) {
+        const pingRate = this._localTimeSamples.length < SAMPLE_CUTOFF ? 0 : this._pingRate;
+        if (this._lastPing === 0 && this._lastPong + pingRate < this._clock.now()) {
             this._doPing();
         }
 
