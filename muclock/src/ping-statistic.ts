@@ -1,4 +1,4 @@
-function compareInt (a:number, b:number) { return a - b };
+function compareInt (a:number, b:number) { return a - b; }
 
 export class MuPingStatistic {
     public bufferSize:number = 1024;
@@ -8,7 +8,7 @@ export class MuPingStatistic {
 
     public sampleCount:number = 0;
 
-    private _sortedSamples:number[] = []
+    private _sortedSamples:number[] = [];
 
     constructor (bufferSize:number) {
         this.bufferSize = bufferSize;

@@ -1,52 +1,13 @@
-// FIXME: use high performance counters when available
+import now = require('right-now');
+
 export class MuClock {
-    public startTime:number;
-    private _freezing_time:number;
-    public _now:Function;
+    private startTime:number = now();
 
-    private _isFrozen:boolean;
-
-    constructor () {
-        this.startTime = Date.now();
-        this._freezing_time = -1;
-        this.now = this._livelyClock;
-        this._isFrozen = false;
+    public now () {
+        return now() - this.startTime;
     }
 
-    public now() {
-        return this._now();
-    }
-
-    private _livelyClock() {
-        return Date.now() - this.startTime;
-    }
-
-    private _frozenClock() {
-        return this._freezing_time - this.startTime;
-    }
-
-    public pauseClock(timeOffset = 0) {
-        if (this._isFrozen) {
-            console.log('clock has already paused');
-            return;
-        }
-        this._isFrozen = true;
-        this._freezing_time = Date.now() - timeOffset;
-        this._now = this._frozenClock;
-    }
-    public resumeClock(timeOffset = 0) {
-        if (!this._isFrozen) {
-            console.log('clock already runnig');
-            return;
-        }
-        this._isFrozen = false;
-        this.startTime += Date.now() - this._freezing_time - timeOffset;
-        this._now = this._livelyClock;
-
-        this._freezing_time = -1;
-    }
-
-    public isFrozen() {
-        return this._isFrozen;
+    public reset () {
+        this.startTime = now();
     }
 }

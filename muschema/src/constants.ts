@@ -1,10 +1,17 @@
-export = {
-    int8: { MIN: -0x80, MAX: 0x7F },
-    int16: { MIN: -0x8000, MAX: 0x7FFF },
-    int32: { MIN: -0x80000000, MAX: 0x7FFFFFFF },
-    uint8: { MIN: 0, MAX: 0xFF },
-    uint16: { MIN: 0, MAX: 0xFFFF },
-    uint32: { MIN: 0, MAX: 0xFFFFFFFF },
+export const primitiveMuTypes = [
+    'boolean',
+    'float32',
+    'float64',
+    'int8',
+    'int16',
+    'int32',
+    'string',
+    'uint8',
+    'uint16',
+    'uint32',
+];
+
+export const Constants = {
     float32: {
         EPSILON: 1.401298464324817e-45,
         MIN: 1.1754943508222875e-38,
@@ -15,4 +22,35 @@ export = {
         MIN: 2.2250738585072014e-308,
         MAX: 1.7976931348623157e+308,
     },
+    int8: { MIN: -0x80, MAX: 0x7F },
+    int16: { MIN: -0x8000, MAX: 0x7FFF },
+    int32: { MIN: -0x80000000, MAX: 0x7FFFFFFF },
+    uint8: { MIN: 0, MAX: 0xFF },
+    uint16: { MIN: 0, MAX: 0xFFFF },
+    uint32: { MIN: 0, MAX: 0xFFFFFFFF },
+};
+
+export const muType2WriteMethod = {
+    boolean: 'writeUint8',
+    float32: 'writeFloat32',
+    float64: 'writeFloat64',
+    int8: 'writeInt8',
+    int16: 'writeInt16',
+    int32: 'writeInt32',
+    string: 'writeString',
+    uint8: 'writeUint8',
+    uint16: 'writeUint16',
+    uint32: 'writeUint32',
+};
+export const muType2ReadMethod = {
+    boolean: 'readUint8',
+    float32: 'readFloat32',
+    float64: 'readFloat64',
+    int8: 'readInt8',
+    int16: 'readInt16',
+    int32: 'readInt32',
+    string: 'readString',
+    uint8: 'readUint8',
+    uint16: 'readUint16',
+    uint32: 'readUint32',
 };
