@@ -5,16 +5,7 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-const numType2ArrayType = {
-    float32: Float32Array,
-    float64: Float64Array,
-    int8: Int8Array,
-    int16: Int16Array,
-    int32: Int32Array,
-    uint8: Uint8Array,
-    uint16: Uint16Array,
-    uint32: Uint32Array,
-};
+import { muType2ArrayType } from './constants';
 
 export type _MuVectorType<ValueSchema extends MuNumber> = {
     float32:Float32Array;
@@ -27,8 +18,9 @@ export type _MuVectorType<ValueSchema extends MuNumber> = {
     uint32:Uint32Array;
 }[ValueSchema['muType']];
 
-export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVectorType<ValueSchema>> {
-    private _constructor:typeof numType2ArrayType[ValueSchema['muType']];
+export class MuVector<ValueSchema extends MuNumber>
+        implements MuSchema<_MuVectorType<ValueSchema>> {
+    private _constructor:typeof muType2ArrayType[ValueSchema['muType']];
     private _pool:_MuVectorType<ValueSchema>[] = [];
 
     public readonly identity:_MuVectorType<ValueSchema>;
@@ -39,7 +31,7 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
     public readonly dimension:number;
 
     constructor (valueSchema:ValueSchema, dimension:number) {
-        this._constructor = numType2ArrayType[valueSchema.muType];
+        this._constructor = muType2ArrayType[valueSchema.muType];
 
         this.identity = new this._constructor(dimension);
         for (let i = 0; i < dimension; ++i) {
@@ -47,12 +39,12 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
         }
 
         this.muData = valueSchema;
+        this.dimension = dimension;
         this.json = {
             type: 'vector',
             valueType: this.muData.json,
             dimension,
         };
-        this.dimension = dimension;
     }
 
     public alloc () : _MuVectorType<ValueSchema> {

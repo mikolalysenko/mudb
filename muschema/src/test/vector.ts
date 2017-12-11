@@ -9,18 +9,26 @@ import {
 } from '../';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-test('vector identity', (t) => {
-    const vec = new MuVector(new MuFloat64(5e-324), 3);
+import { muType2ArrayType, primitiveMuTypes } from '../constants';
+import {
+    numSchema,
+    randomValue,
+    testPairFactory,
+} from './_helper';
 
-    t.equals(vec.identity.length, 3);
-    t.equals(vec.identity[0], 5e-324);
+test('vector - identity', (t) => {
+    const vecSchema = new MuVector(new MuFloat64(5e-324), 3);
+
+    t.equals(vecSchema.identity.constructor, Float64Array);
+    t.equals(vecSchema.identity.length, 3);
+    t.equals(vecSchema.identity[0], 5e-324);
 
     t.end();
 });
 
-test('vector alloc()', (t) => {
-    const vec = new MuVector(new MuUint8(), 5);
-    const uint8 = vec.alloc();
+test('vector - alloc()', (t) => {
+    const vecSchema = new MuVector(new MuUint8(), 5);
+    const uint8 = vecSchema.alloc();
 
     t.equals(uint8.constructor, Uint8Array);
     t.equals(uint8.length, 5);
@@ -28,52 +36,62 @@ test('vector alloc()', (t) => {
     t.end();
 });
 
-test('vector clone()', (t) => {
-    const vec = new MuVector(new MuInt32(), 3);
-    const int32 = vec.clone(new Int32Array([-3, 0, 3]));
+function randomTypedArray (muType, length) {
+    const arr = new Array(length);
+    for (let i = 0; i < length; ++i) {
+        arr[i] = randomValue(muType);
+    }
+    return new muType2ArrayType[muType](arr);
+}
 
-    t.equals(int32.length, 3);
-    t.equals(int32[0], -3);
-    t.equals(int32[1], 0);
-    t.equals(int32[2], 3);
+const muNumTypes = [
+    'float32',
+    'float64',
+    'int8',
+    'int16',
+    'int32',
+    'uint8',
+    'uint16',
+    'uint32',
+];
+
+test('vector - clone()', (t) => {
+    for (const muType of muNumTypes) {
+        const valueSchema = numSchema(muType);
+        const dimension = 20;
+        const vecSchema = new MuVector(valueSchema, dimension);
+
+        for (let i = 0; i < 100; ++i) {
+            const vec = randomTypedArray(muType, dimension);
+            const copy = vecSchema.clone(vec);
+
+            t.notEquals(copy, vec);
+            t.same(copy, vec);
+        }
+    }
 
     t.end();
 });
 
-test('vector diffBinary()', (t) => {
-    const vec = new MuVector(new MuInt32(), 9);
+test('vector - diffing & patching', (t) => {
+    for (const muType of muNumTypes) {
+        const valueSchema = numSchema(muType);
+        const dimension = 20;
+        const vecSchema = new MuVector(valueSchema, dimension);
 
-    let ws = new MuWriteStream(2);
-    t.false(vec.diffBinary(new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), ws));
+        const testPair = testPairFactory(
+            t,
+            vecSchema,
+            (vec) => new Uint8Array(vec.buffer),
+        );
 
-    ws = new MuWriteStream(2);
-    t.true(vec.diffBinary(new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]), new Int32Array([1, 0, 0, 0, 2, 0, 3, 0, 4]), ws));
-
-    t.end();
-});
-
-test('vector patchBinary()', (t) => {
-    const vec = new MuVector(new MuFloat32(), 9);
-
-    let ws = new MuWriteStream(2);
-    vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), ws);
-    let rs = new MuReadStream(ws);
-    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
-
-    ws = new MuWriteStream(2);
-    vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.233, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), ws);
-    rs = new MuReadStream(ws);
-    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.233, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]));
-
-    ws = new MuWriteStream(2);
-    vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.999]), ws);
-    rs = new MuReadStream(ws);
-    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.999]));
-
-    ws = new MuWriteStream(2);
-    vec.diffBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), new Float32Array([0.168, 0.233, 0.3344, 0.4416, 0.5525, 0.699, 0.711, 0.888, 0.999]), ws);
-    rs = new MuReadStream(ws);
-    t.same(new Float32Array(vec.patchBinary(new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]), rs).buffer), new Float32Array([0.168, 0.233, 0.3344, 0.4416, 0.5525, 0.699, 0.711, 0.888, 0.999]));
+        for (let i = 0; i < 100; ++i) {
+            testPair(
+                randomTypedArray(muType, dimension),
+                randomTypedArray(muType, dimension),
+            );
+        }
+    }
 
     t.end();
 });

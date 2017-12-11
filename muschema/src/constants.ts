@@ -61,3 +61,14 @@ export const muType2ReadMethod = {
     uint16: 'readUint16',
     uint32: 'readUint32',
 };
+
+export const muType2ArrayType = {
+    float32: Float32Array,
+    float64: Float64Array,
+    int8: Int8Array,
+    int16: Int16Array,
+    int32: Int32Array,
+    uint8: Uint8Array,
+    uint16: Uint16Array,
+    uint32: Uint32Array,
+};

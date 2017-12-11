@@ -1,11 +1,22 @@
 import {
-    Constants,
-    primitiveMuTypes,
-} from '../constants';
+    MuFloat32,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+} from '../';
 import {
     MuReadStream,
     MuWriteStream,
 } from 'mustreams';
+
+import {
+    Constants,
+    primitiveMuTypes,
+} from '../constants';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
@@ -21,6 +32,20 @@ function randomCodePoint () {
     // to avoid the surrogates issue
     const MAX_CODE_POINT = 0xD7FF;
     return Math.random() * MAX_CODE_POINT | 0;
+}
+
+const muNumType2Schema = {
+    'float32': MuFloat32,
+    'float64': MuFloat64,
+    'int8': MuInt8,
+    'int16': MuInt16,
+    'int32': MuInt32,
+    'uint8': MuUint8,
+    'uint16': MuUint16,
+    'uint32': MuUint32,
+};
+export function numSchema (muType) {
+    return muNumType2Schema[muType]();
 }
 
 export function randomStr () {
@@ -69,7 +94,7 @@ export function randomValue (muType:string) {
     }
 }
 
-export function testPairFactory (t, schema) {
+export function testPairFactory (t, schema, fn?) {
     function patch (a, b) {
         const ws = new MuWriteStream(2);
         schema.diffBinary(a, b, ws);
@@ -77,8 +102,14 @@ export function testPairFactory (t, schema) {
         return schema.patchBinary(a, rs);
     }
 
-    return (a, b) => {
-        t.same(patch(a, b), b);
-        t.same(patch(b, a), a);
-    };
+    return  fn ?
+            (a, b) => {
+                t.same(patch(a, b), fn(b));
+                t.same(patch(b, a), fn(a));
+            }
+            :
+            (a, b) => {
+                t.same(patch(a, b), b);
+                t.same(patch(b, a), a);
+            };
 }
