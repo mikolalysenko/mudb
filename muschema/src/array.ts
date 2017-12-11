@@ -10,8 +10,6 @@ export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['ident
 
 export class MuArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<_MuArrayType<ValueSchema>> {
-    private _pool:_MuArrayType<ValueSchema>[] = [];
-
     public readonly identity:_MuArrayType<ValueSchema> = [];
     public readonly muType = 'array';
     public readonly muData:ValueSchema;
@@ -27,13 +25,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : _MuArrayType<ValueSchema> {
-        return this._pool.pop() || this.identity.slice();
-    }
+    public alloc () : _MuArrayType<ValueSchema> { return []; }
 
     public free (x:_MuArrayType<ValueSchema>) : void {
-        this._pool.push(x);
-
         const valueSchema = this.muData;
         switch (valueSchema.muType) {
             case 'boolean':
@@ -55,7 +49,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public clone (x:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
-        const result = this._pool.pop() || new Array(x.length);
+        const result = new Array(x.length);
 
         const schema = this.muData;
         switch (schema.muType) {

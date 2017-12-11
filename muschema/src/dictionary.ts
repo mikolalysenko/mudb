@@ -1,14 +1,13 @@
 import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-export interface Dictionary<T extends MuSchema<any>> {
-    [key:string]:T['identity'];
-}
+export type Dictionary<V extends MuSchema<any>> = {
+    [key:string]:V['identity'];
+};
 
-/** Dictionary type schema */
-export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema<Dictionary<ValueSchema>> {
+export class MuDictionary<ValueSchema extends MuSchema<any>>
+        implements MuSchema<Dictionary<ValueSchema>> {
     public readonly identity:Dictionary<ValueSchema>;
-
     public readonly muType = 'dictionary';
     public readonly muData:ValueSchema;
     public readonly json:object;
@@ -23,9 +22,28 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         };
     }
 
-    public alloc () { return {}; }
+    public alloc () : Dictionary<ValueSchema> { return {}; }
 
-    public free (x:Dictionary<ValueSchema>) {}
+    public free (x:Dictionary<ValueSchema>) {
+        const valueSchema = this.muData;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'float32':
+            case 'float64':
+            case 'int8':
+            case 'int16':
+            case 'int32':
+            case 'string':
+            case 'uint8':
+            case 'uint16':
+            case 'uint32':
+                break;
+            default:
+                for (const prop in x) {
+                    valueSchema.free(x[prop]);
+                }
+        }
+    }
 
     public clone (x:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
         const result:Dictionary<ValueSchema> = {};
@@ -101,54 +119,48 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
     public diffBinary (
         base:Dictionary<ValueSchema>,
         target:Dictionary<ValueSchema>,
-        stream:MuWriteStream) : boolean {
-        const valueSchema = this.muData;
+        stream:MuWriteStream,
+    ) : boolean {
+        stream.grow(this.getByteLength(base) + this.getByteLength(target));
 
         let numRemove = 0;
         let numPatch = 0;
 
         const removeOffset = stream.offset;
-        stream.grow(4);
-        stream.writeUint32(numRemove);
-        const patchOffset = stream.offset;
-        stream.grow(4);
-        stream.writeUint32(numPatch);
+        const patchOffset = removeOffset + 4;
+        stream.offset = removeOffset + 8;
 
         const baseProps = Object.keys(base);
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
-                numRemove++;
-                stream.grow(4 + 4 * prop.length);
                 stream.writeString(prop);
+                ++numRemove;
             }
         }
 
+        const valueSchema = this.muData;
         const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
             const prop = targetProps[i];
             const prefixOffset = stream.offset;
-            stream.grow(4 + 4 * prop.length);
             stream.writeString(prop);
             if (prop in base) {
-                // FIXME: temporary hack, remove when binary serialization is finished
-                if (valueSchema.diffBinary) {
-                    const equal = !valueSchema.diffBinary(base[prop], target[prop], stream);
-                    if (equal) {
-                        stream.offset = prefixOffset;
-                    } else {
-                        numPatch += 1;
-                    }
+                const different = valueSchema.diffBinary!(base[prop], target[prop], stream);
+                if (different) {
+                    ++numPatch;
+                } else {
+                    stream.offset = prefixOffset;
                 }
             } else {
-                // FIXME: temporary hack, remove when binary serialization is finished
-                if (valueSchema.diffBinary) {
-                    const equal = !valueSchema.diffBinary(valueSchema.identity, target[prop], stream);
-                    if (equal) {
-                        stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+                const equal = !valueSchema.diffBinary!(valueSchema.identity, target[prop], stream);
+                if (equal) {
+                    stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+                    if (valueSchema.muType === 'dictionary') {
+                        stream.offset -= 8;
                     }
                 }
-                numPatch += 1;
+                ++numPatch;
             }
         }
 
@@ -158,26 +170,24 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
         return numPatch > 0 || numRemove > 0;
     }
 
-    public patchBinary(
+    public patchBinary (
         base:Dictionary<ValueSchema>,
-        stream:MuReadStream) : Dictionary<ValueSchema> {
-        const valueSchema = this.muData;
-        if (!valueSchema.patchBinary) {
-            return this.identity;
-        }
+        stream:MuReadStream,
+    ) : Dictionary<ValueSchema> {
+        const result:Dictionary<ValueSchema> = {};
 
         const numRemove = stream.readUint32();
         const numPatch = stream.readUint32();
 
-        const removeProps = {};
+        const propsToRemove = {};
         for (let i = 0; i < numRemove; ++i) {
-            removeProps[stream.readString()] = true;
+            propsToRemove[stream.readString()] = true;
         }
 
-        const result:Dictionary<ValueSchema> = {};
+        const valueSchema = this.muData;
         for (const prop in base) {
-            if (removeProps[prop]) {
-                break;
+            if (propsToRemove[prop]) {
+                continue;
             }
             result[prop] = valueSchema.clone(base[prop]);
         }
@@ -187,12 +197,55 @@ export class MuDictionary<ValueSchema extends MuSchema<any>> implements MuSchema
             stream.buffer.uint8[stream.offset + 3] &= ~0x80;
             const prop = stream.readString();
             if (prop in base) {
-                result[prop] = valueSchema.patchBinary(base[prop], stream);
+                result[prop] = valueSchema.patchBinary!(base[prop], stream);
             } else if (isIdentity) {
                 result[prop] = valueSchema.clone(valueSchema.identity);
             } else {
-                result[prop] = valueSchema.patchBinary(valueSchema.identity, stream);
+                result[prop] = valueSchema.patchBinary!(valueSchema.identity, stream);
             }
+        }
+
+        return result;
+    }
+
+    public getByteLength (x:Dictionary<ValueSchema>) : number {
+        function calcStringsByteLength (strs:string[]) {
+            let r = 0;
+            for (const s of strs) {
+                r += 4 + 4 * s.length;
+            }
+            return r;
+        }
+
+        let result = 8;
+
+        const props = Object.keys(x);
+        const numProps = props.length;
+        result += calcStringsByteLength(props);
+
+        const valueSchema = this.muData;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'int8':
+            case 'uint8':
+                result += numProps;
+                break;
+            case 'int16':
+            case 'uint16':
+                result += numProps * 2;
+                break;
+            case 'float32':
+            case 'int32':
+            case 'uint32':
+                result += numProps * 4;
+                break;
+            case 'float64':
+                result += numProps * 8;
+                break;
+            default:
+                for (const key in x) {
+                    result += valueSchema.getByteLength!(x[key]);
+                }
         }
 
         return result;

@@ -11,3 +11,4 @@ node_modules/*
 !*/types/*.d.ts
 !bin/*
 .jsbeautifyrc
+yarn.lock
