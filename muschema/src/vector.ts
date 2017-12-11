@@ -89,48 +89,53 @@ export class MuVector<ValueSchema extends MuNumber> implements MuSchema<_MuVecto
         return this.clone(a);
     }
 
-    public diffBinary (base_:_MuVectorType<ValueSchema>, target_:_MuVectorType<ValueSchema>, stream:MuWriteStream) {
-        const valueSchema:MuSchema<number> = this.muData;
-        const dimension = this.dimension * this.identity.BYTES_PER_ELEMENT;
-
-        stream.grow(Math.ceil(dimension * 9 / 8));
-
+    public diffBinary (
+        base_:_MuVectorType<ValueSchema>,
+        target_:_MuVectorType<ValueSchema>,
+        stream:MuWriteStream,
+    ) : boolean {
         const base = new Uint8Array(base_.buffer);
         const target = new Uint8Array(target_.buffer);
 
+        const dimension = this.dimension * this.identity.BYTES_PER_ELEMENT;
+        stream.grow(Math.ceil(dimension * 9 / 8));
+
+        let trackerOffset = stream.offset;
+        stream.offset = trackerOffset + Math.ceil(dimension / 8);
+
         let tracker = 0;
         let numPatch = 0;
+
         for (let i = 0; i < dimension; ++i) {
             if (base[i] !== target[i]) {
+                stream.writeUint8(target[i]);
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
 
             if ((i & 7) === 7) {
-                stream.writeUint8(tracker);
+                stream.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
         if (dimension & 7) {
-            stream.writeUint8(tracker);
-        }
-
-        for (let i = 0; i < dimension; ++i) {
-            if (base[i] !== target[i]) {
-                stream.writeUint8(target[i]);
-            }
+            stream.writeUint8At(trackerOffset, tracker);
         }
 
         return numPatch > 0;
     }
 
-    public patchBinary (base:_MuVectorType<ValueSchema>, stream:MuReadStream) {
+    public patchBinary (
+        base:_MuVectorType<ValueSchema>,
+        stream:MuReadStream,
+    ) : Uint8Array {
+        const result = new Uint8Array(this.clone(base).buffer);
+
         const trackerOffset = stream.offset;
         const trackerBytes = Math.ceil(this.dimension * this.identity.BYTES_PER_ELEMENT / 8);
-        stream.offset += trackerBytes;
+        stream.offset = trackerOffset + trackerBytes;
 
-        const result = new Uint8Array(this.clone(base).buffer);
         for (let i = 0; i < trackerBytes; ++i) {
             const start = i * 8;
             const tracker = stream.readUint8At(trackerOffset + i);
