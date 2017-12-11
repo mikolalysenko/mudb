@@ -11,6 +11,13 @@ export const primitiveMuTypes = [
     'uint32',
 ];
 
+export const nonPrimitiveMuTypes = [
+    'array',
+    'dictionary',
+    'struct',
+    'vector',
+];
+
 export const Constants = {
     float32: {
         EPSILON: 1.401298464324817e-45,

@@ -2,6 +2,10 @@ import {
     Constants,
     primitiveMuTypes,
 } from '../constants';
+import {
+    MuReadStream,
+    MuWriteStream,
+} from 'mustreams';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
@@ -19,11 +23,23 @@ function randomCodePoint () {
     return Math.random() * MAX_CODE_POINT | 0;
 }
 
-export function randomString (maxLength:number) {
-    const length = Math.random() * maxLength | 0;
+export function randomStr () {
+    const length = Math.random() * 20 + 1 | 0;
     const charCodes = new Array(length);
     for (let i = 0; i < length; ++i) {
         charCodes[i] = randomCodePoint();
+    }
+    return String.fromCharCode.apply(null, charCodes);
+}
+
+export function randomShortStr () {
+    const ingredient = 'abc';
+    const ingredientLeng = ingredient.length;
+
+    const length = Math.random() * 3 + 1 | 0;
+    const charCodes = new Array(length);
+    for (let i = 0; i < length; ++i) {
+        charCodes[i] = ingredient.charCodeAt(Math.random() * ingredientLeng | 0);
     }
     return String.fromCharCode.apply(null, charCodes);
 }
@@ -43,7 +59,7 @@ export function randomValue (muType:string) {
         case 'int32':
             return randomSign() * Math.random() * MAX | 0;
         case 'string':
-            return randomString(20);
+            return randomStr();
         case 'uint8':
         case 'uint16':
         case 'uint32':
@@ -51,4 +67,18 @@ export function randomValue (muType:string) {
         default:
             return;
     }
+}
+
+export function testPairFactory (t, schema) {
+    function patch (a, b) {
+        const ws = new MuWriteStream(2);
+        schema.diffBinary(a, b, ws);
+        const rs = new MuReadStream(ws);
+        return schema.patchBinary(a, rs);
+    }
+
+    return (a, b) => {
+        t.same(patch(a, b), b);
+        t.same(patch(b, a), a);
+    };
 }

@@ -21,18 +21,19 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-import { randomValue } from './_helper';
+import {
+    randomValue,
+    testPairFactory,
+} from './_helper';
 import { primitiveMuTypes } from '../constants';
 
 test('array - identity', (t) => {
     let arraySchema = new MuArray(new MuString());
     t.same(arraySchema.identity, []);
 
-    arraySchema = new MuArray(
-        new MuString(),
-        ['foo', 'bar'],
-    );
-    t.same(arraySchema.identity, ['foo', 'bar']);
+    const id = ['foo', 'bar'];
+    arraySchema = new MuArray(new MuString(), id);
+    t.equals(arraySchema.identity, id);
 
     t.end();
 });
@@ -45,7 +46,7 @@ test('array - allocation', (t) => {
         new MuUint32(),
         [233, 666],
     );
-    t.same(arraySchema.alloc(), [233, 666]);
+    t.same(arraySchema.alloc(), []);
 
     t.end();
 });
@@ -139,17 +140,7 @@ test('array - diffing & patching', (t) => {
         const valueSchema = new muType2MuSchema[muType]();
         const arraySchema = new MuArray(valueSchema);
 
-        const patch = (arrayA, arrayB) => {
-            const ws = new MuWriteStream(2);
-            arraySchema.diffBinary(arrayA, arrayB, ws);
-            const rs = new MuReadStream(ws);
-            return arraySchema.patchBinary(arrayA, rs);
-        };
-
-        const testPair = (a, b) => {
-            t.same(patch(a, b), b);
-            t.same(patch(b, a), a);
-        };
+        const testPair = testPairFactory(t, arraySchema);
 
         for (let i = 0; i < 100; ++i) {
             testPair(randomArrayOfType(muType), randomArrayOfType(muType));

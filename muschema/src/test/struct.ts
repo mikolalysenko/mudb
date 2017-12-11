@@ -20,8 +20,9 @@ import {
 } from 'mustreams';
 
 import {
-    randomString,
+    randomStr,
     randomValue,
+    testPairFactory,
 } from './_helper';
 
 test('struct muType', (t) => {
@@ -107,7 +108,7 @@ test('struct diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const Schema of muSchemas) {
-            result[randomString(20)] = new Schema();
+            result[randomStr()] = new Schema();
         }
         return result;
     }
@@ -116,17 +117,7 @@ test('struct diff() & patch()', (t) => {
         const spec = structSpec();
         const structSchema = new MuStruct(spec);
 
-        const patch = (structA, structB) => {
-            const ws = new MuWriteStream(2);
-            structSchema.diffBinary(structA, structB, ws);
-            const rs = new MuReadStream(ws);
-            return structSchema.patchBinary(structA, rs);
-        };
-
-        const testPair = (a, b) => {
-            t.same(patch(a, b), b);
-            t.same(patch(b, a), a);
-        };
+        const testPair = testPairFactory(t, structSchema);
 
         const randomStruct = () => {
             const result = {};
