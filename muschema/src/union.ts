@@ -2,16 +2,16 @@ import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 // tslint:disable-next-line:class-name
-export interface _MuPair<SubTypes extends { [type:string]:MuSchema<any> }> {
+export interface _TypeDataPair<SubTypes extends { [type:string]:MuSchema<any> }> {
     type:keyof SubTypes;
     data:SubTypes[keyof SubTypes]['identity'];
 }
 
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
-        implements MuSchema<_MuPair<SubTypes>> {
+        implements MuSchema<_TypeDataPair<SubTypes>> {
     private _types:string[];
 
-    public readonly identity:_MuPair<SubTypes>;
+    public readonly identity:_TypeDataPair<SubTypes>;
 
     public readonly muType = 'union';
     public readonly muData:SubTypes;
@@ -27,7 +27,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         if (identityType) {
             this.identity = {
                 type: identityType,
-                data: schemaSpec[identityType],
+                data: schemaSpec[identityType].identity,
             };
         } else {
             this.identity = {
@@ -47,18 +47,18 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public alloc () : _MuPair<SubTypes> {
+    public alloc () : _TypeDataPair<SubTypes> {
         return {
             type: '',
             data: void 0,
         };
     }
 
-    public free (data:_MuPair<SubTypes>) {
+    public free (data:_TypeDataPair<SubTypes>) {
         this.muData[data.type].free(data.data);
     }
 
-    public clone (data:_MuPair<SubTypes>) : _MuPair<SubTypes> {
+    public clone (data:_TypeDataPair<SubTypes>) : _TypeDataPair<SubTypes> {
         const schema = this.muData[data.type];
         return {
             type: data.type,
@@ -67,11 +67,11 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public diffBinary (
-        base:_MuPair<SubTypes>,
-        target:_MuPair<SubTypes>,
+        base:_TypeDataPair<SubTypes>,
+        target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(1 + this.getByteLength(target));
+        stream.grow(this.getByteLength(target));
 
         const trackerOffset = stream.offset;
         stream.offset = trackerOffset + 1;
@@ -81,42 +81,48 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const schema = this.muData[target.type];
         if (base.type === target.type) {
             if (schema.diffBinary!(base.data, target.data, stream)) {
-                tracker |= 0x1;
+                tracker = 1;
             }
         } else {
             stream.writeUint8(this._types.indexOf(target.type));
             schema.diffBinary!(schema.identity, target.data, stream);
-            tracker |= 0x2;
+            tracker = 2;
         }
 
-        stream.writeUint8At(trackerOffset, tracker);
-
-        return tracker > 0;
+        if (tracker) {
+            stream.writeUint8At(trackerOffset, tracker);
+            return true;
+        }
+        stream.offset = trackerOffset;
+        return false;
     }
 
     public patchBinary (
-        base:_MuPair<SubTypes>,
+        base:_TypeDataPair<SubTypes>,
         stream:MuReadStream,
-    ) : _MuPair<SubTypes> {
+    ) : _TypeDataPair<SubTypes> {
         const result = this.clone(base);
         const tracker = stream.readUint8();
 
-        const schema = this.muData[result.type];
-
-        if (tracker & 0x1) {
+        if (tracker === 1) {
+            const schema = this.muData[result.type];
             result.data = schema.patchBinary!(result.data, stream);
         }
 
-        if (tracker & 0x2) {
+        if (tracker === 2) {
             result.type = this._types[stream.readUint8()];
+
+            const schema = this.muData[result.type];
             result.data = schema.patchBinary!(schema.identity, stream);
         }
 
         return result;
     }
 
-    public getByteLength (data:_MuPair<SubTypes>) : number {
-        let result = 0;
+    public getByteLength (data:_TypeDataPair<SubTypes>) : number {
+        const TRACKER_BYTE = 1;
+        let result = TRACKER_BYTE;
+
         const type = data.type;
 
         result += 4 + type.length * 4;
@@ -125,7 +131,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return result;
     }
 
-    public diff (base:_MuPair<SubTypes>, target:_MuPair<SubTypes>) : (any | undefined) {
+    public diff (base:_TypeDataPair<SubTypes>, target:_TypeDataPair<SubTypes>) : (any | undefined) {
         const model = this.muData[target.type];
         if (target.type === base.type) {
             const delta = model.diff(base.data, target.data);
@@ -143,7 +149,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         }
     }
 
-    public patch (base:_MuPair<SubTypes>, patch:any) : _MuPair<SubTypes> {
+    public patch (base:_TypeDataPair<SubTypes>, patch:any) : _TypeDataPair<SubTypes> {
         if ('type' in patch) {
             const model = this.muData[patch.type];
             return {

@@ -22,7 +22,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 import {
     randomShortStr,
     randomStr,
-    randomValue,
+    randomValueOf,
     testPairFactory,
 } from './_helper';
 import {
@@ -73,19 +73,19 @@ const muType2MuSchema = {
     'vector': MuVector,
 };
 
-function randomDict (depth, muType, genString) {
+function randomDict (depth, muType, randomStrFn) {
     const result = {};
     const numProps = Math.random() * 10 | 0;
 
     if (depth <= 1) {
         for (let i = 0; i < numProps; ++i) {
-            result[genString()] = randomValue(muType);
+            result[randomStrFn()] = randomValueOf(muType);
         }
         return result;
     }
 
     for (let i = 0; i < numProps; ++i) {
-        result[genString()] = randomDict(depth - 1, muType, genString);
+        result[randomStrFn()] = randomDict(depth - 1, muType, randomStrFn);
     }
 
     return result;

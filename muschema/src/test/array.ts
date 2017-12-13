@@ -22,7 +22,7 @@ import {
 } from 'mustreams';
 
 import {
-    randomValue,
+    randomValueOf,
     testPairFactory,
 } from './_helper';
 import { primitiveMuTypes } from '../constants';
@@ -55,7 +55,7 @@ function randomArrayOfType (muType) {
     const length = Math.random() * 20 | 0;
     const result = new Array(length);
     for (let i = 0; i < length; ++i) {
-        result[i] = randomValue(muType);
+        result[i] = randomValueOf(muType);
     }
     return result;
 }
@@ -114,7 +114,7 @@ test('array - clone nested array', (t) => {
 
                 if (dimension <= 1) {
                     for (let i = 0; i < length; ++i) {
-                        result[i] = randomValue(muType);
+                        result[i] = randomValueOf(muType);
                     }
                     return result;
                 }

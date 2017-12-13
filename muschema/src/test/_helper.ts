@@ -69,7 +69,7 @@ export function randomShortStr () {
     return String.fromCharCode.apply(null, charCodes);
 }
 
-export function randomValue (muType:string) {
+export function randomValueOf (muType:string) {
     const MAX = Constants[muType] && Constants[muType].MAX;
     const MIN = Constants[muType] && Constants[muType].MIN;
     switch (muType) {
