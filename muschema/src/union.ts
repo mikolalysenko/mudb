@@ -9,6 +9,8 @@ export interface _MuPair<SubTypes extends { [type:string]:MuSchema<any> }> {
 
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         implements MuSchema<_MuPair<SubTypes>> {
+    private _types:string[];
+
     public readonly identity:_MuPair<SubTypes>;
 
     public readonly muType = 'union';
@@ -19,6 +21,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         schemaSpec:SubTypes,
         identityType?:keyof SubTypes,
     ) {
+        this._types = Object.keys(schemaSpec);
         this.muData = schemaSpec;
 
         if (identityType) {
@@ -81,7 +84,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
                 tracker |= 0x1;
             }
         } else {
-            stream.writeString(target.type);
+            stream.writeUint8(this._types.indexOf(target.type));
             schema.diffBinary!(schema.identity, target.data, stream);
             tracker |= 0x2;
         }
@@ -105,7 +108,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         }
 
         if (tracker & 0x2) {
-            result.type = stream.readString();
+            result.type = this._types[stream.readUint8()];
             result.data = schema.patchBinary!(schema.identity, stream);
         }
 
