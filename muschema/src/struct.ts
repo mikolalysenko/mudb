@@ -325,7 +325,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const dTracker = methods.diffBinary.def(0);
         const numPatch = methods.diffBinary.def(0);
 
-        // TODO Nested structs should not grow the stream multiple times
         methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
         propRefs.forEach((propRef, i) => {
             const muType = structTypes[i].muType;

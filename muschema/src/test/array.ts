@@ -25,7 +25,7 @@ import {
     randomValueOf,
     testPairFactory,
 } from './_helper';
-import { primitiveMuTypes } from '../constants';
+import { primitiveMuTypes, muType2ArrayType } from '../constants';
 
 test('array - identity', (t) => {
     let arraySchema = new MuArray(new MuString());
@@ -96,6 +96,25 @@ test('array - clone array of primitive', (t) => {
     t.end();
 });
 
+// create a n-dimensional array
+function nDArray (n, muType) {
+    const length = Math.random() * 5 | 0;
+    const result = new Array(length);
+
+    if (n <= 1) {
+        for (let i = 0; i < length; ++i) {
+            result[i] = randomValueOf(muType);
+        }
+        return result;
+    }
+
+    for (let i = 0; i < length; ++i) {
+        result[i] = nDArray(n - 1, muType);
+    }
+
+    return result;
+}
+
 test('array - clone nested array', (t) => {
     for (const muType of primitiveMuTypes) {
         const valueSchema = new muType2MuSchema[muType]();
@@ -108,23 +127,7 @@ test('array - clone nested array', (t) => {
         );
 
         for (let j = 0; j < 20; ++j) {
-            const array4D = (function nDArray (dimension:number) {
-                const length = Math.random() * 20 | 0;
-                const result = new Array(length);
-
-                if (dimension <= 1) {
-                    for (let i = 0; i < length; ++i) {
-                        result[i] = randomValueOf(muType);
-                    }
-                    return result;
-                }
-
-                for (let i = 0; i < length; ++i) {
-                    result[i] = nDArray(dimension - 1);
-                }
-
-                return result;
-            })(4);
+            const array4D = nDArray(4, muType);
             const copy = arraySchema.clone(array4D);
 
             t.notEquals(copy, array4D);
@@ -135,7 +138,7 @@ test('array - clone nested array', (t) => {
     t.end();
 });
 
-test('array - diffing & patching', (t) => {
+test('array - diff and patch array of primitive', (t) => {
     for (const muType of primitiveMuTypes) {
         const valueSchema = new muType2MuSchema[muType]();
         const arraySchema = new MuArray(valueSchema);
@@ -144,6 +147,55 @@ test('array - diffing & patching', (t) => {
 
         for (let i = 0; i < 100; ++i) {
             testPair(randomArrayOfType(muType), randomArrayOfType(muType));
+        }
+    }
+
+    t.end();
+});
+
+test('array - diff and patch nested array', (t) => {
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(
+            new MuArray(valueSchema),
+        );
+
+        const testPair = testPairFactory(t, arraySchema);
+
+        for (let i = 0; i < 200; ++i) {
+            testPair(nDArray(2, muType), nDArray(2, muType));
+        }
+    }
+
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(
+            new MuArray(
+                new MuArray(valueSchema),
+            ),
+        );
+
+        const testPair = testPairFactory(t, arraySchema);
+
+        for (let i = 0; i < 100; ++i) {
+            testPair(nDArray(3, muType), nDArray(3, muType));
+        }
+    }
+
+    for (const muType of primitiveMuTypes) {
+        const valueSchema = new muType2MuSchema[muType]();
+        const arraySchema = new MuArray(
+            new MuArray(
+                new MuArray(
+                    new MuArray(valueSchema),
+                ),
+            ),
+        );
+
+        const testPair = testPairFactory(t, arraySchema);
+
+        for (let i = 0; i < 100; ++i) {
+            testPair(nDArray(4, muType), nDArray(4, muType));
         }
     }
 
