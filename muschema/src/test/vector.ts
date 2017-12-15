@@ -12,7 +12,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 import { muType2ArrayType, primitiveMuTypes } from '../constants';
 import {
     numSchema,
-    randomValue,
+    randomValueOf,
     testPairFactory,
 } from './_helper';
 
@@ -39,7 +39,7 @@ test('vector - alloc()', (t) => {
 function randomTypedArray (muType, length) {
     const arr = new Array(length);
     for (let i = 0; i < length; ++i) {
-        arr[i] = randomValue(muType);
+        arr[i] = randomValueOf(muType);
     }
     return new muType2ArrayType[muType](arr);
 }

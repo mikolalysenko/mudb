@@ -15,6 +15,7 @@ export const nonPrimitiveMuTypes = [
     'array',
     'dictionary',
     'struct',
+    'union',
     'vector',
 ];
 

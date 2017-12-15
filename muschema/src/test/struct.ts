@@ -21,7 +21,7 @@ import {
 
 import {
     randomStr,
-    randomValue,
+    randomValueOf,
     testPairFactory,
 } from './_helper';
 
@@ -125,7 +125,7 @@ test('struct diff() & patch()', (t) => {
             const propNames = Object.keys(spec);
             const types = propNames.map((name) => spec[name].muType);
             propNames.forEach((name, idx) => {
-                result[name] = randomValue(types[idx]);
+                result[name] = randomValueOf(types[idx]);
             });
 
             return result;
