@@ -15,9 +15,10 @@ import {
     muPrimitiveSchema,
     randomValueOf,
     testPairFactory,
+    testFactory,
 } from './_helper';
 
-test('array - identity', (t) => {
+test('array - identity defaults to an empty array', (t) => {
     let arraySchema = new MuArray(new MuString());
     t.same(arraySchema.identity, []);
 
@@ -28,7 +29,7 @@ test('array - identity', (t) => {
     t.end();
 });
 
-test('array - allocation', (t) => {
+test('array - alloc() always returns an empty array', (t) => {
     let arraySchema = new MuArray(new MuFloat64());
     t.same(arraySchema.alloc(), []);
 
@@ -62,7 +63,7 @@ function flatArrayOf (muType) {
     return nDArray(1, muType);
 }
 
-test('array - clone flat array', (t) => {
+test('array - clone() can copy a flat array', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const arraySchema = new MuArray(valueSchema);
@@ -79,7 +80,7 @@ test('array - clone flat array', (t) => {
     t.end();
 });
 
-test('array - clone nested array', (t) => {
+test('array - clone() can copy a nested array', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
@@ -126,7 +127,7 @@ test('array - clone nested array', (t) => {
     t.end();
 });
 
-test('array - get byte length', (t) => {
+test('array - calculating byte length', (t) => {
     const muType2BytesPerElement = {
         boolean: 1,
         float32: 4,
@@ -174,13 +175,16 @@ test('array - get byte length', (t) => {
     t.end();
 });
 
-test('array - diff and patch flat array', (t) => {
+test('array - applying patches to base array results in a copy of target array (flat)', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const arraySchema = new MuArray(valueSchema);
 
-        const testPair = testPairFactory(t, arraySchema);
+        const doTest = testFactory(t, arraySchema);
+        const arr = flatArrayOf(muType);
+        doTest(arr, arr);
 
+        const testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
                 flatArrayOf(muType),
@@ -192,13 +196,18 @@ test('array - diff and patch flat array', (t) => {
     t.end();
 });
 
-test('array - diff and patch nested array', (t) => {
+test('array - applying patches to base array results in a copy of target array (nested)', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
         let arraySchema = new MuArray(
             new MuArray(valueSchema),
         );
+
+        let doTest = testFactory(t, arraySchema);
+        let arr = nDArray(2, muType);
+        doTest(arr, arr);
+
         let testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
@@ -212,6 +221,11 @@ test('array - diff and patch nested array', (t) => {
                 new MuArray(valueSchema),
             ),
         );
+
+        doTest = testFactory(t, arraySchema);
+        arr = nDArray(3, muType);
+        doTest(arr, arr);
+
         testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
@@ -227,6 +241,11 @@ test('array - diff and patch nested array', (t) => {
                 ),
             ),
         );
+
+        doTest = testFactory(t, arraySchema);
+        arr = nDArray(4, muType);
+        doTest(arr, arr);
+
         testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(

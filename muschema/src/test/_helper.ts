@@ -1,4 +1,5 @@
 import {
+    MuSchema,
     MuBoolean,
     MuFloat32,
     MuFloat64,
@@ -112,22 +113,29 @@ export function randomValueOf (muType:string) {
     }
 }
 
-export function testPairFactory (t, schema, fn?) {
+export function testFactory (t, schema:MuSchema<any>, fn?) {
     function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
-        schema.diffBinary(a, b, ws);
+        schema.diffBinary!(a, b, ws);
         const rs = new MuReadStream(ws);
-        return schema.patchBinary(a, rs);
+        return schema.patchBinary!(a, rs);
     }
 
     return  fn ?
             (a, b) => {
                 t.same(diffPatch(a, b), fn(b));
-                t.same(diffPatch(b, a), fn(a));
             }
             :
             (a, b) => {
                 t.same(diffPatch(a, b), b);
-                t.same(diffPatch(b, a), a);
             };
+}
+
+export function testPairFactory (t, schema:MuSchema<any>, fn?) {
+    const test = fn ? testFactory(t, schema, fn) : testFactory(t, schema);
+
+    return (a, b) => {
+        test(a, b);
+        test(b, a);
+    };
 }
