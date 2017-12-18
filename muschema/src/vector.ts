@@ -142,7 +142,7 @@ export class MuVector<ValueSchema extends MuNumber>
         return result;
     }
 
-    public getByteLength (vec:_MuVectorType<ValueSchema>) {
+    public calcByteLength (vec:_MuVectorType<ValueSchema>) {
         return this.identity.byteLength;
     }
 }

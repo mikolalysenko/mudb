@@ -159,7 +159,7 @@ test('array - calculating byte length', (t) => {
             );
 
             t.equals(
-                arraySchema.getByteLength(arr),
+                arraySchema.calcByteLength(arr),
                 LENGTH_BYTES + numTrackers + length * 4 + sumStrsLength * 4,
             );
 
@@ -167,7 +167,7 @@ test('array - calculating byte length', (t) => {
         }
 
         t.equals(
-            arraySchema.getByteLength(arr),
+            arraySchema.calcByteLength(arr),
             LENGTH_BYTES + numTrackers + length * muType2BytesPerElement[muType],
         );
     }

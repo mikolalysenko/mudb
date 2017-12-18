@@ -71,7 +71,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.getByteLength(target));
+        stream.grow(this.calcByteLength(target));
 
         const trackerOffset = stream.offset;
         stream.offset = trackerOffset + 1;
@@ -119,14 +119,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return result;
     }
 
-    public getByteLength (data:_TypeDataPair<SubTypes>) : number {
+    public calcByteLength (data:_TypeDataPair<SubTypes>) : number {
         const TRACKER_BYTE = 1;
         let result = TRACKER_BYTE;
 
         const type = data.type;
 
         result += 4 + type.length * 4;
-        result += this.muData[type].getByteLength!(data.data);
+        result += this.muData[type].calcByteLength!(data.data);
 
         return result;
     }

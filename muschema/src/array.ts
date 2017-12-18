@@ -76,7 +76,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public getByteLength (x:_MuArrayType<ValueSchema>) : number {
+    public calcByteLength (x:_MuArrayType<ValueSchema>) : number {
         const LENGTH_BYTES = 4;
 
         const length = x.length;
@@ -105,7 +105,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 break;
             default:
                 for (let i = 0; i < length; ++i) {
-                    result += valueSchema.getByteLength!(x[i]);
+                    result += valueSchema.calcByteLength!(x[i]);
                 }
         }
 
@@ -117,7 +117,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         target:_MuArrayType<ValueSchema>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.getByteLength(target));
+        stream.grow(this.calcByteLength(target));
 
         const prefixOffset = stream.offset;
         const targetLength = target.length;

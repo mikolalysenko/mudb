@@ -121,7 +121,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:Dictionary<ValueSchema>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.getByteLength(base) + this.getByteLength(target));
+        stream.grow(this.calcByteLength(base) + this.calcByteLength(target));
 
         let numRemove = 0;
         let numPatch = 0;
@@ -208,7 +208,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public getByteLength (x:Dictionary<ValueSchema>) : number {
+    public calcByteLength (x:Dictionary<ValueSchema>) : number {
         function calcStringsByteLength (strs:string[]) {
             let r = 0;
             for (const s of strs) {
@@ -244,7 +244,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 break;
             default:
                 for (const key in x) {
-                    result += valueSchema.getByteLength!(x[key]);
+                    result += valueSchema.calcByteLength!(x[key]);
                 }
         }
 

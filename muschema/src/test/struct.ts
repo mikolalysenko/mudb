@@ -74,7 +74,7 @@ test('struct - get byte length', (t) => {
     });
 
     t.equals(
-        struct.getByteLength({
+        struct.calcByteLength({
             v: 0.233,
             vs: new Float64Array([0.233, 0.233]),
             s: 'foo',
@@ -168,7 +168,7 @@ test('struct - operations on nested struct', (t) => {
         testPair(identity, struct);
 
         // get byte length
-        t.equals(structSchema.getByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));
+        t.equals(structSchema.calcByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));
     }
 
     t.end();

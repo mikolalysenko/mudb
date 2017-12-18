@@ -49,7 +49,7 @@ export class MuString implements MuSchema<string> {
         return base;
     }
 
-    public getByteLength (str:string) {
+    public calcByteLength (str:string) {
         return 4 + str.length * 4;
     }
 }

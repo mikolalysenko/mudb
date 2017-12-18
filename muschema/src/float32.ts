@@ -24,7 +24,7 @@ export class MuFloat32 extends MuNumber {
         return base;
     }
 
-    public getByteLength (x:MuFloat32) {
+    public calcByteLength (x:MuFloat32) {
         return 4;
     }
 }

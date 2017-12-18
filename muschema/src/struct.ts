@@ -31,7 +31,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
     public readonly diffBinary:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
     public readonly patchBinary:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
-    public readonly getByteLength:(value:_MuStructT<StructSpec>) => number;
+    public readonly calcByteLength:(value:_MuStructT<StructSpec>) => number;
 
     constructor (spec:StructSpec) {
         const structProps:string[] = Object.keys(spec).sort();
@@ -112,7 +112,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             patch: func('patch', ['x', 'p']),
             diffBinary: func('diffBinary', ['b', 't', 's']),
             patchBinary: func('patchBinary', ['b', 's']),
-            getByteLength: func('getByteLength', ['x']),
+            calcByteLength: func('calcByteLength', ['x']),
         };
 
         const poolRef = prelude.def('[]');
@@ -325,7 +325,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         const dTracker = methods.diffBinary.def(0);
         const numPatch = methods.diffBinary.def(0);
 
-        methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.getByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
+        methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.calcByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
         propRefs.forEach((propRef, i) => {
             const muType = structTypes[i].muType;
 
@@ -390,8 +390,8 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.patchBinary.push(`return result`);
 
-        // getByteLength subroutine
-        const byteLength = methods.getByteLength.def(0);
+        // calcByteLength subroutine
+        const byteLength = methods.calcByteLength.def(0);
         let partialByteLength = 0;
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
@@ -417,13 +417,13 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     partialByteLength += type.identity.byteLength;
                     break;
                 case 'string':
-                    methods.getByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
+                    methods.calcByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
                     break;
                 default:
-                    methods.getByteLength.push(`${byteLength}+=${typeRefs[i]}.getByteLength(x[${propRef}]);`);
+                    methods.calcByteLength.push(`${byteLength}+=${typeRefs[i]}.calcByteLength(x[${propRef}]);`);
             }
         });
-        methods.getByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
+        methods.calcByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
         const muDataRef = prelude.def('{}');
         propRefs.forEach((propRef, i) => {
@@ -453,6 +453,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         this.diff = compiled.diff;
         this.diffBinary = compiled.diffBinary;
         this.patchBinary = compiled.patchBinary;
-        this.getByteLength = compiled.getByteLength;
+        this.calcByteLength = compiled.calcByteLength;
     }
 }

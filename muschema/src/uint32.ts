@@ -24,7 +24,7 @@ export class MuUint32 extends MuNumber {
         return base;
     }
 
-    public getByteLength (x:MuUint32) {
+    public calcByteLength (x:MuUint32) {
         return 4;
     }
 }

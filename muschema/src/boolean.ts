@@ -47,7 +47,7 @@ export class MuBoolean implements MuSchema<boolean> {
         }
     }
 
-    public getByteLength (b:MuBoolean) {
+    public calcByteLength (b:MuBoolean) {
         return 1;
     }
 }
