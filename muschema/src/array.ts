@@ -76,6 +76,42 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
+    public getByteLength (x:_MuArrayType<ValueSchema>) : number {
+        const LENGTH_BYTES = 4;
+
+        const length = x.length;
+        const numTrackers = Math.ceil(length / 8);
+
+        let result = LENGTH_BYTES + numTrackers;
+
+        const valueSchema = this.muData;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'int8':
+            case 'uint8':
+                result += length;
+                break;
+            case 'int16':
+            case 'uint16':
+                result += length * 2;
+                break;
+            case 'float32':
+            case 'int32':
+            case 'uint32':
+                result += length * 4;
+                break;
+            case 'float64':
+                result += length * 8;
+                break;
+            default:
+                for (let i = 0; i < length; ++i) {
+                    result += valueSchema.getByteLength!(x[i]);
+                }
+        }
+
+        return result;
+    }
+
     public diffBinary (
         base:_MuArrayType<ValueSchema>,
         target:_MuArrayType<ValueSchema>,
@@ -172,37 +208,6 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             } else {
                 result[i] = valueSchema.clone(valueSchema.identity);
             }
-        }
-
-        return result;
-    }
-
-    public getByteLength (x:_MuArrayType<ValueSchema>) : number {
-        const length = x.length;
-        const numTrackers = Math.ceil(length / 8);
-
-        const META_BYTES = 8;
-        let result = META_BYTES + numTrackers;
-
-        const valueSchema = this.muData;
-        switch (valueSchema.muType) {
-            case 'boolean':
-            case 'int8':
-            case 'uint8':
-                result += length;
-            case 'int16':
-            case 'uint16':
-                result += length * 2;
-            case 'float32':
-            case 'int32':
-            case 'uint32':
-                result += length * 4;
-            case 'float64':
-                result += length * 8;
-            default:
-                for (let i = 0; i < length; ++i) {
-                    result += valueSchema.getByteLength!(x[i]);
-                }
         }
 
         return result;
