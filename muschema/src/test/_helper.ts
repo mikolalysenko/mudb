@@ -1,9 +1,11 @@
 import {
+    MuBoolean,
     MuFloat32,
     MuFloat64,
     MuInt8,
     MuInt16,
     MuInt32,
+    MuString,
     MuUint8,
     MuUint16,
     MuUint32,
@@ -15,7 +17,7 @@ import {
 
 import {
     Constants,
-    primitiveMuTypes,
+    muPrimitiveTypes,
 } from '../constants';
 
 function randomSign () {
@@ -34,7 +36,7 @@ function randomCodePoint () {
     return Math.random() * MAX_CODE_POINT | 0;
 }
 
-const muNumType2Schema = {
+const muNumType2SchemaType = {
     'float32': MuFloat32,
     'float64': MuFloat64,
     'int8': MuInt8,
@@ -44,8 +46,24 @@ const muNumType2Schema = {
     'uint16': MuUint16,
     'uint32': MuUint32,
 };
-export function numSchema (muType) {
-    return muNumType2Schema[muType]();
+export function muNumSchema (muType) {
+    return new muNumType2SchemaType[muType]();
+}
+
+const muPrimitiveType2SchemaType = {
+    'boolean': MuBoolean,
+    'float32': MuFloat32,
+    'float64': MuFloat64,
+    'int8': MuInt8,
+    'int16': MuInt16,
+    'int32': MuInt32,
+    'string': MuString,
+    'uint8': MuUint8,
+    'uint16': MuUint16,
+    'uint32': MuUint32,
+};
+export function muPrimitiveSchema (muType) {
+    return new muPrimitiveType2SchemaType[muType]();
 }
 
 export function randomStr () {
@@ -95,7 +113,7 @@ export function randomValueOf (muType:string) {
 }
 
 export function testPairFactory (t, schema, fn?) {
-    function patch (a, b) {
+    function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
         schema.diffBinary(a, b, ws);
         const rs = new MuReadStream(ws);
@@ -104,12 +122,12 @@ export function testPairFactory (t, schema, fn?) {
 
     return  fn ?
             (a, b) => {
-                t.same(patch(a, b), fn(b));
-                t.same(patch(b, a), fn(a));
+                t.same(diffPatch(a, b), fn(b));
+                t.same(diffPatch(b, a), fn(a));
             }
             :
             (a, b) => {
-                t.same(patch(a, b), b);
-                t.same(patch(b, a), a);
+                t.same(diffPatch(a, b), b);
+                t.same(diffPatch(b, a), a);
             };
 }

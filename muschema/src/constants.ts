@@ -1,4 +1,4 @@
-export const primitiveMuTypes = [
+export const muPrimitiveTypes = [
     'boolean',
     'float32',
     'float64',
@@ -11,7 +11,7 @@ export const primitiveMuTypes = [
     'uint32',
 ];
 
-export const nonPrimitiveMuTypes = [
+export const muNonPrimitiveTypes = [
     'array',
     'dictionary',
     'struct',
@@ -63,7 +63,7 @@ export const muType2ReadMethod = {
     uint32: 'readUint32',
 };
 
-export const muType2ArrayType = {
+export const muType2TypedArray = {
     float32: Float32Array,
     float64: Float64Array,
     int8: Int8Array,

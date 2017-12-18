@@ -4,47 +4,36 @@ import {
     MuBoolean,
     MuFloat32,
     MuFloat64,
-    MuInt8,
-    MuInt16,
-    MuInt32,
     MuString,
     MuStruct,
-    MuUint8,
-    MuUint16,
-    MuUint32,
     MuVector,
-} from '../index';
+} from '../';
 import {
     MuWriteStream,
     MuReadStream,
 } from 'mustreams';
 
+import { muPrimitiveTypes } from '../constants';
 import {
+    muPrimitiveSchema,
     randomStr,
     randomValueOf,
     testPairFactory,
 } from './_helper';
 
-test('struct muType', (t) => {
-    const struct = new MuStruct({});
-    t.equals(struct.muType, 'struct');
-    t.end();
-});
-
-test('struct muData', (t) => {
+test('struct - muData', (t) => {
     const spec = {
         v: new MuFloat32(),
-        vs: new MuVector(new MuFloat32(), 2),
     };
     const struct = new MuStruct(spec);
 
+    t.notEquals(struct.muData, spec);
     t.equals(struct.muData.v, spec.v);
-    t.equals(struct.muData.vs, spec.vs);
 
     t.end();
 });
 
-test('struct identity', (t) => {
+test('struct - identity', (t) => {
     const struct = new MuStruct({
         v: new MuFloat64(0.233),
         vs: new MuVector(new MuFloat64(0.233), 2),
@@ -53,14 +42,14 @@ test('struct identity', (t) => {
     });
 
     t.equals(struct.identity.v, 0.233);
-    t.equals(struct.identity.vs.constructor, Float64Array);
+    t.same(struct.identity.vs, [0.233, 0.233]);
     t.equals(struct.identity.s, 'foo');
     t.equals(struct.identity.b, false);
 
     t.end();
 });
 
-test('struct alloc()', (t) => {
+test('struct - allocation when the pool is empty', (t) => {
     const struct = new MuStruct({
         v: new MuFloat64(0.233),
         vs: new MuVector(new MuFloat64(0.233), 2),
@@ -68,15 +57,15 @@ test('struct alloc()', (t) => {
         b: new MuBoolean(),
     });
 
-    t.equals(typeof struct.alloc().v, 'number');
-    t.equals(struct.alloc().vs.constructor, Float64Array);
-    t.equals(typeof struct.alloc().s, 'string');
-    t.equals(typeof struct.alloc().b, 'boolean');
+    t.equals(struct.alloc().v, 0.233);
+    t.same(struct.alloc().vs, [0.233, 0.233]);
+    t.equals(struct.alloc().s, 'foo');
+    t.equals(struct.alloc().b, false);
 
     t.end();
 });
 
-test('struct getByteLength()', (t) => {
+test('struct - get byte length', (t) => {
     const struct = new MuStruct({
         v: new MuFloat64(0.233),
         vs: new MuVector(new MuFloat64(0.233), 2),
@@ -84,36 +73,29 @@ test('struct getByteLength()', (t) => {
         b: new MuBoolean(),
     });
 
-    t.equals(struct.getByteLength({ v: 0.233, vs: new Float64Array([0.233, 0.233]), s: 'foo', b: false }), 1 + 8 + 2 * 8 + 4 + 4 * 3 + 1);
+    t.equals(
+        struct.getByteLength({
+            v: 0.233,
+            vs: new Float64Array([0.233, 0.233]),
+            s: 'foo',
+            b: false,
+        }),
+        1 + 8 + 2 * 8 + 4 + 4 * 3 + 1,
+    );
 
     t.end();
 });
 
-test('struct diff() & patch()', (t) => {
-    const myType2MuSchema = {
-        'boolean': MuBoolean,
-        'float32': MuFloat32,
-        'float64': MuFloat64,
-        'int8': MuInt8,
-        'int16': MuInt16,
-        'int32': MuInt32,
-        'string': MuString,
-        'uint8': MuUint8,
-        'uint16': MuUint16,
-        'uint32': MuUint32,
-    };
-    const muTypes = Object.keys(myType2MuSchema);
-    const muSchemas = muTypes.map((type) => myType2MuSchema[type]);
-
+test('struct - diff and patch flat struct', (t) => {
     function structSpec () {
         const result = {};
-        for (const Schema of muSchemas) {
-            result[randomStr()] = new Schema();
+        for (const muType of muPrimitiveTypes) {
+            result[randomStr()] = muPrimitiveSchema(muType);
         }
         return result;
     }
 
-    for (let i = 0; i < 100; ++i) {
+    for (let i = 0; i < 500; ++i) {
         const spec = structSpec();
         const structSchema = new MuStruct(spec);
 
@@ -123,9 +105,9 @@ test('struct diff() & patch()', (t) => {
             const result = {};
 
             const propNames = Object.keys(spec);
-            const types = propNames.map((name) => spec[name].muType);
-            propNames.forEach((name, idx) => {
-                result[name] = randomValueOf(types[idx]);
+            const muTypes = propNames.map((name) => spec[name].muType);
+            propNames.forEach((propName, idx) => {
+                result[propName] = randomValueOf(muTypes[idx]);
             });
 
             return result;
@@ -137,9 +119,9 @@ test('struct diff() & patch()', (t) => {
     t.end();
 });
 
-test('nested struct', (t) => {
-    function deepStruct(depth:number) {
-        if (depth === 2) {
+test('struct - operations on nested struct', (t) => {
+    function structSchemaOf (depth:number) : MuStruct<any> {
+        if (depth <= 2) {
             return new MuStruct({
                 type: new MuString('nested'),
                 struct: new MuStruct({
@@ -147,43 +129,46 @@ test('nested struct', (t) => {
                 }),
             });
         }
+
         return new MuStruct({
             type: new MuString('nested'),
-            struct: deepStruct(--depth),
+            struct: structSchemaOf(depth - 1),
         });
     }
 
-    function modifyStruct(ds) {
-        if (ds.struct) {
-            ds.type = 'branch';
-            modifyStruct(ds.struct);
+    function modifyStruct (s) {
+        if (s.struct) {
+            s.type = 'branch';
+            modifyStruct(s.struct);
         } else {
-            ds.type = 'leaf';
+            s.type = 'leaf';
         }
     }
 
-    for (let levels = 2; levels < 100; ++levels) {
-        const struct = deepStruct(levels);
-        const identity = struct.identity;
-        const clone = struct.clone(identity);
+    for (let depth = 2; depth < 100; ++depth) {
+        const structSchema = structSchemaOf(depth);
 
-        t.notEquals(clone, identity);
-        t.same(clone, identity);
+        // clone
+        const identity = structSchema.identity;
+        const struct = structSchema.clone(identity);
 
-        let ws = new MuWriteStream(2);
-        struct.diffBinary(identity, clone, ws);
-        let rs = new MuReadStream(ws);
+        t.notEquals(struct, identity);
+        t.same(struct, identity);
 
-        t.same(struct.patchBinary(identity, rs), identity);
+        // diff & patch
+        const ws = new MuWriteStream(2);
+        structSchema.diffBinary(identity, struct, ws);
+        const rs = new MuReadStream(ws);
 
-        modifyStruct(clone);
-        ws = new MuWriteStream(2);
-        struct.diffBinary(identity, clone, ws);
-        rs = new MuReadStream(ws);
+        t.same(structSchema.patchBinary(identity, rs), struct);
 
-        t.same(struct.patchBinary(identity, rs), clone);
+        modifyStruct(struct);
 
-        t.equals(struct.getByteLength(identity), levels + (levels - 1) * (4 + 6 * 4) + (4 + 4 * 4));
+        const testPair = testPairFactory(t, structSchema);
+        testPair(identity, struct);
+
+        // get byte length
+        t.equals(structSchema.getByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));
     }
 
     t.end();

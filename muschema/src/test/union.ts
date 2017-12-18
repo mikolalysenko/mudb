@@ -11,14 +11,10 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-    MuArray,
-    MuDictionary,
-    MuStruct,
     MuUnion,
-    MuVector,
 } from '../';
-import { primitiveMuTypes } from '../constants';
 
+import { muPrimitiveTypes } from '../constants';
 import {
     randomValueOf,
     testPairFactory,
@@ -91,7 +87,7 @@ test('union - clone pair of primitive type', (t) => {
     };
     const unionSchema = new MuUnion(schemaSpec);
 
-    for (const muType of primitiveMuTypes) {
+    for (const muType of muPrimitiveTypes) {
         const pair = randomPairOf(muType);
         const copy = unionSchema.clone(pair);
 
@@ -149,10 +145,11 @@ test('union - diff and patch flat pair', (t) => {
 
     const testPair = testPairFactory(t, unionSchema);
 
-    for (const typeA of primitiveMuTypes) {
+    for (const typeA of muPrimitiveTypes) {
         testPair(randomPairOf(typeA), randomPairOf(typeA));
 
-        for (const typeB of primitiveMuTypes) {
+        // pair of pairs with different types
+        for (const typeB of muPrimitiveTypes) {
             if (typeB === typeA) {
                 continue;
             }
@@ -186,8 +183,9 @@ test('union - diff and patch nested pair', (t) => {
 
     const testPair = testPairFactory(t, unionSchema);
 
-    for (const typeA of primitiveMuTypes) {
-        for (let i = 0; i < 10; ++i) {
+    for (const typeA of muPrimitiveTypes) {
+        // pair of pairs of the same type
+        for (let i = 0; i < 200; ++i) {
             const pairA = {
                 type: 'subType' as TypeName,
                 data: {
@@ -205,12 +203,13 @@ test('union - diff and patch nested pair', (t) => {
             testPair(pairA, pairB);
         }
 
-        for (const typeB of primitiveMuTypes) {
+        for (const typeB of muPrimitiveTypes) {
             if (typeA === typeB) {
                 continue;
             }
 
-            for (let i = 0; i < 10; ++i) {
+            // pair of pairs of different types
+            for (let i = 0; i < 200; ++i) {
                 const pairA = {
                     type: 'subType' as TypeName,
                     data: {

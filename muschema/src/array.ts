@@ -4,7 +4,6 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 import {
     muType2ReadMethod,
     muType2WriteMethod,
-    primitiveMuTypes,
 } from './constants';
 
 export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
