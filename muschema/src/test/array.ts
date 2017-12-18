@@ -126,6 +126,54 @@ test('array - clone nested array', (t) => {
     t.end();
 });
 
+test('array - get byte length', (t) => {
+    const muType2BytesPerElement = {
+        boolean: 1,
+        float32: 4,
+        float64: 8,
+        int8: 1,
+        int16: 2,
+        int32: 4,
+        uint8: 1,
+        uint16: 2,
+        uint32: 4,
+    };
+
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        const arraySchema = new MuArray(valueSchema);
+
+        const arr = flatArrayOf(muType);
+
+        const LENGTH_BYTES = 4;
+
+        const length = arr.length;
+        const numTrackers = Math.ceil(length / 8);
+
+        if (muType === 'string') {
+            let sumStrsLength = 0;
+            sumStrsLength = arr.reduce(
+                (acc, str) => acc + str.length,
+                sumStrsLength,
+            );
+
+            t.equals(
+                arraySchema.getByteLength(arr),
+                LENGTH_BYTES + numTrackers + length * 4 + sumStrsLength * 4,
+            );
+
+            continue;
+        }
+
+        t.equals(
+            arraySchema.getByteLength(arr),
+            LENGTH_BYTES + numTrackers + length * muType2BytesPerElement[muType],
+        );
+    }
+
+    t.end();
+});
+
 test('array - diff and patch flat array', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
