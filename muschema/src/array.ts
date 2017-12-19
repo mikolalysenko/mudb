@@ -76,6 +76,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
+    // a word for length of array +
+    // bytes for trackers +
+    // bytes for data
     public calcByteLength (x:_MuArrayType<ValueSchema>) : number {
         const LENGTH_BYTES = 4;
 

@@ -12,10 +12,11 @@ import {
     randomShortStr,
     randomStr,
     randomValueOf,
+    testFactory,
     testPairFactory,
 } from './_helper';
 
-test('dictionary - identity', (t) => {
+test('dictionary - identity defaults to an empty object', (t) => {
     const dictA = new MuDictionary(new MuVoid());
 
     t.same(dictA.identity, {});
@@ -53,7 +54,7 @@ function flatDictOf (muType, genStrFn=randomStr) {
     return dictOfDepth(1, muType, genStrFn);
 }
 
-test('dictionary - clone flat dictionary', (t) => {
+test('dictionary - clone() can create copies of a flat dictionary', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const dictSchema = new MuDictionary(valueSchema);
@@ -70,7 +71,7 @@ test('dictionary - clone flat dictionary', (t) => {
     t.end();
 });
 
-test('dictionary - clone nested dictionary', (t) => {
+test('dictionary - clone() can create copies of a nested dictionary', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
@@ -102,7 +103,64 @@ test('dictionary - clone nested dictionary', (t) => {
     t.end();
 });
 
-test('dictionary - diff and patch flat dictionary', (t) => {
+test('dictionary - calculating byte length', (t) => {
+    function sumStrsLength (strs:string[]) {
+        return strs.reduce(
+            (acc, str) => acc + str.length,
+            0,
+        );
+    }
+
+    function calcStrsByteLength (strs:string[]) {
+        let result = 0;
+
+        const STR_LENGTH_BYTES = 4;
+        const BYTES_PER_CHAR = 4;
+
+        result += strs.length * STR_LENGTH_BYTES;
+        result += sumStrsLength(strs) * BYTES_PER_CHAR;
+
+        return result;
+    }
+
+    const muType2numBytes = {
+        boolean: 1,
+        float32: 4,
+        float64: 8,
+        int8: 1,
+        int16: 2,
+        int32: 4,
+        uint8: 1,
+        uint16: 2,
+        uint32: 4,
+    };
+
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        const dictSchema = new MuDictionary(valueSchema);
+
+        const dict = flatDictOf(muType, randomShortStr);
+
+        const COUNTER_BYTES = 8;
+
+        const props = Object.keys(dict);
+        const propsByteLength = calcStrsByteLength(props);
+        const numProps = props.length;
+
+        let valuesByteLength = numProps * muType2numBytes[muType];
+
+        if (muType === 'string') {
+            const values = props.map((k) => dict[k]);
+            valuesByteLength = calcStrsByteLength(values);
+        }
+
+        t.equals(dictSchema.calcByteLength(dict), COUNTER_BYTES + propsByteLength + valuesByteLength);
+    }
+
+    t.end();
+});
+
+test('dictionary - applying patches to base dictionary results in a copy of target dictionary (flat)', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const dictSchema = new MuDictionary(valueSchema);
@@ -123,12 +181,16 @@ test('dictionary - diff and patch flat dictionary', (t) => {
                 flatDictOf(muType, randomShortStr),
             );
         }
+
+        const doTest = testFactory(t, dictSchema);
+        const dict = flatDictOf(muType);
+        doTest(dict, dict);
     }
 
     t.end();
 });
 
-test('dictionary - diff and patch nested dictionary', (t) => {
+test('dictionary - applying patches to base dictionary results in a copy of target dictionary (nested)', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
@@ -170,6 +232,10 @@ test('dictionary - diff and patch nested dictionary', (t) => {
                 dictOfDepth(4, muType),
             );
         }
+
+        const doTest = testFactory(t, dictSchema);
+        const dict = dictOfDepth(4, muType);
+        doTest(dict, dict);
     }
 
     t.end();

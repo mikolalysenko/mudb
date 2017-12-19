@@ -14,8 +14,8 @@ import {
 import {
     muPrimitiveSchema,
     randomValueOf,
-    testPairFactory,
     testFactory,
+    testPairFactory,
 } from './_helper';
 
 test('array - identity defaults to an empty array', (t) => {
@@ -63,7 +63,7 @@ function flatArrayOf (muType) {
     return nDArray(1, muType);
 }
 
-test('array - clone() can copy a flat array', (t) => {
+test('array - clone() can create copies of a flat array', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const arraySchema = new MuArray(valueSchema);
@@ -80,7 +80,7 @@ test('array - clone() can copy a flat array', (t) => {
     t.end();
 });
 
-test('array - clone() can copy a nested array', (t) => {
+test('array - clone() can create copies of a nested array', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
@@ -149,26 +149,24 @@ test('array - calculating byte length', (t) => {
         const LENGTH_BYTES = 4;
 
         const length = arr.length;
-        const numTrackers = Math.ceil(length / 8);
+        const BITS_PER_BYTE = 8;
+        const trackerBytes = Math.ceil(length / BITS_PER_BYTE);
+
+        let elementBytes = length * muType2BytesPerElement[muType];
 
         if (muType === 'string') {
-            let sumStrsLength = 0;
-            sumStrsLength = arr.reduce(
+            const STR_LENGTH_BYTES = 4;
+            const BYTES_PER_CHAR = 4;
+            const sumStrsLength = arr.reduce(
                 (acc, str) => acc + str.length,
-                sumStrsLength,
+                0,
             );
-
-            t.equals(
-                arraySchema.calcByteLength(arr),
-                LENGTH_BYTES + numTrackers + length * 4 + sumStrsLength * 4,
-            );
-
-            continue;
+            elementBytes = length * STR_LENGTH_BYTES + sumStrsLength * BYTES_PER_CHAR;
         }
 
         t.equals(
             arraySchema.calcByteLength(arr),
-            LENGTH_BYTES + numTrackers + length * muType2BytesPerElement[muType],
+            LENGTH_BYTES + trackerBytes + elementBytes,
         );
     }
 
@@ -204,10 +202,6 @@ test('array - applying patches to base array results in a copy of target array (
             new MuArray(valueSchema),
         );
 
-        let doTest = testFactory(t, arraySchema);
-        let arr = nDArray(2, muType);
-        doTest(arr, arr);
-
         let testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
@@ -221,11 +215,6 @@ test('array - applying patches to base array results in a copy of target array (
                 new MuArray(valueSchema),
             ),
         );
-
-        doTest = testFactory(t, arraySchema);
-        arr = nDArray(3, muType);
-        doTest(arr, arr);
-
         testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
@@ -241,11 +230,6 @@ test('array - applying patches to base array results in a copy of target array (
                 ),
             ),
         );
-
-        doTest = testFactory(t, arraySchema);
-        arr = nDArray(4, muType);
-        doTest(arr, arr);
-
         testPair = testPairFactory(t, arraySchema);
         for (let i = 0; i < 200; ++i) {
             testPair(
@@ -253,6 +237,10 @@ test('array - applying patches to base array results in a copy of target array (
                 nDArray(4, muType),
             );
         }
+
+        const doTest = testFactory(t, arraySchema);
+        const arr = nDArray(4, muType);
+        doTest(arr, arr);
     }
 
     t.end();
