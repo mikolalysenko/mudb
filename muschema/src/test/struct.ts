@@ -18,75 +18,64 @@ import {
     muPrimitiveSchema,
     randomStr,
     randomValueOf,
-    testPairFactory,
+    testPatchingPairFactory,
 } from './_helper';
 
 test('struct - muData', (t) => {
     const spec = {
         v: new MuFloat32(),
     };
-    const struct = new MuStruct(spec);
+    const structSchema = new MuStruct(spec);
 
-    t.notEquals(struct.muData, spec);
-    t.equals(struct.muData.v, spec.v);
+    t.notEquals(structSchema.muData, spec);
+    t.equals(structSchema.muData.v, spec.v);
 
     t.end();
 });
 
 test('struct - identity', (t) => {
-    const struct = new MuStruct({
+    const structSchema = new MuStruct({
         v: new MuFloat64(0.233),
         vs: new MuVector(new MuFloat64(0.233), 2),
         s: new MuString('foo'),
         b: new MuBoolean(),
     });
 
-    t.equals(struct.identity.v, 0.233);
-    t.same(struct.identity.vs, [0.233, 0.233]);
-    t.equals(struct.identity.s, 'foo');
-    t.equals(struct.identity.b, false);
+    t.equals(structSchema.identity.v, 0.233);
+    t.same(structSchema.identity.vs, [0.233, 0.233]);
+    t.equals(structSchema.identity.s, 'foo');
+    t.equals(structSchema.identity.b, false);
 
     t.end();
 });
 
-test('struct - allocation when the pool is empty', (t) => {
-    const struct = new MuStruct({
+test('struct - calcByteLength()', (t) => {
+    const structSchema = new MuStruct({
         v: new MuFloat64(0.233),
-        vs: new MuVector(new MuFloat64(0.233), 2),
         s: new MuString('foo'),
         b: new MuBoolean(),
     });
 
-    t.equals(struct.alloc().v, 0.233);
-    t.same(struct.alloc().vs, [0.233, 0.233]);
-    t.equals(struct.alloc().s, 'foo');
-    t.equals(struct.alloc().b, false);
+    const struct = {
+        v: 0.233,
+        s: 'foo',
+        b: false,
+    };
 
-    t.end();
-});
-
-test('struct - get byte length', (t) => {
-    const struct = new MuStruct({
-        v: new MuFloat64(0.233),
-        vs: new MuVector(new MuFloat64(0.233), 2),
-        s: new MuString('foo'),
-        b: new MuBoolean(),
-    });
+    const numProps = Object.keys(struct).length;
+    const BITS_PER_BYTE = 8;
+    const trackerBytes = Math.ceil(numProps / BITS_PER_BYTE);
+    const dataBytes = 8 + 4 + 3 * 4 + 1;
 
     t.equals(
-        struct.calcByteLength({
-            v: 0.233,
-            vs: new Float64Array([0.233, 0.233]),
-            s: 'foo',
-            b: false,
-        }),
-        1 + 8 + 2 * 8 + 4 + 4 * 3 + 1,
+        structSchema.calcByteLength(struct),
+        trackerBytes + dataBytes,
     );
 
     t.end();
 });
 
-test('struct - diff and patch flat struct', (t) => {
+test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const muType of muPrimitiveTypes) {
@@ -99,7 +88,7 @@ test('struct - diff and patch flat struct', (t) => {
         const spec = structSpec();
         const structSchema = new MuStruct(spec);
 
-        const testPair = testPairFactory(t, structSchema);
+        const testPatchingPair = testPatchingPairFactory(t, structSchema);
 
         const randomStruct = () => {
             const result = {};
@@ -113,13 +102,13 @@ test('struct - diff and patch flat struct', (t) => {
             return result;
         };
 
-        testPair(randomStruct(), randomStruct());
+        testPatchingPair(randomStruct(), randomStruct());
     }
 
     t.end();
 });
 
-test('struct - operations on nested struct', (t) => {
+test('struct (nested)', (t) => {
     function structSchemaOf (depth:number) : MuStruct<any> {
         if (depth <= 2) {
             return new MuStruct({
@@ -164,8 +153,8 @@ test('struct - operations on nested struct', (t) => {
 
         modifyStruct(struct);
 
-        const testPair = testPairFactory(t, structSchema);
-        testPair(identity, struct);
+        const testPatchingPair = testPatchingPairFactory(t, structSchema);
+        testPatchingPair(identity, struct);
 
         // get byte length
         t.equals(structSchema.calcByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));

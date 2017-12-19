@@ -17,7 +17,7 @@ import {
 import { muPrimitiveTypes } from '../constants';
 import {
     randomValueOf,
-    testPairFactory,
+    testPatchingPairFactory,
 } from './_helper';
 
 test('union - identity', (t) => {
@@ -26,7 +26,7 @@ test('union - identity', (t) => {
     });
 
     t.same(unionSchema.identity, {
-        type:   '',
+        type: '',
         data: void 0,
     });
 
@@ -45,7 +45,7 @@ test('union - identity', (t) => {
     t.end();
 });
 
-test('union - allocation', (t) => {
+test('union - alloc()', (t) => {
     const unionSchema = new MuUnion(
         {
             number: new MuInt8(123),
@@ -71,7 +71,7 @@ function randomPairOf (type) {
     };
 }
 
-test('union - clone pair of primitive type', (t) => {
+test('union (flat type-data pair) - clone()', (t) => {
     // the spec keys can have arbitrary names
     const schemaSpec = {
         boolean: new MuBoolean(),
@@ -98,7 +98,7 @@ test('union - clone pair of primitive type', (t) => {
     t.end();
 });
 
-test('union - clone pair of union type', (t) => {
+test('union (nested type-data pair) - clone()', (t) => {
     const schemaSpec = {
         subType: new MuUnion(
             {
@@ -127,7 +127,7 @@ test('union - clone pair of union type', (t) => {
     t.end();
 });
 
-test('union - diff and patch flat pair', (t) => {
+test('union - calcByteLength()', (t) => {
     // the spec keys can have arbitrary names
     const schemaSpec = {
         boolean: new MuBoolean(),
@@ -143,24 +143,76 @@ test('union - diff and patch flat pair', (t) => {
     };
     const unionSchema = new MuUnion(schemaSpec);
 
-    const testPair = testPairFactory(t, unionSchema);
+    const muType2numBytes = {
+        boolean: 1,
+        float32: 4,
+        float64: 8,
+        int8: 1,
+        int16: 2,
+        int32: 4,
+        uint8: 1,
+        uint16: 2,
+        uint32: 4,
+    };
+
+    for (const muType of muPrimitiveTypes) {
+        const pair = randomPairOf(muType);
+
+        const TRACKER_BYTE = 1;
+
+        const STR_LENGTH_BYTES = 4;
+        const BYTES_PER_CHAR = 4;
+        const typeBytes = STR_LENGTH_BYTES + pair.type.length * BYTES_PER_CHAR;
+
+        let dataBytes = muType2numBytes[muType];
+
+        if (muType === 'string') {
+            dataBytes = STR_LENGTH_BYTES + pair.data.length * BYTES_PER_CHAR;
+        }
+
+        t.equals(
+            unionSchema.calcByteLength(pair),
+            TRACKER_BYTE + typeBytes + dataBytes,
+        );
+    }
+
+    t.end();
+});
+
+test('union (flat type-data pair) - diff() & patch()', (t) => {
+    // the spec keys can have arbitrary names
+    const schemaSpec = {
+        boolean: new MuBoolean(),
+        float32: new MuFloat32(),
+        float64: new MuFloat64(),
+        int8: new MuInt8(),
+        int16: new MuInt16(),
+        int32: new MuInt32(),
+        string: new MuString(),
+        uint8: new MuUint8(),
+        uint16: new MuUint16(),
+        uint32: new MuUint32(),
+    };
+    const unionSchema = new MuUnion(schemaSpec);
+
+    const testPatchingPair = testPatchingPairFactory(t, unionSchema);
 
     for (const typeA of muPrimitiveTypes) {
-        testPair(randomPairOf(typeA), randomPairOf(typeA));
+        testPatchingPair(randomPairOf(typeA), randomPairOf(typeA));
 
         // pair of pairs with different types
         for (const typeB of muPrimitiveTypes) {
             if (typeB === typeA) {
                 continue;
             }
-            testPair(randomPairOf(typeA), randomPairOf(typeB));
+            testPatchingPair(randomPairOf(typeA), randomPairOf(typeB));
         }
     }
 
     t.end();
 });
 
-test('union - diff and patch nested pair', (t) => {
+test('union (nested type-data pair) - diff() & patch()', (t) => {
     // the spec keys can have arbitrary names
     const schemaSpec = {
         subType: new MuUnion({
@@ -181,7 +233,7 @@ test('union - diff and patch nested pair', (t) => {
     type TypeName = 'subType';
     type InnerTypeName = 'boolean'|'float32'|'float64'|'int8'|'int16'|'int32'|'string'|'uint8'|'uint16'|'uint32';
 
-    const testPair = testPairFactory(t, unionSchema);
+    const testPatchingPair = testPatchingPairFactory(t, unionSchema);
 
     for (const typeA of muPrimitiveTypes) {
         // pair of pairs of the same type
@@ -200,7 +252,7 @@ test('union - diff and patch nested pair', (t) => {
                     data: randomValueOf(typeA),
                 },
             };
-            testPair(pairA, pairB);
+            testPatchingPair(pairA, pairB);
         }
 
         for (const typeB of muPrimitiveTypes) {
@@ -224,7 +276,7 @@ test('union - diff and patch nested pair', (t) => {
                         data: randomValueOf(typeB),
                     },
                 };
-                testPair(pairA, pairB);
+                testPatchingPair(pairA, pairB);
             }
         }
     }

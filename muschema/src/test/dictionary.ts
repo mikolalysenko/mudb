@@ -12,11 +12,11 @@ import {
     randomShortStr,
     randomStr,
     randomValueOf,
-    testFactory,
-    testPairFactory,
+    testPatchingFactory,
+    testPatchingPairFactory,
 } from './_helper';
 
-test('dictionary - identity defaults to an empty object', (t) => {
+test('dictionary - identity', (t) => {
     const dictA = new MuDictionary(new MuVoid());
 
     t.same(dictA.identity, {});
@@ -54,7 +54,7 @@ function flatDictOf (muType, genStrFn=randomStr) {
     return dictOfDepth(1, muType, genStrFn);
 }
 
-test('dictionary - clone() can create copies of a flat dictionary', (t) => {
+test('dictionary (flat) - clone()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const dictSchema = new MuDictionary(valueSchema);
@@ -71,7 +71,7 @@ test('dictionary - clone() can create copies of a flat dictionary', (t) => {
     t.end();
 });
 
-test('dictionary - clone() can create copies of a nested dictionary', (t) => {
+test('dictionary (nested) - clone()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
@@ -103,7 +103,7 @@ test('dictionary - clone() can create copies of a nested dictionary', (t) => {
     t.end();
 });
 
-test('dictionary - calculating byte length', (t) => {
+test('dictionary - calcByteLength()', (t) => {
     function sumStrsLength (strs:string[]) {
         return strs.reduce(
             (acc, str) => acc + str.length,
@@ -160,15 +160,15 @@ test('dictionary - calculating byte length', (t) => {
     t.end();
 });
 
-test('dictionary - applying patches to base dictionary results in a copy of target dictionary (flat)', (t) => {
+test('dictionary (flat) - diff() & patch()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         const dictSchema = new MuDictionary(valueSchema);
 
-        const testPair = testPairFactory(t, dictSchema);
+        const testPatchingPair = testPatchingPairFactory(t, dictSchema);
 
         for (let i = 0; i < 200; ++i) {
-            testPair(
+            testPatchingPair(
                 flatDictOf(muType, randomStr),
                 flatDictOf(muType, randomStr),
             );
@@ -176,30 +176,30 @@ test('dictionary - applying patches to base dictionary results in a copy of targ
 
         for (let i = 0; i < 200; ++i) {
             // increase the chance of getting properties with the same name
-            testPair(
+            testPatchingPair(
                 flatDictOf(muType, randomShortStr),
                 flatDictOf(muType, randomShortStr),
             );
         }
 
-        const doTest = testFactory(t, dictSchema);
+        const testPatching = testPatchingFactory(t, dictSchema);
         const dict = flatDictOf(muType);
-        doTest(dict, dict);
+        testPatching(dict, dict);
     }
 
     t.end();
 });
 
-test('dictionary - applying patches to base dictionary results in a copy of target dictionary (nested)', (t) => {
+test('dictionary (nested) - diff() & patch()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
 
         let dictSchema = new MuDictionary(
             new MuDictionary(valueSchema),
         );
-        let testPair = testPairFactory(t, dictSchema);
+        let testPatchingPair = testPatchingPairFactory(t, dictSchema);
         for (let i = 0; i < 200; ++i) {
-            testPair(
+            testPatchingPair(
                 dictOfDepth(2, muType),
                 dictOfDepth(2, muType),
             );
@@ -210,9 +210,9 @@ test('dictionary - applying patches to base dictionary results in a copy of targ
                 new MuDictionary(valueSchema),
             ),
         );
-        testPair = testPairFactory(t, dictSchema);
+        testPatchingPair = testPatchingPairFactory(t, dictSchema);
         for (let i = 0; i < 200; ++i) {
-            testPair(
+            testPatchingPair(
                 dictOfDepth(3, muType),
                 dictOfDepth(3, muType),
             );
@@ -225,17 +225,17 @@ test('dictionary - applying patches to base dictionary results in a copy of targ
                 ),
             ),
         );
-        testPair = testPairFactory(t, dictSchema);
+        testPatchingPair = testPatchingPairFactory(t, dictSchema);
         for (let i = 0; i < 200; ++i) {
-            testPair(
+            testPatchingPair(
                 dictOfDepth(4, muType),
                 dictOfDepth(4, muType),
             );
         }
 
-        const doTest = testFactory(t, dictSchema);
+        const testPatching = testPatchingFactory(t, dictSchema);
         const dict = dictOfDepth(4, muType);
-        doTest(dict, dict);
+        testPatching(dict, dict);
     }
 
     t.end();

@@ -317,10 +317,45 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.patch.push('return result;');
 
-        // diffBinary subroutine
+        // calcByteLength subroutine
         const numProps = structProps.length;
         const trackerBytes = Math.ceil(numProps / 8);
 
+        const byteLength = methods.calcByteLength.def(0);
+        let partialByteLength = 0;
+        propRefs.forEach((propRef, i) => {
+            const type = structTypes[i];
+            switch (type.muType) {
+                case 'boolean':
+                case 'int8':
+                case 'uint8':
+                    ++partialByteLength;
+                    break;
+                case 'int16':
+                case 'uint16':
+                    partialByteLength += 2;
+                    break;
+                case 'float32':
+                case 'int32':
+                case 'uint32':
+                    partialByteLength += 4;
+                    break;
+                case 'float64':
+                    partialByteLength += 8;
+                    break;
+                case 'vector':
+                    partialByteLength += type.identity.byteLength;
+                    break;
+                case 'string':
+                    methods.calcByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
+                    break;
+                default:
+                    methods.calcByteLength.push(`${byteLength}+=${typeRefs[i]}.calcByteLength(x[${propRef}]);`);
+            }
+        });
+        methods.calcByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
+
+        // diffBinary subroutine
         const dTrackerOffset = methods.diffBinary.def(0);
         const dTracker = methods.diffBinary.def(0);
         const numPatch = methods.diffBinary.def(0);
@@ -389,41 +424,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             }
         });
         methods.patchBinary.push(`return result`);
-
-        // calcByteLength subroutine
-        const byteLength = methods.calcByteLength.def(0);
-        let partialByteLength = 0;
-        propRefs.forEach((propRef, i) => {
-            const type = structTypes[i];
-            switch (type.muType) {
-                case 'boolean':
-                case 'int8':
-                case 'uint8':
-                    ++partialByteLength;
-                    break;
-                case 'int16':
-                case 'uint16':
-                    partialByteLength += 2;
-                    break;
-                case 'float32':
-                case 'int32':
-                case 'uint32':
-                    partialByteLength += 4;
-                    break;
-                case 'float64':
-                    partialByteLength += 8;
-                    break;
-                case 'vector':
-                    partialByteLength += type.identity.byteLength;
-                    break;
-                case 'string':
-                    methods.calcByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
-                    break;
-                default:
-                    methods.calcByteLength.push(`${byteLength}+=${typeRefs[i]}.calcByteLength(x[${propRef}]);`);
-            }
-        });
-        methods.calcByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
         const muDataRef = prelude.def('{}');
         propRefs.forEach((propRef, i) => {

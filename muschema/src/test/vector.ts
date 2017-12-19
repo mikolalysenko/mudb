@@ -10,20 +10,17 @@ import { muType2TypedArray } from '../constants';
 import {
     muNumSchema,
     randomValueOf,
-    testPairFactory,
+    testPatchingPairFactory,
 } from './_helper';
 
 test('vector - identity', (t) => {
     const vecSchema = new MuVector(new MuFloat64(5e-324), 3);
-
-    t.equals(vecSchema.identity.constructor, Float64Array);
-    t.equals(vecSchema.identity.length, 3);
-    t.equals(vecSchema.identity[0], 5e-324);
+    t.same(vecSchema.identity, [5e-324, 5e-324, 5e-324]);
 
     t.end();
 });
 
-test('vector - allocation when the pool is empty', (t) => {
+test('vector - alloc() when the pool is empty', (t) => {
     const vecSchema = new MuVector(new MuUint8(), 5);
     const uint8 = vecSchema.alloc();
 
@@ -52,7 +49,7 @@ const muNumTypes = [
     'uint32',
 ];
 
-test('vector - cloning', (t) => {
+test('vector - clone()', (t) => {
     for (const muType of muNumTypes) {
         const valueSchema = muNumSchema(muType);
         const dimension = 100;
@@ -70,20 +67,40 @@ test('vector - cloning', (t) => {
     t.end();
 });
 
-test('vector - diffing & patching', (t) => {
+test('vector - calcByteLength()', (t) => {
     for (const muType of muNumTypes) {
         const valueSchema = muNumSchema(muType);
         const dimension = 100;
         const vecSchema = new MuVector(valueSchema, dimension);
 
-        const testPair = testPairFactory(
+        const vec = typedArrayOf(muType, dimension);
+
+        const dataBytes = dimension * vecSchema.identity.BYTES_PER_ELEMENT;
+        const trackerBytes = Math.ceil(dataBytes / 8);
+
+        t.equals(
+            vecSchema.calcByteLength(vec),
+            trackerBytes + dataBytes,
+        );
+    }
+
+    t.end();
+});
+
+test('vector - diff() & patch()', (t) => {
+    for (const muType of muNumTypes) {
+        const valueSchema = muNumSchema(muType);
+        const dimension = 100;
+        const vecSchema = new MuVector(valueSchema, dimension);
+
+        const testPatchingPair = testPatchingPairFactory(
             t,
             vecSchema,
             (vec) => new Uint8Array(vec.buffer),
         );
 
         for (let i = 0; i < 200; ++i) {
-            testPair(
+            testPatchingPair(
                 typedArrayOf(muType, dimension),
                 typedArrayOf(muType, dimension),
             );

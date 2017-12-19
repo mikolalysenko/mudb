@@ -113,7 +113,7 @@ export function randomValueOf (muType:string) {
     }
 }
 
-export function testFactory (t, schema:MuSchema<any>, fn?) {
+export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
     function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
         schema.diffBinary!(a, b, ws);
@@ -131,8 +131,8 @@ export function testFactory (t, schema:MuSchema<any>, fn?) {
             };
 }
 
-export function testPairFactory (t, schema:MuSchema<any>, fn?) {
-    const test = fn ? testFactory(t, schema, fn) : testFactory(t, schema);
+export function testPatchingPairFactory (t, schema:MuSchema<any>, fn?) {
+    const test = fn ? testPatchingFactory(t, schema, fn) : testPatchingFactory(t, schema);
 
     return (a, b) => {
         test(a, b);
