@@ -40,11 +40,7 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public patchBinary (a:boolean, stream:MuReadStream) {
-        if (stream.bytesLeft() > 0) {
-            return !!stream.readUint8();
-        } else {
-            return a;
-        }
+        return !!stream.readUint8();
     }
 
     public calcByteLength (b:MuBoolean) {

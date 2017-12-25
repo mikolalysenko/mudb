@@ -59,7 +59,6 @@ export function reallocBuffer (buffer:MuBuffer, nsize:number) {
     return result;
 }
 
-const SCRATCH_BUFFER = new MuBuffer(new ArrayBuffer(8));
 const LITTLE_ENDIAN = true;
 
 export class MuWriteStream {
@@ -136,15 +135,9 @@ export class MuWriteStream {
 export class MuReadStream {
     public buffer:MuBuffer;
     public offset:number = 0;
-    public readonly contentBytes:number;
 
-    constructor (ws:MuWriteStream) {
-        this.buffer = ws.buffer;
-        this.contentBytes = ws.offset;
-    }
-
-    public bytesLeft() : number {
-        return this.contentBytes - this.offset;
+    constructor (data:ArrayBuffer) {
+        this.buffer = new MuBuffer(data);
     }
 
     public readInt8 () : number {

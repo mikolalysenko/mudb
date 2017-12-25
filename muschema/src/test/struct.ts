@@ -147,7 +147,7 @@ test('struct (nested)', (t) => {
         // diff & patch
         const ws = new MuWriteStream(2);
         structSchema.diffBinary(identity, struct, ws);
-        const rs = new MuReadStream(ws);
+        const rs = new MuReadStream(ws.buffer.buffer);
 
         t.same(structSchema.patchBinary(identity, rs), struct);
 

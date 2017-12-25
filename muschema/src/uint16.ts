@@ -18,10 +18,7 @@ export class MuUint16 extends MuNumber {
     }
 
     public patchBinary (base:number, stream:MuReadStream) {
-        if (stream.bytesLeft() > 1) {
-            return stream.readUint16();
-        }
-        return base;
+        return stream.readUint16();
     }
 
     public calcByteLength (x:MuUint16) {
