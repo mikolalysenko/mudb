@@ -1,5 +1,6 @@
 import { MuSocket } from './socket';
 import { MuSchema } from 'muschema/schema';
+import { MuWriteStream, MuReadStream } from 'mustreams';
 
 import stableStringify = require('json-stable-stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
@@ -52,21 +53,30 @@ export class MuMessageFactory {
 
     public createDispatch (sockets:MuSocket[]) {
         const result = {};
+
         this.messageNames.forEach((name, messageId) => {
             const schema = this.schemas[messageId];
-            const packet = {
-                p: this.protocolId,
-                m: messageId,
-                d: null,
-            };
-            result[name] = function (data, unreliable?:boolean) {
-                packet.d = schema.diff(schema.identity, data);
-                const str = JSON.stringify(packet);
-                for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(str, unreliable);
+            result[name] = (data, unreliable?:boolean) => {
+                const stream = new MuWriteStream(32);
+
+                stream.writeUint32(this.protocolId);
+                const prefixOffset = stream.offset;
+                stream.writeUint32(messageId);
+
+                const diffFromIdentity = schema.diffBinary!(schema.identity, data, stream);
+                if (diffFromIdentity) {
+                    // mask the most significant bit of messageId on to indicate patches
+                    stream.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
+
+                for (let i = 0; i < sockets.length; ++i) {
+                    sockets[i].send(stream.buffer.uint8, unreliable);
+                }
+
+                stream.destroy();
             };
         });
+
         return result;
     }
 
@@ -107,48 +117,69 @@ export class MuProtocolFactory {
     }
 
     public createParser(spec:{
-            messageHandlers:({ [name:string]:(data, unreliable) => void }),
-            rawHandler:((data, unreliable) => void),
-        }[]) {
+        messageHandlers:({ [name:string]:(data, unreliable) => void }),
+        rawHandler:((data, unreliable) => void),
+    }[]) {
         const raw = spec.map((h) => h.rawHandler);
         const message = spec.map(({messageHandlers}, id) =>
-            this.protocolFactories[id].messageNames.map((name) => messageHandlers[name]));
+            this.protocolFactories[id].messageNames.map(
+                (name) => messageHandlers[name],
+            ),
+        );
         const factories = this.protocolFactories;
 
         return function (data, unreliable:boolean) {
-            const object = JSON.parse(data);
+            if (typeof data === 'string') {
+                const object = JSON.parse(data);
 
-            const protoId = object.p;
-            const protocol = factories[protoId];
-            if (!protocol) {
-                return;
-            }
+                const protoId = object.p;
+                const protocol = factories[protoId];
+                if (!protocol) {
+                    return;
+                }
 
-            if (object.u) {
-                const bytes = new Uint8Array(object.u);
-                raw[protoId](bytes, unreliable);
-            } else if (object.s) {
-                raw[protoId](object.s, unreliable);
-            } else {
-                const messageId = object.m;
-                const packetData = object.d;
+                if (object.u) {
+                    const bytes = new Uint8Array(object.u);
+                    raw[protoId](bytes, unreliable);
+                } else if (object.s) {
+                    raw[protoId](object.s, unreliable);
+                }
+            } else if (data instanceof ArrayBuffer) {
+                const stream = new MuReadStream(data);
+
+                const protoId = stream.readUint32();
+                const protocol = factories[protoId];
+
+                if (!protocol) {
+                    return;
+                }
+
+                const uint8 = stream.buffer.uint8;
+                // check the masked bit to see if there is a patch
+                const diffFromIdentity = uint8[stream.offset + 3] & 0x80;
+                uint8[stream.offset + 3] &= ~0x80;
+
+                const messageId = stream.readUint32();
                 const messageSchema = protocol.schemas[messageId];
+
                 if (!messageSchema) {
                     return;
                 }
+
                 const handler = message[protoId];
                 if (!handler || !handler[messageId]) {
                     return;
                 }
-                if (packetData === undefined) {
-                    const m = messageSchema.clone(messageSchema.identity);
-                    message[protoId][messageId](m, unreliable);
-                    messageSchema.free(m);
+
+                let m;
+                if (diffFromIdentity) {
+                    m = messageSchema.patchBinary!(messageSchema.identity, stream);
                 } else {
-                    const m = messageSchema.patch(messageSchema.identity, packetData);
-                    message[protoId][messageId](m, unreliable);
-                    messageSchema.free(m);
+                    m = messageSchema.clone(messageSchema.identity);
                 }
+                message[protoId][messageId](m, unreliable);
+
+                messageSchema.free(m);
             }
         };
     }

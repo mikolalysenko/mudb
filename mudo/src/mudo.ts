@@ -21,12 +21,12 @@ function clientTemplate (spec:ClientTemplateSpec) {
     function generateLocal() {
         return `
 var MuServer = require('${require.resolve('mudb/server')}').MuServer;
-var createServer = require('${spec.serverPath}');
+var launchServer = require('${spec.serverPath}');
 var muLocalSocket = require('${require.resolve('mulocal-socket')}');
 
 var socketServer = muLocalSocket.createLocalSocketServer();
 var server = new MuServer(socketServer);
-createServer(server);
+launchServer(server);
 
 var socket = muLocalSocket.createLocalSocket({
     sessionId: Math.round(1e12 * Math.random()).toString(32),
@@ -56,12 +56,12 @@ var socket = new MuWebSocket({
 
     return `
 var MuClient = require('${require.resolve('mudb/client')}').MuClient;
-var createClient = require('${spec.clientPath}');
+var runClient = require('${spec.clientPath}');
 
 ${generateSocket()}
 
 var client = new MuClient(socket);
-createClient(client);
+runClient(client);
 `;
 }
 
