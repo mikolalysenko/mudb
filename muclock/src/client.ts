@@ -130,7 +130,7 @@ export class MuClockClient {
     private _lastNow:number = 0;
     private _simulationClock() : number {
         const remoteClock = Math.max(
-            this._clock.now() * this._clockScale + this._clockShift + 2 * this._pingStatistic.median,
+            this._clock.now() * this._clockScale + this._clockShift,
             this._lastNow + 1e-6);
         this._lastNow = remoteClock;
         return remoteClock;
