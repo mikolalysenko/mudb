@@ -1,5 +1,6 @@
 import { MuSchema } from 'muschema/schema';
 import { MuUint32 } from 'muschema/uint32';
+import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export type MuAnySchema = MuSchema<any>;
 
@@ -49,6 +50,7 @@ export interface MuStateReplica<Schema extends MuAnySchema> {
     windowSize:number;
 }
 
+// store tick and state in stateSet while keeping all ticks in increasing order
 function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;
     ticks.push(tick);
@@ -113,46 +115,44 @@ function mostRecentCommonState (states:number[][]) : number {
     }
 }
 
+// add a new tick while keeping all ticks in increasing order
 export function addObservation (ticks:number[], newTick:number) {
     ticks.push(newTick);
-    for (let idx = ticks.length - 2; idx >= 0; --idx) {
-        if (ticks[idx] < newTick) {
-            ticks[idx + 1] = newTick;
+    for (let i = ticks.length - 2; i >= 0; --i) {
+        if (ticks[i] < newTick) {
+            ticks[i + 1] = newTick;
             break;
-        } else if (ticks[idx] > newTick) {
-            ticks[idx + 1] = ticks[idx];
+        } else if (ticks[i] > newTick) {
+            ticks[i + 1] = ticks[i];
         } else {
             break;
         }
     }
 }
 
+// remove ticks that are below horizon, except the first one
 export function forgetObservation (ticks:number[], horizon:number) {
-    let ptr = 1;
+    let pointer = 1;
     for (let i = 1; i < ticks.length; ++i) {
         if (ticks[i] >= horizon) {
-            ticks[ptr] = ticks[i];
-            ptr ++;
+            ticks[pointer] = ticks[i];
+            pointer++;
         }
     }
-    ticks.length = ptr;
+    ticks.length = pointer;
 }
 
 export function parseState<Schema extends MuAnySchema> (
     packet:any,
     schema:Schema,
     replica:MuStateReplica<Schema>,
-    ack:(tick:number, unreliable?:boolean) => void) : boolean {
-    const { history, state, tick, windowSize } = replica;
-    if (typeof packet.nextTick !== 'number' ||
-        typeof packet.baseTick !== 'number') {
-        return false;
-    }
-    const nextTick = packet.nextTick;
-    const baseTick = packet.baseTick;
-    const baseIndex = history.at(baseTick);
-    const baseState = history.states[baseIndex];
+    ack:(tick:number, unreliable?:boolean) => void,
+) : boolean {
+    const { history, windowSize } = replica;
 
+    const stream = new MuReadStream(packet);
+
+    const nextTick = stream.readUint32();
     // check that nextTick is valid
     for (let i = 0; i < history.ticks.length; ++i) {
         const x = history.ticks[i];
@@ -161,9 +161,17 @@ export function parseState<Schema extends MuAnySchema> (
         }
     }
 
+    // check the most significant bit of baseTick to see if there is a patch
+    const differentFromBase = stream.buffer.uint8[stream.offset + 3] & 0x80;
+    stream.buffer.uint8[stream.offset + 3] &= ~0x80;
+
+    const baseTick = stream.readUint32();
+    const baseIndex = history.at(baseTick);
+    const baseState = history.states[baseIndex];
+
     let nextState:Schema['identity'];
-    if ('patch' in packet) {
-        nextState = schema.patch(baseState, packet.patch);
+    if (differentFromBase) {
+        nextState = schema.patchBinary!(baseState, stream);
     } else {
         nextState = schema.clone(baseState);
     }
@@ -180,13 +188,14 @@ export function parseState<Schema extends MuAnySchema> (
 }
 
 export function publishState<Schema extends MuAnySchema> (
-        schema:Schema,
-        observations:number[][],
-        replica:MuStateReplica<Schema>,
-        raw:(data:Uint8Array|string, unreliable?:boolean) => void,
-        forget:(horizon:number, unreliable?:boolean) => void,
-        reliable:boolean) {
-    const { history, state, tick, windowSize } = replica;
+    schema:Schema,
+    observations:number[][],
+    replica:MuStateReplica<Schema>,
+    raw:(data:Uint8Array|string, unreliable?:boolean) => void,
+    forget:(horizon:number, unreliable?:boolean) => void,
+    reliable:boolean,
+) {
+    const { history, windowSize } = replica;
 
     observations.push(history.ticks);
     const baseTick = mostRecentCommonState(observations);
@@ -197,13 +206,23 @@ export function publishState<Schema extends MuAnySchema> (
 
     const nextTick = ++replica.tick;
 
-    const packet = JSON.stringify({
-        nextTick,
-        baseTick,
-        patch: schema.diff(baseState, replica.state),
-    });
     pushState(replica.history, nextTick, schema.clone(replica.state));
-    raw(packet, !reliable);
+
+    const stream = new MuWriteStream(128);
+
+    stream.writeUint32(nextTick);
+    const prefixOffset = stream.offset;
+    stream.writeUint32(baseTick);
+
+    const differentFromBase = schema.diffBinary!(baseState, replica.state, stream);
+    if (differentFromBase) {
+        // mask the most significant bit of baseTick on to indicate patches
+        stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+    }
+
+    raw(stream.buffer.uint8, !reliable);
+
+    stream.destroy();
 
     // update window
     const horizon = baseTick - windowSize;
