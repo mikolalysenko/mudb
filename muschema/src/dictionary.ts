@@ -116,19 +116,70 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
+    // a word reserved for number of properties removed +
+    // a word reserved for number of patches +
+    // bytes for property names +
+    // bytes for values
+    public calcByteLength (x:Dictionary<ValueSchema>) : number {
+        function calcStrsByteLength (strs:string[]) {
+            let r = 0;
+            for (const s of strs) {
+                r += 4 + 4 * s.length;
+            }
+            return r;
+        }
+
+        let result = 8;
+
+        const props = Object.keys(x);
+        result += calcStrsByteLength(props);
+
+        const valueSchema = this.muData;
+        const numProps = props.length;
+        switch (valueSchema.muType) {
+            case 'boolean':
+            case 'int8':
+            case 'uint8':
+                result += numProps;
+                break;
+            case 'int16':
+            case 'uint16':
+                result += numProps * 2;
+                break;
+            case 'float32':
+            case 'int32':
+            case 'uint32':
+                result += numProps * 4;
+                break;
+            case 'float64':
+                result += numProps * 8;
+                break;
+            case 'string':
+                const values = props.map((p) => x[p]);
+                result += calcStrsByteLength(values);
+                break;
+            default:
+                for (const key in x) {
+                    result += valueSchema.calcByteLength!(x[key]);
+                }
+        }
+
+        return result;
+    }
+
     public diffBinary (
         base:Dictionary<ValueSchema>,
         target:Dictionary<ValueSchema>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.getByteLength(base) + this.getByteLength(target));
+        stream.grow(this.calcByteLength(base) + this.calcByteLength(target));
 
         let numRemove = 0;
         let numPatch = 0;
 
-        const removeOffset = stream.offset;
-        const patchOffset = removeOffset + 4;
-        stream.offset = removeOffset + 8;
+        const removeCounterOffset = stream.offset;
+        const patchCounterOffset = removeCounterOffset + 4;
+        stream.offset = removeCounterOffset + 8;
 
         const baseProps = Object.keys(base);
         for (let i = 0; i < baseProps.length; ++i) {
@@ -142,9 +193,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const valueSchema = this.muData;
         const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
-            const prop = targetProps[i];
             const prefixOffset = stream.offset;
+
+            const prop = targetProps[i];
             stream.writeString(prop);
+
             if (prop in base) {
                 const different = valueSchema.diffBinary!(base[prop], target[prop], stream);
                 if (different) {
@@ -153,9 +206,12 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                     stream.offset = prefixOffset;
                 }
             } else {
-                const equal = !valueSchema.diffBinary!(valueSchema.identity, target[prop], stream);
-                if (equal) {
+                const equalToIdentity = !valueSchema.diffBinary!(valueSchema.identity, target[prop], stream);
+                if (equalToIdentity) {
+                    // mask the most significant bit of the word
+                    // recording the length of the property name
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+
                     if (valueSchema.muType === 'dictionary') {
                         stream.offset -= 8;
                     }
@@ -164,8 +220,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
         }
 
-        stream.writeUint32At(removeOffset, numRemove);
-        stream.writeUint32At(patchOffset, numPatch);
+        stream.writeUint32At(removeCounterOffset, numRemove);
+        stream.writeUint32At(patchCounterOffset, numPatch);
 
         return numPatch > 0 || numRemove > 0;
     }
@@ -203,49 +259,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             } else {
                 result[prop] = valueSchema.patchBinary!(valueSchema.identity, stream);
             }
-        }
-
-        return result;
-    }
-
-    public getByteLength (x:Dictionary<ValueSchema>) : number {
-        function calcStringsByteLength (strs:string[]) {
-            let r = 0;
-            for (const s of strs) {
-                r += 4 + 4 * s.length;
-            }
-            return r;
-        }
-
-        let result = 8;
-
-        const props = Object.keys(x);
-        const numProps = props.length;
-        result += calcStringsByteLength(props);
-
-        const valueSchema = this.muData;
-        switch (valueSchema.muType) {
-            case 'boolean':
-            case 'int8':
-            case 'uint8':
-                result += numProps;
-                break;
-            case 'int16':
-            case 'uint16':
-                result += numProps * 2;
-                break;
-            case 'float32':
-            case 'int32':
-            case 'uint32':
-                result += numProps * 4;
-                break;
-            case 'float64':
-                result += numProps * 8;
-                break;
-            default:
-                for (const key in x) {
-                    result += valueSchema.getByteLength!(x[key]);
-                }
         }
 
         return result;

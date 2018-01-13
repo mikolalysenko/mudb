@@ -72,10 +72,10 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 },
             },
             raw: (data, unreliable) => {
-                if (typeof data !== 'string') {
+                if (!(data instanceof Uint8Array)) {
                     return;
                 }
-                const packet = JSON.parse(data);
+                const packet = data.buffer;
                 if (parseState(packet, this.schema.server, this.server, this._protocol.server.message.ackState)) {
                     if (spec && spec.state) {
                         spec.state(this.server.state, this.server.tick, !unreliable);

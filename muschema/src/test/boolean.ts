@@ -26,7 +26,7 @@ test('boolean', (t) => {
     t.equals(b.diffBinary(true, false, ws), true);
     t.equals(b.diffBinary(false, true, ws), true);
 
-    const rs = new MuReadStream(ws);
+    const rs = new MuReadStream(ws.buffer.buffer);
 
     t.equals(b.patchBinary(true, rs), false);
     t.equals(b.patchBinary(true, rs), true);

@@ -43,13 +43,10 @@ export class MuString implements MuSchema<string> {
     }
 
     public patchBinary (base:string, stream:MuReadStream) {
-        if (stream.bytesLeft() > 4) {
-            return stream.readString();
-        }
-        return base;
+        return stream.readString();
     }
 
-    public getByteLength (str:string) {
+    public calcByteLength (str:string) {
         return 4 + str.length * 4;
     }
 }

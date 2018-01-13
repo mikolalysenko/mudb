@@ -5,7 +5,7 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-import { muType2ArrayType } from './constants';
+import { muType2TypedArray } from './constants';
 
 export type _MuVectorType<ValueSchema extends MuNumber> = {
     float32:Float32Array;
@@ -20,7 +20,7 @@ export type _MuVectorType<ValueSchema extends MuNumber> = {
 
 export class MuVector<ValueSchema extends MuNumber>
         implements MuSchema<_MuVectorType<ValueSchema>> {
-    private _constructor:typeof muType2ArrayType[ValueSchema['muType']];
+    private _constructor:typeof muType2TypedArray[ValueSchema['muType']];
     private _pool:_MuVectorType<ValueSchema>[] = [];
 
     public readonly identity:_MuVectorType<ValueSchema>;
@@ -31,7 +31,7 @@ export class MuVector<ValueSchema extends MuNumber>
     public readonly dimension:number;
 
     constructor (valueSchema:ValueSchema, dimension:number) {
-        this._constructor = muType2ArrayType[valueSchema.muType];
+        this._constructor = muType2TypedArray[valueSchema.muType];
 
         this.identity = new this._constructor(dimension);
         for (let i = 0; i < dimension; ++i) {
@@ -81,6 +81,12 @@ export class MuVector<ValueSchema extends MuNumber>
         return this.clone(a);
     }
 
+    // bytes for trackers +
+    // bytes enough to hold the value of vec
+    public calcByteLength (vec:_MuVectorType<ValueSchema>) {
+        return Math.ceil(this.identity.byteLength * 9 / 8);
+    }
+
     public diffBinary (
         base_:_MuVectorType<ValueSchema>,
         target_:_MuVectorType<ValueSchema>,
@@ -89,8 +95,8 @@ export class MuVector<ValueSchema extends MuNumber>
         const base = new Uint8Array(base_.buffer);
         const target = new Uint8Array(target_.buffer);
 
-        const dimension = this.dimension * this.identity.BYTES_PER_ELEMENT;
-        stream.grow(Math.ceil(dimension * 9 / 8));
+        const dimension = this.identity.byteLength;
+        stream.grow(this.calcByteLength(target));
 
         let trackerOffset = stream.offset;
         stream.offset = trackerOffset + Math.ceil(dimension / 8);
@@ -140,9 +146,5 @@ export class MuVector<ValueSchema extends MuNumber>
         }
 
         return result;
-    }
-
-    public getByteLength (vec:_MuVectorType<ValueSchema>) {
-        return this.identity.byteLength;
     }
 }

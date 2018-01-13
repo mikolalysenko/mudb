@@ -39,7 +39,7 @@ test('string', (t) => {
     t.equals(s.diffBinary(longStr, longStr, ws), false);
     t.equals(s.diffBinary(longStr, longStr.substring(0, longStr.length - 1), ws), true);
 
-    const rs = new MuReadStream(ws);
+    const rs = new MuReadStream(ws.buffer.buffer);
 
     t.equals(s.patchBinary(longStr, rs), longStr.substring(0, longStr.length - 1));
     t.equals(s.patchBinary(longStr, rs), longStr, 'running out of content, return the base value');

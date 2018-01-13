@@ -66,12 +66,26 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
+    // a byte for tracker +
+    // bytes for type value +
+    // bytes for data value
+    public calcByteLength (pair:_TypeDataPair<SubTypes>) : number {
+        let result = 1;
+
+        const type = pair.type;
+
+        result += 4 + type.length * 4;
+        result += this.muData[type].calcByteLength!(pair.data);
+
+        return result;
+    }
+
     public diffBinary (
         base:_TypeDataPair<SubTypes>,
         target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.getByteLength(target));
+        stream.grow(this.calcByteLength(target));
 
         const trackerOffset = stream.offset;
         stream.offset = trackerOffset + 1;
@@ -115,18 +129,6 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             const schema = this.muData[result.type];
             result.data = schema.patchBinary!(schema.identity, stream);
         }
-
-        return result;
-    }
-
-    public getByteLength (data:_TypeDataPair<SubTypes>) : number {
-        const TRACKER_BYTE = 1;
-        let result = TRACKER_BYTE;
-
-        const type = data.type;
-
-        result += 4 + type.length * 4;
-        result += this.muData[type].getByteLength!(data.data);
 
         return result;
     }

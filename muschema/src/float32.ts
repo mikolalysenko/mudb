@@ -18,13 +18,10 @@ export class MuFloat32 extends MuNumber {
     }
 
     public patchBinary (base:number, stream:MuReadStream) {
-        if (stream.bytesLeft() > 3) {
-            return stream.readFloat32();
-        }
-        return base;
+        return stream.readFloat32();
     }
 
-    public getByteLength (x:MuFloat32) {
+    public calcByteLength (x:MuFloat32) {
         return 4;
     }
 }

@@ -56,6 +56,7 @@ export class MuWebSocket implements MuSocket {
 
         const openSocket = () => {
             const socket = new WebSocket(this._url);
+            socket.binaryType = 'arraybuffer';
             socketQueue.push(socket);
 
             socket.onopen = () => {

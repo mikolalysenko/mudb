@@ -94,7 +94,7 @@ test('diff() & patch()', (t) => {
         t.equals(n.diffBinary(0, 1 - smallNum, ws), false);
         t.equals(n.diffBinary(1 - smallNum, 0, ws), false);
 
-        const rs = new MuReadStream(ws);
+        const rs = new MuReadStream(ws.buffer.buffer);
 
         t.equals(n.patchBinary(123, rs), 123, 'no content to be read, return the base value');
     });
@@ -111,7 +111,7 @@ test('diff() & patch()', (t) => {
         t.equals(n.diffBinary(1, 0, ws), true);
         t.equals(n.diffBinary(1, max, ws), true);
 
-        const rs = new MuReadStream(ws);
+        const rs = new MuReadStream(ws.buffer.buffer);
 
         t.equals(n.patchBinary(123, rs), min);
         t.equals(n.patchBinary(123, rs), 0);
@@ -129,7 +129,7 @@ test('diff() & patch()', (t) => {
         t.equals(n.diffBinary(1.0, -epsilon, ws), true);
         t.equals(n.diffBinary(1.0, epsilon, ws), true);
 
-        const rs = new MuReadStream(ws);
+        const rs = new MuReadStream(ws.buffer.buffer);
 
         t.equals(n.patchBinary(1.0, rs), -epsilon);
         t.equals(n.patchBinary(1.0, rs), epsilon);
