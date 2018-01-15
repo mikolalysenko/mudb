@@ -1,4 +1,5 @@
 import { MuSchema } from './schema';
+import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export type MuNumberType =
     'float32' |
@@ -11,7 +12,7 @@ export type MuNumberType =
     'uint32';
 
 /** Number type schema */
-export class MuNumber implements MuSchema<number> {
+export abstract class MuNumber implements MuSchema<number> {
     public readonly identity:number;
     public readonly muType:MuNumberType;
     public readonly json:object;
@@ -35,4 +36,9 @@ export class MuNumber implements MuSchema<number> {
         return;
     }
     public patch (s:number, p:number) { return p; }
+
+    public abstract diffBinary (b:number, t:number, stream:MuWriteStream) : boolean;
+    public abstract patchBinary (b:number, stream:MuReadStream) : number;
+
+    public abstract calcByteLength(x:MuNumber);
 }

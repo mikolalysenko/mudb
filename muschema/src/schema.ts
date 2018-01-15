@@ -29,10 +29,10 @@ export interface MuSchema<Value> {
     patch (base:Value, patch:any) : Value;
 
     /** Computes a binary patch */
-    diffBinary? (base:Value, target:Value, out:MuWriteStream) : boolean;
+    diffBinary (base:Value, target:Value, out:MuWriteStream) : boolean;
 
     /** Apply a patch to an object */
-    patchBinary? (base:Value, inp:MuReadStream) : Value;
+    patchBinary (base:Value, inp:MuReadStream) : Value;
 
-    calcByteLength? (x:any) : number;
+    calcByteLength (x:any) : number;
 }
