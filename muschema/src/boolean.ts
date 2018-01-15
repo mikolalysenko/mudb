@@ -28,7 +28,7 @@ export class MuBoolean implements MuSchema<boolean> {
         return false;
     }
 
-    public patchBinary (a:boolean, stream:MuReadStream) {
+    public patch (a:boolean, stream:MuReadStream) {
         return !!stream.readUint8();
     }
 

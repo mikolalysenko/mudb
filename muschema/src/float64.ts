@@ -17,7 +17,7 @@ export class MuFloat64 extends MuNumber {
         return false;
     }
 
-    public patchBinary (base:number, stream:MuReadStream) {
+    public patch (base:number, stream:MuReadStream) {
         return stream.readFloat64();
     }
 

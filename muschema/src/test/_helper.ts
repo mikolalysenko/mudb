@@ -118,7 +118,7 @@ export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
         const ws = new MuWriteStream(2);
         schema.diff(a, b, ws);
         const rs = new MuReadStream(ws.buffer.buffer);
-        return schema.patchBinary!(a, rs);
+        return schema.patch(a, rs);
     }
 
     return  fn ?

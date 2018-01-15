@@ -104,7 +104,7 @@ export class MuVector<ValueSchema extends MuNumber>
         return numPatch > 0;
     }
 
-    public patchBinary (
+    public patch (
         base:_MuVectorType<ValueSchema>,
         stream:MuReadStream,
     ) : Uint8Array {

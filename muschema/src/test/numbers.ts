@@ -96,7 +96,7 @@ test('diff() & patch()', (t) => {
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(123, rs), 123, 'no content to be read, return the base value');
+        t.equals(n.patch(123, rs), 123, 'no content to be read, return the base value');
     });
 
     TYPES.forEach((Type) => {
@@ -113,10 +113,10 @@ test('diff() & patch()', (t) => {
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(123, rs), min);
-        t.equals(n.patchBinary(123, rs), 0);
-        t.equals(n.patchBinary(123, rs), max);
-        t.equals(n.patchBinary(123, rs), 123, 'running out of content, return the base value');
+        t.equals(n.patch(123, rs), min);
+        t.equals(n.patch(123, rs), 0);
+        t.equals(n.patch(123, rs), max);
+        t.equals(n.patch(123, rs), 123, 'running out of content, return the base value');
     });
 
     FLOATS.forEach((Type) => {
@@ -131,8 +131,8 @@ test('diff() & patch()', (t) => {
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(1.0, rs), -epsilon);
-        t.equals(n.patchBinary(1.0, rs), epsilon);
+        t.equals(n.patch(1.0, rs), -epsilon);
+        t.equals(n.patch(1.0, rs), epsilon);
     });
 
     t.end();

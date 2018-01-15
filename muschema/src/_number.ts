@@ -30,7 +30,7 @@ export abstract class MuNumber implements MuSchema<number> {
     public clone (x:number) { return x; }
 
     public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
-    public abstract patchBinary (b:number, stream:MuReadStream) : number;
+    public abstract patch (b:number, stream:MuReadStream) : number;
 
     public abstract calcByteLength(x:MuNumber);
 }

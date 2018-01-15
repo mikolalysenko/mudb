@@ -165,7 +165,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return numPatch > 0 || numRemove > 0;
     }
 
-    public patchBinary (
+    public patch (
         base:Dictionary<ValueSchema>,
         stream:MuReadStream,
     ) : Dictionary<ValueSchema> {
@@ -192,11 +192,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             stream.buffer.uint8[stream.offset + 3] &= ~0x80;
             const prop = stream.readString();
             if (prop in base) {
-                result[prop] = valueSchema.patchBinary!(base[prop], stream);
+                result[prop] = valueSchema.patch(base[prop], stream);
             } else if (isIdentity) {
                 result[prop] = valueSchema.clone(valueSchema.identity);
             } else {
-                result[prop] = valueSchema.patchBinary!(valueSchema.identity, stream);
+                result[prop] = valueSchema.patch(valueSchema.identity, stream);
             }
         }
 

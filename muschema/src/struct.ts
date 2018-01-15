@@ -27,7 +27,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
     public readonly clone:(value:_MuStructT<StructSpec>) => _MuStructT<StructSpec>;
 
     public readonly diff:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
-    public readonly patchBinary:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
+    public readonly patch:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
     public readonly calcByteLength:(value:_MuStructT<StructSpec>) => number;
 
     constructor (spec:StructSpec) {
@@ -106,7 +106,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             free: func('free', ['x']),
             clone: func('clone', ['x']),
             diff: func('diff', ['b', 't', 's']),
-            patchBinary: func('patchBinary', ['b', 's']),
+            patch: func('patch', ['b', 's']),
             calcByteLength: func('calcByteLength', ['x']),
         };
 
@@ -323,19 +323,19 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         // return the number of tracker bytes plus content bytes
         methods.diff.push(`if(${numPatch}){return s.offset-${dTrackerOffset}+${trackerBytes}}else{s.offset=${dTrackerOffset};return 0}`);
 
-        // patchBinary subroutine
-        const pTrackerOffset = methods.patchBinary.def(0);
-        const pTracker = methods.patchBinary.def(0);
-        methods.patchBinary.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=clone(b);`);
+        // patch subroutine
+        const pTrackerOffset = methods.patch.def(0);
+        const pTracker = methods.patch.def(0);
+        methods.patch.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=clone(b);`);
         propRefs.forEach((propRef, i) => {
             if (!(i & 7)) {
-                methods.patchBinary.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
+                methods.patch.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
             }
 
             const muType = structTypes[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
+                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -346,13 +346,13 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
+                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
                     break;
                 default:
-                    methods.patchBinary.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=${typeRefs[i]}.patchBinary(b[${propRef}],s)}`);
+                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=${typeRefs[i]}.patch(b[${propRef}],s)}`);
             }
         });
-        methods.patchBinary.push(`return result`);
+        methods.patch.push(`return result`);
 
         const muDataRef = prelude.def('{}');
         propRefs.forEach((propRef, i) => {
@@ -379,7 +379,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         this.free = compiled.free;
         this.clone = compiled.clone;
         this.diff = compiled.diff;
-        this.patchBinary = compiled.patchBinary;
+        this.patch = compiled.patch;
         this.calcByteLength = compiled.calcByteLength;
     }
 }

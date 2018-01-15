@@ -17,7 +17,7 @@ export class MuInt16 extends MuNumber {
         return false;
     }
 
-    public patchBinary (base:number, stream:MuReadStream) {
+    public patch (base:number, stream:MuReadStream) {
         return stream.readInt16();
     }
 

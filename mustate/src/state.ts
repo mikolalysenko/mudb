@@ -171,7 +171,7 @@ export function parseState<Schema extends MuAnySchema> (
 
     let nextState:Schema['identity'];
     if (differentFromBase) {
-        nextState = schema.patchBinary!(baseState, stream);
+        nextState = schema.patch(baseState, stream);
     } else {
         nextState = schema.clone(baseState);
     }

@@ -28,7 +28,7 @@ export class MuString implements MuSchema<string> {
         return false;
     }
 
-    public patchBinary (base:string, stream:MuReadStream) {
+    public patch (base:string, stream:MuReadStream) {
         return stream.readString();
     }
 

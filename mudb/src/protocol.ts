@@ -174,7 +174,7 @@ export class MuProtocolFactory {
 
                 let m;
                 if (diffFromIdentity) {
-                    m = messageSchema.patchBinary!(messageSchema.identity, stream);
+                    m = messageSchema.patch(messageSchema.identity, stream);
                 } else {
                     m = messageSchema.clone(messageSchema.identity);
                 }

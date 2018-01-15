@@ -111,7 +111,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return false;
     }
 
-    public patchBinary (
+    public patch (
         base:_TypeDataPair<SubTypes>,
         stream:MuReadStream,
     ) : _TypeDataPair<SubTypes> {
@@ -120,14 +120,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         if (tracker === 1) {
             const schema = this.muData[result.type];
-            result.data = schema.patchBinary!(result.data, stream);
+            result.data = schema.patch(result.data, stream);
         }
 
         if (tracker === 2) {
             result.type = this._types[stream.readUint8()];
 
             const schema = this.muData[result.type];
-            result.data = schema.patchBinary!(schema.identity, stream);
+            result.data = schema.patch(schema.identity, stream);
         }
 
         return result;

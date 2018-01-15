@@ -170,7 +170,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return false;
     }
 
-    public patchBinary (
+    public patch (
         base:_MuArrayType<ValueSchema>,
         stream:MuReadStream,
     ) : _MuArrayType<ValueSchema> {
@@ -195,7 +195,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patchBinary!(base[i], stream);
+                result[i] = valueSchema.patch(base[i], stream);
             }
         }
 
@@ -207,7 +207,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patchBinary!(valueSchema.identity, stream);
+                result[i] = valueSchema.patch(valueSchema.identity, stream);
             } else {
                 result[i] = valueSchema.clone(valueSchema.identity);
             }

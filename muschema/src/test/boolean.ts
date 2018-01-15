@@ -28,8 +28,8 @@ test('boolean', (t) => {
 
     const rs = new MuReadStream(ws.buffer.buffer);
 
-    t.equals(b.patchBinary(true, rs), false);
-    t.equals(b.patchBinary(true, rs), true);
+    t.equals(b.patch(true, rs), false);
+    t.equals(b.patch(true, rs), true);
 
     t.end();
 });
