@@ -220,7 +220,8 @@ export function publishState<Schema extends MuAnySchema> (
         stream.buffer.uint8[prefixOffset + 3] |= 0x80;
     }
 
-    raw(stream.buffer.uint8, !reliable);
+    const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
+    raw(contentBytes, !reliable);
 
     stream.destroy();
 

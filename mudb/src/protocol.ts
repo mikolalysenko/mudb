@@ -69,8 +69,9 @@ export class MuMessageFactory {
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
 
+                const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(stream.buffer.uint8, unreliable);
+                    sockets[i].send(contentBytes, unreliable);
                 }
 
                 stream.destroy();
