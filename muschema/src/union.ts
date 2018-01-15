@@ -132,42 +132,4 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         return result;
     }
-
-    public diff (base:_TypeDataPair<SubTypes>, target:_TypeDataPair<SubTypes>) : (any | undefined) {
-        const model = this.muData[target.type];
-        if (target.type === base.type) {
-            const delta = model.diff(base.data, target.data);
-            if (delta === void 0) {
-                return;
-            }
-            return {
-                data: delta
-            };
-        } else {
-            return {
-                type: target.type,
-                data: model.diff(model.identity, target.data),
-            };
-        }
-    }
-
-    public patch (base:_TypeDataPair<SubTypes>, patch:any) : _TypeDataPair<SubTypes> {
-        if ('type' in patch) {
-            const model = this.muData[patch.type];
-            return {
-                type: patch.type,
-                data: model.patch(model.identity, patch.data),
-            };
-        } else if ('data' in patch) {
-            return {
-                type: base.type,
-                data: this.muData[base.type].patch(base.data, patch.data),
-            };
-        } else {
-            return {
-                type: base.type,
-                data: this.muData[base.type].clone(base.data),
-            };
-        }
-    }
 }

@@ -15,6 +15,4 @@ export class MuVoid implements MuSchema<void> {
     public diffBinary (b, t, stream:MuWriteStream) { return false; }
     public patchBinary (b, stream:MuReadStream) : void {}
     public calcByteLength () { return 0; }
-    public diff (b, t) : void {}
-    public patch (b, p) : void {}
 }

@@ -29,14 +29,6 @@ export abstract class MuNumber implements MuSchema<number> {
     public free (x:number) { }
     public clone (x:number) { return x; }
 
-    public diff (s:number, t:number) {
-        if (s !== t) {
-            return t;
-        }
-        return;
-    }
-    public patch (s:number, p:number) { return p; }
-
     public abstract diffBinary (b:number, t:number, stream:MuWriteStream) : boolean;
     public abstract patchBinary (b:number, stream:MuReadStream) : number;
 

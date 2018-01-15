@@ -19,17 +19,6 @@ export class MuBoolean implements MuSchema<boolean> {
     public free () { }
     public clone (b:boolean) { return b; }
 
-    public diff (a:boolean, b:boolean) {
-        if (a !== b) {
-            return b;
-        }
-        return;
-    }
-
-    public patch (a:boolean, b:boolean) {
-        return !!b;
-    }
-
     public diffBinary (a:boolean, b:boolean, stream:MuWriteStream) {
         if (a !== b) {
             stream.grow(1);

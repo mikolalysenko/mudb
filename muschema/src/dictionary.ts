@@ -18,7 +18,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         this.json = {
             type: 'dictionary',
             valueType: this.muData.json,
-            identity: JSON.stringify(this.diff({}, this.identity)),
+            identity: JSON.stringify(this.identity),
         };
     }
 
@@ -52,67 +52,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < props.length; ++i) {
             result[props[i]] = schema.clone(x[props[i]]);
         }
-        return result;
-    }
-
-    public diff (base:Dictionary<ValueSchema>, target:Dictionary<ValueSchema>) {
-        const remove:string[] = [];
-        const patch:{ [prop:string]:any } = {};
-
-        Object.keys(base).forEach((prop) => {
-            if (prop in target) {
-                const delta = this.muData.diff(base[prop], target[prop]);
-                if (delta !== undefined) {
-                    patch[prop] = delta;
-                }
-            } else {
-                remove.push(prop);
-            }
-        });
-
-        Object.keys(target).forEach((prop) => {
-            if (!(prop in base)) {
-                const d = this.muData.diff(this.muData.identity, target[prop]);
-                if (d !== undefined) {
-                    patch[prop] = d;
-                }
-            }
-        });
-
-        if (remove.length === 0 && Object.keys(patch).length === 0) {
-            return;
-        }
-
-        return {
-            remove,
-            patch,
-        };
-    }
-
-    public patch (base:Dictionary<ValueSchema>, {remove, patch}:{remove:string[], patch:{[key:string]:any}}) {
-        const result = {};
-        const schema = this.muData;
-
-        const baseProps = Object.keys(base);
-        for (let i = 0; i < baseProps.length; ++i) {
-            const prop = baseProps[i];
-            if (remove.indexOf(prop) < 0) {
-                if (prop in patch) {
-                    result[prop] = schema.patch(base[prop], patch[prop]);
-                } else {
-                    result[prop] = schema.clone(base[prop]);
-                }
-            }
-        }
-
-        const patchProps = Object.keys(patch);
-        for (let i = 0; i < patchProps.length; ++i) {
-            const prop = patchProps[i];
-            if (!(prop in base)) {
-                result[prop] = schema.patch(schema.identity, patch[prop]);
-            }
-        }
-
         return result;
     }
 
