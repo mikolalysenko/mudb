@@ -26,7 +26,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
     public readonly free:(value:_MuStructT<StructSpec>) => void;
     public readonly clone:(value:_MuStructT<StructSpec>) => _MuStructT<StructSpec>;
 
-    public readonly diffBinary:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
+    public readonly diff:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
     public readonly patchBinary:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
     public readonly calcByteLength:(value:_MuStructT<StructSpec>) => number;
 
@@ -105,7 +105,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             alloc: func('alloc', []),
             free: func('free', ['x']),
             clone: func('clone', ['x']),
-            diffBinary: func('diffBinary', ['b', 't', 's']),
+            diff: func('diff', ['b', 't', 's']),
             patchBinary: func('patchBinary', ['b', 's']),
             calcByteLength: func('calcByteLength', ['x']),
         };
@@ -284,18 +284,18 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.calcByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
-        // diffBinary subroutine
-        const dTrackerOffset = methods.diffBinary.def(0);
-        const dTracker = methods.diffBinary.def(0);
-        const numPatch = methods.diffBinary.def(0);
+        // diff subroutine
+        const dTrackerOffset = methods.diff.def(0);
+        const dTracker = methods.diff.def(0);
+        const numPatch = methods.diff.def(0);
 
-        methods.diffBinary.push(`${dTrackerOffset}=s.offset;s.grow(this.calcByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
+        methods.diff.push(`${dTrackerOffset}=s.offset;s.grow(this.calcByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
         propRefs.forEach((propRef, i) => {
             const muType = structTypes[i].muType;
 
             switch (muType) {
                 case 'boolean':
-                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.writeUint8(t[${propRef}]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diff.push(`if(b[${propRef}]!==t[${propRef}]){s.writeUint8(t[${propRef}]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -306,22 +306,22 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.diffBinary.push(`if(b[${propRef}]!==t[${propRef}]){s.${muType2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diff.push(`if(b[${propRef}]!==t[${propRef}]){s.${muType2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
-                    methods.diffBinary.push(`if(${typeRefs[i]}.diffBinary(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diff.push(`if(${typeRefs[i]}.diff(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
             }
 
             if ((i & 7) === 7) {
-                methods.diffBinary.push(`s.writeUint8At(${dTrackerOffset}+${i >> 3},${dTracker});${dTracker}=0;`);
+                methods.diff.push(`s.writeUint8At(${dTrackerOffset}+${i >> 3},${dTracker});${dTracker}=0;`);
             }
         });
 
         if (numProps & 7) {
-            methods.diffBinary.push(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
+            methods.diff.push(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
         }
         // return the number of tracker bytes plus content bytes
-        methods.diffBinary.push(`if(${numPatch}){return s.offset-${dTrackerOffset}+${trackerBytes}}else{s.offset=${dTrackerOffset};return 0}`);
+        methods.diff.push(`if(${numPatch}){return s.offset-${dTrackerOffset}+${trackerBytes}}else{s.offset=${dTrackerOffset};return 0}`);
 
         // patchBinary subroutine
         const pTrackerOffset = methods.patchBinary.def(0);
@@ -378,7 +378,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         this.alloc = compiled.alloc;
         this.free = compiled.free;
         this.clone = compiled.clone;
-        this.diffBinary = compiled.diffBinary;
+        this.diff = compiled.diff;
         this.patchBinary = compiled.patchBinary;
         this.calcByteLength = compiled.calcByteLength;
     }

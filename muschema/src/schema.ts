@@ -23,7 +23,7 @@ export interface MuSchema<Value> {
     clone (state:Value) : Value;
 
     /** Computes a binary patch */
-    diffBinary (base:Value, target:Value, out:MuWriteStream) : boolean;
+    diff (base:Value, target:Value, out:MuWriteStream) : boolean;
 
     /** Apply a patch to an object */
     patchBinary (base:Value, inp:MuReadStream) : Value;

@@ -36,8 +36,8 @@ test('string', (t) => {
 
     const ws = new MuWriteStream(2);
 
-    t.equals(s.diffBinary(longStr, longStr, ws), false);
-    t.equals(s.diffBinary(longStr, longStr.substring(0, longStr.length - 1), ws), true);
+    t.equals(s.diff(longStr, longStr, ws), false);
+    t.equals(s.diff(longStr, longStr.substring(0, longStr.length - 1), ws), true);
 
     const rs = new MuReadStream(ws.buffer.buffer);
 

@@ -8,7 +8,7 @@ export class MuFloat32 extends MuNumber {
         super(+(value || 0));
     }
 
-    public diffBinary (base:number, target:number, stream:MuWriteStream) {
+    public diff (base:number, target:number, stream:MuWriteStream) {
         if (base !== target) {
             stream.grow(4);
             stream.writeFloat32(target);

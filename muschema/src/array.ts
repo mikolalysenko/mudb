@@ -115,7 +115,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diffBinary (
+    public diff (
         base:_MuArrayType<ValueSchema>,
         target:_MuArrayType<ValueSchema>,
         stream:MuWriteStream,
@@ -136,7 +136,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const baseLength = base.length;
         const valueSchema = this.muData;
         for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
-            if (valueSchema.diffBinary!(base[i], target[i], stream)) {
+            if (valueSchema.diff(base[i], target[i], stream)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
@@ -148,7 +148,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
 
         for (let i = baseLength; i < targetLength; ++i) {
-            if (valueSchema.diffBinary!(valueSchema.identity, target[i], stream)) {
+            if (valueSchema.diff(valueSchema.identity, target[i], stream)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }

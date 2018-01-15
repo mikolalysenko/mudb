@@ -106,7 +106,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diffBinary (
+    public diff (
         base:Dictionary<ValueSchema>,
         target:Dictionary<ValueSchema>,
         stream:MuWriteStream,
@@ -138,14 +138,14 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             stream.writeString(prop);
 
             if (prop in base) {
-                const different = valueSchema.diffBinary!(base[prop], target[prop], stream);
+                const different = valueSchema.diff(base[prop], target[prop], stream);
                 if (different) {
                     ++numPatch;
                 } else {
                     stream.offset = prefixOffset;
                 }
             } else {
-                const equalToIdentity = !valueSchema.diffBinary!(valueSchema.identity, target[prop], stream);
+                const equalToIdentity = !valueSchema.diff(valueSchema.identity, target[prop], stream);
                 if (equalToIdentity) {
                     // mask the most significant bit of the word
                     // recording the length of the property name

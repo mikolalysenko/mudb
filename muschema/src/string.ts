@@ -19,7 +19,7 @@ export class MuString implements MuSchema<string> {
     public free () {}
     public clone (x:string) { return x; }
 
-    public diffBinary (base:string, target:string, stream:MuWriteStream) {
+    public diff (base:string, target:string, stream:MuWriteStream) {
         if (base !== target) {
             stream.grow(4 + 4 * target.length);
             stream.writeString(target);

@@ -12,7 +12,7 @@ export class MuVoid implements MuSchema<void> {
     public alloc () : void {}
     public free () : void {}
     public clone () : void {}
-    public diffBinary (b, t, stream:MuWriteStream) { return false; }
+    public diff (b, t, stream:MuWriteStream) { return false; }
     public patchBinary (b, stream:MuReadStream) : void {}
     public calcByteLength () { return 0; }
 }

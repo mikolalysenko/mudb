@@ -80,7 +80,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return result;
     }
 
-    public diffBinary (
+    public diff (
         base:_TypeDataPair<SubTypes>,
         target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
@@ -94,12 +94,12 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         const schema = this.muData[target.type];
         if (base.type === target.type) {
-            if (schema.diffBinary!(base.data, target.data, stream)) {
+            if (schema.diff(base.data, target.data, stream)) {
                 tracker = 1;
             }
         } else {
             stream.writeUint8(this._types.indexOf(target.type));
-            schema.diffBinary!(schema.identity, target.data, stream);
+            schema.diff(schema.identity, target.data, stream);
             tracker = 2;
         }
 

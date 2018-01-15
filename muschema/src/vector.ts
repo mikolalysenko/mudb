@@ -67,7 +67,7 @@ export class MuVector<ValueSchema extends MuNumber>
         return Math.ceil(this.identity.byteLength * 9 / 8);
     }
 
-    public diffBinary (
+    public diff (
         base_:_MuVectorType<ValueSchema>,
         target_:_MuVectorType<ValueSchema>,
         stream:MuWriteStream,

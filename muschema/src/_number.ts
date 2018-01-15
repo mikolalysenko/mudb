@@ -29,7 +29,7 @@ export abstract class MuNumber implements MuSchema<number> {
     public free (x:number) { }
     public clone (x:number) { return x; }
 
-    public abstract diffBinary (b:number, t:number, stream:MuWriteStream) : boolean;
+    public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
     public abstract patchBinary (b:number, stream:MuReadStream) : number;
 
     public abstract calcByteLength(x:MuNumber);

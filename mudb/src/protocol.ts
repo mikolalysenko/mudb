@@ -63,7 +63,7 @@ export class MuMessageFactory {
                 const prefixOffset = stream.offset;
                 stream.writeUint32(messageId);
 
-                const diffFromIdentity = schema.diffBinary!(schema.identity, data, stream);
+                const diffFromIdentity = schema.diff(schema.identity, data, stream);
                 if (diffFromIdentity) {
                     // mask the most significant bit of messageId on to indicate patches
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;

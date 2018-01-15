@@ -116,7 +116,7 @@ export function randomValueOf (muType:string) {
 export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
     function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
-        schema.diffBinary!(a, b, ws);
+        schema.diff(a, b, ws);
         const rs = new MuReadStream(ws.buffer.buffer);
         return schema.patchBinary!(a, rs);
     }

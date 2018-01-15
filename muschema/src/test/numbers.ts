@@ -89,10 +89,10 @@ test('diff() & patch()', (t) => {
 
         const smallNum = 1e-8;
 
-        t.equals(n.diffBinary(0, smallNum, ws), false);
-        t.equals(n.diffBinary(smallNum, 0, ws), false);
-        t.equals(n.diffBinary(0, 1 - smallNum, ws), false);
-        t.equals(n.diffBinary(1 - smallNum, 0, ws), false);
+        t.equals(n.diff(0, smallNum, ws), false);
+        t.equals(n.diff(smallNum, 0, ws), false);
+        t.equals(n.diff(0, 1 - smallNum, ws), false);
+        t.equals(n.diff(1 - smallNum, 0, ws), false);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
@@ -107,9 +107,9 @@ test('diff() & patch()', (t) => {
         const min = CONSTANTS[muType].MIN;
         const max = CONSTANTS[muType].MAX;
 
-        t.equals(n.diffBinary(1, min, ws), true);
-        t.equals(n.diffBinary(1, 0, ws), true);
-        t.equals(n.diffBinary(1, max, ws), true);
+        t.equals(n.diff(1, min, ws), true);
+        t.equals(n.diff(1, 0, ws), true);
+        t.equals(n.diff(1, max, ws), true);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
@@ -126,8 +126,8 @@ test('diff() & patch()', (t) => {
         const muType = n.muType;
         const epsilon = CONSTANTS[muType]['EPSILON'];
 
-        t.equals(n.diffBinary(1.0, -epsilon, ws), true);
-        t.equals(n.diffBinary(1.0, epsilon, ws), true);
+        t.equals(n.diff(1.0, -epsilon, ws), true);
+        t.equals(n.diff(1.0, epsilon, ws), true);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 

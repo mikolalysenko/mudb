@@ -214,7 +214,7 @@ export function publishState<Schema extends MuAnySchema> (
     const prefixOffset = stream.offset;
     stream.writeUint32(baseTick);
 
-    const differentFromBase = schema.diffBinary!(baseState, replica.state, stream);
+    const differentFromBase = schema.diff(baseState, replica.state, stream);
     if (differentFromBase) {
         // mask the most significant bit of baseTick on to indicate patches
         stream.buffer.uint8[prefixOffset + 3] |= 0x80;
