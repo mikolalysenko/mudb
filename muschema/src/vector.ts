@@ -107,8 +107,9 @@ export class MuVector<ValueSchema extends MuNumber>
     public patch (
         base:_MuVectorType<ValueSchema>,
         stream:MuReadStream,
-    ) : Uint8Array {
-        const result = new Uint8Array(this.clone(base).buffer);
+    ) : _MuVectorType<ValueSchema> {
+        const resultArray = this.clone(base);
+        const result = new Uint8Array(resultArray.buffer);
 
         const trackerOffset = stream.offset;
         const trackerBytes = Math.ceil(this.dimension * this.identity.BYTES_PER_ELEMENT / 8);
@@ -125,6 +126,6 @@ export class MuVector<ValueSchema extends MuNumber>
             }
         }
 
-        return result;
+        return resultArray;
     }
 }
