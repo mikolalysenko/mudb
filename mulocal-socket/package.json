@@ -15,7 +15,8 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.0.1"
+    "mudb": "0.0.1",
+    "mustreams": "0.0.0"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",

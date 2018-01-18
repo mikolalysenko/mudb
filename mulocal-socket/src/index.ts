@@ -10,8 +10,33 @@ import {
     MuSocketSpec,
     MuConnectionHandler,
 } from 'mudb/socket';
+import {
+    allocBuffer,
+    freeBuffer,
+    MuBuffer,
+} from 'mustreams';
 
 function noop () {}
+
+class BufferWrapper {
+    private _buffer:MuBuffer;
+    public bytes:Uint8Array;
+
+    constructor (data:Uint8Array) {
+        const size = data.length;
+        const buffer = allocBuffer(size);
+        const bytes = buffer.uint8.subarray(0, size);
+        bytes.set(data);
+        this._buffer = buffer;
+        this.bytes = bytes;
+    }
+
+    public free () {
+        freeBuffer(this._buffer);
+    }
+}
+
+type PendingMessage = string | BufferWrapper;
 
 export class MuLocalSocket implements MuSocket {
     public sessionId:MuSessionId;
@@ -53,7 +78,7 @@ export class MuLocalSocket implements MuSocket {
             0);
     }
 
-    private _pendingMessages:MuData[] = [];
+    private _pendingMessages:PendingMessage[] = [];
     private _pendingDrainTimeout;
     private _handleDrain = () => {
         this._pendingDrainTimeout = 0;
@@ -63,34 +88,45 @@ export class MuLocalSocket implements MuSocket {
             }
             const message = this._pendingMessages[i];
             try {
-                this._duplex._onMessage(message, false);
+                if (typeof message === 'string') {
+                    this._duplex._onMessage(message, false);
+                } else {
+                    this._duplex._onMessage(message.bytes, false);
+                    message.free();
+                }
             } catch (e) { }
         }
         this._pendingMessages.length = 0;
     }
 
-    public send(data:any, unreliable?:boolean) {
+    public send(data:MuData, unreliable?:boolean) {
         if (this._closed) {
             return;
         }
+        const wrapped = typeof data === 'string' ? data : new BufferWrapper(data);
         if (unreliable) {
-            this._pendingUnreliableMessages.push(data);
+            this._pendingUnreliableMessages.push(wrapped);
             setTimeout(this._handleUnreliableDrain, 0);
         } else {
-            this._pendingMessages.push(data);
+            this._pendingMessages.push(wrapped);
             if (!this._pendingDrainTimeout) {
                 this._pendingDrainTimeout = setTimeout(this._handleDrain, 0);
             }
         }
     }
 
-    private _pendingUnreliableMessages:any[] = [];
+    private _pendingUnreliableMessages:PendingMessage[] = [];
     private _handleUnreliableDrain = () => {
         if (this._closed) {
             return;
         }
         const message = this._pendingUnreliableMessages.pop();
-        this._duplex._onMessage(message, true);
+        if (typeof message === 'string') {
+            this._duplex._onMessage(message, true);
+        } else if (message) {
+            this._duplex._onMessage(message.bytes, true);
+            message.free();
+        }
     }
 
     public close () {
