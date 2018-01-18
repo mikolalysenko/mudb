@@ -78,7 +78,9 @@ export class MuVector<ValueSchema extends MuNumber>
         const dimension = this.identity.byteLength;
         stream.grow(this.calcByteLength(target));
 
-        let trackerOffset = stream.offset;
+        const headPtr = stream.offset;
+
+        let trackerOffset = headPtr;
         stream.offset = trackerOffset + Math.ceil(dimension / 8);
 
         let tracker = 0;
@@ -97,11 +99,15 @@ export class MuVector<ValueSchema extends MuNumber>
             }
         }
 
+        if (numPatch === 0) {
+            stream.offset = headPtr;
+            return false;
+        }
+
         if (dimension & 7) {
             stream.writeUint8At(trackerOffset, tracker);
         }
-
-        return numPatch > 0;
+        return true;
     }
 
     public patch (
