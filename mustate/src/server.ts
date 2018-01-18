@@ -108,8 +108,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     return;
                 }
                 const client = this.clients[findClient(this.clients, client_.sessionId)];
-                const packet = data.buffer;
-                if (parseState(packet, this.schema.client, client, client_.message.ackState)) {
+                if (parseState(data, this.schema.client, client, client_.message.ackState)) {
                     if (spec && spec.state) {
                         spec.state(client, client.state, client.tick, !unreliable);
                     }

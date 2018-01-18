@@ -143,7 +143,7 @@ export function forgetObservation (ticks:number[], horizon:number) {
 }
 
 export function parseState<Schema extends MuAnySchema> (
-    packet:any,
+    packet:Uint8Array,
     schema:Schema,
     replica:MuStateReplica<Schema>,
     ack:(tick:number, unreliable?:boolean) => void,
@@ -162,15 +162,12 @@ export function parseState<Schema extends MuAnySchema> (
     }
 
     // check the most significant bit of baseTick to see if there is a patch
-    const differentFromBase = stream.buffer.uint8[stream.offset + 3] & 0x80;
-    stream.buffer.uint8[stream.offset + 3] &= ~0x80;
-
     const baseTick = stream.readUint32();
     const baseIndex = history.at(baseTick);
     const baseState = history.states[baseIndex];
 
     let nextState:Schema['identity'];
-    if (differentFromBase) {
+    if (stream.offset < stream.length) {
         nextState = schema.patch(baseState, stream);
     } else {
         nextState = schema.clone(baseState);
@@ -214,12 +211,7 @@ export function publishState<Schema extends MuAnySchema> (
     const prefixOffset = stream.offset;
     stream.writeUint32(baseTick);
 
-    const differentFromBase = schema.diff(baseState, replica.state, stream);
-    if (differentFromBase) {
-        // mask the most significant bit of baseTick on to indicate patches
-        stream.buffer.uint8[prefixOffset + 3] |= 0x80;
-    }
-
+    schema.diff(baseState, replica.state, stream);
     const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
     raw(contentBytes, !reliable);
 
