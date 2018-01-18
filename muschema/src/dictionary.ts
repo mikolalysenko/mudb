@@ -113,6 +113,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     ) : boolean {
         stream.grow(this.calcByteLength(base) + this.calcByteLength(target));
 
+        const headPtr = stream.offset;
+
         let numRemove = 0;
         let numPatch = 0;
 
@@ -138,31 +140,28 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             stream.writeString(prop);
 
             if (prop in base) {
-                const different = valueSchema.diff(base[prop], target[prop], stream);
-                if (different) {
+                if (valueSchema.diff(base[prop], target[prop], stream)) {
                     ++numPatch;
                 } else {
                     stream.offset = prefixOffset;
                 }
             } else {
-                const equalToIdentity = !valueSchema.diff(valueSchema.identity, target[prop], stream);
-                if (equalToIdentity) {
-                    // mask the most significant bit of the word
-                    // recording the length of the property name
+                if (valueSchema.diff(valueSchema.identity, target[prop], stream)) {
+                    ++numPatch;
+                } else {
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
-
-                    if (valueSchema.muType === 'dictionary') {
-                        stream.offset -= 8;
-                    }
                 }
-                ++numPatch;
             }
         }
 
-        stream.writeUint32At(removeCounterOffset, numRemove);
-        stream.writeUint32At(patchCounterOffset, numPatch);
-
-        return numPatch > 0 || numRemove > 0;
+        if (numPatch > 0 || numRemove > 0) {
+            stream.writeUint32At(removeCounterOffset, numRemove);
+            stream.writeUint32At(patchCounterOffset, numPatch);
+            return true;
+        } else {
+            stream.offset = headPtr;
+            return false;
+        }
     }
 
     public patch (
@@ -170,6 +169,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         stream:MuReadStream,
     ) : Dictionary<ValueSchema> {
         const result:Dictionary<ValueSchema> = {};
+        const valueSchema = this.muData;
 
         const numRemove = stream.readUint32();
         const numPatch = stream.readUint32();
@@ -179,8 +179,9 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             propsToRemove[stream.readString()] = true;
         }
 
-        const valueSchema = this.muData;
-        for (const prop in base) {
+        const props = Object.keys(base);
+        for (let i = 0; i < props.length; ++i) {
+            const prop = props[i];
             if (propsToRemove[prop]) {
                 continue;
             }
