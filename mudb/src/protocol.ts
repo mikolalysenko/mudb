@@ -1,4 +1,4 @@
-import { MuSocket } from './socket';
+import { MuSocket, MuData } from './socket';
 import { MuSchema } from 'muschema/schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
@@ -62,12 +62,7 @@ export class MuMessageFactory {
                 stream.writeUint32(this.protocolId);
                 const prefixOffset = stream.offset;
                 stream.writeUint32(messageId);
-
-                const diffFromIdentity = schema.diff(schema.identity, data, stream);
-                if (diffFromIdentity) {
-                    // mask the most significant bit of messageId on to indicate patches
-                    stream.buffer.uint8[prefixOffset + 3] |= 0x80;
-                }
+                schema.diff(schema.identity, data, stream);
 
                 const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
                 for (let i = 0; i < sockets.length; ++i) {
@@ -129,7 +124,7 @@ export class MuProtocolFactory {
         );
         const factories = this.protocolFactories;
 
-        return function (data, unreliable:boolean) {
+        return function (data:MuData, unreliable:boolean) {
             if (typeof data === 'string') {
                 const object = JSON.parse(data);
 
@@ -145,7 +140,7 @@ export class MuProtocolFactory {
                 } else if (object.s) {
                     raw[protoId](object.s, unreliable);
                 }
-            } else if (data instanceof ArrayBuffer) {
+            } else {
                 const stream = new MuReadStream(data);
 
                 const protoId = stream.readUint32();
@@ -154,11 +149,6 @@ export class MuProtocolFactory {
                 if (!protocol) {
                     return;
                 }
-
-                const uint8 = stream.buffer.uint8;
-                // check the masked bit to see if there is a patch
-                const diffFromIdentity = uint8[stream.offset + 3] & 0x80;
-                uint8[stream.offset + 3] &= ~0x80;
 
                 const messageId = stream.readUint32();
                 const messageSchema = protocol.schemas[messageId];
@@ -173,7 +163,7 @@ export class MuProtocolFactory {
                 }
 
                 let m;
-                if (diffFromIdentity) {
+                if (stream.offset < stream.length) {
                     m = messageSchema.patch(messageSchema.identity, stream);
                 } else {
                     m = messageSchema.clone(messageSchema.identity);
