@@ -19,18 +19,7 @@ export class MuBoolean implements MuSchema<boolean> {
     public free () { }
     public clone (b:boolean) { return b; }
 
-    public diff (a:boolean, b:boolean) {
-        if (a !== b) {
-            return b;
-        }
-        return;
-    }
-
-    public patch (a:boolean, b:boolean) {
-        return !!b;
-    }
-
-    public diffBinary (a:boolean, b:boolean, stream:MuWriteStream) {
+    public diff (a:boolean, b:boolean, stream:MuWriteStream) {
         if (a !== b) {
             stream.grow(1);
             stream.writeUint8(b ? 1 : 0);
@@ -39,7 +28,7 @@ export class MuBoolean implements MuSchema<boolean> {
         return false;
     }
 
-    public patchBinary (a:boolean, stream:MuReadStream) {
+    public patch (a:boolean, stream:MuReadStream) {
         return !!stream.readUint8();
     }
 

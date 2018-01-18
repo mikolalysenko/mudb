@@ -8,7 +8,7 @@ export class MuUint16 extends MuNumber {
         super((value || 0) & 0xFFFF);
     }
 
-    public diffBinary (base:number, target:number, stream:MuWriteStream) {
+    public diff (base:number, target:number, stream:MuWriteStream) {
         if (base !== target) {
             stream.grow(2);
             stream.writeUint16(target);
@@ -17,7 +17,7 @@ export class MuUint16 extends MuNumber {
         return false;
     }
 
-    public patchBinary (base:number, stream:MuReadStream) {
+    public patch (base:number, stream:MuReadStream) {
         return stream.readUint16();
     }
 

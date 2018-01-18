@@ -21,15 +21,15 @@ test('boolean', (t) => {
 
     const ws = new MuWriteStream(4);
 
-    t.equals(b.diffBinary(true, true, ws), false);
-    t.equals(b.diffBinary(false, false, ws), false);
-    t.equals(b.diffBinary(true, false, ws), true);
-    t.equals(b.diffBinary(false, true, ws), true);
+    t.equals(b.diff(true, true, ws), false);
+    t.equals(b.diff(false, false, ws), false);
+    t.equals(b.diff(true, false, ws), true);
+    t.equals(b.diff(false, true, ws), true);
 
     const rs = new MuReadStream(ws.buffer.buffer);
 
-    t.equals(b.patchBinary(true, rs), false);
-    t.equals(b.patchBinary(true, rs), true);
+    t.equals(b.patch(true, rs), false);
+    t.equals(b.patch(true, rs), true);
 
     t.end();
 });

@@ -61,33 +61,13 @@ export class MuVector<ValueSchema extends MuNumber>
         return copy;
     }
 
-    public diff (a:_MuVectorType<ValueSchema>, b:_MuVectorType<ValueSchema>) : (any|undefined) {
-        for (let i = 0; i < a.length; ++i) {
-            if (a[i] !== b[i]) {
-                return Array.prototype.slice.call(b);
-            }
-        }
-        return;
-    }
-
-    public patch (a:_MuVectorType<ValueSchema>, p:any) {
-        if (p) {
-            const x = this.alloc();
-            for (let i = 0; i < p.length; ++i) {
-                x[i] = p[i];
-            }
-            return x;
-        }
-        return this.clone(a);
-    }
-
     // bytes for trackers +
     // bytes enough to hold the value of vec
     public calcByteLength (vec:_MuVectorType<ValueSchema>) {
         return Math.ceil(this.identity.byteLength * 9 / 8);
     }
 
-    public diffBinary (
+    public diff (
         base_:_MuVectorType<ValueSchema>,
         target_:_MuVectorType<ValueSchema>,
         stream:MuWriteStream,
@@ -124,7 +104,7 @@ export class MuVector<ValueSchema extends MuNumber>
         return numPatch > 0;
     }
 
-    public patchBinary (
+    public patch (
         base:_MuVectorType<ValueSchema>,
         stream:MuReadStream,
     ) : Uint8Array {

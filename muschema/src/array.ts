@@ -21,7 +21,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.json = {
             type: 'array',
             valueType: this.muData.json,
-            identity: JSON.stringify(this.diff([], this.identity)),
+            identity: JSON.stringify(this.identity),
         };
     }
 
@@ -115,7 +115,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public diffBinary (
+    public diff (
         base:_MuArrayType<ValueSchema>,
         target:_MuArrayType<ValueSchema>,
         stream:MuWriteStream,
@@ -136,7 +136,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const baseLength = base.length;
         const valueSchema = this.muData;
         for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
-            if (valueSchema.diffBinary!(base[i], target[i], stream)) {
+            if (valueSchema.diff(base[i], target[i], stream)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
@@ -148,7 +148,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
 
         for (let i = baseLength; i < targetLength; ++i) {
-            if (valueSchema.diffBinary!(valueSchema.identity, target[i], stream)) {
+            if (valueSchema.diff(valueSchema.identity, target[i], stream)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
@@ -170,7 +170,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return false;
     }
 
-    public patchBinary (
+    public patch (
         base:_MuArrayType<ValueSchema>,
         stream:MuReadStream,
     ) : _MuArrayType<ValueSchema> {
@@ -195,7 +195,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patchBinary!(base[i], stream);
+                result[i] = valueSchema.patch(base[i], stream);
             }
         }
 
@@ -207,7 +207,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patchBinary!(valueSchema.identity, stream);
+                result[i] = valueSchema.patch(valueSchema.identity, stream);
             } else {
                 result[i] = valueSchema.clone(valueSchema.identity);
             }
@@ -215,50 +215,4 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         return result;
     }
-
-    public diff(base:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {
-        const schema = this.muData;
-        const result = new Array(target.length);
-        let changed = base.length !== target.length;
-        for (let i = 0; i < target.length; ++i) {
-            if (i < base.length) {
-                const p = schema.diff(base[i], target[i])
-                if (typeof p !== undefined) {
-                    changed = true;
-                }
-                result[i] = p;
-            } else {
-                result[i] = schema.diff(schema.identity, target[i]);
-            }
-        }
-        if (changed) {
-            return result;
-        }
-        return;
-     }
-
-    public patch(base:_MuArrayType<ValueSchema>, patch:any[]|undefined) {
-        if (!patch) {
-            return this.clone(base);
-        }
-        const result:_MuArrayType<ValueSchema> = new Array(patch.length);
-        const schema = this.muData;
-        for (let i = 0; i < patch.length; ++i) {
-            const x = patch[i];
-            if (x === undefined || x === null) {
-                if (i < base.length) {
-                    result[i] = schema.clone(base[i]);
-                } else {
-                    result[i] = schema.clone(schema.identity);
-                }
-            } else {
-                if (i < base.length) {
-                    result[i] = schema.patch(base[i], x);
-                } else {
-                    result[i] = schema.patch(schema.identity, x);
-                }
-            }
-        }
-        return result;
-     }
 }

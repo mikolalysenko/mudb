@@ -63,14 +63,15 @@ export class MuMessageFactory {
                 const prefixOffset = stream.offset;
                 stream.writeUint32(messageId);
 
-                const diffFromIdentity = schema.diffBinary!(schema.identity, data, stream);
+                const diffFromIdentity = schema.diff(schema.identity, data, stream);
                 if (diffFromIdentity) {
                     // mask the most significant bit of messageId on to indicate patches
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
 
+                const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(stream.buffer.uint8, unreliable);
+                    sockets[i].send(contentBytes, unreliable);
                 }
 
                 stream.destroy();
@@ -173,7 +174,7 @@ export class MuProtocolFactory {
 
                 let m;
                 if (diffFromIdentity) {
-                    m = messageSchema.patchBinary!(messageSchema.identity, stream);
+                    m = messageSchema.patch(messageSchema.identity, stream);
                 } else {
                     m = messageSchema.clone(messageSchema.identity);
                 }

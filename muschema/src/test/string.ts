@@ -36,13 +36,13 @@ test('string', (t) => {
 
     const ws = new MuWriteStream(2);
 
-    t.equals(s.diffBinary(longStr, longStr, ws), false);
-    t.equals(s.diffBinary(longStr, longStr.substring(0, longStr.length - 1), ws), true);
+    t.equals(s.diff(longStr, longStr, ws), false);
+    t.equals(s.diff(longStr, longStr.substring(0, longStr.length - 1), ws), true);
 
     const rs = new MuReadStream(ws.buffer.buffer);
 
-    t.equals(s.patchBinary(longStr, rs), longStr.substring(0, longStr.length - 1));
-    t.equals(s.patchBinary(longStr, rs), longStr, 'running out of content, return the base value');
+    t.equals(s.patch(longStr, rs), longStr.substring(0, longStr.length - 1));
+    t.equals(s.patch(longStr, rs), longStr, 'running out of content, return the base value');
 
     t.end();
 });

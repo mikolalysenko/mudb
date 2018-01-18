@@ -81,7 +81,7 @@ export class MuWebSocket implements MuSocket {
                                 removeSocket(socket);
 
                                 for (let i = 0; i < socketQueue.length; ++i) {
-                                    socket.close();
+                                    socketQueue[i].close();
                                 }
                                 spec.close();
                             };
@@ -111,7 +111,7 @@ export class MuWebSocket implements MuSocket {
                 }));
             };
         };
-        for (let i = 0; i <= this._maxSockets; ++i) {
+        for (let i = 0; i < this._maxSockets; ++i) {
             openSocket();
         }
     }

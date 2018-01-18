@@ -80,7 +80,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return result;
     }
 
-    public diffBinary (
+    public diff (
         base:_TypeDataPair<SubTypes>,
         target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
@@ -94,12 +94,12 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         const schema = this.muData[target.type];
         if (base.type === target.type) {
-            if (schema.diffBinary!(base.data, target.data, stream)) {
+            if (schema.diff(base.data, target.data, stream)) {
                 tracker = 1;
             }
         } else {
             stream.writeUint8(this._types.indexOf(target.type));
-            schema.diffBinary!(schema.identity, target.data, stream);
+            schema.diff(schema.identity, target.data, stream);
             tracker = 2;
         }
 
@@ -111,7 +111,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return false;
     }
 
-    public patchBinary (
+    public patch (
         base:_TypeDataPair<SubTypes>,
         stream:MuReadStream,
     ) : _TypeDataPair<SubTypes> {
@@ -120,54 +120,16 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         if (tracker === 1) {
             const schema = this.muData[result.type];
-            result.data = schema.patchBinary!(result.data, stream);
+            result.data = schema.patch(result.data, stream);
         }
 
         if (tracker === 2) {
             result.type = this._types[stream.readUint8()];
 
             const schema = this.muData[result.type];
-            result.data = schema.patchBinary!(schema.identity, stream);
+            result.data = schema.patch(schema.identity, stream);
         }
 
         return result;
-    }
-
-    public diff (base:_TypeDataPair<SubTypes>, target:_TypeDataPair<SubTypes>) : (any | undefined) {
-        const model = this.muData[target.type];
-        if (target.type === base.type) {
-            const delta = model.diff(base.data, target.data);
-            if (delta === void 0) {
-                return;
-            }
-            return {
-                data: delta
-            };
-        } else {
-            return {
-                type: target.type,
-                data: model.diff(model.identity, target.data),
-            };
-        }
-    }
-
-    public patch (base:_TypeDataPair<SubTypes>, patch:any) : _TypeDataPair<SubTypes> {
-        if ('type' in patch) {
-            const model = this.muData[patch.type];
-            return {
-                type: patch.type,
-                data: model.patch(model.identity, patch.data),
-            };
-        } else if ('data' in patch) {
-            return {
-                type: base.type,
-                data: this.muData[base.type].patch(base.data, patch.data),
-            };
-        } else {
-            return {
-                type: base.type,
-                data: this.muData[base.type].clone(base.data),
-            };
-        }
     }
 }

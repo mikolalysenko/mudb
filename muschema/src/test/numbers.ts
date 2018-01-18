@@ -89,14 +89,14 @@ test('diff() & patch()', (t) => {
 
         const smallNum = 1e-8;
 
-        t.equals(n.diffBinary(0, smallNum, ws), false);
-        t.equals(n.diffBinary(smallNum, 0, ws), false);
-        t.equals(n.diffBinary(0, 1 - smallNum, ws), false);
-        t.equals(n.diffBinary(1 - smallNum, 0, ws), false);
+        t.equals(n.diff(0, smallNum, ws), false);
+        t.equals(n.diff(smallNum, 0, ws), false);
+        t.equals(n.diff(0, 1 - smallNum, ws), false);
+        t.equals(n.diff(1 - smallNum, 0, ws), false);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(123, rs), 123, 'no content to be read, return the base value');
+        t.equals(n.patch(123, rs), 123, 'no content to be read, return the base value');
     });
 
     TYPES.forEach((Type) => {
@@ -107,16 +107,16 @@ test('diff() & patch()', (t) => {
         const min = CONSTANTS[muType].MIN;
         const max = CONSTANTS[muType].MAX;
 
-        t.equals(n.diffBinary(1, min, ws), true);
-        t.equals(n.diffBinary(1, 0, ws), true);
-        t.equals(n.diffBinary(1, max, ws), true);
+        t.equals(n.diff(1, min, ws), true);
+        t.equals(n.diff(1, 0, ws), true);
+        t.equals(n.diff(1, max, ws), true);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(123, rs), min);
-        t.equals(n.patchBinary(123, rs), 0);
-        t.equals(n.patchBinary(123, rs), max);
-        t.equals(n.patchBinary(123, rs), 123, 'running out of content, return the base value');
+        t.equals(n.patch(123, rs), min);
+        t.equals(n.patch(123, rs), 0);
+        t.equals(n.patch(123, rs), max);
+        t.equals(n.patch(123, rs), 123, 'running out of content, return the base value');
     });
 
     FLOATS.forEach((Type) => {
@@ -126,13 +126,13 @@ test('diff() & patch()', (t) => {
         const muType = n.muType;
         const epsilon = CONSTANTS[muType]['EPSILON'];
 
-        t.equals(n.diffBinary(1.0, -epsilon, ws), true);
-        t.equals(n.diffBinary(1.0, epsilon, ws), true);
+        t.equals(n.diff(1.0, -epsilon, ws), true);
+        t.equals(n.diff(1.0, epsilon, ws), true);
 
         const rs = new MuReadStream(ws.buffer.buffer);
 
-        t.equals(n.patchBinary(1.0, rs), -epsilon);
-        t.equals(n.patchBinary(1.0, rs), epsilon);
+        t.equals(n.patch(1.0, rs), -epsilon);
+        t.equals(n.patch(1.0, rs), epsilon);
     });
 
     t.end();
