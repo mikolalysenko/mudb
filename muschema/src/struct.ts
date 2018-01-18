@@ -326,7 +326,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         // patch subroutine
         const pTrackerOffset = methods.patch.def(0);
         const pTracker = methods.patch.def(0);
-        methods.patch.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=clone(b);`);
+        methods.patch.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=alloc(b);`);
         propRefs.forEach((propRef, i) => {
             if (!(i & 7)) {
                 methods.patch.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
@@ -335,7 +335,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             const muType = structTypes[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
+                    methods.patch.push(`;if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -346,10 +346,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
+                    methods.patch.push(`;if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
                     break;
                 default:
-                    methods.patch.push(`if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=${typeRefs[i]}.patch(b[${propRef}],s)}`);
+                    methods.patch.push(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?${typeRefs[i]}.patch(b[${propRef}],s):${typeRefs[i]}.clone(b[${propRef}]);`);
             }
         });
         methods.patch.push(`return result`);
