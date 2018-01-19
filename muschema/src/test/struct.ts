@@ -2,6 +2,7 @@ import test = require('tape');
 
 import {
     MuBoolean,
+    MuUint8,
     MuFloat32,
     MuFloat64,
     MuString,
@@ -158,6 +159,59 @@ test('struct (nested)', (t) => {
 
         // get byte length
         t.equals(structSchema.calcByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));
+    }
+
+    t.end();
+});
+
+test('random test', (t) => {
+    const testSchema = new MuStruct({
+        a: new MuFloat32(1),
+        b: new MuUint8(),
+        c: new MuVector(new MuFloat32(), 3),
+        foo: new MuString('0'),
+    });
+
+    type structT = typeof testSchema['identity'];
+
+    function randomStruct () {
+        const result = testSchema.alloc();
+        result.a = ((Math.random() * 2) | 0) / 2;
+        result.b = (Math.random() * 2) | 0
+        result.c = new Float32Array([
+            ((Math.random() * 2) | 0) / 2,
+            ((Math.random() * 2) | 0) / 2,
+            ((Math.random() * 2) | 0) / 2
+        ]);
+        result.foo = Math.round(Math.random() * 8).toString();
+        return result;
+    }
+
+
+    function calcDiff (a:structT, b:structT) : MuReadStream {
+        const x = new MuWriteStream(1);
+        testSchema.diff(a, b, x);
+        return new MuReadStream(x.bytes());
+    }
+
+    function testPair (a:structT, b:structT) {
+        const x = calcDiff(a, b);
+        if (x.length === 0) {
+            t.same(a, b, 'structs are equal');
+        } else {
+            const c = testSchema.patch(a, x);
+            t.same(b, c, 'patch ok');
+            t.equals(x.length, x.offset, 'offset ok');
+        }
+    }
+
+    for (let i = 0; i < 100; ++i) {
+        const as = randomStruct();
+        const bs = randomStruct();
+        testPair(as, bs);
+        testPair(bs, as);
+        testPair(testSchema.identity, as);
+        testPair(testSchema.identity, bs);
     }
 
     t.end();

@@ -119,8 +119,11 @@ export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
         schema.diff(a, b, ws);
         const rs = new MuReadStream(ws.buffer.uint8.subarray(0, ws.offset));
         if (rs.length) {
-            return schema.patch(a, rs);
+            const r = schema.patch(a, rs);
+            t.equals(rs.offset, rs.length, 'no bytes left in stream');
+            return r;
         } else {
+            t.same(a, b, 'empty patch consistent');
             return schema.clone(a);
         }
     }

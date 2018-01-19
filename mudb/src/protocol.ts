@@ -64,7 +64,7 @@ export class MuMessageFactory {
                 stream.writeUint32(messageId);
                 schema.diff(schema.identity, data, stream);
 
-                const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
+                const contentBytes = stream.bytes();
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(contentBytes, unreliable);
                 }

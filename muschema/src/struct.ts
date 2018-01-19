@@ -333,9 +333,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             }
 
             const muType = structTypes[i].muType;
+            methods.patch.push(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?`)
             switch (muType) {
                 case 'boolean':
-                    methods.patch.push(`;if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=!!s.readUint8()}`);
+                    methods.patch.push(`!!s.readUint8():b[${propRef}];`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -346,10 +347,10 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                    methods.patch.push(`;if(${pTracker}&${1 << (i & 7)}){result[${propRef}]=s.${muType2ReadMethod[muType]}()}`);
+                    methods.patch.push(`s.${muType2ReadMethod[muType]}():b[${propRef}];`);
                     break;
                 default:
-                    methods.patch.push(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?${typeRefs[i]}.patch(b[${propRef}],s):${typeRefs[i]}.clone(b[${propRef}]);`);
+                    methods.patch.push(`${typeRefs[i]}.patch(b[${propRef}],s):${typeRefs[i]}.clone(b[${propRef}]);`);
             }
         });
         methods.patch.push(`return result`);

@@ -1,11 +1,12 @@
 import * as test from 'tape';
 
 import {
+    MuFloat32,
     MuFloat64,
     MuUint8,
     MuVector,
 } from '../';
-
+import { MuWriteStream, MuReadStream } from 'mustreams';
 import { muType2TypedArray } from '../constants';
 import {
     muNumSchema,
@@ -90,14 +91,12 @@ test('vector - calcByteLength()', (t) => {
 test('vector - diff() & patch()', (t) => {
     for (const muType of muNumTypes) {
         const valueSchema = muNumSchema(muType);
-        const dimension = 100;
+        const dimension = 5;
         const vecSchema = new MuVector(valueSchema, dimension);
 
         const testPatchingPair = testPatchingPairFactory(
             t,
-            vecSchema,
-            (vec) => new Uint8Array(vec.buffer),
-        );
+            vecSchema);
 
         for (let i = 0; i < 200; ++i) {
             testPatchingPair(
@@ -105,6 +104,48 @@ test('vector - diff() & patch()', (t) => {
                 typedArrayOf(muType, dimension),
             );
         }
+    }
+
+    t.end();
+});
+
+test('random test', (t) => {
+    const testSchema = new MuVector(new MuFloat32(0.5), 3);
+    type vectorT = typeof testSchema['identity'];
+
+    function randomVector () {
+        const result = testSchema.alloc();
+        result[0] = ((Math.random() * 4) / 2) - 1;
+        result[1] = ((Math.random() * 4) / 2) - 1;
+        result[2] = ((Math.random() * 4) / 2) - 1;
+        return result;
+    }
+
+
+    function calcDiff (a:vectorT, b:vectorT) : MuReadStream {
+        const x = new MuWriteStream(1);
+        testSchema.diff(a, b, x);
+        return new MuReadStream(x.bytes());
+    }
+
+    function testPair (a:vectorT, b:vectorT) {
+        const x = calcDiff(a, b);
+        if (x.length === 0) {
+            t.same(a, b, 'vectors are equal');
+        } else {
+            const c = testSchema.patch(a, x);
+            t.same(b, c, 'patch ok');
+            t.equals(x.length, x.offset, 'offset ok');
+        }
+    }
+
+    for (let i = 0; i < 100; ++i) {
+        const as = randomVector();
+        const bs = randomVector();
+        testPair(as, bs);
+        testPair(bs, as);
+        testPair(testSchema.identity, as);
+        testPair(testSchema.identity, bs);
     }
 
     t.end();

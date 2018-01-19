@@ -212,7 +212,7 @@ export function publishState<Schema extends MuAnySchema> (
     stream.writeUint32(baseTick);
 
     schema.diff(baseState, replica.state, stream);
-    const contentBytes = stream.buffer.uint8.subarray(0, stream.offset);
+    const contentBytes = stream.bytes();
     raw(contentBytes, !reliable);
 
     stream.destroy();

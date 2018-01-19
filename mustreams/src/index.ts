@@ -70,6 +70,10 @@ export class MuWriteStream {
         this.offset = 0;
     }
 
+    public bytes () {
+        return this.buffer.uint8.subarray(0, this.offset);
+    }
+
     public destroy () {
         freeBuffer(this.buffer);
     }
