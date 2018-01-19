@@ -72,7 +72,11 @@ export class MuWebSocket implements MuSocket {
                             this.open = true;
                             socket.onmessage = (message) => {
                                 if (this.open) {
-                                    spec.message(message.data, false);
+                                    if (typeof message.data === 'string') {
+                                        spec.message(message.data, false);
+                                    } else {
+                                        spec.message(new Uint8Array(message.data), false);
+                                    }
                                 }
                             };
                             socket.onclose = () => {
@@ -92,7 +96,11 @@ export class MuWebSocket implements MuSocket {
                             this._unreliableSockets.push(socket);
                             socket.onmessage = (message) => {
                                 if (this.open) {
-                                    spec.message(message.data, true);
+                                    if (typeof message.data === 'string') {
+                                        spec.message(message.data, true);
+                                    } else {
+                                        spec.message(new Uint8Array(message.data), true);
+                                    }
                                 }
                             };
                             socket.onclose = () => {
