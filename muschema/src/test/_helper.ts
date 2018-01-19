@@ -117,8 +117,12 @@ export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
     function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
         schema.diff(a, b, ws);
-        const rs = new MuReadStream(ws.buffer.buffer);
-        return schema.patch(a, rs);
+        const rs = new MuReadStream(ws.buffer.uint8.subarray(0, ws.offset));
+        if (rs.length) {
+            return schema.patch(a, rs);
+        } else {
+            return schema.clone(a);
+        }
     }
 
     return  fn ?

@@ -26,7 +26,7 @@ test('boolean', (t) => {
     t.equals(b.diff(true, false, ws), true);
     t.equals(b.diff(false, true, ws), true);
 
-    const rs = new MuReadStream(ws.buffer.buffer);
+    const rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(b.patch(true, rs), false);
     t.equals(b.patch(true, rs), true);

@@ -67,7 +67,7 @@ test('int', (t) => {
         ws.writeUint8(i + 0x100 / loops - 1);
     }
 
-    const rs = new MuReadStream(ws.buffer.buffer);
+    const rs = new MuReadStream(ws.buffer.uint8);
     for (let i = -0x80; i < 0x80; i += 0x100 / loops) {
         t.equals(rs.readInt8(), i);
         t.equals(rs.readInt8(), i + 0x100 / loops - 1);
@@ -127,7 +127,7 @@ test('float', (t) => {
         return arr[0];
     }
 
-    const rs = new MuReadStream(ws.buffer.buffer);
+    const rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(rs.readFloat32(), FLOAT32_MIN);
     t.equals(rs.readFloat32(), -FLOAT32_EPSILON);
@@ -163,7 +163,7 @@ test('string', (t) => {
     ws.writeString(strC);
     ws.writeString(strD);
 
-    let rs = new MuReadStream(ws.buffer.buffer);
+    let rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(rs.readString(), '');
     t.equals(rs.readString(), strA);
@@ -182,7 +182,7 @@ test('string', (t) => {
     ws.writeString(threeBytes);
     ws.writeString(fourBytes);
 
-    rs = new MuReadStream(ws.buffer.buffer);
+    rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(rs.readString(), ascii);
     t.equals(rs.readString(), twoBytes);
@@ -198,7 +198,7 @@ test('string', (t) => {
     ws = new MuWriteStream(2 ** 30);
     ws.writeString(longStr);
 
-    rs = new MuReadStream(ws.buffer.buffer);
+    rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(rs.readString(), longStr, 'able to write and read a long string of characters of various bytes');
 

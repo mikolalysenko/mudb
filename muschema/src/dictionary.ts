@@ -113,11 +113,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     ) : boolean {
         stream.grow(this.calcByteLength(base) + this.calcByteLength(target));
 
-        const headPtr = stream.offset;
-
         let numRemove = 0;
         let numPatch = 0;
 
+        // mark the initial offset
         const removeCounterOffset = stream.offset;
         const patchCounterOffset = removeCounterOffset + 4;
         stream.offset = removeCounterOffset + 8;
@@ -146,11 +145,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                     stream.offset = prefixOffset;
                 }
             } else {
-                if (valueSchema.diff(valueSchema.identity, target[prop], stream)) {
-                    ++numPatch;
-                } else {
+                if (!valueSchema.diff(valueSchema.identity, target[prop], stream)) {
                     stream.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
+                ++numPatch;
             }
         }
 
@@ -159,7 +157,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             stream.writeUint32At(patchCounterOffset, numPatch);
             return true;
         } else {
-            stream.offset = headPtr;
+            stream.offset = removeCounterOffset;
             return false;
         }
     }
