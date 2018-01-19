@@ -51,11 +51,11 @@ export class MuVector<ValueSchema extends MuNumber>
         return this._pool.pop() || new this._constructor(this.dimension);
     }
 
-    public free (vec) {
+    public free (vec:_MuVectorType<ValueSchema>) {
         this._pool.push(vec);
     }
 
-    public clone (vec) : _MuVectorType<ValueSchema> {
+    public clone (vec:_MuVectorType<ValueSchema>) : _MuVectorType<ValueSchema> {
         const copy = this.alloc();
         copy.set(vec);
         return copy;
@@ -118,14 +118,28 @@ export class MuVector<ValueSchema extends MuNumber>
         const result = new Uint8Array(resultArray.buffer);
 
         const trackerOffset = stream.offset;
-        const trackerBytes = Math.ceil(this.dimension * this.identity.BYTES_PER_ELEMENT / 8);
+        const trackerBits = this.dimension * this.identity.BYTES_PER_ELEMENT;
+        const trackerFullBytes = Math.floor(trackerBits / 8);
+        const trackerBytes = Math.ceil(trackerBits / 8)
         stream.offset = trackerOffset + trackerBytes;
 
-        for (let i = 0; i < trackerBytes; ++i) {
+        for (let i = 0; i < trackerFullBytes; ++i) {
             const start = i * 8;
             const tracker = stream.readUint8At(trackerOffset + i);
 
             for (let j = 0; j < 8; ++j) {
+                if (tracker & (1 << j)) {
+                    result[start + j] = stream.readUint8();
+                }
+            }
+        }
+
+        if (trackerBits & 7) {
+            const start = trackerFullBytes * 8;
+            const tracker = stream.readUint8At(trackerOffset + trackerFullBytes);
+            const partialBits = trackerBits & 7;
+
+            for (let j = 0; j < partialBits; ++j) {
                 if (tracker & (1 << j)) {
                     result[start + j] = stream.readUint8();
                 }
