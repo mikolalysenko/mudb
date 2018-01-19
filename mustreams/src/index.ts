@@ -138,12 +138,13 @@ export class MuWriteStream {
 
 export class MuReadStream {
     public buffer:MuBuffer;
-    public offset:number = 0;
+    public offset:number;
     public length:number;
 
     constructor (data:Uint8Array) {
         this.buffer = new MuBuffer(data.buffer);
-        this.length = data.length;
+        this.offset = data.byteOffset;
+        this.length = data.byteLength;
     }
 
     public readInt8 () : number {

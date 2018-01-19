@@ -1,9 +1,11 @@
 import { MuSocket, MuData } from './socket';
 import { MuSchema } from 'muschema/schema';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream, allocBuffer } from 'mustreams';
 
 import stableStringify = require('json-stable-stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
+
+const RAW_MESSAGE = 0xffffffff;
 
 export type MuAnySchema = MuSchema<any>;
 export type MuMessageType = MuAnySchema;
@@ -78,7 +80,7 @@ export class MuMessageFactory {
 
     public createSendRaw (sockets:MuSocket[]) {
         const p = this.protocolId;
-        return function (data:Uint8Array|string, unreliable?:boolean) {
+        return function (data:MuData, unreliable?:boolean) {
             if (typeof data === 'string') {
                 const packet = JSON.stringify({
                     p,
@@ -88,13 +90,17 @@ export class MuMessageFactory {
                     sockets[i].send(packet, unreliable);
                 }
             } else {
-                const packet = JSON.stringify({
-                    p,
-                    u: Array.prototype.slice.call(data),
-                });
+                const size = 8 + data.length;
+                const stream = new MuWriteStream(size);
+                stream.writeUint32(p);
+                stream.writeUint32(RAW_MESSAGE);
+                const { uint8 } = stream.buffer;
+                uint8.set(data, 8);
+                const bytes = uint8.subarray(0, size);
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(packet, unreliable);
+                    sockets[i].send(bytes, unreliable);
                 }
+                stream.destroy();
             }
         };
     }
@@ -145,14 +151,19 @@ export class MuProtocolFactory {
 
                 const protoId = stream.readUint32();
                 const protocol = factories[protoId];
-
                 if (!protocol) {
                     return;
                 }
 
                 const messageId = stream.readUint32();
-                const messageSchema = protocol.schemas[messageId];
 
+                // handle raw packet
+                if (messageId === RAW_MESSAGE) {
+                    raw[protoId](stream.buffer.uint8.subarray(stream.offset), unreliable);
+                    return;
+                }
+
+                const messageSchema = protocol.schemas[messageId];
                 if (!messageSchema) {
                     return;
                 }
@@ -169,7 +180,6 @@ export class MuProtocolFactory {
                     m = messageSchema.clone(messageSchema.identity);
                 }
                 message[protoId][messageId](m, unreliable);
-
                 messageSchema.free(m);
             }
         };

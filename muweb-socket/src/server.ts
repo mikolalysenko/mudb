@@ -42,7 +42,11 @@ export class MuWebSocketConnectionImpl {
         this.reliableSocket = reliableSocket;
         this.reliableSocket.onmessage = ({data}) => {
             if (this.started) {
-                this.onMessage(data, false);
+                if (typeof data === 'string') {
+                    this.onMessage(data, false);
+                } else {
+                    this.onMessage(new Uint8Array(data), false);
+                }
             } else {
                 if (typeof data === 'string') {
                     this.pendingMessages.push(data);
@@ -62,7 +66,11 @@ export class MuWebSocketConnectionImpl {
         }
         this.unreliableSockets.push(socket);
         socket.onmessage = ({ data }) => {
-            this.onMessage(data, true);
+            if (typeof data === 'string') {
+                this.onMessage(data, true);
+            } else {
+                this.onMessage(new Uint8Array(data), true);
+            }
         };
         socket.onclose = () => {
             this.unreliableSockets.splice(this.unreliableSockets.indexOf(socket), 1);
