@@ -138,12 +138,26 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     }
 
     public commit(reliable?:boolean) {
-        publishState(
+        const observedStates = this._observedStates;
+        const baseTick = publishState(
             this.schema.server,
-            this._observedStates,
+            observedStates,
             this,
             this._protocol.broadcastRaw,
             this._protocol.broadcast.forgetState,
             !!reliable);
+
+        for (let i = 0; i < observedStates.length; ++i) {
+            const observations = observedStates[i];
+            let ptr = 1;
+            while (ptr < observations.length && observations[ptr] < baseTick) {
+                ++ptr;
+            }
+            let optr = 1;
+            while (ptr < observations.length) {
+                observations[optr++] = observations[ptr++];
+            }
+            observations.length = optr;
+        }
     }
 }
