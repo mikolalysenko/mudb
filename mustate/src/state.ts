@@ -148,7 +148,7 @@ export function parseState<Schema extends MuAnySchema> (
     replica:MuStateReplica<Schema>,
     ack:(tick:number, unreliable?:boolean) => void,
 ) : boolean {
-    const { history, windowSize } = replica;
+    const { history, windowSize, state } = replica;
 
     const stream = new MuReadStream(packet);
 
@@ -164,6 +164,10 @@ export function parseState<Schema extends MuAnySchema> (
     // check the most significant bit of baseTick to see if there is a patch
     const baseTick = stream.readUint32();
     const baseIndex = history.at(baseTick);
+    if (history.ticks[baseIndex] !== baseTick) {
+        console.error('bad state packet');
+        return false;
+    }
     const baseState = history.states[baseIndex];
 
     let nextState:Schema['identity'];
@@ -175,6 +179,9 @@ export function parseState<Schema extends MuAnySchema> (
 
     pushState(history, nextTick, nextState);
     ack(nextTick, true);
+
+    const horizon = Math.min(baseTick, Math.max(nextTick, replica.tick) - windowSize + 1);
+    garbageCollectStates(schema, history, horizon);
 
     if (nextTick > replica.tick) {
         replica.state = nextState;
@@ -192,7 +199,7 @@ export function publishState<Schema extends MuAnySchema> (
     forget:(horizon:number, unreliable?:boolean) => void,
     reliable:boolean,
 ) {
-    const { history, windowSize } = replica;
+    const { history, windowSize, state } = replica;
 
     observations.push(history.ticks);
     const baseTick = mostRecentCommonState(observations);
@@ -203,7 +210,7 @@ export function publishState<Schema extends MuAnySchema> (
 
     const nextTick = ++replica.tick;
 
-    pushState(replica.history, nextTick, schema.clone(replica.state));
+    pushState(history, nextTick, schema.clone(state));
 
     const stream = new MuWriteStream(128);
 
@@ -211,15 +218,17 @@ export function publishState<Schema extends MuAnySchema> (
     const prefixOffset = stream.offset;
     stream.writeUint32(baseTick);
 
-    schema.diff(baseState, replica.state, stream);
+    schema.diff(baseState, state, stream);
     const contentBytes = stream.bytes();
     raw(contentBytes, !reliable);
 
     stream.destroy();
 
     // update window
-    const horizon = baseTick - windowSize;
+    const horizon = Math.min(baseTick, nextTick - windowSize + 1);
     if (garbageCollectStates(schema, history, horizon)) {
         forget(horizon, !reliable);
     }
+
+    return baseTick;
 }
