@@ -66,18 +66,12 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    // a byte for tracker +
-    // bytes for type value +
-    // bytes for data value
+    // one byte for tracker +
+    // one byte for the index of type +
+    // bytes for data
     public calcByteLength (pair:_TypeDataPair<SubTypes>) : number {
-        let result = 1;
-
-        const type = pair.type;
-
-        result += 4 + type.length * 4;
-        result += this.muData[type].calcByteLength!(pair.data);
-
-        return result;
+        const dataSchema = this.muData[pair.type];
+        return 2 + dataSchema.calcByteLength!(pair.data);
     }
 
     public diff (
@@ -88,19 +82,22 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         stream.grow(this.calcByteLength(target));
 
         const trackerOffset = stream.offset;
-        stream.offset = trackerOffset + 1;
+        ++stream.offset;
 
         let tracker = 0;
 
-        const schema = this.muData[target.type];
+        const dataSchema = this.muData[target.type];
         if (base.type === target.type) {
-            if (schema.diff(base.data, target.data, stream)) {
+            if (dataSchema.diff(base.data, target.data, stream)) {
                 tracker = 1;
             }
         } else {
             stream.writeUint8(this._types.indexOf(target.type));
-            schema.diff(schema.identity, target.data, stream);
-            tracker = 2;
+            if (dataSchema.diff(dataSchema.identity, target.data, stream)) {
+                tracker = 2;
+            } else {
+                tracker = 4;
+            }
         }
 
         if (tracker) {
@@ -116,18 +113,18 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         stream:MuReadStream,
     ) : _TypeDataPair<SubTypes> {
         const result = this.clone(base);
-        const tracker = stream.readUint8();
 
-        if (tracker === 1) {
+        const tracker = stream.readUint8();
+        if (tracker & 1) {
+            result.data = this.muData[result.type].patch(result.data, stream);
+        } else if (tracker & 2) {
+            result.type = this._types[stream.readUint8()];
             const schema = this.muData[result.type];
             result.data = schema.patch(result.data, stream);
-        }
-
-        if (tracker === 2) {
+        } else {
             result.type = this._types[stream.readUint8()];
-
             const schema = this.muData[result.type];
-            result.data = schema.patch(schema.identity, stream);
+            result.data = schema.clone(schema.identity);
         }
 
         return result;
