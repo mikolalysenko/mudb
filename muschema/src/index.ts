@@ -15,6 +15,7 @@ import { MuUint32 } from './uint32';
 import { MuUnion } from './union';
 import { MuVector } from './vector';
 import { MuVoid } from './void';
+import { MuSortedArray } from './sorted';
 
 export {
     MuArray,
@@ -34,4 +35,5 @@ export {
     MuUnion,
     MuVector,
     MuVoid,
+    MuSortedArray,
 };
