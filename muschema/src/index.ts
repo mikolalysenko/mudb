@@ -1,4 +1,5 @@
 import { MuArray } from './array';
+import { MuASCIIString } from './ascii';
 import { MuBoolean } from './boolean';
 import { MuDictionary } from './dictionary';
 import { MuFloat32 } from './float32';
@@ -19,6 +20,7 @@ import { MuSortedArray } from './sorted';
 
 export {
     MuArray,
+    MuASCIIString,
     MuBoolean,
     MuDictionary,
     MuFloat32,
