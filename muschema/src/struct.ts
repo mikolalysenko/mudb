@@ -133,27 +133,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                     prelude.push(`this[${propRef}]=null;`);
             }
         });
-        propRefs.forEach((propRef, i) => {
-            const type = structTypes[i];
-            switch (type.muType) {
-                case 'boolean':
-                case 'float32':
-                case 'float64':
-                case 'int8':
-                case 'int16':
-                case 'int32':
-                case 'uint8':
-                case 'uint16':
-                case 'uint32':
-                    prelude.push(`this[${propRef}]=${type.identity};`);
-                    break;
-                case 'string':
-                    prelude.push(`this[${propRef}]=${inject(type.identity)};`);
-                    break;
-                default:
-                    prelude.push(`this[${propRef}]=null;`);
-            }
-        });
         prelude.push(`}function _alloc(){if(${poolRef}.length > 0){return ${poolRef}.pop()}return new MuStruct()}`);
 
         const identityRef = prelude.def('_alloc()');
@@ -321,7 +300,7 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             methods.diff.push(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
         }
         // return the number of tracker bytes plus content bytes
-        methods.diff.push(`if(${numPatch}){return s.offset-${dTrackerOffset}+${trackerBytes}}else{s.offset=${dTrackerOffset};return 0}`);
+        methods.diff.push(`if(${numPatch}){return true;}else{s.offset=${dTrackerOffset};return false;}`);
 
         // patch subroutine
         const pTrackerOffset = methods.patch.def(0);
