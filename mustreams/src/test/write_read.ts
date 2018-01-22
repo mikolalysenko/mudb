@@ -145,6 +145,48 @@ test('float', (t) => {
     t.end();
 });
 
+test('ascii string', (t) => {
+    const asciis = new Array(128);
+    for (let i = 0; i < 128; ++i) {
+        asciis[i] = String.fromCharCode(i);
+    }
+
+    let ws = new MuWriteStream(1024);
+    ws.writeUint32(0);
+    ws.writeASCII('');
+    for (let i = 0; i < 128; ++i) {
+        ws.writeUint32(1);
+        ws.writeASCII(asciis[i]);
+    }
+
+    let rs = new MuReadStream(ws.buffer.uint8);
+
+    let strLeng = rs.readUint32();
+    t.equals(rs.readASCII(strLeng), '');
+
+    for (let i = 0; i < 128; ++i) {
+        strLeng = rs.readUint32();
+        t.equals(rs.readASCII(strLeng), asciis[i]);
+    }
+
+    let longStr = '';
+    const str = asciis.join('');
+    for (let i = 0; i < 1e5; ++i) {
+        longStr += str;
+    }
+
+    ws = new MuWriteStream(2 ** 30);
+    ws.writeUint32(longStr.length);
+    ws.writeASCII(longStr);
+
+    rs = new MuReadStream(ws.buffer.uint8);
+    strLeng = rs.readUint32();
+
+    t.equals(rs.readASCII(strLeng), longStr);
+
+    t.end();
+});
+
 test('string', (t) => {
     const emptyStr = '';
     const strA = String.fromCharCode(0x00, 0x00, 0x00, 0x00,
@@ -162,7 +204,6 @@ test('string', (t) => {
     ws.writeString(strB);
     ws.writeString(strC);
     ws.writeString(strD);
-
     let rs = new MuReadStream(ws.buffer.uint8);
 
     t.equals(rs.readString(), '');
