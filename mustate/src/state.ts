@@ -165,7 +165,6 @@ export function parseState<Schema extends MuAnySchema> (
     const baseTick = stream.readUint32();
     const baseIndex = history.at(baseTick);
     if (history.ticks[baseIndex] !== baseTick) {
-        console.error('bad state packet');
         return false;
     }
     const baseState = history.states[baseIndex];
@@ -180,7 +179,7 @@ export function parseState<Schema extends MuAnySchema> (
     pushState(history, nextTick, nextState);
     ack(nextTick, true);
 
-    const horizon = Math.min(baseTick, Math.max(nextTick, replica.tick) - windowSize + 1);
+    const horizon = Math.min(baseTick - 1, Math.max(nextTick, replica.tick) - windowSize + 1);
     garbageCollectStates(schema, history, horizon);
 
     if (nextTick > replica.tick) {
@@ -225,7 +224,7 @@ export function publishState<Schema extends MuAnySchema> (
     stream.destroy();
 
     // update window
-    const horizon = Math.min(baseTick, nextTick - windowSize + 1);
+    const horizon = Math.min(baseTick - 1, nextTick - windowSize + 1);
     if (garbageCollectStates(schema, history, horizon)) {
         forget(horizon, !reliable);
     }
