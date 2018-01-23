@@ -159,7 +159,7 @@ export class MuProtocolFactory {
 
                 // handle raw packet
                 if (messageId === RAW_MESSAGE) {
-                    raw[protoId](stream.buffer.uint8.subarray(stream.offset), unreliable);
+                    raw[protoId](data.subarray(stream.offset), unreliable);
                     return;
                 }
 
