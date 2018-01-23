@@ -120,6 +120,12 @@ export class MuWriteStream {
         this.offset += 8;
     }
 
+    public writeASCII (str:string) {
+        for (let i = 0; i < str.length; ++i) {
+            this.writeUint8(str.charCodeAt(i));
+        }
+    }
+
     public writeString (str:string) {
         const bytes = encodeString(str);
         this.writeUint32(bytes.length);
@@ -189,6 +195,19 @@ export class MuReadStream {
         const offset = this.offset;
         this.offset += 8;
         return this.buffer.dataView.getFloat64(offset, LITTLE_ENDIAN);
+    }
+
+    public readASCII (byteLength:number) : string {
+        const head = this.offset;
+        this.offset += byteLength;
+
+        let str = '';
+        const uint8 = this.buffer.uint8;
+        for (let i = head; i < this.offset; ++i) {
+            str += String.fromCharCode(uint8[i]);
+        }
+
+        return str;
     }
 
     public readString () : string {
