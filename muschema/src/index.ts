@@ -2,6 +2,7 @@ import { MuArray } from './array';
 import { MuASCIIString } from './ascii';
 import { MuBoolean } from './boolean';
 import { MuDictionary } from './dictionary';
+import { MuFixedASCIIString } from './fixed-ascii';
 import { MuFloat32 } from './float32';
 import { MuFloat64 } from './float64';
 import { MuInt8 } from './int8';
@@ -23,6 +24,7 @@ export {
     MuASCIIString,
     MuBoolean,
     MuDictionary,
+    MuFixedASCIIString,
     MuFloat32,
     MuFloat64,
     MuInt8,

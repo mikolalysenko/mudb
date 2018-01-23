@@ -152,8 +152,10 @@ test('ascii string', (t) => {
     }
 
     let ws = new MuWriteStream(1024);
+
     ws.writeUint32(0);
     ws.writeASCII('');
+
     for (let i = 0; i < 128; ++i) {
         ws.writeUint32(1);
         ws.writeASCII(asciis[i]);

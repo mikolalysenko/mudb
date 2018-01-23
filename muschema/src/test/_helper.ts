@@ -67,25 +67,33 @@ export function muPrimitiveSchema (muType) {
     return new muPrimitiveType2SchemaType[muType]();
 }
 
-export function randomStr () {
-    const length = Math.random() * 20 + 1 | 0;
-    const charCodes = new Array(length);
+export function strOfLeng (length) {
+    const codePoints = new Array(length);
     for (let i = 0; i < length; ++i) {
-        charCodes[i] = randomCodePoint();
+        codePoints[i] = randomCodePoint();
     }
-    return String.fromCharCode.apply(null, charCodes);
+    return String.fromCharCode.apply(String, codePoints);
 }
 
-export function randomShortStr () {
+export function simpleStrOfLeng (length) {
     const ingredient = 'abc';
     const ingredientLeng = ingredient.length;
 
-    const length = Math.random() * 3 + 1 | 0;
-    const charCodes = new Array(length);
+    const chars = new Array(length);
     for (let i = 0; i < length; ++i) {
-        charCodes[i] = ingredient.charCodeAt(Math.random() * ingredientLeng | 0);
+        chars[i] = ingredient.charAt(Math.random() * ingredientLeng | 0);
     }
-    return String.fromCharCode.apply(null, charCodes);
+    return chars.join('');
+}
+
+export function randomStr () {
+    const length = Math.random() * 20 + 1 | 0;
+    return strOfLeng(length);
+}
+
+export function randomShortStr () {
+    const length = Math.random() * 3 + 1 | 0;
+    return simpleStrOfLeng(length);
 }
 
 export function randomValueOf (muType:string) {
