@@ -121,15 +121,9 @@ export class MuWriteStream {
     }
 
     public writeASCII (str:string) {
-        const strLeng = str.length;
-        const bytes = new Array(strLeng);
-        for (let i = 0; i < strLeng; ++i) {
-            bytes[i] = str.charCodeAt(i);
+        for (let i = 0; i < str.length; ++i) {
+            this.writeUint8(str.charCodeAt(i));
         }
-
-        this.buffer.uint8.set(bytes, this.offset);
-
-        this.offset += strLeng;
     }
 
     public writeString (str:string) {
