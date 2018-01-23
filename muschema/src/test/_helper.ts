@@ -117,7 +117,7 @@ export function testPatchingFactory (t, schema:MuSchema<any>, fn?) {
     function diffPatch (a, b) {
         const ws = new MuWriteStream(2);
         schema.diff(a, b, ws);
-        const rs = new MuReadStream(ws.buffer.uint8.subarray(0, ws.offset));
+        const rs = new MuReadStream(ws.bytes());
         if (rs.length) {
             const r = schema.patch(a, rs);
             t.equals(rs.offset, rs.length, 'no bytes left in stream');

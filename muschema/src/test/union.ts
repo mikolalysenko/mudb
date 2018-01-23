@@ -158,21 +158,20 @@ test('union - calcByteLength()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const pair = randomPairOf(muType);
 
-        const TRACKER_BYTE = 1;
+        let dataBytes = muType2numBytes[muType];
 
         const STR_LENGTH_BYTES = 4;
         const BYTES_PER_CHAR = 4;
-        const typeBytes = STR_LENGTH_BYTES + pair.type.length * BYTES_PER_CHAR;
-
-        let dataBytes = muType2numBytes[muType];
-
         if (muType === 'string') {
             dataBytes = STR_LENGTH_BYTES + pair.data.length * BYTES_PER_CHAR;
         }
 
+        const TRACKER_BYTE = 1;
+        const TYPE_BYTE = 1;
+
         t.equals(
             unionSchema.calcByteLength(pair),
-            TRACKER_BYTE + typeBytes + dataBytes,
+            TRACKER_BYTE + TYPE_BYTE + dataBytes,
         );
     }
 
