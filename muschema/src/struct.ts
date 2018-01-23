@@ -251,9 +251,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'float64':
                     partialByteLength += 8;
                     break;
-                case 'vector':
-                    partialByteLength += type.identity.byteLength;
-                    break;
                 case 'string':
                     methods.calcByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
                     break;
@@ -303,9 +300,9 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         methods.diff.push(`if(${numPatch}){return true;}else{s.offset=${dTrackerOffset};return false;}`);
 
         // patch subroutine
-        const pTrackerOffset = methods.patch.def(0);
+        const pTrackerOffset = methods.patch.def('s.offset');
         const pTracker = methods.patch.def(0);
-        methods.patch.push(`${pTrackerOffset}=s.offset;s.offset+=${trackerBytes};var result=alloc(b);`);
+        methods.patch.push(`;s.offset+=${trackerBytes};var result=_alloc(b);`);
         propRefs.forEach((propRef, i) => {
             if (!(i & 7)) {
                 methods.patch.push(`${pTracker}=s.readUint8At(${pTrackerOffset}+${i >> 3});`);
