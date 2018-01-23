@@ -10,25 +10,24 @@ export class MuFixedASCIIString implements MuSchema<string> {
 
     public readonly length:number;
 
-    constructor (length:number, id?:string) {
-        length >>>= 0;
-        if (length > 1 << 27) {
-            throw new RangeError('invalid length');
-        }
-        if (id && id.length !== length) {
-            throw new Error('string length does not match the length to be set');
-        }
-        this.length = length;
+    constructor (lengthOrIdentity:number|string) {
+        if (typeof lengthOrIdentity === 'number') {
+            if (lengthOrIdentity < 0) {
+                throw new RangeError('length cannot be negative');
+            }
+            const length = lengthOrIdentity | 0;
+            if (length > 1 << 27) {
+                throw new RangeError('invalid length');
+            }
+            this.length = length;
 
-        if (!id) {
-            if (length > identityStr.length) {
-                while (length > identityStr.length) {
-                    identityStr += identityStr;
-                }
+            while (length > identityStr.length) {
+                identityStr += identityStr;
             }
             this.identity = identityStr.substr(0, length);
         } else {
-            this.identity = id;
+            this.identity = lengthOrIdentity;
+            this.length = lengthOrIdentity.length;
         }
 
         this.json = {
@@ -46,15 +45,16 @@ export class MuFixedASCIIString implements MuSchema<string> {
     }
 
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
-        if (base.length !== this.length) {
-            throw new Error('length of base string does not match the length set');
+        const length = this.length;
+        if (base.length !== length) {
+            throw new Error('base of invalid length');
         }
-        if (target.length !== this.length) {
-            throw new Error('length of target string does not match the length set');
+        if (target.length !== length) {
+            throw new Error('target of invalid length');
         }
 
         if (base !== target) {
-            out.grow(this.length);
+            out.grow(length);
             out.writeASCII(target);
             return true;
         }
