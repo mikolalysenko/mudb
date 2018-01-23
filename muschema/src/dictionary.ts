@@ -26,22 +26,9 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
     public free (x:Dictionary<ValueSchema>) {
         const valueSchema = this.muData;
-        switch (valueSchema.muType) {
-            case 'boolean':
-            case 'float32':
-            case 'float64':
-            case 'int8':
-            case 'int16':
-            case 'int32':
-            case 'string':
-            case 'uint8':
-            case 'uint16':
-            case 'uint32':
-                break;
-            default:
-                for (const prop in x) {
-                    valueSchema.free(x[prop]);
-                }
+        const props = Object.keys(x);
+        for (let i = 0; i < props.length; ++i) {
+            valueSchema.free(x[props[i]]);
         }
     }
 
