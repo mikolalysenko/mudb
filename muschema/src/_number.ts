@@ -17,8 +17,9 @@ export abstract class MuNumber implements MuSchema<number> {
     public readonly muType:MuNumberType;
     public readonly json:object;
 
-    constructor (value:number) {
+    constructor (value:number, type:MuNumberType) {
         this.identity = value;
+        this.muType = type;
         this.json = {
             type: this.muType,
             identity: this.identity,

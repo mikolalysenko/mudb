@@ -2,10 +2,8 @@ import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export class MuUint16 extends MuNumber {
-    public readonly muType:MuNumberType = 'uint16';
-
     constructor(value?:number) {
-        super((value || 0) & 0xFFFF);
+        super((value || 0) & 0xFFFF, 'uint16');
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {

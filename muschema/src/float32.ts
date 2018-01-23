@@ -2,10 +2,8 @@ import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 export class MuFloat32 extends MuNumber {
-    public readonly muType:MuNumberType = 'float32';
-
     constructor(value?:number) {
-        super(+(value || 0));
+        super(+(value || 0), 'float32');
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {
