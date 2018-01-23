@@ -84,16 +84,10 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         this._protocol.configure({
             message: {
                 ackState: (client, tick) => {
-                    if (tick > this.tick || tick !== tick >>> 0) {
-                        return;
-                    }
                     const index = findClient(this.clients, client.sessionId);
                     addObservation(this._observedStates[index], tick);
                 },
                 forgetState: (client, tick) => {
-                    if (tick >= this.tick || tick !== tick >>> 0) {
-                        return;
-                    }
                     const index = findClient(this.clients, client.sessionId);
                     forgetObservation(this._observedStates[index], tick);
                 },
@@ -108,7 +102,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     return;
                 }
                 const client = this.clients[findClient(this.clients, client_.sessionId)];
-                if (parseState(data, this.schema.client, client, client_.message.ackState)) {
+                if (parseState(data, this.schema.client, client, client_.message.ackState, client_.message.forgetState)) {
                     if (spec && spec.state) {
                         spec.state(client, client.state, client.tick, !unreliable);
                     }
@@ -122,7 +116,6 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     spec.connect(client);
                 }
                 // TODO send initial state packet to client
-
             },
             disconnect: (client_) => {
                 const clientId = findClient(this.clients, client_.sessionId);
@@ -144,7 +137,6 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
             observedStates,
             this,
             this._protocol.broadcastRaw,
-            this._protocol.broadcast.forgetState,
             !!reliable);
 
         for (let i = 0; i < observedStates.length; ++i) {

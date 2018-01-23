@@ -67,19 +67,19 @@ function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State)
     }
 }
 
-export function garbageCollectStates<State> (model:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
+export function garbageCollectStates<State> (schema:MuSchema<State>, stateSet:MuStateSet<State>, tick:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
     for (let i = 1; i < ticks.length; ++i) {
         if (ticks[i] < tick) {
-            model.free(states[i]);
+            schema.free(states[i]);
         } else {
             ticks[ptr] = ticks[i];
             states[ptr] = states[i];
-            ptr ++;
+            ptr++;
         }
     }
-    const modified = ptr === ticks.length;
+    const modified = ptr !== ticks.length;
     ticks.length = states.length = ptr;
     return modified;
 }
@@ -147,13 +147,13 @@ export function parseState<Schema extends MuAnySchema> (
     schema:Schema,
     replica:MuStateReplica<Schema>,
     ack:(tick:number, unreliable?:boolean) => void,
+    forget:(horizon:number, unreliable?:boolean) => void,
 ) : boolean {
     const { history, windowSize, state } = replica;
 
     const stream = new MuReadStream(packet);
 
     const nextTick = stream.readUint32();
-    // check that nextTick is valid
     for (let i = 0; i < history.ticks.length; ++i) {
         const x = history.ticks[i];
         if (x === nextTick) {
@@ -161,7 +161,6 @@ export function parseState<Schema extends MuAnySchema> (
         }
     }
 
-    // check the most significant bit of baseTick to see if there is a patch
     const baseTick = stream.readUint32();
     const baseIndex = history.at(baseTick);
     if (history.ticks[baseIndex] !== baseTick) {
@@ -179,8 +178,10 @@ export function parseState<Schema extends MuAnySchema> (
     pushState(history, nextTick, nextState);
     ack(nextTick, true);
 
-    const horizon = Math.min(baseTick - 1, Math.max(nextTick, replica.tick) - windowSize + 1);
-    garbageCollectStates(schema, history, horizon);
+    const horizon = baseTick - windowSize - 1;
+    if (garbageCollectStates(schema, history, horizon)) {
+        forget(horizon, true);
+    }
 
     if (nextTick > replica.tick) {
         replica.state = nextState;
@@ -195,7 +196,6 @@ export function publishState<Schema extends MuAnySchema> (
     observations:number[][],
     replica:MuStateReplica<Schema>,
     raw:(data:Uint8Array|string, unreliable?:boolean) => void,
-    forget:(horizon:number, unreliable?:boolean) => void,
     reliable:boolean,
 ) {
     const { history, windowSize, state } = replica;
@@ -211,10 +211,8 @@ export function publishState<Schema extends MuAnySchema> (
 
     pushState(history, nextTick, schema.clone(state));
 
-    const stream = new MuWriteStream(128);
-
+    const stream = new MuWriteStream(4096);
     stream.writeUint32(nextTick);
-    const prefixOffset = stream.offset;
     stream.writeUint32(baseTick);
 
     schema.diff(baseState, state, stream);
@@ -223,11 +221,8 @@ export function publishState<Schema extends MuAnySchema> (
 
     stream.destroy();
 
-    // update window
-    const horizon = Math.min(baseTick - 1, nextTick - windowSize + 1);
-    if (garbageCollectStates(schema, history, horizon)) {
-        forget(horizon, !reliable);
-    }
+    const horizon = baseTick - windowSize - 1;
+    garbageCollectStates(schema, history, horizon);
 
     return baseTick;
 }
