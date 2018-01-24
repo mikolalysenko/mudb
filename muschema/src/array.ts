@@ -33,22 +33,8 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
     public free (arr:_MuArrayType<ValueSchema>) : void {
         const valueSchema = this.muData;
-        switch (valueSchema.muType) {
-            case 'boolean':
-            case 'float32':
-            case 'float64':
-            case 'int8':
-            case 'int16':
-            case 'int32':
-            case 'string':
-            case 'uint8':
-            case 'uint16':
-            case 'uint32':
-                break;
-            default:
-                for (let i = 0; i < arr.length; ++i) {
-                    valueSchema.free(arr[i]);
-                }
+        for (let i = 0; i < arr.length; ++i) {
+            valueSchema.free(arr[i]);
         }
         arr.length = 0;
         this.pool.push(arr);
@@ -58,26 +44,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const result = this.alloc();
         result.length = arr.length;
 
-        const schema = this.muData;
-        switch (schema.muType) {
-            case 'boolean':
-            case 'float32':
-            case 'float64':
-            case 'int8':
-            case 'int16':
-            case 'int32':
-            case 'string':
-            case 'uint8':
-            case 'uint16':
-            case 'uint32':
-                for (let i = 0; i < arr.length; ++i) {
-                    result[i] = arr[i];
-                }
-                break;
-            default:
-                for (let i = 0; i < arr.length; ++i) {
-                    result[i] = schema.clone(arr[i]);
-                }
+        const valueSchema = this.muData;
+        for (let i = 0; i < arr.length; ++i) {
+            result[i] = valueSchema.clone(arr[i]);
         }
 
         return result;
