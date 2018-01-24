@@ -7,7 +7,7 @@ export class MuInt16 extends MuNumber {
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {
-        if (base !== target) {
+        if ((base << 16 >> 16) !== (target << 16 >> 16)) {
             stream.grow(2);
             stream.writeInt16(target);
             return true;

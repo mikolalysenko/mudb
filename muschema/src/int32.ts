@@ -7,7 +7,7 @@ export class MuInt32 extends MuNumber {
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {
-        if (base !== target) {
+        if ((base << 0) !== (target << 0)) {
             stream.grow(4);
             stream.writeInt32(target);
             return true;

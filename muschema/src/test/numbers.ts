@@ -13,69 +13,69 @@ import {
 } from '../';
 import { MuReadStream, MuWriteStream } from 'mustreams';
 
-const TYPES = [
+const numSchemaTypes = [
     MuInt8, MuInt16, MuInt32,
     MuUint8, MuUint16, MuUint32,
     MuFloat32, MuFloat64,
 ];
 
-const INTS = [
+const intSchemaTypes = [
     MuInt8, MuInt16, MuInt32,
     MuUint8, MuUint16, MuUint32,
 ];
 
-const FLOATS = [
+const floatSchemaTypes = [
     MuFloat32,
     MuFloat64,
 ];
 
 test('alloc() & clone()', (t) => {
-    TYPES.forEach((Type) => {
+    numSchemaTypes.forEach((Type) => {
         const defaultValue = 0;
-        let n = new Type();
+        let numSchema = new Type();
 
-        t.equals(n.identity, defaultValue);
-        t.equals(n.alloc(), defaultValue);
-        t.equals(n.clone(0), 0);
+        t.equals(numSchema.identity, defaultValue);
+        t.equals(numSchema.alloc(), defaultValue);
+        t.equals(numSchema.clone(0), 0);
 
-        const muType = n.muType;
+        const muType = numSchema.muType;
         const min = Constants[muType].MIN;
         const max = Constants[muType].MAX;
 
-        n = new Type(min);
+        numSchema = new Type(min);
 
-        t.equals(n.identity, min);
-        t.equals(n.alloc(), min);
-        t.equals(n.clone(min), min);
+        t.equals(numSchema.identity, min);
+        t.equals(numSchema.alloc(), min);
+        t.equals(numSchema.clone(min), min);
 
-        n = new Type(max);
+        numSchema = new Type(max);
 
-        t.equals(n.identity, max);
-        t.equals(n.alloc(), max);
-        t.equals(n.clone(max), max);
+        t.equals(numSchema.identity, max);
+        t.equals(numSchema.alloc(), max);
+        t.equals(numSchema.clone(max), max);
 
         if (muType.indexOf('int') === 0) {
-            n = new Type(-1);
+            numSchema = new Type(-1);
 
-            t.equals(n.identity, -1);
-            t.equals(n.alloc(), -1);
-            t.equals(n.clone(-1), -1);
+            t.equals(numSchema.identity, -1);
+            t.equals(numSchema.alloc(), -1);
+            t.equals(numSchema.clone(-1), -1);
         }
 
         if (Constants[muType]['EPSILON']) {
             const epsilon = Constants[muType]['EPSILON'];
 
-            n = new Type(-epsilon);
+            numSchema = new Type(-epsilon);
 
-            t.equals(n.identity, -epsilon);
-            t.equals(n.alloc(), -epsilon);
-            t.equals(n.clone(-epsilon), -epsilon);
+            t.equals(numSchema.identity, -epsilon);
+            t.equals(numSchema.alloc(), -epsilon);
+            t.equals(numSchema.clone(-epsilon), -epsilon);
 
-            n = new Type(epsilon);
+            numSchema = new Type(epsilon);
 
-            t.equals(n.identity, epsilon);
-            t.equals(n.alloc(), epsilon);
-            t.equals(n.clone(epsilon), epsilon);
+            t.equals(numSchema.identity, epsilon);
+            t.equals(numSchema.alloc(), epsilon);
+            t.equals(numSchema.clone(epsilon), epsilon);
         }
     });
 
@@ -83,51 +83,51 @@ test('alloc() & clone()', (t) => {
 });
 
 test('diff() & patch()', (t) => {
-    INTS.forEach((Type) => {
-        const n = new Type();
+    intSchemaTypes.forEach((Type) => {
+        const intSchema = new Type();
         const ws = new MuWriteStream(2);
 
         const smallNum = 1e-8;
 
-        t.equals(n.diff(0, smallNum, ws), false);
-        t.equals(n.diff(smallNum, 0, ws), false);
-        t.equals(n.diff(0, 1 - smallNum, ws), false);
-        t.equals(n.diff(1 - smallNum, 0, ws), false);
+        t.false(intSchema.diff(0, smallNum, ws));
+        t.false(intSchema.diff(smallNum, 0, ws));
+        t.false(intSchema.diff(0, 1 - smallNum, ws));
+        t.false(intSchema.diff(1 - smallNum, 0, ws));
     });
 
-    TYPES.forEach((Type) => {
-        const n = new Type();
+    numSchemaTypes.forEach((Type) => {
+        const numSchema = new Type();
         const ws = new MuWriteStream(2);
 
-        const muType = n.muType;
+        const muType = numSchema.muType;
         const min = Constants[muType].MIN;
         const max = Constants[muType].MAX;
 
-        t.equals(n.diff(1, min, ws), true);
-        t.equals(n.diff(1, 0, ws), true);
-        t.equals(n.diff(1, max, ws), true);
+        t.true(numSchema.diff(1, min, ws));
+        t.true(numSchema.diff(1, 0, ws));
+        t.true(numSchema.diff(1, max, ws));
 
         const rs = new MuReadStream(ws.buffer.uint8);
 
-        t.equals(n.patch(123, rs), min);
-        t.equals(n.patch(123, rs), 0);
-        t.equals(n.patch(123, rs), max);
+        t.equals(numSchema.patch(123, rs), min);
+        t.equals(numSchema.patch(123, rs), 0);
+        t.equals(numSchema.patch(123, rs), max);
     });
 
-    FLOATS.forEach((Type) => {
-        const n = new Type();
+    floatSchemaTypes.forEach((Type) => {
+        const floatSchema = new Type();
         const ws = new MuWriteStream(2);
 
-        const muType = n.muType;
+        const muType = floatSchema.muType;
         const epsilon = Constants[muType]['EPSILON'];
 
-        t.equals(n.diff(1.0, -epsilon, ws), true);
-        t.equals(n.diff(1.0, epsilon, ws), true);
+        t.true(floatSchema.diff(1.0, -epsilon, ws));
+        t.true(floatSchema.diff(1.0, epsilon, ws));
 
         const rs = new MuReadStream(ws.buffer.uint8);
 
-        t.equals(n.patch(1.0, rs), -epsilon);
-        t.equals(n.patch(1.0, rs), epsilon);
+        t.equals(floatSchema.patch(1.0, rs), -epsilon);
+        t.equals(floatSchema.patch(1.0, rs), epsilon);
     });
 
     t.end();
