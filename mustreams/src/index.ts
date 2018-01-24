@@ -150,7 +150,7 @@ export class MuReadStream {
     constructor (data:Uint8Array) {
         this.buffer = new MuBuffer(data.buffer);
         this.offset = data.byteOffset;
-        this.length = data.byteLength;
+        this.length = data.byteLength + data.byteOffset;
     }
 
     public readInt8 () : number {
