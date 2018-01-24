@@ -42,63 +42,12 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    // a word reserved for number of properties removed +
-    // a word reserved for number of patches +
-    // bytes for property names +
-    // bytes for values
-    public calcByteLength (x:Dictionary<ValueSchema>) : number {
-        function calcStrsByteLength (strs:string[]) {
-            let r = 0;
-            for (const s of strs) {
-                r += 4 + 4 * s.length;
-            }
-            return r;
-        }
-
-        let result = 8;
-
-        const props = Object.keys(x);
-        result += calcStrsByteLength(props);
-
-        const valueSchema = this.muData;
-        const numProps = props.length;
-        switch (valueSchema.muType) {
-            case 'boolean':
-            case 'int8':
-            case 'uint8':
-                result += numProps;
-                break;
-            case 'int16':
-            case 'uint16':
-                result += numProps * 2;
-                break;
-            case 'float32':
-            case 'int32':
-            case 'uint32':
-                result += numProps * 4;
-                break;
-            case 'float64':
-                result += numProps * 8;
-                break;
-            case 'string':
-                const values = props.map((p) => x[p]);
-                result += calcStrsByteLength(values);
-                break;
-            default:
-                for (const key in x) {
-                    result += valueSchema.calcByteLength!(x[key]);
-                }
-        }
-
-        return result;
-    }
-
     public diff (
         base:Dictionary<ValueSchema>,
         target:Dictionary<ValueSchema>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.calcByteLength(base) + this.calcByteLength(target));
+        stream.grow(32);
 
         let numRemove = 0;
         let numPatch = 0;
@@ -112,6 +61,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
+                stream.grow(4 + 4 * prop.length);
                 stream.writeString(prop);
                 ++numRemove;
             }
@@ -123,6 +73,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             const prefixOffset = stream.offset;
 
             const prop = targetProps[i];
+            stream.grow(4 + 4 * prop.length);
             stream.writeString(prop);
 
             if (prop in base) {

@@ -68,26 +68,6 @@ test('vector - clone()', (t) => {
     t.end();
 });
 
-test('vector - calcByteLength()', (t) => {
-    for (const muType of muNumTypes) {
-        const valueSchema = muNumSchema(muType);
-        const dimension = 100;
-        const vecSchema = new MuVector(valueSchema, dimension);
-
-        const vec = typedArrayOf(muType, dimension);
-
-        const dataBytes = dimension * vecSchema.identity.BYTES_PER_ELEMENT;
-        const trackerBytes = Math.ceil(dataBytes / 8);
-
-        t.equals(
-            vecSchema.calcByteLength(vec),
-            trackerBytes + dataBytes,
-        );
-    }
-
-    t.end();
-});
-
 test('vector - diff() & patch()', (t) => {
     for (const muType of muNumTypes) {
         const valueSchema = muNumSchema(muType);

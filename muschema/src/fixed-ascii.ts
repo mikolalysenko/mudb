@@ -40,10 +40,6 @@ export class MuFixedASCIIString implements MuSchema<string> {
     public free () : void {}
     public clone (x:string) : string { return x; }
 
-    public calcByteLength (x:string) : number {
-        return this.length;
-    }
-
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         const length = this.length;
         if (base.length !== length) {

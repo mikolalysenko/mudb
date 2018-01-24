@@ -7,7 +7,7 @@ export class MuUint16 extends MuNumber {
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {
-        if (base !== target) {
+        if ((base & 0xffff) !== (target & 0xffff)) {
             stream.grow(2);
             stream.writeUint16(target);
             return true;
@@ -17,9 +17,5 @@ export class MuUint16 extends MuNumber {
 
     public patch (base:number, stream:MuReadStream) {
         return stream.readUint16();
-    }
-
-    public calcByteLength (x:MuUint16) {
-        return 2;
     }
 }

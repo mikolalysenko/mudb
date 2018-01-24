@@ -31,8 +31,4 @@ export class MuString implements MuSchema<string> {
     public patch (base:string, stream:MuReadStream) {
         return stream.readString();
     }
-
-    public calcByteLength (str:string) {
-        return 4 + str.length * 4;
-    }
 }

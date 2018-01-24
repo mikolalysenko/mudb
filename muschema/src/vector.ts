@@ -61,12 +61,6 @@ export class MuVector<ValueSchema extends MuNumber>
         return copy;
     }
 
-    // bytes for trackers +
-    // bytes enough to hold the value of vec
-    public calcByteLength (vec:_MuVectorType<ValueSchema>) {
-        return Math.ceil(this.identity.byteLength * 9 / 8);
-    }
-
     public diff (
         base_:_MuVectorType<ValueSchema>,
         target_:_MuVectorType<ValueSchema>,
@@ -76,7 +70,7 @@ export class MuVector<ValueSchema extends MuNumber>
         const target = new Uint8Array(target_.buffer);
 
         const dimension = this.identity.byteLength;
-        stream.grow(this.calcByteLength(target));
+        stream.grow(Math.ceil(this.identity.byteLength * 9 / 8));
 
         const headPtr = stream.offset;
 

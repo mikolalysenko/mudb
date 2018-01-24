@@ -295,8 +295,4 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         }
         return result;
     }
-
-    public calcByteLength () : number {
-        return 128;
-    }
 }

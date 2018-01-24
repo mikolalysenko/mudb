@@ -18,8 +18,4 @@ export class MuFloat64 extends MuNumber {
     public patch (base:number, stream:MuReadStream) {
         return stream.readFloat64();
     }
-
-    public calcByteLength (x:MuFloat64) {
-        return 8;
-    }
 }

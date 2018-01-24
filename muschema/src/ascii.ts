@@ -18,8 +18,6 @@ export class MuASCIIString implements MuSchema<string> {
     public free () {}
     public clone (x:string) : string { return x; }
 
-    public calcByteLength (x:string) { return 4 + x.length; }
-
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4 + target.length);

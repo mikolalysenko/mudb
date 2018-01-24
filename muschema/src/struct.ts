@@ -2,6 +2,8 @@ import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 import {
+    muPrimitiveSize,
+    muPrimitiveTypes,
     muType2ReadMethod,
     muType2WriteMethod,
 } from './constants';
@@ -28,10 +30,16 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
 
     public readonly diff:(base:_MuStructT<StructSpec>, target:_MuStructT<StructSpec>, stream:MuWriteStream) => boolean;
     public readonly patch:(base:_MuStructT<StructSpec>, stream:MuReadStream) => _MuStructT<StructSpec>;
-    public readonly calcByteLength:(value:_MuStructT<StructSpec>) => number;
 
     constructor (spec:StructSpec) {
-        const structProps:string[] = Object.keys(spec).sort();
+        // sort struct properties so primitives come first
+        const structProps:string[] = Object.keys(spec).sort(
+            (a:string, b:string) => {
+                const ai = muPrimitiveTypes.indexOf(spec[a].muType);
+                const bi = muPrimitiveTypes.indexOf(spec[b].muType);
+                return (bi - ai) || (a < b ? -1 : (b < a) ? 1 : 0);
+            });
+
         const structTypes:MuSchema<any>[] = structProps.map((propName) => spec[propName]);
         const structJSON = {
             type: 'struct',
@@ -107,7 +115,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
             clone: func('clone', ['x']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
-            calcByteLength: func('calcByteLength', ['x']),
         };
 
         const poolRef = prelude.def('[]');
@@ -225,47 +232,24 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         });
         methods.clone.push('return result');
 
-        // calcByteLength subroutine
+        // common constants
         const numProps = structProps.length;
         const trackerBytes = Math.ceil(numProps / 8);
-
-        const byteLength = methods.calcByteLength.def(0);
-        let partialByteLength = 0;
-        propRefs.forEach((propRef, i) => {
-            const type = structTypes[i];
-            switch (type.muType) {
-                case 'boolean':
-                case 'int8':
-                case 'uint8':
-                    ++partialByteLength;
-                    break;
-                case 'int16':
-                case 'uint16':
-                    partialByteLength += 2;
-                    break;
-                case 'float32':
-                case 'int32':
-                case 'uint32':
-                    partialByteLength += 4;
-                    break;
-                case 'float64':
-                    partialByteLength += 8;
-                    break;
-                case 'string':
-                    methods.calcByteLength.push(`${byteLength}+=4+x[${propRef}].length*4;`);
-                    break;
-                default:
-                    methods.calcByteLength.push(`${byteLength}+=${typeRefs[i]}.calcByteLength(x[${propRef}]);`);
-            }
-        });
-        methods.calcByteLength.push(`${byteLength}+=${trackerBytes + partialByteLength};return ${byteLength}`);
 
         // diff subroutine
         const dTrackerOffset = methods.diff.def(0);
         const dTracker = methods.diff.def(0);
         const numPatch = methods.diff.def(0);
 
-        methods.diff.push(`${dTrackerOffset}=s.offset;s.grow(this.calcByteLength(t)+${trackerBytes});s.offset+=${trackerBytes};`);
+        let baseSize = trackerBytes;
+        propRefs.forEach((p, i) => {
+            const muType = structTypes[i].muType;
+            if (muType in muPrimitiveSize) {
+                baseSize += muPrimitiveSize[muType];
+            }
+        });
+
+        methods.diff.push(`${dTrackerOffset}=s.offset;s.grow(${baseSize});s.offset+=${trackerBytes};`);
         propRefs.forEach((propRef, i) => {
             const muType = structTypes[i].muType;
 
@@ -278,7 +262,6 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
@@ -357,6 +340,5 @@ export class MuStruct<StructSpec extends _SchemaDictionary>
         this.clone = compiled.clone;
         this.diff = compiled.diff;
         this.patch = compiled.patch;
-        this.calcByteLength = compiled.calcByteLength;
     }
 }

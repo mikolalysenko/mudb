@@ -98,8 +98,4 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         this.allocCount++;
         return this.schema.patch(base, inp);
     }
-
-    public calcByteLength(x:BaseSchema['identity']) {
-        return this.schema.calcByteLength(x);
-    }
 }

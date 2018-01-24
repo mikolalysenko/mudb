@@ -27,6 +27,4 @@ export interface MuSchema<Value> {
 
     /** Apply a patch to an object */
     patch (base:Value, inp:MuReadStream) : Value;
-
-    calcByteLength (x:any) : number;
 }

@@ -32,6 +32,4 @@ export abstract class MuNumber implements MuSchema<number> {
 
     public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
     public abstract patch (b:number, stream:MuReadStream) : number;
-
-    public abstract calcByteLength(x:MuNumber);
 }
