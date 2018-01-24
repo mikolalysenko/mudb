@@ -39,10 +39,9 @@ test('string', (t) => {
     t.equals(s.diff(longStr, longStr, ws), false);
     t.equals(s.diff(longStr, longStr.substring(0, longStr.length - 1), ws), true);
 
-    const rs = new MuReadStream(ws.buffer.uint8);
+    const rs = new MuReadStream(ws.bytes());
 
     t.equals(s.patch(longStr, rs), longStr.substring(0, longStr.length - 1));
-    t.equals(s.patch(longStr, rs), longStr, 'running out of content, return the base value');
 
     t.end();
 });

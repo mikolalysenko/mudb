@@ -66,20 +66,12 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    // one byte for tracker +
-    // one byte for the index of type +
-    // bytes for data
-    public calcByteLength (pair:_TypeDataPair<SubTypes>) : number {
-        const dataSchema = this.muData[pair.type];
-        return 2 + dataSchema.calcByteLength!(pair.data);
-    }
-
     public diff (
         base:_TypeDataPair<SubTypes>,
         target:_TypeDataPair<SubTypes>,
         stream:MuWriteStream,
     ) : boolean {
-        stream.grow(this.calcByteLength(target));
+        stream.grow(8);
 
         const trackerOffset = stream.offset;
         ++stream.offset;

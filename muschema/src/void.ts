@@ -14,5 +14,4 @@ export class MuVoid implements MuSchema<void> {
     public clone () : void {}
     public diff (b, t, stream:MuWriteStream) { return false; }
     public patch (b, stream:MuReadStream) : void {}
-    public calcByteLength () { return 0; }
 }

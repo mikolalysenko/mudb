@@ -1,15 +1,16 @@
-export const muPrimitiveTypes = [
-    'boolean',
-    'float32',
-    'float64',
-    'int8',
-    'int16',
-    'int32',
-    'string',
-    'uint8',
-    'uint16',
-    'uint32',
-];
+export const muPrimitiveSize = {
+    'boolean': 1,
+    'uint8': 1,
+    'uint16': 2,
+    'uint32': 4,
+    'int8': 1,
+    'int16': 2,
+    'int32': 4,
+    'float32': 4,
+    'float64': 8,
+};
+
+export const muPrimitiveTypes = Object.keys(muPrimitiveSize);
 
 export const muNonPrimitiveTypes = [
     'array',
@@ -50,6 +51,7 @@ export const muType2WriteMethod = {
     uint16: 'writeUint16',
     uint32: 'writeUint32',
 };
+
 export const muType2ReadMethod = {
     boolean: 'readUint8',
     float32: 'readFloat32',

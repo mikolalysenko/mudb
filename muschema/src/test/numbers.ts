@@ -1,5 +1,5 @@
 import test = require('tape');
-import CONSTANTS = require('../constants');
+import { Constants } from '../constants';
 
 import {
     MuInt8,
@@ -39,8 +39,8 @@ test('alloc() & clone()', (t) => {
         t.equals(n.clone(0), 0);
 
         const muType = n.muType;
-        const min = CONSTANTS[muType].MIN;
-        const max = CONSTANTS[muType].MAX;
+        const min = Constants[muType].MIN;
+        const max = Constants[muType].MAX;
 
         n = new Type(min);
 
@@ -62,8 +62,8 @@ test('alloc() & clone()', (t) => {
             t.equals(n.clone(-1), -1);
         }
 
-        if (CONSTANTS[muType]['EPSILON']) {
-            const epsilon = CONSTANTS[muType]['EPSILON'];
+        if (Constants[muType]['EPSILON']) {
+            const epsilon = Constants[muType]['EPSILON'];
 
             n = new Type(-epsilon);
 
@@ -93,10 +93,6 @@ test('diff() & patch()', (t) => {
         t.equals(n.diff(smallNum, 0, ws), false);
         t.equals(n.diff(0, 1 - smallNum, ws), false);
         t.equals(n.diff(1 - smallNum, 0, ws), false);
-
-        const rs = new MuReadStream(ws.buffer.uint8);
-
-        t.equals(n.patch(123, rs), 123, 'no content to be read, return the base value');
     });
 
     TYPES.forEach((Type) => {
@@ -104,8 +100,8 @@ test('diff() & patch()', (t) => {
         const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const min = CONSTANTS[muType].MIN;
-        const max = CONSTANTS[muType].MAX;
+        const min = Constants[muType].MIN;
+        const max = Constants[muType].MAX;
 
         t.equals(n.diff(1, min, ws), true);
         t.equals(n.diff(1, 0, ws), true);
@@ -116,7 +112,6 @@ test('diff() & patch()', (t) => {
         t.equals(n.patch(123, rs), min);
         t.equals(n.patch(123, rs), 0);
         t.equals(n.patch(123, rs), max);
-        t.equals(n.patch(123, rs), 123, 'running out of content, return the base value');
     });
 
     FLOATS.forEach((Type) => {
@@ -124,7 +119,7 @@ test('diff() & patch()', (t) => {
         const ws = new MuWriteStream(2);
 
         const muType = n.muType;
-        const epsilon = CONSTANTS[muType]['EPSILON'];
+        const epsilon = Constants[muType]['EPSILON'];
 
         t.equals(n.diff(1.0, -epsilon, ws), true);
         t.equals(n.diff(1.0, epsilon, ws), true);

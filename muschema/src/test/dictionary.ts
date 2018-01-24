@@ -103,63 +103,6 @@ test('dictionary (nested) - clone()', (t) => {
     t.end();
 });
 
-test('dictionary - calcByteLength()', (t) => {
-    function sumStrsLength (strs:string[]) {
-        return strs.reduce(
-            (acc, str) => acc + str.length,
-            0,
-        );
-    }
-
-    function calcStrsByteLength (strs:string[]) {
-        let result = 0;
-
-        const STR_LENGTH_BYTES = 4;
-        const BYTES_PER_CHAR = 4;
-
-        result += strs.length * STR_LENGTH_BYTES;
-        result += sumStrsLength(strs) * BYTES_PER_CHAR;
-
-        return result;
-    }
-
-    const muType2numBytes = {
-        boolean: 1,
-        float32: 4,
-        float64: 8,
-        int8: 1,
-        int16: 2,
-        int32: 4,
-        uint8: 1,
-        uint16: 2,
-        uint32: 4,
-    };
-
-    for (const muType of muPrimitiveTypes) {
-        const valueSchema = muPrimitiveSchema(muType);
-        const dictSchema = new MuDictionary(valueSchema);
-
-        const dict = flatDictOf(muType, randomShortStr);
-
-        const COUNTER_BYTES = 8;
-
-        const props = Object.keys(dict);
-        const propsByteLength = calcStrsByteLength(props);
-        const numProps = props.length;
-
-        let valuesByteLength = numProps * muType2numBytes[muType];
-
-        if (muType === 'string') {
-            const values = props.map((k) => dict[k]);
-            valuesByteLength = calcStrsByteLength(values);
-        }
-
-        t.equals(dictSchema.calcByteLength(dict), COUNTER_BYTES + propsByteLength + valuesByteLength);
-    }
-
-    t.end();
-});
-
 test('dictionary (flat) - diff() & patch()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);

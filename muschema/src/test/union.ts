@@ -127,57 +127,6 @@ test('union (nested type-data pair) - clone()', (t) => {
     t.end();
 });
 
-test('union - calcByteLength()', (t) => {
-    // the spec keys can have arbitrary names
-    const schemaSpec = {
-        boolean: new MuBoolean(),
-        float32: new MuFloat32(),
-        float64: new MuFloat64(),
-        int8: new MuInt8(),
-        int16: new MuInt16(),
-        int32: new MuInt32(),
-        string: new MuString(),
-        uint8: new MuUint8(),
-        uint16: new MuUint16(),
-        uint32: new MuUint32(),
-    };
-    const unionSchema = new MuUnion(schemaSpec);
-
-    const muType2numBytes = {
-        boolean: 1,
-        float32: 4,
-        float64: 8,
-        int8: 1,
-        int16: 2,
-        int32: 4,
-        uint8: 1,
-        uint16: 2,
-        uint32: 4,
-    };
-
-    for (const muType of muPrimitiveTypes) {
-        const pair = randomPairOf(muType);
-
-        let dataBytes = muType2numBytes[muType];
-
-        const STR_LENGTH_BYTES = 4;
-        const BYTES_PER_CHAR = 4;
-        if (muType === 'string') {
-            dataBytes = STR_LENGTH_BYTES + pair.data.length * BYTES_PER_CHAR;
-        }
-
-        const TRACKER_BYTE = 1;
-        const TYPE_BYTE = 1;
-
-        t.equals(
-            unionSchema.calcByteLength(pair),
-            TRACKER_BYTE + TYPE_BYTE + dataBytes,
-        );
-    }
-
-    t.end();
-});
-
 test('union (flat type-data pair) - diff() & patch()', (t) => {
     // the spec keys can have arbitrary names
     const schemaSpec = {

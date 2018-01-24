@@ -18,8 +18,4 @@ export class MuInt8 extends MuNumber {
     public patch (base:number, stream:MuReadStream) {
         return stream.readInt8();
     }
-
-    public calcByteLength (x:MuInt8) {
-        return 1;
-    }
 }

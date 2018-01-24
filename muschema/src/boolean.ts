@@ -31,8 +31,4 @@ export class MuBoolean implements MuSchema<boolean> {
     public patch (a:boolean, stream:MuReadStream) {
         return !!stream.readUint8();
     }
-
-    public calcByteLength (b:MuBoolean) {
-        return 1;
-    }
 }

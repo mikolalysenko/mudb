@@ -50,32 +50,6 @@ test('struct - identity', (t) => {
     t.end();
 });
 
-test('struct - calcByteLength()', (t) => {
-    const structSchema = new MuStruct({
-        v: new MuFloat64(0.233),
-        s: new MuString('foo'),
-        b: new MuBoolean(),
-    });
-
-    const struct = {
-        v: 0.233,
-        s: 'foo',
-        b: false,
-    };
-
-    const numProps = Object.keys(struct).length;
-    const BITS_PER_BYTE = 8;
-    const trackerBytes = Math.ceil(numProps / BITS_PER_BYTE);
-    const dataBytes = 8 + 4 + 3 * 4 + 1;
-
-    t.equals(
-        structSchema.calcByteLength(struct),
-        trackerBytes + dataBytes,
-    );
-
-    t.end();
-});
-
 test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
@@ -156,9 +130,6 @@ test('struct (nested)', (t) => {
 
         const testPatchingPair = testPatchingPairFactory(t, structSchema);
         testPatchingPair(identity, struct);
-
-        // get byte length
-        t.equals(structSchema.calcByteLength(identity), depth + (depth - 1) * (4 + 6 * 4) + (4 + 4 * 4));
     }
 
     t.end();
