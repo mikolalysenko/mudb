@@ -15,6 +15,8 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     public readonly muData:ValueSchema;
     public readonly json:object;
 
+    public pool:ValueSchema['identity'][][] = [];
+
     constructor(valueSchema:ValueSchema, id?:_MuArrayType<ValueSchema>) {
         this.identity = id || [];
         this.muData = valueSchema;
@@ -25,9 +27,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : _MuArrayType<ValueSchema> { return []; }
+    public alloc () : _MuArrayType<ValueSchema> {
+        return this.pool.pop() || [];
+    }
 
-    public free (x:_MuArrayType<ValueSchema>) : void {
+    public free (arr:_MuArrayType<ValueSchema>) : void {
         const valueSchema = this.muData;
         switch (valueSchema.muType) {
             case 'boolean':
@@ -42,14 +46,17 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint32':
                 break;
             default:
-                for (let i = 0; i < x.length; ++i) {
-                    valueSchema.free(x[i]);
+                for (let i = 0; i < arr.length; ++i) {
+                    valueSchema.free(arr[i]);
                 }
         }
+        arr.length = 0;
+        this.pool.push(arr);
     }
 
-    public clone (x:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
-        const result = new Array(x.length);
+    public clone (arr:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
+        const result = this.alloc();
+        result.length = arr.length;
 
         const schema = this.muData;
         switch (schema.muType) {
@@ -63,13 +70,13 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             case 'uint8':
             case 'uint16':
             case 'uint32':
-                for (let i = 0; i < x.length; ++i) {
-                    result[i] = x[i];
+                for (let i = 0; i < arr.length; ++i) {
+                    result[i] = arr[i];
                 }
                 break;
             default:
-                for (let i = 0; i < x.length; ++i) {
-                    result[i] = schema.clone(x[i]);
+                for (let i = 0; i < arr.length; ++i) {
+                    result[i] = schema.clone(arr[i]);
                 }
         }
 
