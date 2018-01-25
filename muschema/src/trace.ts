@@ -39,7 +39,7 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
     public allocCount:number = 0;
     public freeCount:number = 0;
 
-    public createLog (name:string) {
+    public createLog (name:string) : MuSchemaLogger<BaseSchema> {
         const x = new MuSchemaLogger(this, name);
         this.logs.push(x);
         return x;
@@ -59,7 +59,7 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
             alloc: this.allocCount,
             free: this.freeCount,
             object: this.allocCount - this.freeCount,
-        })
+        });
         if (console.table) {
             console.table(x);
         } else {
