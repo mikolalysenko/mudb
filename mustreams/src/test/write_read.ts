@@ -9,7 +9,6 @@ const {
     decodeString,
 } = StringCodec;
 
-/*
 test('buffer allocation', (t) => {
     t.equals(allocBuffer(8).buffer.byteLength, 8);
     t.equals(allocBuffer(9).buffer.byteLength, 16);
@@ -248,8 +247,6 @@ test('string', (t) => {
 
     t.end();
 });
-
-*/
 
 test('varints', (t) => {
     const testVals = [
