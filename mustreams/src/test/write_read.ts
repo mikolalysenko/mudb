@@ -247,3 +247,42 @@ test('string', (t) => {
 
     t.end();
 });
+
+test('varints', (t) => {
+    const testVals = [
+        1,
+        64,
+        128,
+        129,
+        255,
+        256,
+        (1 << 7),
+        (1 << 14),
+        (1 << 21),
+        (1 << 28),
+        (1 << 31),
+    ];
+
+    for (let i = testVals.length - 1; i >= 0; --i) {
+        const x = testVals[i];
+        testVals.push(
+            (x - 1) >>> 0,
+            (x + 1) >>> 0,
+            (x + (Math.random() * x) | 0) >>> 0);
+    }
+
+    testVals.push(0);
+    testVals.push(0xfffffff);
+
+    const ws = new MuWriteStream(5 * testVals.length);
+    for (let i = 0; i < testVals.length; ++i) {
+        ws.writeVarInt(testVals[i]);
+    }
+
+    const rs = new MuReadStream(ws.bytes());
+    for (let i = 0; i < testVals.length; ++i) {
+        t.equals(rs.readVarInt(), testVals[i] >>> 0, 'var int read ok: 0b' + (testVals[i] >>> 0).toString(2));
+    }
+
+    t.end();
+});
