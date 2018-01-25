@@ -120,7 +120,8 @@ export class MuWriteStream {
         this.offset += 8;
     }
 
-    public writeVarInt (x:number) {
+    public writeVarInt (x_:number) {
+        const x = x_ >>> 0;
         const bytes = this.buffer.uint8;
         const offset = this.offset;
 
@@ -129,25 +130,25 @@ export class MuWriteStream {
             this.offset += 1;
         } else if (x < (1 << 14)) {
             bytes[offset] = 0x80 | (x & 0x7f);
-            bytes[offset + 1] = x >> 7;
+            bytes[offset + 1] = x >>> 7;
             this.offset += 2;
         } else if (x < (1 << 21)) {
             bytes[offset] = 0x80 | (x & 0x7f);
             bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
-            bytes[offset + 2] = x >> 14;
+            bytes[offset + 2] = x >>> 14;
             this.offset += 3;
         } else if (x < (1 << 28)) {
             bytes[offset] = 0x80 | (x & 0x7f);
             bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
             bytes[offset + 2] = 0x80 | ((x >> 14) & 0x7f);
-            bytes[offset + 3] = x >> 21;
+            bytes[offset + 3] = x >>> 21;
             this.offset += 4;
         } else {
             bytes[offset] = 0x80 | (x & 0x7f);
             bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
             bytes[offset + 2] = 0x80 | ((x >> 14) & 0x7f);
             bytes[offset + 3] = 0x80 | ((x >> 21) & 0x7f);
-            bytes[offset + 4] = x >> 28;
+            bytes[offset + 4] = x >>> 28;
             this.offset += 5;
         }
     }
@@ -247,24 +248,24 @@ export class MuReadStream {
         if (x2 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
-                ((x1 << 7) & 0x7f) |
+                ((x1 & 0x7f) << 7) |
                 (x2 << 14);
         }
         const x3 = bytes[offset++]
         if (x3 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
-                ((x1 << 7) & 0x7f) |
-                ((x2 << 14) & 0x7f) |
+                ((x1 & 0x7f) << 7) |
+                ((x2 & 0x7f) << 14) |
                 (x3 << 21);
         }
-        const x4 = bytes[offset++]
+        const x4 = bytes[offset++];
         this.offset = offset;
-        return (x0 & 0x7f) |
-            ((x1 << 7) & 0x7f) |
-            ((x2 << 14) & 0x7f) |
-            ((x3 << 21) & 0x7f) |
-            (x4 << 28);
+        return (x0 & 0x7f) +
+            ((x1 & 0x7f) << 7) +
+            ((x2 & 0x7f) << 14) +
+            ((x3 & 0x7f) << 21) +
+            (x4 * (1 << 28));
     }
 
     public readASCII (byteLength:number) : string {
