@@ -8,15 +8,22 @@ const repoContents = fs.readdirSync(repoPath)
 const muModules = repoContents.filter((filename) => filename.indexOf('mu') === 0)
 const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
 
-console.log('installing dependencies and registering modules...')
+let npmish = 'npm'
+let installish = 'i'
+if (process.argv.length == 3 && process.argv[2] == 'yarn') {
+    npmish = 'yarn'
+    installish = ''
+}
+
+console.log('installing dependencies and registering modules with...')
 modulePaths.forEach((dir) => {
     const execSync = execInDirectorySync(dir)
 
     // bypass compilation errors
     try { execSync('tsc') } catch (e) { }
     execSync('rm -rf node_modules')
-    execSync('npm i')
-    execSync('npm link')
+    execSync(`${npmish} ${installish}`)
+    execSync(`${npmish} link`)
 })
 
 console.log('linking dependencies...')
@@ -28,7 +35,7 @@ modulePaths.forEach((dir) => {
         if (dependencies) {
             Object.keys(dependencies).forEach((dep) => {
                 if (dep.indexOf('mu') === 0) {
-                    exec(`npm link ${dep}`)
+                    exec(`${npmish} link ${dep}`)
                 }
             })
         }
