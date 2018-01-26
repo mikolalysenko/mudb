@@ -20,9 +20,18 @@ By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.m
 * Install vscode (optional)
 * Linking submodules
 
-```
+One of these:
+
+```sh
+# npm
 npm run link-all
+# yarn
+yarn run link-all -- yarn
+# yarn version >= 1.0.0
+yarn run link-all yarn
 ```
+
+You may need to run your linking command twice if this is the first time you're developing on mudb.
 
 * typescript watch
 
