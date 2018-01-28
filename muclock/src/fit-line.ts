@@ -1,19 +1,3 @@
-// solve for model. parameters a,b.
-//  f(x) = ax + b
-//
-// loss
-//  L = sum((f(xi) - yi)^2)
-//      sum((axi + b - yi)^2)
-//      sum(a^2 xi^2 + a b xi - a xi yi + a b xi + b^2 - b yi - a xi yi - b yi + yi^2)
-//      sum(a^2 xi^2 + 2 a b xi - 2 a xi yi + b^2 - 2 b yi + yi^2)
-//
-//  dL / da = sum(2 a xi^2 + 2 b xi - 2 xi yi)
-//          ~ a sum(xi^2) + b sum(xi) - sum(xi yi)
-//
-//  dL / db = sum(2 a xi + 2 b - 2 yi)
-//          ~ a sum(xi) + n b - sum(yi)
-//
-
 class Pair {
     public x:number;
     public y:number;
@@ -42,40 +26,8 @@ function zipPairs (x:number[], y:number[]) : Pair[] {
     return pairList;
 }
 
-export function fitLine(x:number[], y:number[]) : { a:number, b:number } {
+export function fitLine(x:number[], y:number[]) {
     const pairs = zipPairs(x, y);
-
-    const startIdx = Math.floor(pairs.length * 1 / 6);
-    const endIdx = Math.ceil(pairs.length * 5 / 6);
-    const n = endIdx - startIdx;
-
-    let sumX2 = 0;
-    let sumX = 0;
-    let sumY = 0;
-    let sumXY = 0;
-
-    for (let i = startIdx; i < endIdx; ++i) {
-        const p = pairs[i];
-        const xi = p.x;
-        const yi = p.y;
-        sumX2 += xi * xi;
-        sumX += xi;
-        sumY += yi;
-        sumXY += xi * yi;
-    }
-
-    const det = sumX2 * n - sumX * sumX;
-    if (Math.abs(det) < 1e-6) {
-        const p = pairs[pairs.length >> 1];
-        return { a: 1, b: p.y - p.x };
-    }
-
-    const a0 = n / det;
-    const a1 = -sumX / det;
-    const a2 = sumX2 / det;
-
-    return {
-        a: sumXY * a0 + sumY * a1,
-        b: sumXY * a1 + sumY * a2,
-    };
+    const p = pairs[pairs.length >> 1];
+    return p.y - p.x;
 }

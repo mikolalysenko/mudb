@@ -9,6 +9,11 @@ export const MuClockProtocol = {
         init: new MuStruct({
             tickRate: new MuUint32(),
             serverClock: new MuFloat64(),
+            skippedFrames: new MuUint32(),
+        }),
+        frameSkip: new MuStruct({
+            skippedFrames: new MuUint32(),
+            serverClock: new MuFloat64(),
         }),
         ping: new MuUint32(),
         pong: new MuFloat64(),
