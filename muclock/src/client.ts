@@ -4,14 +4,17 @@ import { MuClock } from './clock';
 import { MuPingStatistic } from './ping-statistic';
 import { fitLine } from './fit-line';
 
-const SAMPLE_CUTOFF = 32;
+const SAMPLE_CUTOFF = 8;
 
 const DEFAULT_PING_RATE = 500;
 const DEFAULT_PING_BUFFER_SIZE = 1024;
-const DEFAULT_CLOCK_BUFFER_SIZE = 1024;
+const DEFAULT_CLOCK_BUFFER_SIZE = 64;
+const DEFAULT_FRAME_SKIP = 0;
 
 export class MuClockClient {
     private _protocol:MuClientProtocol<typeof MuClockProtocol>;
+
+    public frameSkip:number = DEFAULT_FRAME_SKIP;
 
     private _clock:MuClock = new MuClock();
     private _clockScale:number = 1;
@@ -30,6 +33,8 @@ export class MuClockClient {
 
     public tickRate:number = 30;
     private _tickCount:number = 0;
+    private _skippedFrames:number = 0;
+    private _monotone:boolean = true;
 
     private _started = false;
 
@@ -43,6 +48,8 @@ export class MuClockClient {
         pollRate?:number,
         pingBufferSize?:number,
         clockBufferSize?:number,
+        frameSkip?:number,
+        enableRewind?:boolean,
     }) {
         this._protocol = spec.client.protocol(MuClockProtocol);
         this._clockBufferSize = spec.clockBufferSize || DEFAULT_CLOCK_BUFFER_SIZE;
@@ -53,10 +60,18 @@ export class MuClockClient {
             this._onTick = spec.tick;
         }
 
+        if (spec.frameSkip) {
+            this.frameSkip = spec.frameSkip | 0;
+        }
+
+        this._monotone = !spec.enableRewind;
+
         this._protocol.configure({
             message: {
-                init: ({ tickRate, serverClock }) => {
+                init: ({ tickRate, serverClock, skippedFrames }) => {
                     this._clock.reset();
+
+                    this._skippedFrames = 0;
 
                     this._started = true;
 
@@ -80,12 +95,16 @@ export class MuClockClient {
                         spec.ready();
                     }
                 },
+                frameSkip: ({ serverClock, skippedFrames }) => {
+                    this._addTimeObservation(serverClock, this._clock.now());
+                    this._skippedFrames = skippedFrames;
+                },
                 ping: (id) => this._protocol.server.message.pong(id),
                 pong: (serverClock) => {
                     this._lastPong = this._clock.now();
                     const rtt = this._lastPong - this._lastPing;
                     this._pingStatistic.addSample(rtt);
-                    this._addTimeObservation(serverClock, this._lastPong + 0.5 * rtt);
+                    this._addTimeObservation(serverClock, this._lastPong);
                     this._lastPing = 0;
                 },
             },
@@ -106,18 +125,9 @@ export class MuClockClient {
             this._localTimeSamples[idx] = localClock;
             this._remoteTimeSamples[idx] = serverClock;
         }
-        if (this._localTimeSamples.length < SAMPLE_CUTOFF) {
-            let avgShift = 0;
-            for (let i = 0; i < this._localTimeSamples.length; ++i) {
-                avgShift += this._remoteTimeSamples[i] - this._localTimeSamples[i];
-            }
-            this._clockScale = 1;
-            this._clockShift = avgShift / this._localTimeSamples.length;
-        } else {
-            const {a, b} = fitLine(this._localTimeSamples, this._remoteTimeSamples);
-            this._clockScale = a;
-            this._clockShift = b;
-        }
+        const nextShift = fitLine(this._localTimeSamples, this._remoteTimeSamples);
+        this._clockScale = 1;
+        this._clockShift = nextShift;
     }
 
     private _doPing () {
@@ -146,9 +156,19 @@ export class MuClockClient {
             this._doPing();
         }
 
-        const targetTickCount = Math.floor(this._simulationClock() / this.tickRate);
-        while (this._tickCount < targetTickCount) {
-            this._onTick(++this._tickCount);
+        const ticksSmooth = this._simulationClock() / this.tickRate - this._skippedFrames;
+        const targetTickCount = Math.floor(ticksSmooth);
+        if (targetTickCount > 0) {
+            const ticks = targetTickCount - this._tickCount;
+            if ((ticks > this.frameSkip) || // fast forward
+                (ticks < 0 && !this._monotone && targetTickCount > 0)) { // rewind
+                this._tickCount = targetTickCount;
+                this._onTick(this._tickCount);
+            } else {
+                while (this._tickCount < targetTickCount) {
+                    this._onTick(++this._tickCount);
+                }
+            }
         }
     }
 
@@ -165,7 +185,11 @@ export class MuClockClient {
         if (!this._started) {
             return 0;
         }
-        return Math.min(this._tickCount + 1, this._simulationClock() / this.tickRate);
+        return Math.max(
+                0,
+                Math.min(
+                    this._tickCount + 1,
+                    this._simulationClock() / this.tickRate - this._skippedFrames));
     }
 
     public ping () : number {

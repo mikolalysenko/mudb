@@ -7,6 +7,7 @@ const DEFAULT_TICK_RATE = 30;
 const DEFAULT_PING = 200;
 const PING_BUFFER_SIZE = 256;
 const DEFAULT_TIMEOUT = Infinity;
+const DEFAULT_FRAMESKIP = Infinity;
 
 function genUUID () {
     return Math.floor(Math.random() * 1e12) | 0;
@@ -79,6 +80,9 @@ export class MuClockServer {
     private _pollInterval:any;
     private _onTick:(tick:number) => void = function () {};
 
+    public frameSkip:number = DEFAULT_FRAMESKIP;
+    private _skippedFrames:number = 0;
+
     private _clientPingHandlers:{ [sessionId:string]:MuClockClientPingHandler } = {};
     constructor (spec:{
         server:MuServer,
@@ -88,6 +92,7 @@ export class MuClockServer {
         tick?:(t:number) => void,
         timeout?:number,
         pingBufferSize?:number,
+        frameSkip?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
         this._pingBufferSize = spec.pingBufferSize || 256;
@@ -97,6 +102,9 @@ export class MuClockServer {
         }
         if ('tick' in spec) {
             this._onTick = spec.tick || function () {};
+        }
+        if ('frameSkip' in spec) {
+            this.frameSkip = +(spec.frameSkip || 0);
         }
 
         this._protocol.configure({
@@ -119,6 +127,7 @@ export class MuClockServer {
                 client.message.init({
                     tickRate: this.tickRate,
                     serverClock: this._clock.now(),
+                    skippedFrames: this._skippedFrames,
                 });
 
                 const pingClient = new MuClockClientPingHandler({
@@ -140,12 +149,26 @@ export class MuClockServer {
     }
 
     public poll () {
-        const targetTick = Math.floor(this.now() / this.tickRate);
-        while (this._tickCount < targetTick) {
-            this._onTick(++this._tickCount);
+        const now = this._clock.now();
+
+        const ticksSmooth = now / this.tickRate - this._skippedFrames;
+        const targetTick = Math.floor(ticksSmooth);
+        const numTicks = targetTick - this._tickCount;
+
+        if (numTicks <= this.frameSkip) {
+            while (this._tickCount < targetTick) {
+                this._onTick(++this._tickCount);
+            }
+        } else if (numTicks > 0) {
+            this._skippedFrames += targetTick - this._tickCount - 1;
+            this._tickCount = Math.floor(now / this.tickRate - this._skippedFrames);
+            this._protocol.broadcast.frameSkip({
+                skippedFrames: this._skippedFrames,
+                serverClock: now,
+            });
+            this._onTick(this._tickCount);
         }
 
-        const now = this._clock.now();
         const ids = Object.keys(this._clientPingHandlers);
         for (let i = 0; i < ids.length; ++i) {
             this._clientPingHandlers[ids[i]].poll(now);
@@ -154,7 +177,7 @@ export class MuClockServer {
 
     public tick () {
         if (this._clock) {
-            const t = this._clock.now() / this.tickRate;
+            const t = this._clock.now() / this.tickRate - this._skippedFrames;
             return Math.min(t, this._tickCount + 1);
         }
         return 0;
