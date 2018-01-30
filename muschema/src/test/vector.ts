@@ -7,7 +7,7 @@ import {
     MuVector,
 } from '../';
 import { MuWriteStream, MuReadStream } from 'mustreams';
-import { muType2TypedArray } from '../constants';
+import { muType2TypedArray } from '../_constants';
 import {
     muNumSchema,
     randomValueOf,

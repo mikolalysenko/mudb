@@ -14,7 +14,7 @@ import {
     MuReadStream,
 } from 'mustreams';
 
-import { muPrimitiveTypes } from '../constants';
+import { muPrimitiveTypes } from '../_constants';
 import {
     muPrimitiveSchema,
     randomStr,
