@@ -1,7 +1,7 @@
 import test = require('tape');
 
 import { MuFixedASCIIString } from '../';
-import { testPatchingPairFactory, simpleStrOfLeng } from './_helper';
+import { testPatchingPairFactory, simpleStrOfLeng } from '../_helper';
 
 test('fixed-length ascii - diff() & patch()', (t) => {
     function ASCIIOfLeng (length) {

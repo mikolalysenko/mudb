@@ -12,7 +12,7 @@ import {
     muNumSchema,
     randomValueOf,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('vector - identity', (t) => {
     const vecSchema = new MuVector(new MuFloat64(5e-324), 3);

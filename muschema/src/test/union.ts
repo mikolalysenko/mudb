@@ -18,7 +18,7 @@ import { muPrimitiveTypes } from '../constants';
 import {
     randomValueOf,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('union - identity', (t) => {
     let unionSchema = new MuUnion({

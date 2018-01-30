@@ -10,7 +10,7 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-} from '../';
+} from './';
 import {
     MuReadStream,
     MuWriteStream,
@@ -19,7 +19,7 @@ import {
 import {
     Constants,
     muPrimitiveTypes,
-} from '../constants';
+} from './constants';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;

@@ -16,7 +16,7 @@ import {
     randomValueOf,
     testPatchingFactory,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('array - identity', (t) => {
     let arraySchema = new MuArray(new MuString());
