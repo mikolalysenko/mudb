@@ -31,12 +31,6 @@ function fround (float) {
     return fa[0];
 }
 
-function randomCodePoint () {
-    // to avoid the surrogates issue
-    const MAX_CODE_POINT = 0xD7FF;
-    return Math.random() * MAX_CODE_POINT | 0;
-}
-
 const muNumType2SchemaType = {
     'float32': MuFloat32,
     'float64': MuFloat64,
@@ -68,6 +62,12 @@ export function muPrimitiveSchema (muType) {
 }
 
 export function strOfLeng (length) {
+    function randomCodePoint () {
+        // to avoid the surrogates issue
+        const MAX_CODE_POINT = 0xD7FF;
+        return Math.random() * MAX_CODE_POINT | 0;
+    }
+
     const codePoints = new Array(length);
     for (let i = 0; i < length; ++i) {
         codePoints[i] = randomCodePoint();
@@ -109,13 +109,13 @@ export function randomValueOf (muType:string) {
         case 'int8':
         case 'int16':
         case 'int32':
-            return randomSign() * Math.random() * MAX | 0;
+            return randomSign() * Math.round(Math.random() * MAX);
         case 'string':
             return randomStr();
         case 'uint8':
         case 'uint16':
         case 'uint32':
-            return Math.random() * MAX >>> 0;
+            return Math.round(Math.random() * MAX);
         default:
             return;
     }
