@@ -96,6 +96,14 @@ export function randomShortStr () {
     return simpleStrOfLeng(length);
 }
 
+export function randomFloat32 () {
+    return fround(Math.random() * 10 ** (randomSign() * (Math.random() * 38 | 0)));
+}
+
+export function randomFloat64 () {
+    return Math.random() * 10 ** (randomSign() * (Math.random() * 308 | 0));
+}
+
 export function randomValueOf (muType:string) {
     const MAX = Constants[muType] && Constants[muType].MAX;
     const MIN = Constants[muType] && Constants[muType].MIN;
@@ -103,9 +111,9 @@ export function randomValueOf (muType:string) {
         case 'boolean':
             return Math.random() < 0.5 ? false : true;
         case 'float32':
-            return fround(randomSign() * Math.random() * 10 * MIN);
+            return randomFloat32();
         case 'float64':
-            return randomSign() * Math.random() * 10 * MIN;
+            return randomFloat64();
         case 'int8':
         case 'int16':
         case 'int32':
