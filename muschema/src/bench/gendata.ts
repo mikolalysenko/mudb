@@ -63,3 +63,14 @@ export function shallowMerge<T extends object> (target:T, source:T) : T {
     });
     return result;
 }
+
+export function genStruct (spec) : any {
+    const props = Object.keys(spec);
+    const muTypes = props.map((p) => spec[p]['muType']);
+
+    const result = {};
+    props.forEach((p, idx) => {
+        result[p] = randomValueOf(muTypes[idx]);
+    });
+    return result;
+}

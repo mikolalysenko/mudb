@@ -77,11 +77,10 @@ export function strOfLeng (length) {
 
 export function simpleStrOfLeng (length) {
     const ingredient = 'abc';
-    const ingredientLeng = ingredient.length;
 
     const chars = new Array(length);
     for (let i = 0; i < length; ++i) {
-        chars[i] = ingredient.charAt(Math.random() * ingredientLeng | 0);
+        chars[i] = ingredient.charAt(Math.random() * ingredient.length | 0);
     }
     return chars.join('');
 }
@@ -105,8 +104,6 @@ export function randomFloat64 () {
 }
 
 export function randomValueOf (muType:string) {
-    const MAX = Constants[muType] && Constants[muType].MAX;
-    const MIN = Constants[muType] && Constants[muType].MIN;
     switch (muType) {
         case 'boolean':
             return Math.random() < 0.5 ? false : true;
@@ -117,13 +114,13 @@ export function randomValueOf (muType:string) {
         case 'int8':
         case 'int16':
         case 'int32':
-            return randomSign() * Math.round(Math.random() * MAX);
+            return randomSign() * Math.round(Math.random() * Constants[muType].MAX);
         case 'string':
             return randomStr();
         case 'uint8':
         case 'uint16':
         case 'uint32':
-            return Math.round(Math.random() * MAX);
+            return Math.round(Math.random() * Constants[muType].MAX);
         default:
             return;
     }
