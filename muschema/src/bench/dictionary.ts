@@ -12,6 +12,9 @@ import {
     shallowMerge,
 } from './gendata';
 
+console.log('---------- dictionary ----------');
+console.log('1Kx targets with 1K props');
+
 const schema = new MuDictionary(new MuUint32());
 
 const emptyDict = {};
@@ -20,7 +23,6 @@ const dict2 = changeValues(dict1, 'uint32');
 
 let outs = createWriteStreams(1e3);
 
-console.log('1Kx targets with 1K props');
 console.time('diff more props');
 for (let i = 0; i < 1e3; ++i) {
     schema.diff(emptyDict, dict1, outs[i]);

@@ -16,6 +16,8 @@ import {
     genStruct,
 } from './gendata';
 
+console.log('---------- struct ----------');
+
 const spec1 = {
     a: new MuUint32(),
     b: new MuUint32(),

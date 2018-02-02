@@ -11,73 +11,17 @@ import {
     genArray,
 } from './gendata';
 
-const u32Schema = new MuArray(new MuUint32());
-
-console.log('1Kx 1K elements');
-
-const oneK1 = genArray('uint32', 1e3);
-const oneK2 = genArray('uint32', 1e3);
-let half = genArray('uint32', 500);
-let doubled = genArray('uint32', 2e3);
-
-let outs = createWriteStreams(1e3);
-
-console.time('diff same length');
-for (let i = 0; i < 1e3; ) {
-    u32Schema.diff(oneK1, oneK2, outs[i++]);
-    u32Schema.diff(oneK2, oneK1, outs[i++]);
-}
-console.timeEnd('diff same length');
-
-let inps = createReadStreams(outs);
-
-console.time('patch same length');
-for (let i = 0; i < 1e3; ) {
-    u32Schema.patch(oneK1, inps[i++]);
-    u32Schema.patch(oneK2, inps[i++]);
-}
-console.timeEnd('patch same length');
-
-outs = createWriteStreams(1e3);
-
-console.time('diff shorter against longer');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.diff(half, oneK1, outs[i]);
-}
-console.timeEnd('diff shorter against longer');
-
-inps = createReadStreams(outs);
-
-console.time('patch shorter to longer');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.patch(half, inps[i++]);
-}
-console.timeEnd('patch shorter to longer');
-
-outs = createWriteStreams(1e3);
-
-console.time('diff longer against shorter');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.diff(doubled, oneK1, outs[i]);
-}
-console.timeEnd('diff longer against shorter');
-
-inps = createReadStreams(outs);
-
-console.time('patch longer to shorter');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.patch(doubled, inps[i]);
-}
-console.timeEnd('patch longer to shorter');
-
+console.log('---------- array ----------');
 console.log('100Kx 10 elements');
+
+const u32Schema = new MuArray(new MuUint32());
 
 const ten1 = genArray('uint32', 10);
 const ten2 = genArray('uint32', 10);
-half = genArray('uint32', 5);
-doubled = genArray('uint32', 20);
+let half = genArray('uint32', 5);
+let doubled = genArray('uint32', 20);
 
-outs = createWriteStreams(1e5);
+let outs = createWriteStreams(1e5);
 
 console.time('diff same length');
 for (let i = 0; i < 1e5; ) {
@@ -101,6 +45,63 @@ for (let i = 0; i < 1e5; ++i) {
     u32Schema.diff(doubled, ten1, outs[i]);
 }
 console.timeEnd('diff longer against shorter');
+
+console.log('1Kx 1K elements');
+
+const k1 = genArray('uint32', 1e3);
+const k2 = genArray('uint32', 1e3);
+half = genArray('uint32', 500);
+doubled = genArray('uint32', 2e3);
+
+outs = createWriteStreams(1e3);
+
+console.time('diff same length');
+for (let i = 0; i < 1e3; ) {
+    u32Schema.diff(k1, k2, outs[i++]);
+    u32Schema.diff(k2, k1, outs[i++]);
+}
+console.timeEnd('diff same length');
+
+let inps = createReadStreams(outs);
+
+console.time('patch same length');
+for (let i = 0; i < 1e3; ) {
+    u32Schema.patch(k1, inps[i++]);
+    u32Schema.patch(k2, inps[i++]);
+}
+console.timeEnd('patch same length');
+
+outs = createWriteStreams(1e3);
+
+console.time('diff shorter against longer');
+for (let i = 0; i < 1e3; ++i) {
+    u32Schema.diff(half, k1, outs[i]);
+}
+console.timeEnd('diff shorter against longer');
+
+inps = createReadStreams(outs);
+
+console.time('patch shorter to longer');
+for (let i = 0; i < 1e3; ++i) {
+    u32Schema.patch(half, inps[i++]);
+}
+console.timeEnd('patch shorter to longer');
+
+outs = createWriteStreams(1e3);
+
+console.time('diff longer against shorter');
+for (let i = 0; i < 1e3; ++i) {
+    u32Schema.diff(doubled, k1, outs[i]);
+}
+console.timeEnd('diff longer against shorter');
+
+inps = createReadStreams(outs);
+
+console.time('patch longer to shorter');
+for (let i = 0; i < 1e3; ++i) {
+    u32Schema.patch(doubled, inps[i]);
+}
+console.timeEnd('patch longer to shorter');
 
 console.log('10x 100K elements');
 

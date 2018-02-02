@@ -9,6 +9,7 @@ import {
     genVector,
 } from './gendata';
 
+console.log('---------- vector ----------');
 console.log('100Kx targets with 10 elements');
 
 const schema1 = new MuVector(new MuUint32(), 10);
