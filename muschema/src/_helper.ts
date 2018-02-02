@@ -10,7 +10,7 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-} from '../';
+} from './';
 import {
     MuReadStream,
     MuWriteStream,
@@ -19,7 +19,7 @@ import {
 import {
     Constants,
     muPrimitiveTypes,
-} from '../constants';
+} from './_constants';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
@@ -29,12 +29,6 @@ function fround (float) {
     const fa = new Float32Array(1);
     fa[0] = float;
     return fa[0];
-}
-
-function randomCodePoint () {
-    // to avoid the surrogates issue
-    const MAX_CODE_POINT = 0xD7FF;
-    return Math.random() * MAX_CODE_POINT | 0;
 }
 
 const muNumType2SchemaType = {
@@ -68,6 +62,12 @@ export function muPrimitiveSchema (muType) {
 }
 
 export function strOfLeng (length) {
+    function randomCodePoint () {
+        // to avoid the surrogates issue
+        const MAX_CODE_POINT = 0xD7FF;
+        return Math.random() * MAX_CODE_POINT | 0;
+    }
+
     const codePoints = new Array(length);
     for (let i = 0; i < length; ++i) {
         codePoints[i] = randomCodePoint();
@@ -77,11 +77,10 @@ export function strOfLeng (length) {
 
 export function simpleStrOfLeng (length) {
     const ingredient = 'abc';
-    const ingredientLeng = ingredient.length;
 
     const chars = new Array(length);
     for (let i = 0; i < length; ++i) {
-        chars[i] = ingredient.charAt(Math.random() * ingredientLeng | 0);
+        chars[i] = ingredient.charAt(Math.random() * ingredient.length | 0);
     }
     return chars.join('');
 }
@@ -96,26 +95,32 @@ export function randomShortStr () {
     return simpleStrOfLeng(length);
 }
 
+export function randomFloat32 () {
+    return fround(Math.random() * 10 ** (randomSign() * (Math.random() * 38 | 0)));
+}
+
+export function randomFloat64 () {
+    return Math.random() * 10 ** (randomSign() * (Math.random() * 308 | 0));
+}
+
 export function randomValueOf (muType:string) {
-    const MAX = Constants[muType] && Constants[muType].MAX;
-    const MIN = Constants[muType] && Constants[muType].MIN;
     switch (muType) {
         case 'boolean':
             return Math.random() < 0.5 ? false : true;
         case 'float32':
-            return fround(randomSign() * Math.random() * 10 * MIN);
+            return randomFloat32();
         case 'float64':
-            return randomSign() * Math.random() * 10 * MIN;
+            return randomFloat64();
         case 'int8':
         case 'int16':
         case 'int32':
-            return randomSign() * Math.random() * MAX | 0;
+            return randomSign() * Math.round(Math.random() * Constants[muType].MAX);
         case 'string':
             return randomStr();
         case 'uint8':
         case 'uint16':
         case 'uint32':
-            return Math.random() * MAX >>> 0;
+            return Math.round(Math.random() * Constants[muType].MAX);
         default:
             return;
     }

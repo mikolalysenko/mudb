@@ -1,7 +1,7 @@
 import test = require('tape');
 
 import { MuASCIIString } from '../';
-import { randomShortStr, testPatchingPairFactory } from './_helper';
+import { randomShortStr, testPatchingPairFactory } from '../_helper';
 
 test('ascii - diff() & patch()', (t) => {
     function randomASCII () {

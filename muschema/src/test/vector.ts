@@ -7,12 +7,12 @@ import {
     MuVector,
 } from '../';
 import { MuWriteStream, MuReadStream } from 'mustreams';
-import { muType2TypedArray } from '../constants';
+import { muType2TypedArray } from '../_constants';
 import {
     muNumSchema,
     randomValueOf,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('vector - identity', (t) => {
     const vecSchema = new MuVector(new MuFloat64(5e-324), 3);

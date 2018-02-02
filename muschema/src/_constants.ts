@@ -15,6 +15,7 @@ export const muPrimitiveTypes = Object.keys(muPrimitiveSize);
 export const muNonPrimitiveTypes = [
     'array',
     'dictionary',
+    'sorted',
     'struct',
     'union',
     'vector',

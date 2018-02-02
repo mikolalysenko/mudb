@@ -14,13 +14,13 @@ import {
     MuReadStream,
 } from 'mustreams';
 
-import { muPrimitiveTypes } from '../constants';
+import { muPrimitiveTypes } from '../_constants';
 import {
     muPrimitiveSchema,
     randomStr,
     randomValueOf,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('struct - muData', (t) => {
     const spec = {

@@ -10,13 +10,13 @@ import {
 import {
     muType2TypedArray,
     muPrimitiveTypes,
-} from '../constants';
+} from '../_constants';
 import {
     muPrimitiveSchema,
     randomValueOf,
     testPatchingFactory,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('array - identity', (t) => {
     let arraySchema = new MuArray(new MuString());

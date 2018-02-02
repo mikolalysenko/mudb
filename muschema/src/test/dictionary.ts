@@ -6,7 +6,7 @@ import {
     MuVoid,
 } from '../';
 
-import { muPrimitiveTypes } from '../constants';
+import { muPrimitiveTypes } from '../_constants';
 import {
     muPrimitiveSchema,
     randomShortStr,
@@ -14,7 +14,7 @@ import {
     randomValueOf,
     testPatchingFactory,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('dictionary - identity', (t) => {
     const dictA = new MuDictionary(new MuVoid());

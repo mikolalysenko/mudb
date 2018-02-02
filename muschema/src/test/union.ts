@@ -14,11 +14,11 @@ import {
     MuUnion,
 } from '../';
 
-import { muPrimitiveTypes } from '../constants';
+import { muPrimitiveTypes } from '../_constants';
 import {
     randomValueOf,
     testPatchingPairFactory,
-} from './_helper';
+} from '../_helper';
 
 test('union - identity', (t) => {
     let unionSchema = new MuUnion({
