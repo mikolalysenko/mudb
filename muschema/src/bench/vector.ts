@@ -4,6 +4,7 @@ import {
 } from '../';
 
 import {
+    calcContentBytes,
     createWriteStreams,
     createReadStreams,
     genVector,
@@ -26,6 +27,7 @@ for (let i = 0; i < 1e5; ) {
 }
 console.timeEnd('diff vectors of uint32');
 
+let meanContentBytes = calcContentBytes(outs);
 let inps = createReadStreams(outs);
 
 console.time('patch vectors of uint32');
@@ -34,6 +36,7 @@ for (let i = 0; i < 1e5; ) {
     schema1.patch(ten2, inps[i++]);
 }
 console.timeEnd('patch vectors of uint32');
+console.log(`using ${meanContentBytes} bytes`);
 
 console.log('1Kx targets with 1K elements');
 
@@ -51,6 +54,7 @@ for (let i = 0; i < 1e3; ) {
 }
 console.timeEnd('diff vectors of uint32');
 
+meanContentBytes = calcContentBytes(outs);
 inps = createReadStreams(outs);
 
 console.time('patch vectors of uint32');
@@ -59,6 +63,7 @@ for (let i = 0; i < 1e3; ) {
     schema2.patch(k2, inps[i++]);
 }
 console.timeEnd('patch vectors of uint32');
+console.log(`using ${meanContentBytes} bytes`);
 
 console.log('10x targets with 100K elements');
 
@@ -67,7 +72,7 @@ const schema3 = new MuVector(new MuUint32(), 1e5);
 const tenK1 = genVector('uint32', 1e5);
 const tenK2 = genVector('uint32', 1e5);
 
-outs = createWriteStreams(1e5);
+outs = createWriteStreams(10);
 
 console.time('diff vectors of uint32');
 for (let i = 0; i < 10; ) {
@@ -76,6 +81,7 @@ for (let i = 0; i < 10; ) {
 }
 console.timeEnd('diff vectors of uint32');
 
+meanContentBytes = calcContentBytes(outs);
 inps = createReadStreams(outs);
 
 console.time('patch vectors of uint32');
@@ -84,3 +90,4 @@ for (let i = 0; i < 10; ) {
     schema3.patch(tenK2, inps[i++]);
 }
 console.timeEnd('patch vectors of uint32');
+console.log(`using ${meanContentBytes} bytes`);

@@ -4,6 +4,7 @@ import {
 } from '../';
 
 import {
+    calcContentBytes,
     createWriteStreams,
     createReadStreams,
 } from './gendata';
@@ -44,6 +45,7 @@ for (let i = 0; i < odds.length; ++i) {
     ++odds[i];
 }
 
+let meanContentBytes = calcContentBytes(outs);
 outs = createWriteStreams(1e5);
 
 console.time('with totally different elements');
@@ -51,6 +53,7 @@ for (let i = 0; i < 1e5; ++i) {
     schema.diff(evens, odds, outs[i]);
 }
 console.timeEnd('with totally different elements');
+console.log(`using ${meanContentBytes} bytes`);
 
 console.log('1Kx targets with 1K elements');
 
@@ -85,6 +88,7 @@ for (let i = 0; i < odds.length; ++i) {
     ++odds[i];
 }
 
+meanContentBytes = calcContentBytes(outs);
 outs = createWriteStreams(1e3);
 
 console.time('with totally different elements');
@@ -92,6 +96,7 @@ for (let i = 0; i < 1e3; ++i) {
     schema.diff(evens, odds, outs[i]);
 }
 console.timeEnd('with totally different elements');
+console.log(`using ${meanContentBytes} bytes`);
 
 console.log('10x targets with 100K elements');
 
@@ -126,6 +131,7 @@ for (let i = 0; i < odds.length; ++i) {
     ++odds[i];
 }
 
+meanContentBytes = calcContentBytes(outs);
 outs = createWriteStreams(10);
 
 console.time('with totally different elements');
@@ -143,3 +149,4 @@ for (let i = 0; i < 10; ++i) {
     schema.diff(evens, evens, outs[i]);
 }
 console.timeEnd('diff short sorted array against long sorted array');
+console.log(`using ${meanContentBytes} bytes`);

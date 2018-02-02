@@ -6,13 +6,14 @@ import {
 } from '../';
 
 import {
+    calcContentBytes,
     createWriteStreams,
     createReadStreams,
     genArray,
 } from './gendata';
 
 console.log('---------- array ----------');
-console.log('100Kx 10 elements');
+console.log('100Kx targets with 10 elements');
 
 const u32Schema = new MuArray(new MuUint32());
 
@@ -30,6 +31,7 @@ for (let i = 0; i < 1e5; ) {
 }
 console.timeEnd('diff same length');
 
+let meanContentBytes = calcContentBytes(outs);
 outs = createWriteStreams(1e5);
 
 console.time('diff shorter against longer');
@@ -45,8 +47,9 @@ for (let i = 0; i < 1e5; ++i) {
     u32Schema.diff(doubled, ten1, outs[i]);
 }
 console.timeEnd('diff longer against shorter');
+console.log(`using ${meanContentBytes} bytes`);
 
-console.log('1Kx 1K elements');
+console.log('1Kx targets with 1K elements');
 
 const k1 = genArray('uint32', 1e3);
 const k2 = genArray('uint32', 1e3);
@@ -62,6 +65,7 @@ for (let i = 0; i < 1e3; ) {
 }
 console.timeEnd('diff same length');
 
+meanContentBytes = calcContentBytes(outs);
 let inps = createReadStreams(outs);
 
 console.time('patch same length');
@@ -102,8 +106,9 @@ for (let i = 0; i < 1e3; ++i) {
     u32Schema.patch(doubled, inps[i]);
 }
 console.timeEnd('patch longer to shorter');
+console.log(`using ${meanContentBytes} bytes`);
 
-console.log('10x 100K elements');
+console.log('10x targets with 100K elements');
 
 const tenK1 = genArray('uint32', 1e5);
 const tenK2 = genArray('uint32', 1e5);
@@ -119,6 +124,7 @@ for (let i = 0; i < 10; ) {
 }
 console.timeEnd('diff same length');
 
+meanContentBytes = calcContentBytes(outs);
 outs = createWriteStreams(10);
 
 console.time('diff shorter against longer');
@@ -134,3 +140,4 @@ for (let i = 0; i < 10; ++i) {
     u32Schema.diff(doubled, tenK1, outs[i]);
 }
 console.timeEnd('diff longer against shorter');
+console.log(`using ${meanContentBytes} bytes`);

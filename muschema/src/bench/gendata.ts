@@ -93,3 +93,12 @@ export function genVector (muType:keyof typeof muType2ArrayType, dimension:numbe
     }
     return result;
 }
+
+export function calcContentBytes (outs:MuWriteStream[]) : number {
+    function reducer (acc:number, out:MuWriteStream) {
+        return acc + out.offset;
+    }
+
+    const sum = outs.reduce(reducer, 0);
+    return sum / outs.length;
+}

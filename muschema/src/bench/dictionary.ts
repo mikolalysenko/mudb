@@ -5,6 +5,7 @@ import {
 } from '../';
 
 import {
+    calcContentBytes,
     createWriteStreams,
     createReadStreams,
     genDictionary,
@@ -46,6 +47,7 @@ for (let i = 0; i < 1e3; ) {
 }
 console.timeEnd('diff same set of props');
 
+let meanContentBytes = calcContentBytes(outs);
 inps = createReadStreams(outs);
 
 console.time('patch same set of props');
@@ -92,3 +94,4 @@ for (let i = 0; i < 1e3; ++i) {
     schema.patch(dict4, inps[i]);
 }
 console.timeEnd('patch half of all props removed');
+console.log(`using ${meanContentBytes} bytes`);

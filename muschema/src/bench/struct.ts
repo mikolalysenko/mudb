@@ -11,6 +11,7 @@ import {
 } from '../';
 
 import {
+    calcContentBytes,
     createWriteStreams,
     createReadStreams,
     genStruct,
@@ -42,6 +43,7 @@ for (let i = 0; i < 1e5; ) {
 }
 console.timeEnd('diff structs of uint32');
 
+let meanContentBytes = calcContentBytes(outs);
 let inps = createReadStreams(outs);
 
 console.time('patch structs of uint32');
@@ -50,6 +52,7 @@ for (let i = 0; i < 1e5; ) {
     schema1.patch(struct2, inps[i++]);
 }
 console.timeEnd('patch structs of uint32');
+console.log(`using ${meanContentBytes} bytes`);
 
 const spec2 = {
     a: new MuFloat32(),
@@ -75,6 +78,7 @@ for (let i = 0; i < 1e5; ) {
 }
 console.timeEnd('diff structs with props of various types');
 
+meanContentBytes = calcContentBytes(outs);
 inps = createReadStreams(outs);
 
 console.time('patch structs with props of various types');
@@ -83,3 +87,4 @@ for (let i = 0; i < 1e5; ) {
     schema2.patch(struct4, inps[i++]);
 }
 console.timeEnd('patch structs with props of various types');
+console.log(`using ${meanContentBytes} bytes`);
