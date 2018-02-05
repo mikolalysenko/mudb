@@ -71,7 +71,7 @@ export class MuClockClient {
                 init: ({ tickRate, serverClock, skippedFrames }) => {
                     this._clock.reset();
 
-                    this._skippedFrames = 0;
+                    this._skippedFrames = skippedFrames;
 
                     this._started = true;
 
