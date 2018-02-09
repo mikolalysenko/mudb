@@ -70,7 +70,7 @@ export class MuClockServer {
 
     public ping:{ [sessionId:string]:number } = {};
 
-    private _clock:MuClock;
+    private _clock!:MuClock;
     private _tickCount:number = 0;
     private _protocol:MuServerProtocol<typeof MuClockProtocol>;
 

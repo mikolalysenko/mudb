@@ -8,7 +8,7 @@ export class MuWebSocket implements MuSocket {
     private _closed:boolean = false;
 
     private _url:string;
-    private _reliableSocket:WebSocket;
+    private _reliableSocket!:WebSocket;
     private _unreliableSockets:WebSocket[] = [];
     private _maxSockets:number = 5;
 

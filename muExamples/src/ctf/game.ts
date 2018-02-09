@@ -26,7 +26,7 @@ export class Player {
   public y:number;
   public color:string;
   public team:Team;
-  public direction:number;
+  public direction:number|undefined;
 
   constructor(x, y, team) {
     this.x = x;

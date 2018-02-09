@@ -43,7 +43,7 @@ export class MuLocalSocket implements MuSocket {
 
     private _server:MuLocalSocketServer;
 
-    public _duplex:MuLocalSocket;
+    public _duplex!:MuLocalSocket;
     public _onMessage:MuMessageHandler = noop;
     public _onUnreliableMessage:MuMessageHandler = noop;
     public _onClose:MuCloseHandler = noop;
@@ -158,8 +158,8 @@ export class MuLocalSocketServer implements MuSocketServer {
     private _closed:boolean = false;
     public open:boolean = false;
 
-    private _onConnection:MuConnectionHandler;
-    private _onClose:MuCloseHandler;
+    private _onConnection!:MuConnectionHandler;
+    private _onClose!:MuCloseHandler;
 
     constructor () {
     }

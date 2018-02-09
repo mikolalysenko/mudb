@@ -48,6 +48,7 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     }) {
         this.schema = spec.schema;
         this.client = spec.client;
+        this.sessionId = spec.client.sessionId;
         if (typeof spec.windowSize === 'number') {
             this.windowSize = spec.windowSize;
         }

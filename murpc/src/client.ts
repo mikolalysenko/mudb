@@ -31,6 +31,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     private _callbacks:{[id:string]:(err, base) => void};
 
     constructor (client:MuClient, schema:Schema) {
+        this.sessionId = client.sessionId;
         this.client = client;
         this.schema = schema;
         this._callbacks = {};
