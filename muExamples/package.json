@@ -28,7 +28,7 @@
     "tsify": "^3.0.3",
     "tslint": "^5.7.0",
     "tslint-language-service": "^0.9.6",
-    "typescript": "^2.5.2",
+    "typescript": "^2.7.1",
     "tape": "^4.8.0"
   }
 }

@@ -17,6 +17,6 @@
   "devDependencies": {
     "tape": "^4.8.0",
     "ts-node": "^3.3.0",
-    "typescript": "^2.5.2"
+    "typescript": "^2.7.1"
   }
 }
