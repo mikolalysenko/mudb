@@ -74,7 +74,7 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     }
 }
 
-export type MuAnyServerProtocol = MuServerProtocol<MuAnyProtocolSchema>;
+export interface MuAnyServerProtocol extends MuServerProtocol<MuAnyProtocolSchema> {}
 
 export class MuServer {
     public protocols:MuAnyServerProtocol[] = [];

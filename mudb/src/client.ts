@@ -6,8 +6,6 @@ export class MuRemoteServer<Schema extends MuAnyMessageTable> {
     public sendRaw!:(bytes:Uint8Array|string, unreliable?:boolean) => void;
 }
 
-export type MuAnyClientProtocol = MuClientProtocol<MuAnyProtocolSchema>;
-
 const noop = function () {};
 
 export class MuClientProtocolSpec {
@@ -49,6 +47,8 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         this.protoSpec.closeHandler = spec.close || noop;
     }
 }
+
+export interface MuAnyClientProtocol extends MuClientProtocol<MuAnyProtocolSchema> {}
 
 export class MuClient {
     public readonly sessionId:string;
