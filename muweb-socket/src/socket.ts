@@ -8,7 +8,7 @@ export class MuWebSocket implements MuSocket {
     private _closed:boolean = false;
 
     private _url:string;
-    private _reliableSocket!:WebSocket;
+    private _reliableSocket:WebSocket|null = null;
     private _unreliableSockets:WebSocket[] = [];
     private _maxSockets:number = 5;
 
@@ -132,7 +132,7 @@ export class MuWebSocket implements MuSocket {
             if (this._unreliableSockets.length > 0) {
                 this._unreliableSockets[this._lastSocketSend++ % this._unreliableSockets.length].send(data);
             }
-        } else {
+        } else if (this._reliableSocket) {
             this._reliableSocket.send(data);
         }
     }
