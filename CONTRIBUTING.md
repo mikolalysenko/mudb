@@ -4,23 +4,22 @@ The following is a a set of guidelines, not rules. Feel free to propose changes 
 
 **Table of Contents**
 
-- [Code of Conduct](#code-of-conduct)
-- [Coding Style Guide](#coding-style-guide)
+- [code of conduct](#code-of-conduct)
+- [set up](#set-up)
+- [coding style guide](#coding-style-guide)
 
-## Code of Conduct
+## code of conduct
 
 By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.md).
 
+## set up
 
-## set up ##
+1. Install Node.js
+2. Install Typescript
+3. Clone repo
+4. Install deps and link modules
 
-* Clone repo
-* Install nodejs
-* Install typescript
-* Install vscode (optional)
-* Linking submodules
-
-One of these:
+with one of these commands:
 
 ```sh
 # npm
@@ -31,19 +30,19 @@ yarn run link-all -- yarn
 yarn run link-all yarn
 ```
 
-You may need to run your linking command twice if this is the first time you're developing on mudb.
+You may need to run your linking command twice for the first time.
 
-* typescript watch
+5. Typescript watch
 
 ```
 npm run watch
 ```
 
-## adding a module ##
+## add new modules
 
 **TODO** document workflow
 
-## writing docs docs ##
+## write docs
 
 Notes on mdtoc
 
@@ -53,22 +52,21 @@ npm run docs
 
 Edit `README-toc.md`, not `README.md`
 
-## testing ##
+## test
 
-### run all tests ###
+### run all tests
 
 ```
 npm test
 ```
 
-### add a test case ###
+### add a test case
 
 Notes on tape
 
+## coding style guide
 
-## Coding Style Guide
-
-### Naming
+### naming
 
 - Use PascalCase for type names.
 - Use PascalCase for enum values.
@@ -77,7 +75,7 @@ Notes on tape
 - Use `_` as a prefix for private properties.
 - Use whole words in names when possible.
 
-### Whitespace
+### whitespace
 
 - Indent using 4 spaces.
 - **No** spaces between variable/parameter/member name and type.
@@ -95,17 +93,13 @@ Notes on tape
 - But do put spaces **around** the colon for function return types.
 
     ```ts
-    function noop() : void { }
+    function noop () : void { }
     ```
 
-### Misc
+### misc
 
 - Avoid lines longer than 100 characters.
 - Use `const` by default.
 - Use single quotes for strings. And prefer template literals over concatenations.
 - Always use semicolons.
-- Use `undefined`. Do not use `null`.
 - Always surround loop and conditional bodies with curly braces.
-- Prefer arrow functions over anonymous function expressisons.
-
-
