@@ -40,8 +40,8 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly server:MuServer;
     public readonly clients:{ [sessionId:string]:MuRemoteClientProtocol<Schema['client']> } = {};
 
-    public broadcast!:MuMessageInterface<Schema['client']>['userAPI'];
-    public broadcastRaw!:(bytes:Uint8Array|string, unreliable?:boolean) => void;
+    public broadcast = <MuMessageInterface<Schema['client']>['userAPI']>{};
+    public broadcastRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void = noop;
 
     public configured:boolean = false;
 
