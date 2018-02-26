@@ -16,6 +16,10 @@ const {
     MuInt32,
     MuDictionary
 } = require('muschema')
+const {
+    MuWriteStream,
+    MuReadStream,
+} = require('mustreams')
 
 // Define an entity schema
 const EntitySchema = new MuStruct({
@@ -49,11 +53,17 @@ const otherEntities = EntitySet.clone(entities)
 // modify player entity
 otherEntities.foo.hp = 1
 
-// compute a patch
-const patch = EntitySet.diff(entities, otherEntities)
+// compute a patch and write it to stream
+const out = new MuWriteStream(32)
+const hasPatch = EntitySet.diff(entities, otherEntities, out)
 
-// apply a patch to a set of entities
-const entityCopy = EntitySet.patch(entities, patch)
+let otherEntitiesCopy = EntitySet.clone(entites)
+if (hasPatch) {
+    // read the patch from stream and apply it to
+    // a copy of entities
+    const inp = new MuReadStream(out.buffer.uint8)
+    otherEntitiesCopy = EntitySet.patch(entities, inp)
+}
 
 // release memory
 EntitySet.free(otherEntities)
@@ -78,23 +88,21 @@ Internally each `muschema` is an object which implements the following interface
 * `alloc()` Creates a new value from scratch
 * `free(value)` Returns a value to the internal memory pool.
 * `clone(value)` Makes a copy of a value.
-* `diff(base, target)` Computes a patch from `base` to `target`
-* `patch(base, patch)` Applies `patch` to `base` returning a new value
+* `diff(base, target, stream)` Computes a patch from `base` to `target` and writes it to `stream`
+* `patch(base, stream)` Applies patch read from `stream` to `base` returning a new value
 
 `diff` and `patch` obey the following semantics:
 
 ```javascript
-const delta = diff(base, target)
-
-const result = patch(base, delta)
-
-// now: result === target
+const hasPatch = diff(base, target, outStream)
+const targetCopy = patch(base, inpStream)
+// targetCopy is equivalent to target
 ```
 
 To serialize an arbitrary object without a base, use the identity element.  For example:
 
 ```javascript
-const serialized = schema.diff(schema.identity, value)
+const hasPatch = schema.diff(schema.identity, value, outStream)
 ```
 
 Schemas can be composed recursively by calling submethods.  `muschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user defined applications can specify custom serialization and diffing/patching methods for various common types.
@@ -187,22 +195,25 @@ A discriminated union of several subtypes.  Each subtype must be given a label.
 const { MuFloat64 } = require('muschema/float64')
 const { MuString } = require('muschema/string')
 const { MuUnion } = require('muschema/union')
+const { MuWriteStream, MuReadStream } = require('mustreams')
 
 const FloatOrString = new MuUnion({
     float: new MuFloat64('foo'),
     string: new MuString('bar'),
-});
+})
 
 // create a new value
-const x = FloatOrString.alloc();
-x.type = 'float';
+const x = FloatOrString.alloc()
+x.type = 'float'
 x.data = 1
 
-// compute a delta
-const p = FloatOrString.diff(FloatOrString.identity, x);
+// compute a delta and write it to stream
+const out = new MuWriteStream(32)
+FloatOrString.diff(FloatOrString.identity, x, out)
 
 // apply a patch
-const y = FloatOrString.patch(FloatOrString.idenity, p);
+const inp = new MuReadStream(out.buffer.uint32)
+const y = FloatOrString.patch(FloatOrString.idenity, inp)
 ```
 
 ## data structures ##
