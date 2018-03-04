@@ -87,8 +87,8 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 }
             },
             close: () => {
-                garbageCollectStates(this.schema.client, this.history, 0);
-                garbageCollectStates(this.schema.server, this.history, 0);
+                garbageCollectStates(this.schema.client, this.history, Infinity);
+                garbageCollectStates(this.schema.server, this.server.history, Infinity);
                 if (spec && spec.close) {
                     spec.close();
                 }
