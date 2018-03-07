@@ -14,20 +14,14 @@ This is heavily commented example showing how to create a server/client pair and
 
 Here is an example of a simple chat protocol:
 
-### chat example
-
 **schema.js**
 
 ```javascript
-// first, we define a
-import {
-    MuString,
-    MuStruct,
-    MuFloat32,
-    MuUnion,
-} from 'muschema';
+var muschema = require('muschema')
+var MuStruct = muschema.MuStruct
+var MuString = muschema.MuString
 
-export const ChatSchema = {
+exports.ChatSchema = {
     client: {
         chat: new MuStruct({
             name: new MuString(),
@@ -37,82 +31,99 @@ export const ChatSchema = {
     server: {
         say: new MuString(),
     },
-};
+}
 ```
 
 **server.js**
 
 ```javascript
-import { ChatSchema } from './schema';
+module.exports = function (server) {
+    var protocol = server.protocol(require('./schema').ChatSchema)
 
-export = function (server) {
-    const protocol = server.protocol(ChatSchema);
+    var clientNames = {}
 
     protocol.configure({
         message: {
-            say: (client, text) => {
+            say: function (client, text) {
                 protocol.broadcast.chat({
-                    name: client.sessionId,
-                    text,
-                });
+                    name: clientNames[client.sessionId],
+                    text: text,
+                })
             },
         },
-    });
+        connect: function (client) {
+            clientNames[client.sessionId] = client.sessionId
+            protocol.broadcast.chat({
+                name: 'server',
+                text: clientNames[client.sessionId] + ' has joined the channel',
+            })
+        },
+        disconnect: function (client) {
+            protocol.broadcast.chat({
+                name: 'server',
+                text: clientNames[client.sessionId] + ' has left',
+            })
+        },
+    })
 
-    server.start();
-};
+    server.start()
+}
 ```
 
 **client.js**
 
 ```javascript
-import { ChatSchema } from './schema';
+module.exports = function (client) {
+    var messageDiv = document.createElement('div')
+    var textLabel = document.createElement('label')
+    var textInput = document.createElement('input')
 
-export = function (client) {
-    const messageDiv = document.createElement('div');
-    const messageStyle = messageDiv.style;
-    messageStyle.overflow = 'auto';
-    messageStyle.width = '400px';
-    messageStyle.height = '300px';
+    var protocol = client.protocol(require('./schema').ChatSchema)
 
-    const textDiv = document.createElement('input');
-    textDiv.type = 'text';
-    const textStyle = textDiv.style;
-    textStyle.width = '400px';
-    textStyle.padding = '0px';
-    textStyle.margin = '0px';
+    messageDiv.style.overflow = 'auto'
+    messageDiv.style.width = '400px'
+    messageDiv.style.height = '300px'
 
-    document.body.appendChild(messageDiv);
-    document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(textDiv);
+    textLabel.textContent = 'message: '
 
-    const protocol = client.protocol(ChatSchema);
+    textInput.type = 'text'
+    textInput.style.width = '400px'
+    textInput.style.padding = '0px'
+    textInput.style.margin = '0px'
+
+    document.body.appendChild(messageDiv)
+    document.body.appendChild(document.createElement('br'))
+    document.body.appendChild(textLabel)
+    document.body.appendChild(textInput)
 
     protocol.configure({
-        ready: () => {
-            textDiv.addEventListener('keydown', (ev) => {
+        ready: function () {
+            textInput.addEventListener('keydown', function (ev) {
                 if (ev.keyCode === 13) {
-                    const message = textDiv.value;
-                    textDiv.value = '';
-                    protocol.server.message.say(message);
+                    protocol.server.message.say(textInput.value)
+                    textInput.value = ''
                 }
-            });
+            })
         },
         message: {
-            chat: ({name, text}) => {
-                const textNode = document.createTextNode(`${name}: ${text}`);
-                messageDiv.appendChild(textNode);
-                messageDiv.appendChild(document.createElement('br'));
-            },
-        },
-    });
+            chat: function (data) {
+                var name = data.name, text = data.text
+                var textNode = document.createTextNode(name + ": " + text)
+                messageDiv.appendChild(textNode)
+                messageDiv.appendChild(document.createElement('br'))
+            }
+        }
+    })
 
-    client.start();
-};
+    client.start()
+}
 ```
 
-### running the game
+To run the example,
 
+0. cd into the directory containing the three files above
+1. `npm i mudo`
+2. `mudo --socket websocket --open`
 
 # table of contents
 
