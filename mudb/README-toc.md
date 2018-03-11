@@ -134,16 +134,105 @@ npm i mudb muweb-socket mulocal-socket
 
 # api #
 
-## server ##
+## `MuServer` ##
 
-## client ##
+### constructor ###
 
-## messages ##
+```javascript
+var httpServer = require('http').createServer(/* ... */)
+var socketServer = require('muweb-socket').MuSocketServer(httpServer)
+var muServer = require('mudb').MuServer(socketServer)
+```
 
-### broadcast ###
+### `protocol(schema)` ###
+Adds a server protocol, and returns it to be configured.  Note that you cannot add any new protocols after the server is `start`ed.
 
-## socket interface ##
+`schema` is an object of two properties, `server` and `client`.
 
+### `start(spec?)` ###
+Launches the server.  You can specify these methods in `spec`:
+
+* `ready()` called when the socket server is launched
+* `close(error?)` called when the socker server is shut down
+
+### `destroy()` ###
+Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
+
+## `MuServerProtocol` ##
+
+### `broadcast` ###
+An object of methods that can be used to dispatch specific function calls to all connected client.
+
+### `broadcastRaw(data:Uint8Array|string, unreliable?:boolean)`
+A method that can be used to send "raw" messages to all connected clients.
+
+### `configure(spec)` ###
+Each protocol should be configured before the server is `start`ed and can be configured only once, by calling the method with a specifications object.  `spec` must contain a `message` property, which is an object of handlers for all of the message types.  Also, you can specify these methods in `spec` as needed:
+
+* `ready()` called when the socket server is launched
+* `connect(client:MuRemoteClient)` called when a client connects to the server
+* `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message (not processed, contrary to delta), sent by `protocol.server.sendRaw()`
+* `disconnect(client:MuRemoteClient)` called when a client disconnects from the server
+* `close()` called when the socket server is shut down
+
+## `MuRemoteClient` ##
+
+### `sessionId` ###
+A string representing a unique session id identifying the client.
+
+### `message` ###
+An object of methods that can be used to dispatch specific function calls to the corresponding client.
+
+### `sendRaw(bytes:Uint8Array|string, unreliable?:boolean)` ###
+A method that can be used to send "raw" messages to the corresponding client.
+
+### `close()` ###
+Closes the reliable socket.
+
+## `MuClient` ##
+
+### constructor ###
+
+```javascript
+var socket = require('muweb-socket/socket').MuWebSocket(spec)
+var muClient = require('mudb').MuClient(socket)
+```
+
+### `protocol(schema)` ###
+Adds a client protocol, and returns it to be configured.  Note that you cannot add any new protocols after the client is `start`ed.
+
+`schema` is an object of two properties, `server` and `client`.
+
+### `start(spec?)` ###
+Runs the client.  You can specify these methods in `spec`:
+
+* `ready(error?)` called when socket is open
+* `close(error?)` called when socket is closed
+
+### `destroy()` ###
+Closes all sockets.
+
+## `MuClientProtocol` ##
+
+### `server` ###
+A `MuRemoteServer`.
+
+### `configure(spec)` ###
+Each protocol should be configured before a client is `start`ed and can be configured only once, by calling the method with a specifications object.  `spec` must contain a `message` property, which is an object of handlers for all of the message types.  Also, you can specify these methods in `spec` as needed:
+
+* `ready()` called when socket is open
+* `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message (not processed, contrary to delta), sent by `protocol.broadcastRaw()`
+* `close()` called when socket is closed
+
+## `MuRemoteServer` ##
+
+### `message` ###
+An object of methods that can be used to dispatch specific function calls to the server.
+
+### `sendRaw(bytes:Uint8Array|string, unreliable?:boolean)`
+A method that can be used to send "raw" messages to the server.
+
+## `MuSocket` interface ##
 `MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.
 
 ### properties ###
@@ -152,31 +241,39 @@ npm i mudb muweb-socket mulocal-socket
 A string representing a unique session id identifying the socket.
 
 #### `open` ####
-Boolean flag determing whether a socket is open or not.
+A boolean flag determing whether the socket is open or not.
 
 ### methods ###
 
 #### `start(spec)` ####
+`spec` is an object containing the following methods:
 
 * `ready()`
 * `message(data:Uint8Array, unreliable:boolean)`
-* `close()`
+* `close(error?)`
 
 #### `send(data:Uint8Array, unreliable?:boolean)` ####
 
 #### `close()` ####
 
-## socket server interface ##
+## `MuSocketServer` interface ##
 
 ### properties ###
 
 #### `clients[]` ####
+A list of clients connected to the server.
 
 #### `open` ####
+A boolean flag determining whether the socket server is open or not.
 
 ### methods ###
 
-#### `start()` ####
+#### `start(spec)` ####
+`spec` is an object containing the following methods:
+
+* `ready()`
+* `connection(socket)`
+* `close(error?)`
 
 #### `close()` ####
 
