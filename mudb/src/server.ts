@@ -1,7 +1,7 @@
 import { MuSocket, MuSocketServer } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 
-export class MuRemoteClientProtocol<Schema extends MuAnyMessageTable> {
+export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
     public readonly message:MuMessageInterface<Schema>['userAPI'];
     public readonly sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
@@ -21,7 +21,7 @@ export class MuRemoteClientProtocol<Schema extends MuAnyMessageTable> {
 }
 
 export interface MuRemoteMessageInterface<Schema extends MuAnyProtocolSchema> {
-    api:{ [message in keyof Schema['server']]:(client:MuRemoteClientProtocol<Schema['client']>, data:Schema['server'][message]['identity'], unreliable?:boolean) => void };
+    api:{ [message in keyof Schema['server']]:(client:MuRemoteClient<Schema['client']>, data:Schema['server'][message]['identity'], unreliable?:boolean) => void };
 }
 
 const noop = function () {};
@@ -38,7 +38,7 @@ export class MuServerProtocolSpec {
 export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly schema:Schema;
     public readonly server:MuServer;
-    public readonly clients:{ [sessionId:string]:MuRemoteClientProtocol<Schema['client']> } = {};
+    public readonly clients:{ [sessionId:string]:MuRemoteClient<Schema['client']> } = {};
 
     public broadcast = <MuMessageInterface<Schema['client']>['userAPI']>{};
     public broadcastRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void = noop;
@@ -55,10 +55,10 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
 
     public configure (spec:{
         message:MuRemoteMessageInterface<Schema>['api'];
-        raw?:(client:MuRemoteClientProtocol<Schema['client']>, data:Uint8Array|string, unreliable:boolean) => void;
+        raw?:(client:MuRemoteClient<Schema['client']>, data:Uint8Array|string, unreliable:boolean) => void;
         ready?:() => void;
-        connect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
-        disconnect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
+        connect?:(client:MuRemoteClient<Schema['client']>) => void;
+        disconnect?:(client:MuRemoteClient<Schema['client']>) => void;
         close?:() => void;
     }) {
         if (this.configured) {
@@ -137,7 +137,7 @@ export class MuServer {
                 this.protocols.forEach((protocol, id) => {
                     const factory = clientFactory.protocolFactories[id];
 
-                    const client = new MuRemoteClientProtocol(
+                    const client = new MuRemoteClient(
                         socket,
                         factory.createDispatch([socket]),
                         factory.createSendRaw([socket]));

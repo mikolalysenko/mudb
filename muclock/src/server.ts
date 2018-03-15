@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
+import { MuServer, MuServerProtocol, MuRemoteClient } from 'mudb/server';
 import { MuClock } from './clock';
 import { MuClockProtocol } from './schema';
 import { MuPingStatistic } from './ping-statistic';
@@ -14,7 +14,7 @@ function genUUID () {
 }
 
 class MuClockClientPingHandler {
-    private _client:MuRemoteClientProtocol<typeof MuClockProtocol.client>;
+    private _client:MuRemoteClient<typeof MuClockProtocol.client>;
 
     private _clock:MuClock;
     private _server:MuClockServer;
@@ -28,7 +28,7 @@ class MuClockClientPingHandler {
     private _timeout:number;
 
     constructor (spec:{
-        client:MuRemoteClientProtocol<typeof MuClockProtocol.client>;
+        client:MuRemoteClient<typeof MuClockProtocol.client>;
         server:MuClockServer;
         clock:MuClock;
         pingRate:number;
