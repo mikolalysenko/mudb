@@ -22,13 +22,13 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
 
     public configured:boolean = false;
 
-    private protoSpec:MuClientProtocolSpec;
+    private _protocolSpec:MuClientProtocolSpec;
 
-    constructor (schema:Schema, client:MuClient, protoSpec:MuClientProtocolSpec) {
+    constructor (schema:Schema, client:MuClient, protocolSpec:MuClientProtocolSpec) {
         this.schema = schema;
         this.client = client;
         this.server = new MuRemoteServer();
-        this.protoSpec = protoSpec;
+        this._protocolSpec = protocolSpec;
     }
 
     public configure (spec:{
@@ -41,10 +41,10 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
             throw new Error('protocol already configured');
         }
         this.configured = true;
-        this.protoSpec.messageHandlers = spec.message;
-        this.protoSpec.rawHandler = spec.raw || noop;
-        this.protoSpec.readyHandler = spec.ready || noop;
-        this.protoSpec.closeHandler = spec.close || noop;
+        this._protocolSpec.messageHandlers = spec.message;
+        this._protocolSpec.rawHandler = spec.raw || noop;
+        this._protocolSpec.readyHandler = spec.ready || noop;
+        this._protocolSpec.closeHandler = spec.close || noop;
     }
 }
 
@@ -53,7 +53,7 @@ export interface MuAnyClientProtocol extends MuClientProtocol<MuAnyProtocolSchem
 export class MuClient {
     public readonly sessionId:string;
     public protocols:MuAnyClientProtocol[] = [];
-    private _protocolSpec:MuClientProtocolSpec[] = [];
+    private _protocolSpecs:MuClientProtocolSpec[] = [];
 
     public running:boolean = false;
 
@@ -66,7 +66,7 @@ export class MuClient {
         this.sessionId = socket.sessionId;
     }
 
-    public start (spec?:{
+    public start (spec_?:{
         ready?:(error?:string) => void,
         close?:(error?:string) => void,
     }) {
@@ -82,25 +82,25 @@ export class MuClient {
         const serverSchemas = this.protocols.map((p) => p.schema.server);
         const serverFactory = new MuProtocolFactory(serverSchemas);
 
-        const _spec = spec || {};
+        const spec = spec_ || {};
 
         let firstPacket = true;
-        const socket = this._socket;
-        function checkHashConsistency (packet) {
+
+        const checkHashConsistency = (packet) => {
             try {
                 const data = JSON.parse(packet);
                 if (data.clientHash !== clientFactory.hash ||
                     data.serverHash !== serverFactory.hash) {
-                    socket.close();
+                    this._socket.close();
                 }
             } catch (e) {
-                socket.close();
+                this._socket.close();
             }
-        }
-        const parser = clientFactory.createParser(this._protocolSpec);
+        };
+        const parser = clientFactory.createParser(this._protocolSpecs);
 
         this._socket.start({
-            ready:() => {
+            ready: () => {
                 this.running = true;
 
                 this._socket.send(JSON.stringify({
@@ -108,7 +108,7 @@ export class MuClient {
                     serverHash: serverFactory.hash,
                 }));
 
-                // configure all protocols;
+                // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
                     const protocol = this.protocols[protocolId];
                     protocol.server.message = factory.createDispatch([this._socket]);
@@ -116,13 +116,13 @@ export class MuClient {
                 });
 
                 // initialize all protocols
-                this._protocolSpec.forEach((protoSpec) => {
+                this._protocolSpecs.forEach((protoSpec) => {
                     protoSpec.readyHandler();
                 });
 
                 // fire ready event
-                if (_spec.ready) {
-                    _spec.ready();
+                if (spec.ready) {
+                    spec.ready();
                 }
             },
             message: (data, unreliable) => {
@@ -132,14 +132,14 @@ export class MuClient {
                 checkHashConsistency(data);
                 firstPacket = false;
             },
-            close:(error) => {
+            close: (error) => {
                 this.running = false;
                 this._closed = true;
 
-                this._protocolSpec.forEach((protoSpec) => protoSpec.closeHandler());
+                this._protocolSpecs.forEach((protoSpec) => protoSpec.closeHandler());
 
-                if (_spec.close) {
-                    _spec.close(error);
+                if (spec.close) {
+                    spec.close(error);
                 }
             },
         });
@@ -159,7 +159,7 @@ export class MuClient {
         const spec = new MuClientProtocolSpec();
         const p = new MuClientProtocol(schema, this, spec);
         this.protocols.push(p);
-        this._protocolSpec.push(spec);
+        this._protocolSpecs.push(spec);
         return p;
     }
 }
