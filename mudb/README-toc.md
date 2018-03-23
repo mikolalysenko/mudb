@@ -134,108 +134,19 @@ npm i mudb muweb-socket mulocal-socket
 
 # api #
 
-## `MuServer` ##
+## interfaces ##
 
-### constructor ###
+Purely instructive interfaces:
 
-```javascript
-var httpServer = require('http').createServer(/* ... */)
-var socketServer = require('muweb-socket').MuSocketServer(httpServer)
-var muServer = require('mudb').MuServer(socketServer)
-```
+* `TableOf<T>`: `{ [messageName:string]:T } | {}`
+* `ProtocolSchema`: `{ server:TableOf<AnyMuSchema>, client:TableOf<AnyMuSchema> }`
+* `Dispatch`: `(data, unreliable?:boolean) => undefined`
+* `SendRaw`: `(data:Uint8Array|string, unreliable?:boolean) => undefined`
+* `ServerMessageHandler`: `(client:MuRemoteClient, data, unreliable?:boolean) => undefined`
+* `ClientMessageHandler`: `(data, unreliable:boolean) => undefined`
 
-### `protocol(schema)` ###
-Adds a server protocol, and returns it to be configured.  Note that you cannot add any new protocols after the server is `start`ed.
-
-`schema` is an object of two properties, `server` and `client`.
-
-### `start(spec?)` ###
-Launches the server.  You can specify these methods in `spec`:
-
-* `ready()` called when the socket server is launched
-* `close(error?)` called when the socker server is shut down
-
-### `destroy()` ###
-Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
-
-## `MuServerProtocol` ##
-
-### `broadcast` ###
-An object of methods that can be used to dispatch specific function calls to all connected client.
-
-### `broadcastRaw(data:Uint8Array|string, unreliable?:boolean)`
-A method that can be used to send "raw" messages to all connected clients.
-
-### `configure(spec)` ###
-Each protocol should be configured before the server is `start`ed and can be configured only once, by calling the method with a specifications object.  `spec` must contain a `message` property, which is an object of handlers for all of the message types.  Also, you can specify these methods in `spec` as needed:
-
-* `ready()` called when the socket server is launched
-* `connect(client:MuRemoteClient)` called when a client connects to the server
-* `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message (not processed, contrary to delta), sent by `protocol.server.sendRaw()`
-* `disconnect(client:MuRemoteClient)` called when a client disconnects from the server
-* `close()` called when the socket server is shut down
-
-## `MuRemoteClient` ##
-
-### `sessionId` ###
-A string representing a unique session id identifying the client.
-
-### `message` ###
-An object of methods that can be used to dispatch specific function calls to the corresponding client.
-
-### `sendRaw(bytes:Uint8Array|string, unreliable?:boolean)` ###
-A method that can be used to send "raw" messages to the corresponding client.
-
-### `close()` ###
-Closes the reliable socket.
-
-## `MuClient` ##
-
-### constructor ###
-
-```javascript
-var socket = require('muweb-socket/socket').MuWebSocket(spec)
-var muClient = require('mudb').MuClient(socket)
-```
-
-### `protocol(schema)` ###
-Adds a client protocol, and returns it to be configured.  Note that you cannot add any new protocols after the client is `start`ed.
-
-`schema` is an object of two properties, `server` and `client`.
-
-### `start(spec?)` ###
-Runs the client.  You can specify these methods in `spec`:
-
-* `ready(error?)` called when socket is open
-* `close(error?)` called when socket is closed
-
-### `destroy()` ###
-Closes all sockets.
-
-## `MuClientProtocol` ##
-
-### `server` ###
-A `MuRemoteServer`.
-
-### `configure(spec)` ###
-Each protocol should be configured before a client is `start`ed and can be configured only once, by calling the method with a specifications object.  `spec` must contain a `message` property, which is an object of handlers for all of the message types.  Also, you can specify these methods in `spec` as needed:
-
-* `ready()` called when socket is open
-* `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message (not processed, contrary to delta), sent by `protocol.broadcastRaw()`
-* `close()` called when socket is closed
-
-## `MuRemoteServer` ##
-
-### `message` ###
-An object of methods that can be used to dispatch specific function calls to the server.
-
-### `sendRaw(bytes:Uint8Array|string, unreliable?:boolean)`
-A method that can be used to send "raw" messages to the server.
-
-## `MuSocket` interface ##
+### `MuSocket` ###
 `MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.
-
-### properties ###
 
 #### `sessionId` ####
 A string representing a unique session id identifying the socket.
@@ -243,39 +154,133 @@ A string representing a unique session id identifying the socket.
 #### `open` ####
 A boolean flag determing whether the socket is open or not.
 
-### methods ###
-
 #### `start(spec)` ####
-`spec` is an object containing the following methods:
 
-* `ready()`
-* `message(data:Uint8Array, unreliable:boolean)`
-* `close(error?)`
+* `spec:{ ready, message, close }`
+    * `ready()`
+    * `message(data:Uint8Array|string, unreliable:boolean)`
+    * `close(error?)`
 
-#### `send(data:Uint8Array, unreliable?:boolean)` ####
+#### `send(data:Uint8Array|string, unreliable?:boolean)` ####
 
 #### `close()` ####
 
-## `MuSocketServer` interface ##
+### `MuSocketServer` ###
 
-### properties ###
-
-#### `clients[]` ####
-A list of clients connected to the server.
+#### `clients:MuSocket[]` ####
 
 #### `open` ####
 A boolean flag determining whether the socket server is open or not.
 
-### methods ###
-
 #### `start(spec)` ####
-`spec` is an object containing the following methods:
 
-* `ready()`
-* `connection(socket)`
-* `close(error?)`
+* `spec:{ ready, connection, close }`
+    * `ready()`
+    * `connection(socket:MuSocket)`
+    * `close(error?)`
 
 #### `close()` ####
+
+## `MuServer(socketServer:MuSocketServer)` ##
+
+```javascript
+var httpServer = require('http').createServer(/* ... */)
+var socketServer = new require('muweb-socket').MuWebSocketServer(httpServer)
+var muServer = new require('mudb').MuServer(socketServer)
+```
+
+### `protocol(schema:ProtocolSchema) : MuServerProtocol` ###
+Adds a server protocol, and returns it to be configured.
+
+A `MuServer` can have multiple protocols.  Note that you cannot add any new protocols after the server is started.
+
+### `start(spec?)` ###
+Launches server.
+
+* `spec:{ ready?, close? }`
+    * `ready()`: called when the underlying socket server is launched
+    * `close(error?)`: called when the underlying socker server is shut down
+
+### `destroy()` ###
+Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
+
+## `MuServerProtocol` ##
+
+### `broadcast:TableOf<Dispatch>` ###
+An object of methods, each of which broadcasts to all connected clients.  Each message (delta encoded) will be handled by a specific handler.  For example, the message sent by `protocol.broadcast.shower(shampoo, true)` will be handled by the `shower` method on the corresponding client protocol, as `shower(shampoo, true)`.  So this is effectively dispatching method calls to a remote object.
+
+### `broadcastRaw:SendRaw`
+A method that broadcasts to all connected clients with "raw" (not processed, contrary to delta) messages.  The messages will be handled by the raw message handler of the corresponding client protocol.
+
+### `configure(spec)` ###
+Each protocol should be configured before the server is started and can be configured only once, by specifying the event handlers in `spec`.
+
+* `spec:{ message, ready?, connect?, raw?, disconnect?, close? }`
+    * `message:TableOf<ServerMessageHandler>` required
+    * `ready()` called when the underlying socket server is launched
+    * `connect(client:MuRemoteClient)` called when a client connects
+    * `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when a "raw" message is received
+    * `disconnect(client:MuRemoteClient)` called when a client disconnects
+    * `close()` called when the underlying socket server is shut down
+
+## `MuRemoteClient` ##
+A `MuRemoteClient` is the server-side representation of a client, used in the event handlers.
+
+### `sessionId` ###
+A string representing a unique session id identifying the client.
+
+### `message:TableOf<Dispatch>` ###
+An object of methods, each of which sends messages (delta encoded) to the corresponding client.
+
+### `sendRaw:SendRaw` ###
+A method that sends "raw" messages to the corresponding client.
+
+### `close()` ###
+Closes the reliable socket.
+
+## `MuClient(socket:MuSocket)` ##
+
+```javascript
+var socket = new require('muweb-socket/socket').MuWebSocket(spec)
+var muClient = new require('mudb').MuClient(socket)
+```
+
+### `protocol(schema:ProtocolSchema) : MuClientProtocol` ###
+Adds a client protocol, and returns it to be configured.
+
+A `MuClient` can have multiple protocols.  Note that you cannot add any new protocols after the client is started.
+
+### `start(spec?)` ###
+Runs client.
+
+* `spec:{ ready?, close? }`
+    * `ready(error?:string)` called when the client is ready to handle messages
+    * `close(error?:string)` called when all sockets are closed
+
+### `destroy()` ###
+Closes all sockets.
+
+## `MuClientProtocol` ##
+
+### `server:MuRemoteServer` ###
+The client-side representation of the server.
+
+### `configure(spec)` ###
+Each protocol should be configured before the client is started and can be configured only once, by specifying the event handlers in `spec`.
+
+* `spec:{ message, ready?, raw?, close? }`
+    * `message:TableOf<ClientMessageHandler>` required
+    * `ready()` called when the client is ready to handle messages
+    * `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message
+    * `close()` called when all sockets are closed
+
+## `MuRemoteServer` ##
+
+### `message:TableOf<Dispatch>` ###
+An object of methods, each of which sends specific messages (delta encoded) to the server.
+
+### `sendRaw:SendRaw`
+A method that sends "raw" messages to the server.
 
 # usage tips #
 
