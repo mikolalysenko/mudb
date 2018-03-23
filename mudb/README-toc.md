@@ -257,6 +257,19 @@ Runs client.
     * `ready(error?:string)` called when the client is ready to handle messages
     * `close(error?:string)` called when all sockets are closed
 
+These happen in the given order when `client.start()`:
+
+0. client establishes a connection to server
+1. client sends its session id
+2. server receives session id and uses it to find related connection object
+    * if connection object exists, responds with `{ reliable: false }`
+    * otherwise, responds with `{ reliable: true }`
+3. server then sends schema hash (packets will arrive at client in order)
+4. client resets `onmessage` handler and `onclose` handler of underlying socket based on the value of `reliable`
+5. client then receives and verifies schema hash
+6. client sends schema hash
+7. server receives and verifies schema hash
+
 ### `destroy()` ###
 Closes all sockets.
 
