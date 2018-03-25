@@ -6,29 +6,36 @@ A `mudb` instance consists of multiple protocols which implement different behav
 A *protocol* is a collection of message handlers which implement
 
 ## example
-Here is a minimal chat room example showing how to create a server/client pair and protocol using `mudb`.  A `mudb` instance consists of a `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
+Here is a minimal chat room example showing how to create a server/client pair and protocol using `mudb`.  A `mudb` instance consists of one `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
 
 1. A schema
 2. A server protocol handler
 3. A client protocol handler
 
-The first step to creating any application with `mudb` is to specify a schema using `muschema`, which always consists of two properties, `server` and `client`, each of which is an object containing the state layouts of the corresponding message handlers.
-
 **schema.js**
+
+The first step of creating any applications with `mudb` is to specify a protocol schema using `muschema`.
 
 ```javascript
 var muschema = require('muschema')
 var MuStruct = muschema.MuStruct
 var MuString = muschema.MuString
 
+// A protocol schema always has two properties, `server` and `client`.
 exports.ChatSchema = {
+    // data layouts of different messages received by client
     client: {
+        // data of each `chat` message contains
+        // a `name` property of string type
+        // a `text` property of string type
         chat: new MuStruct({
             name: new MuString(),
             text: new MuString(),
         }),
     },
+    // data layouts of different messages received by server
     server: {
+        // data of each `say` message is of string type
         say: new MuString(),
     },
 }
@@ -42,30 +49,39 @@ module.exports = function (server) {
 
     var clientNames = {}
 
+    // specify server-side event handlers
     protocol.configure({
+        // message handlers
         message: {
+            // called when receiving a `say` message from client
             say: function (client, text) {
+                // Broadcast a `chat` message to all clients.  The data
+                // to be sent must conform to the structure defined by
+                // `ChatSchema.client.chat`
                 protocol.broadcast.chat({
                     name: clientNames[client.sessionId],
                     text: text,
                 })
             },
         },
+        // called when a client connects
         connect: function (client) {
             clientNames[client.sessionId] = client.sessionId
             protocol.broadcast.chat({
                 name: 'server',
-                text: clientNames[client.sessionId] + ' has joined the channel',
+                text: clientNames[client.sessionId] + ' joined the channel',
             })
         },
+        // called when a client disconnects
         disconnect: function (client) {
             protocol.broadcast.chat({
                 name: 'server',
-                text: clientNames[client.sessionId] + ' has left',
+                text: clientNames[client.sessionId] + ' left',
             })
         },
     })
 
+    // launch server after adding and configuring all protocols needed
     server.start()
 }
 ```
@@ -96,18 +112,26 @@ module.exports = function (client) {
     document.body.appendChild(textLabel)
     document.body.appendChild(textInput)
 
+    // specify client-side event handlers
     protocol.configure({
+        // called when client is ready to handle messages
         ready: function () {
             textInput.addEventListener('keydown', function (ev) {
                 if (ev.keyCode === 13) {
+                    // Send a `say` message to server.  Similarly, data
+                    // to be sent must conform to the structure defined by
+                    // `ChatSchema.server.say`
                     protocol.server.message.say(textInput.value)
                     textInput.value = ''
                 }
             })
         },
+        // message handlers
         message: {
+            // called when receiving a `chat` message from server
             chat: function (data) {
-                var name = data.name, text = data.text
+                var name = data.name
+                var text = data.text
                 var textNode = document.createTextNode(name + ": " + text)
                 messageDiv.appendChild(textNode)
                 messageDiv.appendChild(document.createElement('br'))
@@ -115,6 +139,7 @@ module.exports = function (client) {
         }
     })
 
+    // open client after adding and configuring all protocols needed
     client.start()
 }
 ```
