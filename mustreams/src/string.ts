@@ -1,7 +1,3 @@
-function encodeString(str:string) {
-    return new Uint8Array(utf8ToBytes(str));
-}
-
 // Taken from https://github.com/feross/buffer
 function utf8ToBytes(str:string) : number[] {
     let codePoint;
@@ -78,8 +74,36 @@ function utf8ToBytes(str:string) : number[] {
     return bytes;
 }
 
+export function encodeString(str:string) {
+    return new Uint8Array(utf8ToBytes(str));
+}
+
 // Taken from https://github.com/feross/buffer
-function decodeString (bytes:Uint8Array) : string {
+function decodeCodePointsArray (codePoints:number[]) : string {
+    // Based on http://stackoverflow.com/a/22747272/680742, the browser with
+    // the lowest limit is Chrome, with 0x10000 args.
+    // We go 1 magnitude less, for safety
+    const MAX_ARGUMENTS_LENGTH = 0x1000;
+
+    const len = codePoints.length;
+    if (len <= MAX_ARGUMENTS_LENGTH) {
+        return String.fromCharCode.apply(String, codePoints); // avoid extra slice()
+    }
+
+    // Decode in chunks to avoid "call stack size exceeded".
+    let res = '';
+    let i = 0;
+    while (i < len) {
+        res += String.fromCharCode.apply(
+            String,
+            codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH),
+        );
+    }
+    return res;
+}
+
+// Taken from https://github.com/feross/buffer
+export function decodeString (bytes:Uint8Array) : string {
     const { byteLength } = bytes;
     const res:number[] = [];
 
@@ -154,32 +178,3 @@ function decodeString (bytes:Uint8Array) : string {
 
     return decodeCodePointsArray(res);
 }
-
-// Taken from https://github.com/feross/buffer
-function decodeCodePointsArray (codePoints:number[]) : string {
-    // Based on http://stackoverflow.com/a/22747272/680742, the browser with
-    // the lowest limit is Chrome, with 0x10000 args.
-    // We go 1 magnitude less, for safety
-    const MAX_ARGUMENTS_LENGTH = 0x1000;
-
-    const len = codePoints.length;
-    if (len <= MAX_ARGUMENTS_LENGTH) {
-        return String.fromCharCode.apply(String, codePoints); // avoid extra slice()
-    }
-
-    // Decode in chunks to avoid "call stack size exceeded".
-    let res = '';
-    let i = 0;
-    while (i < len) {
-        res += String.fromCharCode.apply(
-            String,
-            codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH),
-        );
-    }
-    return res;
-}
-
-export = {
-    encodeString,
-    decodeString,
-};

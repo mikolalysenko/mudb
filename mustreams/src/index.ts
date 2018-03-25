@@ -1,9 +1,7 @@
-import StringEncode = require('./string');
-
-const {
+import {
     encodeString,
     decodeString,
-} = StringEncode;
+} from './browser-string';
 
 // round to next highest power of 2
 function ceilLog2 (v_) {
@@ -244,14 +242,14 @@ export class MuReadStream {
             return (x0 & 0x7f) |
                 (x1 << 7);
         }
-        const x2 = bytes[offset++]
+        const x2 = bytes[offset++];
         if (x2 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
                 ((x1 & 0x7f) << 7) |
                 (x2 << 14);
         }
-        const x3 = bytes[offset++]
+        const x3 = bytes[offset++];
         if (x3 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
