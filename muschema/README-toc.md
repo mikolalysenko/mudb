@@ -6,22 +6,22 @@ It is kind of like protobufs for JavaScript, only better in that it supports [de
 [Typescript](https://www.typescriptlang.org/) and [node.js](https://nodejs.org/) friendly!
 
 ## example
-Here is a somewhat contrived example showing how all of the methods of the schemas work.
+Here is a contrived example showing how all of the methods of the schemas work.
 
 ```javascript
 const {
-    MuStruct,
-    MuString,
     MuFloat64,
     MuInt32,
+    MuString,
     MuDictionary
+    MuStruct,
 } = require('muschema')
 const {
     MuWriteStream,
     MuReadStream,
 } = require('mustreams')
 
-// Define an entity schema
+// define an entity schema
 const EntitySchema = new MuStruct({
     x: new MuFloat64(),
     y: new MuFloat64(),
@@ -31,10 +31,11 @@ const EntitySchema = new MuStruct({
     name: new MuString('entity')
 })
 
-const EntitySet = new MuDictionary(EntitySchema)
+// define an entity set schema
+const EntitySetSchema = new MuDictionary(EntitySchema)
 
 // create a new entity set object using the schema
-const entities = EntitySet.alloc()
+const entities = EntitySetSchema.alloc()
 
 // create a new entity and add it to the schema
 const player = EntitySchema.alloc()
@@ -43,30 +44,30 @@ player.x = 10
 player.y = 10
 player.dx = -10
 player.dy = -20
-player.name = 'player'
+player.name = 'winnie'
 
-entities['foo'] = player
+entities['pooh'] = player
 
-// now make a copy of all entities
-const otherEntities = EntitySet.clone(entities)
+// make a copy of all entities
+const otherEntities = EntitySetSchema.clone(entities)
 
 // modify player entity
 otherEntities.foo.hp = 1
 
 // compute a patch and write it to stream
 const out = new MuWriteStream(32)
-const hasPatch = EntitySet.diff(entities, otherEntities, out)
+const hasPatch = EntitySetSchema.diff(entities, otherEntities, out)
 
-let otherEntitiesCopy = EntitySet.clone(entites)
+let otherEntitiesCopy = EntitySetSchema.clone(entities)
 if (hasPatch) {
     // read the patch from stream and apply it to
     // a copy of entities
-    const inp = new MuReadStream(out.buffer.uint8)
-    otherEntitiesCopy = EntitySet.patch(entities, inp)
+    const inp = new MuReadStream(out.bytes())
+    otherEntitiesCopy = EntitySetSchema.patch(otherEntitiesCopy, inp)
 }
 
-// release memory
-EntitySet.free(otherEntities)
+// pool objects
+EntitySetSchema.free(otherEntities)
 ```
 
 # table of contents
