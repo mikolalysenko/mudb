@@ -6,6 +6,61 @@ Binary stream API for mudb.  It is different from the Stream API of Node.js in t
 
 **WIP**
 
+## example
+
+Here is a highly contrived example of using `mustreams`.
+
+```javascript
+// on client side
+
+var MuWriteStream = require('mustreams').MuWriteStream
+
+var initialBufferSize = 2
+var stream = new MuWriteStream(initialBufferSize)
+
+var socket = new WebSocket(/* server url */)
+// make sure data will be received in ArrayBuffer form
+socket.binaryType = 'arraybuffer'
+
+// increase the buffer size by 62 bytes
+stream.grow(62)
+
+stream.writeString('ピカチュウ')
+stream.writeUint8(2)    // length of 'hp'
+stream.writeASCII('hp')
+stream.writeUint8(100)
+
+// send buffered data
+socket.send(stream.bytes())
+
+// pool the buffer
+stream.destroy()
+```
+
+```javascript
+// on server side
+
+var createServer = require('http').createServer
+var Server = require('uws').Server
+var MuReadStream = require('mustreams').MuReadStream
+
+var socketServer = new Server({ server: createServer() })
+socketServer.on('connection', function (socket) {
+    socket.onmessage = function (ev) {
+        if (ev.data instanceof ArrayBuffer) {
+            var stream = new MuReadStream(new Uint8Array(ev.data))
+
+            stream.readString()                     // 'ピカチュウ'
+            stream.readASCII(stream.readUint8())    // 'hp'
+            stream.readUint8()                      // 100
+
+            // pool the buffer
+            stream.destroy()
+        }
+    }
+})
+```
+
 # table of contents
 
 # install #
