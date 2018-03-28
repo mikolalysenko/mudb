@@ -151,7 +151,7 @@ export class MuWriteStream {
         }
     }
 
-    public writeASCII (str:string) {
+    public writeASCIINoLength (str:string) {
         for (let i = 0; i < str.length; ++i) {
             this.writeUint8(str.charCodeAt(i));
         }

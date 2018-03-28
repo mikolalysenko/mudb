@@ -51,7 +51,7 @@ export class MuFixedASCIIString implements MuSchema<string> {
 
         if (base !== target) {
             out.grow(length);
-            out.writeASCII(target);
+            out.writeASCIINoLength(target);
             return true;
         }
         return false;

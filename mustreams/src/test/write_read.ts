@@ -154,11 +154,11 @@ test('ascii string', (t) => {
     let ws = new MuWriteStream(1024);
 
     ws.writeUint32(0);
-    ws.writeASCII('');
+    ws.writeASCIINoLength('');
 
     for (let i = 0; i < 128; ++i) {
         ws.writeUint32(1);
-        ws.writeASCII(asciis[i]);
+        ws.writeASCIINoLength(asciis[i]);
     }
 
     let rs = new MuReadStream(ws.buffer.uint8);
@@ -179,7 +179,7 @@ test('ascii string', (t) => {
 
     ws = new MuWriteStream(2 ** 30);
     ws.writeUint32(longStr.length);
-    ws.writeASCII(longStr);
+    ws.writeASCIINoLength(longStr);
 
     rs = new MuReadStream(ws.buffer.uint8);
     strLeng = rs.readUint32();

@@ -22,7 +22,7 @@ export class MuASCIIString implements MuSchema<string> {
         if (base !== target) {
             out.grow(4 + target.length);
             out.writeUint32(target.length);
-            out.writeASCII(target);
+            out.writeASCIINoLength(target);
             return true;
         }
         return false;
