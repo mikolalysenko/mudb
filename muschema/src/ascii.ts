@@ -21,8 +21,7 @@ export class MuASCIIString implements MuSchema<string> {
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4 + target.length);
-            out.writeUint32(target.length);
-            out.writeASCIINoLength(target);
+            out.writeASCII(target);
             return true;
         }
         return false;
