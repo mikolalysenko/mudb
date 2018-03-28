@@ -1,9 +1,7 @@
-import StringEncode = require('./string');
-
-const {
+import {
     encodeString,
     decodeString,
-} = StringEncode;
+} from './browser-string';
 
 // round to next highest power of 2
 function ceilLog2 (v_) {
