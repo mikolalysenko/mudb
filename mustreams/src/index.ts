@@ -266,16 +266,14 @@ export class MuReadStream {
             (x4 * (1 << 28));
     }
 
-    public readASCII (byteLength:number) : string {
-        const head = this.offset;
-        this.offset += byteLength;
+    public readASCIIOf (length:number) : string {
+        const offset = this.offset;
+        this.offset += length;
 
         let str = '';
-        const uint8 = this.buffer.uint8;
-        for (let i = head; i < this.offset; ++i) {
-            str += String.fromCharCode(uint8[i]);
+        for (let i = offset; i < this.offset; ++i) {
+            str += String.fromCharCode(this.buffer.uint8[i]);
         }
-
         return str;
     }
 

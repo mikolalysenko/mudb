@@ -29,6 +29,7 @@ export class MuASCIIString implements MuSchema<string> {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII(inp.readUint32());
+        const length = inp.readUint32();
+        return inp.readASCIIOf(length);
     }
 }

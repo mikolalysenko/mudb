@@ -58,6 +58,6 @@ export class MuFixedASCIIString implements MuSchema<string> {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII(this.length);
+        return inp.readASCIIOf(this.length);
     }
 }
