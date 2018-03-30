@@ -15,8 +15,8 @@ export class MuASCIIString implements MuSchema<string> {
     }
 
     public alloc () : string { return this.identity; }
-    public free () {}
-    public clone (x:string) : string { return x; }
+    public free (_:string) : void { }
+    public clone (x:string) { return x; }
 
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {

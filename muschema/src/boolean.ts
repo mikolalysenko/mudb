@@ -16,7 +16,7 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public alloc () { return this.identity; }
-    public free () { }
+    public free (_:boolean) : void { }
     public clone (b:boolean) { return b; }
 
     public diff (a:boolean, b:boolean, stream:MuWriteStream) {
