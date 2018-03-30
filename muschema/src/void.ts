@@ -3,7 +3,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 
 /** The empty type */
 export class MuVoid implements MuSchema<void> {
-    public readonly identity:void;
+    public readonly identity = undefined;
     public readonly muType = 'void';
     public readonly json = {
         type: 'void',

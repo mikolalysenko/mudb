@@ -1,14 +1,12 @@
 import { MuSocket } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 
-export class MuRemoteServer<Schema extends MuAnyMessageTable> {
-    public message:MuMessageInterface<Schema>['userAPI'];
-    public sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
-}
-
-export type MuAnyClientProtocol = MuClientProtocol<MuAnyProtocolSchema>;
-
 const noop = function () {};
+
+export class MuRemoteServer<Schema extends MuAnyMessageTable> {
+    public message = <MuMessageInterface<Schema>['userAPI']>{};
+    public sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void = noop;
+}
 
 export class MuClientProtocolSpec {
     public messageHandlers = {};
@@ -49,6 +47,8 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         this.protoSpec.closeHandler = spec.close || noop;
     }
 }
+
+export interface MuAnyClientProtocol extends MuClientProtocol<MuAnyProtocolSchema> {}
 
 export class MuClient {
     public readonly sessionId:string;

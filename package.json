@@ -26,6 +26,6 @@
   },
   "homepage": "https://github.com/mikolalysenko/mudb#readme",
   "dependencies": {
-    "typescript": "^2.6.1"
+    "typescript": "^2.7.1"
   }
 }

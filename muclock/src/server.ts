@@ -97,6 +97,8 @@ export class MuClockServer {
         this._protocol = spec.server.protocol(MuClockProtocol);
         this._pingBufferSize = spec.pingBufferSize || 256;
 
+        this._clock = new MuClock();
+
         if ('tickRate' in spec) {
             this.tickRate = spec.tickRate || 30;
         }
@@ -109,7 +111,6 @@ export class MuClockServer {
 
         this._protocol.configure({
             ready: () => {
-                this._clock = new MuClock();
                 this._pollInterval = setInterval(
                     () => this.poll(),
                     Math.min(this.tickRate, this._pingRate) / 2);

@@ -26,9 +26,9 @@
     "budo": "^10.0.4",
     "ts-node": "^3.3.0",
     "tsify": "^3.0.3",
-    "tslint": "^5.7.0",
+    "tslint": "^5.9.1",
     "tslint-language-service": "^0.9.6",
-    "typescript": "^2.5.2",
+    "typescript": "^2.7.1",
     "tape": "^4.8.0"
   }
 }
