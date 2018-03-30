@@ -3,7 +3,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 
 let identityStr = ' ';
 
-export class MuFixedASCIIString implements MuSchema<string> {
+export class MuFixedASCII implements MuSchema<string> {
     public readonly identity:string;
     public readonly muType = 'fixed-ascii';
     public readonly json:object;
