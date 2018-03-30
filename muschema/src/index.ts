@@ -1,5 +1,5 @@
 import { MuArray } from './array';
-import { MuASCIIString } from './ascii';
+import { MuASCII } from './ascii';
 import { MuBoolean } from './boolean';
 import { MuDictionary } from './dictionary';
 import { MuFixedASCIIString } from './fixed-ascii';
@@ -21,7 +21,7 @@ import { MuSortedArray } from './sorted';
 
 export {
     MuArray,
-    MuASCIIString,
+    MuASCII,
     MuBoolean,
     MuDictionary,
     MuFixedASCIIString,
