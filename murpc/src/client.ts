@@ -4,7 +4,7 @@ import {
     MuRPCErrorProtocol,
     MuRPCTable,
     MuRPCInterface,
-    MuRPCProtocolSchemaInterface,
+    MuRPCProtocolSchemaTransformed,
     createRPCProtocolSchemas,
 } from './rpc';
 
@@ -23,9 +23,9 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
 
     public server:MuRPCRemoteServer<Schema['server']>;
 
-    private _protocolSchema:MuRPCProtocolSchemaInterface<Schema>;
-    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['0']>;
-    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaInterface<Schema>['1']>;
+    private _protocolSchema:MuRPCProtocolSchemaTransformed<Schema>;
+    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['0']>;
+    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['1']>;
     private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
 
     private _callbacks:{[id:string]:(err, base) => void};
