@@ -1,5 +1,5 @@
 import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
-import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaTransformed, createRPCProtocolSchemas, MuRPCErrorProtocol } from './rpc';
+import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaTransformed, transformRPCProtocolSchema, MuRPCErrorProtocol } from './rpc';
 import { MuRPCClient } from './client';
 const crypto = require('crypto');
 
@@ -30,7 +30,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         this.schema = schema;
         this._callbacks = {};
 
-        this._protocolSchema = createRPCProtocolSchemas(schema);
+        this._protocolSchema = transformRPCProtocolSchema(schema);
         this._callProtocol = server.protocol(this._protocolSchema['0']);
         this._responseProtocol = server.protocol(this._protocolSchema['1']);
         this._errorProtocol = server.protocol(MuRPCErrorProtocol);

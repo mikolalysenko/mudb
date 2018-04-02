@@ -46,23 +46,28 @@ export interface MuRPCProtocolSchemaTransformed<ProtocolSchema extends MuRPCProt
     };
 }
 
-export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSchema> (
-    schema:ProtocolSchema) : MuRPCProtocolSchemaTransformed<ProtocolSchema> {
-    const protocolSchema = {};
-    for (let i = 0; i < 2; ++i) {
-        const result = {
+export function transformRPCProtocolSchema<ProtocolSchema extends MuRPCProtocolSchema> (
+    schema:ProtocolSchema,
+) : MuRPCProtocolSchemaTransformed<ProtocolSchema> {
+    const protocolSchema = {
+        0: {
             client: {},
             server: {},
-        };
-        Object.keys(schema.client).map((method) => result.client[method] = new MuStruct({
+        },
+        1: {
+            client: {},
+            server: {},
+        },
+    };
+    for (let i = 0; i < 2; ++i) {
+        Object.keys(schema.client).forEach((method) => protocolSchema[i].client[method] = new MuStruct({
             base: schema.client[method][i],
             id: new MuUint32(),
         }));
-        Object.keys(schema.server).map((method) => result.server[method] = new MuStruct({
+        Object.keys(schema.server).forEach((method) => protocolSchema[i].server[method] = new MuStruct({
             base: schema.server[method][i],
             id: new MuUint32(),
         }));
-        protocolSchema[i] = result;
     }
     return <MuRPCProtocolSchemaTransformed<ProtocolSchema>>protocolSchema;
 }

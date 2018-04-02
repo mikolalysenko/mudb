@@ -5,7 +5,7 @@ import {
     MuRPCTable,
     MuRPCInterface,
     MuRPCProtocolSchemaTransformed,
-    createRPCProtocolSchemas,
+    transformRPCProtocolSchema,
 } from './rpc';
 
 export class MuRPCRemoteServer<Schema extends MuRPCTable> {
@@ -36,7 +36,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         this.schema = schema;
         this._callbacks = {};
 
-        this._protocolSchema = createRPCProtocolSchemas(schema);
+        this._protocolSchema = transformRPCProtocolSchema(schema);
         this._callProtocol = client.protocol(this._protocolSchema['0']);
         this._responseProtocol = client.protocol(this._protocolSchema['1']);
         this._errorProtocol = client.protocol(MuRPCErrorProtocol);
