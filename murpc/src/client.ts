@@ -28,32 +28,31 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['1']>;
     private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
 
-    private _callbacks:{[id:string]:(err, base) => void};
+    private _callbacks:{ [id:string]:(err, base) => void } = {};
 
     constructor (client:MuClient, schema:Schema) {
         this.sessionId = client.sessionId;
         this.client = client;
         this.schema = schema;
-        this._callbacks = {};
 
         this._protocolSchema = transformRPCProtocolSchema(schema);
         this._callProtocol = client.protocol(this._protocolSchema['0']);
         this._responseProtocol = client.protocol(this._protocolSchema['1']);
         this._errorProtocol = client.protocol(MuRPCErrorProtocol);
 
-        this.server = new MuRPCRemoteServer(this.createServerPRC(this._callProtocol, schema.server));
+        this.server = new MuRPCRemoteServer(this._createServerPRC(this._callProtocol, schema.server));
     }
 
-    private createServerPRC(callProtocol, serverSchema) {
-        const result = {} as {[method in keyof Schema['server']]:(arg, next) => void};
+    private _createServerPRC(callProtocol, serverSchema) {
+        const rpc = {} as { [method in keyof Schema['server']]:(arg, next) => void };
         Object.keys(serverSchema).forEach((method) => {
-            result[method] = (arg, next) => {
+            rpc[method] = (arg, next) => {
                 const id = generateID();
                 this._callbacks[id] = next;
-                callProtocol.server.message[method]({'base': arg, id});
+                callProtocol.server.message[method]({ base: arg, id });
             };
         });
-        return result;
+        return rpc;
     }
 
     public configure(spec:{
@@ -62,34 +61,34 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         close?:() => void;
     }) {
         this._callProtocol.configure({
-            message: ((schema, rpc, responseProtocol) => {
-                const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
-                Object.keys(schema).forEach((method) => {
-                    result[method] = ({base, id}) => {
-                        rpc[method](base, (err, response) => {
+            message: ((callSchema) => {
+                const handlers = {} as { [method in keyof Schema['client']]:({base, id}) => void };
+                Object.keys(callSchema).forEach((method) => {
+                    handlers[method] = ({ base, id }) => {
+                        spec.rpc[method](base, (err, response) => {
                             if (err) {
-                                responseProtocol.server.message['error']({'base': err, id});
+                                this._responseProtocol.server.message.error({ base: err, id });
                             } else {
-                                responseProtocol.server.message[method]({'base': response, id});
+                                this._responseProtocol.server.message[method]({ base: response, id });
                             }
                         });
                     };
                 });
-                return result;
-            })(this._protocolSchema['0']['client'], spec.rpc, this._responseProtocol),
+                return handlers;
+            })(this._protocolSchema['0']['client']),
         });
 
         this._responseProtocol.configure({
-            message: ((schema, callbacks) => {
-                const result = {} as {[method in keyof Schema['client']]:({base, id}) => void};
-                Object.keys(schema).forEach((method) => {
-                    result[method] = ({base, id}) => {
-                        callbacks[id](undefined, base);
-                        delete callbacks[id];
+            message: ((resopnseSchema) => {
+                const handlers = {} as { [method in keyof Schema['client']]:({ base, id }) => void };
+                Object.keys(resopnseSchema).forEach((method) => {
+                    handlers[method] = ({ base, id }) => {
+                        this._callbacks[id](undefined, base);
+                        delete this._callbacks[id];
                     };
                 });
-                return result;
-            })(this._protocolSchema['1']['client'], this._callbacks),
+                return handlers;
+            })(this._protocolSchema['1']['client']),
             ready: () => {
                 if (spec && spec.ready) {
                     spec.ready();
@@ -106,7 +105,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             message: {
                 error: ({ message, id }) => {
                     console.log('Error:', message);
-                    if (this._callbacks[id]) { delete this._callbacks[id]; }
+                    delete this._callbacks[id];
                 },
             },
         });
