@@ -1,6 +1,6 @@
 {
   "name": "mudo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Development framework for rapid prototyping systems based on mudb",
   "main": "mudo.js",
   "bin": {
