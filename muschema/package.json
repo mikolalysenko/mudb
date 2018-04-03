@@ -1,6 +1,6 @@
 {
   "name": "muschema",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Schemas for mudb",
   "main": "index.js",
   "scripts": {
