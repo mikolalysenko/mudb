@@ -17,7 +17,7 @@
   "dependencies": {
     "mudb": "0.0.1",
     "muschema": "0.0.2",
-    "mustreams": "0.0.0"
+    "mustreams": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",
