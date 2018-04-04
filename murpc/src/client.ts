@@ -16,6 +16,11 @@ export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     }
 }
 
+const uniqueNumber = (() => {
+    let current = 0;
+    return () => current++;
+})();
+
 export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     public readonly sessionId:string;
     public readonly client:MuClient;
@@ -47,7 +52,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         const rpc = {} as { [method in keyof Schema['server']]:(arg, next) => void };
         Object.keys(serverSchema).forEach((method) => {
             rpc[method] = (arg, next) => {
-                const id = generateID();
+                const id = uniqueNumber();
                 this._callbacks[id] = next;
                 callProtocol.server.message[method]({ base: arg, id });
             };
@@ -110,10 +115,4 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
             },
         });
     }
-}
-
-function generateID() {
-    const randomArray = new Uint16Array(1);
-    crypto.getRandomValues(randomArray);
-    return (Date.now() >>> 4) * 100000 + randomArray[0];
 }

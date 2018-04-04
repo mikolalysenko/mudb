@@ -7,7 +7,6 @@ import {
     MuRPCErrorProtocol,
     transformRPCProtocolSchema,
 } from './rpc';
-const crypto = require('crypto');
 
 export class MuRemoteRPCClient<Schema extends MuRPCTable> {
     public readonly sessionId:string;
@@ -36,10 +35,10 @@ function removeItem (array:any[], index:number) {
     array.pop();
 }
 
-function generateID() {
-    const buf = crypto.randomBytes(2);
-    return (Date.now() >>> 4) * 100000 + parseInt(buf.toString('hex'), 16);
-}
+const uniqueNumber = (() => {
+    let current = 0;
+    return () => current++;
+})();
 
 export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     public readonly server:MuServer;
@@ -146,7 +145,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         const rpc = {} as { [method in keyof Schema]:(arg, next) => void };
         Object.keys(this.schema.client).forEach((method) => {
             rpc[method] = (arg, next) => {
-                const id = generateID();
+                const id = uniqueNumber();
                 this._callbacks[clientId][id] = next;
                 this._callProtocol.clients[clientId].message[method]({ base: this.schema.client[method]['0'].clone(arg), id });
             };
