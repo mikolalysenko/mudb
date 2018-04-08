@@ -1,6 +1,6 @@
 import test = require('tape');
 
-import { MuFixedASCIIString } from '../';
+import { MuFixedASCII } from '../';
 import { testPatchingPairFactory, simpleStrOfLeng } from '../_helper';
 
 test('fixed-length ascii - diff() & patch()', (t) => {
@@ -12,11 +12,11 @@ test('fixed-length ascii - diff() & patch()', (t) => {
         return String.fromCharCode.apply(String, codePoints);
     }
 
-    let schema = new MuFixedASCIIString(0);
+    let schema = new MuFixedASCII(0);
     let testPair = testPatchingPairFactory(t, schema);
     testPair('', '');
 
-    schema = new MuFixedASCIIString(1);
+    schema = new MuFixedASCII(1);
     testPair = testPatchingPairFactory(t, schema);
     for (let i = 0; i < 100; ++i) {
         testPair(
@@ -30,7 +30,7 @@ test('fixed-length ascii - diff() & patch()', (t) => {
         );
     }
 
-    schema = new MuFixedASCIIString(0x10000);
+    schema = new MuFixedASCII(0x10000);
     testPair = testPatchingPairFactory(t, schema);
     for (let i = 0; i < 10; ++i) {
         testPair(

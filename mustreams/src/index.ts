@@ -1,9 +1,7 @@
-import StringEncode = require('./string');
-
-const {
+import {
     encodeString,
     decodeString,
-} = StringEncode;
+} from './browser-string';
 
 // round to next highest power of 2
 function ceilLog2 (v_) {
@@ -153,10 +151,15 @@ export class MuWriteStream {
         }
     }
 
-    public writeASCII (str:string) {
+    public writeASCIINoLength (str:string) {
         for (let i = 0; i < str.length; ++i) {
             this.writeUint8(str.charCodeAt(i));
         }
+    }
+
+    public writeASCII (str:string) {
+        this.writeUint32(str.length);
+        this.writeASCIINoLength(str);
     }
 
     public writeString (str:string) {
@@ -183,7 +186,7 @@ export class MuReadStream {
     constructor (data:Uint8Array) {
         this.buffer = new MuBuffer(data.buffer);
         this.offset = data.byteOffset;
-        this.length = data.byteLength + data.byteOffset;
+        this.length = data.byteLength - data.byteOffset;
     }
 
     public readInt8 () : number {
@@ -268,17 +271,20 @@ export class MuReadStream {
             (x4 * (1 << 28));
     }
 
-    public readASCII (byteLength:number) : string {
-        const head = this.offset;
-        this.offset += byteLength;
+    public readASCIIOf (length:number) : string {
+        const offset = this.offset;
+        this.offset += length;
 
         let str = '';
-        const uint8 = this.buffer.uint8;
-        for (let i = head; i < this.offset; ++i) {
-            str += String.fromCharCode(uint8[i]);
+        for (let i = offset; i < this.offset; ++i) {
+            str += String.fromCharCode(this.buffer.uint8[i]);
         }
-
         return str;
+    }
+
+    public readASCII () : string {
+        const length = this.readUint32();
+        return this.readASCIIOf(length);
     }
 
     public readString () : string {

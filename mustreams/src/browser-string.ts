@@ -1,20 +1,23 @@
-import StringEncode = require('./string');
+import * as StringCodec from './string';
 
 let encodeString:(str:string) => Uint8Array;
 let decodeString:(bytes:Uint8Array) => string;
 
-if ('TextEncoder' in window) {
-    const encoder = new (<any>window).TextEncoder();
+// @ts-ignore: No implicit this
+if (this.TextEncoder) {
+    // @ts-ignore: No implicit this
+    const encoder = new this.TextEncoder();
     encodeString = (str) => encoder.encode(str);
 
-    const decoder = new (<any>window).TextDecoder();
+    // @ts-ignore: No implicit this
+    const decoder = new this.TextDecoder();
     decodeString = (bytes) => decoder.decode(bytes);
 } else {
-    encodeString = StringEncode.encodeString;
-    decodeString = StringEncode.decodeString;
+    encodeString = StringCodec.encodeString;
+    decodeString = StringCodec.decodeString;
 }
 
-export = {
+export {
     encodeString,
     decodeString,
 };
