@@ -1,27 +1,27 @@
 # muschema
-An extensible system for specifying diff/patch based replication [schemas](https://en.wikipedia.org/wiki/Database_schema).  In `mudb` schemas are used to define RPC and message interfaces as well as define state layouts.  Schemas allow for run time reflection on type information, and are necessary to support serialization and memory management.
+An extensible system for specifying diff/patch based replication [schemas](https://en.wikipedia.org/wiki/Database_schema).  In `mudb`, schemas are used to define message interfaces and RPC, as well as define state layouts.  Schemas allow for run time reflection on type information, and are necessary to support serialization and memory management.
 
 It is kind of like protobufs for JavaScript, only better in that it supports [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding) and is easier to customize (and worse in the sense that it only works in JavaScript).
 
 [Typescript](https://www.typescriptlang.org/) and [node.js](https://nodejs.org/) friendly!
 
 ## example
-Here is a somewhat contrived example showing how all of the methods of the schemas work.
+Here is a contrived example showing how all of the methods of the schemas work.
 
 ```javascript
 const {
-    MuStruct,
-    MuString,
     MuFloat64,
     MuInt32,
+    MuString,
     MuDictionary
+    MuStruct,
 } = require('muschema')
 const {
     MuWriteStream,
     MuReadStream,
 } = require('mustreams')
 
-// Define an entity schema
+// define an entity schema
 const EntitySchema = new MuStruct({
     x: new MuFloat64(),
     y: new MuFloat64(),
@@ -31,10 +31,11 @@ const EntitySchema = new MuStruct({
     name: new MuString('entity')
 })
 
-const EntitySet = new MuDictionary(EntitySchema)
+// define an entity set schema
+const EntitySetSchema = new MuDictionary(EntitySchema)
 
 // create a new entity set object using the schema
-const entities = EntitySet.alloc()
+const entities = EntitySetSchema.alloc()
 
 // create a new entity and add it to the schema
 const player = EntitySchema.alloc()
@@ -43,30 +44,30 @@ player.x = 10
 player.y = 10
 player.dx = -10
 player.dy = -20
-player.name = 'player'
+player.name = 'winnie'
 
-entities['foo'] = player
+entities['pooh'] = player
 
-// now make a copy of all entities
-const otherEntities = EntitySet.clone(entities)
+// make a copy of all entities
+const otherEntities = EntitySetSchema.clone(entities)
 
 // modify player entity
 otherEntities.foo.hp = 1
 
 // compute a patch and write it to stream
 const out = new MuWriteStream(32)
-const hasPatch = EntitySet.diff(entities, otherEntities, out)
+const hasPatch = EntitySetSchema.diff(entities, otherEntities, out)
 
-let otherEntitiesCopy = EntitySet.clone(entites)
+let otherEntitiesCopy = EntitySetSchema.clone(entities)
 if (hasPatch) {
     // read the patch from stream and apply it to
     // a copy of entities
-    const inp = new MuReadStream(out.buffer.uint8)
-    otherEntitiesCopy = EntitySet.patch(entities, inp)
+    const inp = new MuReadStream(out.bytes())
+    otherEntitiesCopy = EntitySetSchema.patch(otherEntitiesCopy, inp)
 }
 
-// release memory
-EntitySet.free(otherEntities)
+// pool objects
+EntitySetSchema.free(otherEntities)
 ```
 
 # table of contents
@@ -79,89 +80,154 @@ npm i muschema
 
 # api #
 
-## interfaces ##
-Internally each `muschema` is an object which implements the following interface.
+## interface ##
+Each schema implements the following interface:
 
-* `identity` The default value of an object in the schema.
-* `muType` A string encoding some runtime information about the schema.
-* `muData` (optional) Additional runtime information about the schema.  May include subtype schemas, etc.
-* `alloc()` Creates a new value from scratch
-* `free(value)` Returns a value to the internal memory pool.
-* `clone(value)` Makes a copy of a value.
-* `diff(base, target, stream)` Computes a patch from `base` to `target` and writes it to `stream`
-* `patch(base, stream)` Applies patch read from `stream` to `base` returning a new value
+* `identity` the default value of the schema, usually set when initializing a schema
+* `muType` a string containing type information of the schema for runtime reflection
+* `muData` (optional) additional runtime information about the schema, such as the schema of members
+* `alloc()` creates a new value from scratch, or recycles an object from the memory pool when possible
+* `free(value)` returns the value to the memory pool
+* `clone(value)` makes a copy of the value
+* `diff(base, target, out:MuWriteStream)` computes a patch from `base` to `target`, and writes it to `stream`
+* `patch(base, inp:MuReadStream)` reads a patch from `stream`, and applies to `base`
 
 `diff` and `patch` obey the following semantics:
 
-```javascript
-const hasPatch = diff(base, target, outStream)
-const targetCopy = patch(base, inpStream)
-// targetCopy is equivalent to target
+```
+diff(base, target, out)
+patchedBase = patch(base, inp)
+// now patchedBase is equivalent to target
 ```
 
-To serialize an arbitrary object without a base, use the identity element.  For example:
+For situations when you don't have a specific base, use the identity.
 
 ```javascript
-const hasPatch = schema.diff(schema.identity, value, outStream)
+schema.diff(schema.identity, value, out)
+schema.patch(schema.identity, inp)
 ```
 
-Schemas can be composed recursively by calling submethods.  `muschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user defined applications can specify custom serialization and diffing/patching methods for various common types.
+Schemas can be composed recursively by calling submethods.  `muschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user-defined applications can specify custom serialization and diff/patch methods for various common types.
 
-### a note for typescript ##
-For typescript users, a generic interface for schemas can be found in the `muschema/schema` module.  It exports the interface `MuSchema<ValueType>` which any `muschema` should implement.
+### for TypeScript ##
+For TypeScript, the generic interface described above can be found in `muschema/schema`.  The module exports the interface as `MuSchema<ValueType>`, which any schema types should implement.
 
 ## primitives ##
-Out of the box `muschema` comes with schemas for all primitive types in JavaScript.  These can be accessed using the following constructors.
+`muschema` comes with schema types for all primitive types in JavaScript out of the box.
 
 ### void ###
 An empty value type.  Useful for specifying arguments to messages which do not need to be serialized.
 
 ```javascript
 const { MuVoid } = require('muschema/void')
+
+const EmptySchema = new MuVoid()
+
+EmptySchema.identity    // always undefined
+EmptySchema.muType      // 'void'
+
+const nothingness = EmptySchema.alloc() // undefined
+EmptySchema.free(nothingness)           // noop
+EmptySchema.clone(nothingness)          // always returns undefined
 ```
 
 ### boolean ###
-A binary `true`/`false` boolean value
+`true` or `false`
 
 ```javascript
 const { MuBoolean } = require('muschema/boolean')
+
+const SwitchSchema = new MuBoolean(identity)
+
+SwitchSchema.identity   // defaults to false if not specified
+SwitchSchema.muType     // 'boolean'
+
+const switch = SwitchSchema.alloc() // equals identity
+SwitchSchema.free(switch)           // noop
+SwitchSchema.clone(switch)          // returns the value of `switch`
 ```
 
-### numbers ###
-Because `muschema` supports binary serialization
+### number ###
 
 ```javascript
-// Signed integers 8, 16 and 32-bit
+// for signed integers of 8/16/32-bit
 const { MuInt8 } = require('muschema/int8')
 const { MuInt16 } = require('muschema/int16')
 const { MuInt32 } = require('muschema/int32')
 
-// Unsigned integers
+// for unsigned integers of 8/16/32-bit
 const { MuUint8 } = require('muschema/uint8')
 const { MuUint16 } = require('muschema/uint16')
 const { MuUint32 } = require('muschema/uint32')
 
-// Floating point
+// for floating point of 32/64-bit
 const { MuFloat32 } = require('muschema/float32')
-const { MuFloat64 } = require('muschema/float32')
+const { MuFloat64 } = require('muschema/float64')
+
+// here MuNumber stands for any of the number schema types
+const AnyNumberSchema = new MuNumber(identity)
+
+AnyNumberSchema.identity    // defaults to 0 if not specified
+AnyNumberSchema.muType      // string of one of int8/int16/int32/uint8/uint16/uint32/float32/float64
+                            // depending on the schema type
+
+const num = AnyNumberSchema.alloc() // equals identity
+AnyNumberSchema.free(num)           // noop
+AnyNumberSchema.clone(num)          // returns the value of `num`
 ```
 
-For generic numbers, use `MuFloat64`.  If you know the size of your number in advance, then use a more specific datatype.
+* for numbers in general, use `MuFloat64`
+* but if you know the range of the numbers in advance, use a more specific data type instead
 
-### strings ###
-String data type
+### string ###
 
 ```javascript
 const { MuString } = require('muschema/string')
+const { MuASCII } = require('muschema/ascii')
+const { MuFixedASCII } = require('muschema/fixed-ascii')
+
+const MessageSchema = new MuString(identity)
+MessageSchema.identity              // defaults to '' if not specified
+MessageSchema.muType                // 'string'
+
+const msg = MessageSchema.alloc()   // equals identity
+MessageSchema.free(msg)             // noop
+MessageSchema.clone(msg)            // returns the value of `msg`
+
+const UsernameSchema = new MuASCII(identity)
+UsernameSchema.identity                 // defaults to '' if not specified
+UsernameSchema.muType                   // 'ascii'
+
+const username = UsernameSchema.alloc() // equals identity
+UsernameSchema.free(username)           // noop
+UsernameSchema.clone(username)          // returns the value of `username`
+
+// for this schema type, you must either specify the identity
+const phoneNumberSchema = new MuFixedASCII('1234567890')
+phoneNumberSchema.identity              // '1234567890'
+phoneNumberSchema.muType                // 'fixed-ascii'
+phoneNumberSchema.length                // 10, the length of all strings in this schema
+const phone = phoneNumberSchema.alloc() // '1234567890'
+
+// or the fixed length
+const IDSchema = new MuFixedASCII(8)
+IDSchema.identity           // a string of 8 spaces
+IDSchema.length             // 8
+
+const id = IDSchema.alloc() // a string of 8 spaces
+IDSchema.free(id)           // noop
+IDSchema.clone(id)          // returns the value of `id`
 ```
+
+* for strings in general, use `MuString`
+* if the strings consist of only ASCII characters, use `MuASCII`
+* if the strings consist of only ASCII characters and are of the same length, use `MuFixedASCII` instead
 
 ## functors ##
 Primitive data types in `muschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
 
-### structs ###
-A struct is a collection of multiple subtypes.  Structs are constructed by passing in a dictionary of schemas.  Struct schemas may be nested as follows:
-
-**Example:**
+### struct ###
+A struct is a collection of subtypes.  Structs are constructed by passing in a dictionary of schemas.  Struct schemas may be nested as follows:
 
 ```javascript
 const { MuFloat64 } = require('muschema/float64')
@@ -171,13 +237,11 @@ const Vec2 = new MuStruct({
     x: new MuFloat64(0),
     y: new MuFloat64(0),
 })
-
 const Particle = new MuStruct({
     position: Vec2,
     velocity: Vec2
 })
 
-// example usage:
 const p = Particle.alloc()
 p.position.x = 10
 p.position.y = 10
@@ -186,10 +250,70 @@ p.position.y = 10
 Particle.free(p)
 ```
 
-### unions ###
-A discriminated union of several subtypes.  Each subtype must be given a label.
+### array ###
 
-**Example:**
+```javascript
+const { MuStruct } = require('muschema/struct')
+const { MuArray } = require('muschema/array')
+const { MuUint32 } = require('muschema/uint32')
+
+const SlotSchema = new MuStruct({
+    item_id: new MuUint32()
+    amount: new MuUint32()
+})
+const InventorySchema = new MuArray(SlotSchema, identity)
+
+InventorySchema.identity    // defaults to [] if not specified
+InventorySchema.muType      // 'array'
+InventorySchema.muData      // SlotSchema
+
+const backpack = InventorySchema.alloc()    // always []
+InventorySchema.free(backpack)              // pools `backpack` and all its members
+InventorySchema.clone(backpack)             // returns a deep copy of `backpack`
+```
+
+### sorted array ###
+
+```javascript
+const { MuStruct } = require('muschema/struct')
+const { MuSortedArray } = require('muschema/sorted')
+const { MuUint8 } = require('muschema/uint8')
+
+function compare (a, b) {
+    if (a.rank < b.rank) {
+        return -1
+    } else if (a.rank > b.rank) {
+        return 1
+    }
+
+    if (a.suit < b.suit) {
+        return -1
+    } else if (a.suit > b.suit) {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+const CardSchema = new MuStruct({
+    suit: new MuUint8(),
+    rank: new MuUint8(),
+})
+const DeckSchema = new MuSortedArray(CardSchema, compare, identity)
+
+DeckSchema.identity     // defaults to []
+                        // if identity sepcified, will be a sorted copy of it
+DeckSchema.muType       // 'sorted-set'
+DeckSchema.muData       // CardSchema
+DeckSchema.compare      // reference to the compare function
+
+const deck = DeckSchema.alloc() // always []
+DeckSchema.free(deck)           // pools `deck` and all its members
+DeckSchema.clone(deck)          // returns a deep copy of `deck`
+```
+
+### union ###
+A discriminated union of several subtypes.  Each subtype must be given a label.
 
 ```javascript
 const { MuFloat64 } = require('muschema/float64')
@@ -218,21 +342,40 @@ const y = FloatOrString.patch(FloatOrString.idenity, inp)
 
 ## data structures ##
 
-### dictionaries ###
+### dictionary ###
 A dictionary is a labelled collection of values.
-
-**Example:**
 
 ```javascript
 const { MuUint32 } = require('muschema/uint32')
 const { MuDictionary } = require('muschema/dictionary')
 
-const NumberDictionary = new MuDictionary(new MuUint32(0))
+const NumberDictionary = new MuDictionary(new MuUint32(), identity)
+NumberDictionary.identity   // defaults to {} if not specified
+NumberDictionary.muType     // 'dictionary'
+NumberDictionary.muData     // a MuUint32 schema
 
-// create a dictionary
 const dict = NumberDictionary.alloc()
-
 dict['foo'] = 3
+
+NumberDictionary.free(dict)     // pools `dict` and all its members
+NumberDictionary.clone(dict)    // returns a deep copy of `dict`
+```
+
+### vector ###
+
+```javascript
+const { MuVector } = require('muschema/vector')
+const { MuFloat32 } = require('muschema/float64')
+
+const ColorSchema = new MuVector(new MuFloat32(), 4)
+ColorSchema.identity    // Float32Array [0, 0, 0, 0]
+ColorSchema.muType      // 'vector'
+ColorSchema.muData      // reference to the specified MuFloat32 schema
+ColorSchema.dimension   // 4
+
+const rgba = ColorSchema.alloc()    // Float32Array [0, 0, 0, 0]
+ColorSchema.free(rgba)              // pools `rgba`
+ColorSchema.clone(rgba)             // returns a copy of `rgba`
 ```
 
 # more examples #
@@ -241,25 +384,19 @@ Check out `mudb` for some examples of using `muschema`.
 
 # TODO
 
-## features
+## features ##
 
-* binary serialization
-* automated testing
-* diff speed benchmark
-* patch speed benchmark
-* patch size benchmark
+* smarter delta encoding
 * memory pool stats
 
-## more types
+## schema types ##
 
 * fixed point numbers
 * enums
 * tuples
-* fixed size vectors
-* variable length arrays
 * multidimensional arrays
 
-## design
+## TBD ##
 
 * should models define constructors?
 * should pool allocation be optional?
