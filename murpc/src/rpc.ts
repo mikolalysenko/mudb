@@ -77,7 +77,7 @@ export const MuRPCErrorSchema = new MuStruct({
     id: new MuUint32(),
 });
 
-export const MuRPCErrorProtocol = {
+export const MuRPCErrorProtocolSchema = {
     client: {
         error: MuRPCErrorSchema,
     },

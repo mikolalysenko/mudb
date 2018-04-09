@@ -1,14 +1,14 @@
 import { MuClient, MuClientProtocol } from 'mudb/client';
 import {
     MuRPCProtocolSchema,
-    MuRPCErrorProtocol,
+    MuRPCErrorProtocolSchema,
     MuRPCTable,
     MuRPCInterface,
     MuRPCProtocolSchemaTransformed,
     transformRPCProtocolSchema,
 } from './rpc';
 
-export class MuRPCRemoteServer<Schema extends MuRPCTable> {
+export class MuRemoteServerRPC<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callAPI'];
 
     constructor(rpc:MuRPCInterface<Schema>['callAPI']) {
@@ -21,16 +21,16 @@ const uniqueNumber = (() => {
     return () => current++;
 })();
 
-export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
+export class MuClientRPC<Schema extends MuRPCProtocolSchema> {
     public readonly sessionId:string;
     public readonly client:MuClient;
     public readonly schema:Schema;
 
-    public server:MuRPCRemoteServer<Schema['server']>;
+    public server:MuRemoteServerRPC<Schema['server']>;
 
     private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['0']>;
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['1']>;
-    private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
+    private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocolSchema>;
 
     private _callbacks:{ [id:string]:(err, base) => void } = {};
 
@@ -42,9 +42,9 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         const transformedSchema = transformRPCProtocolSchema(schema);
         this._callProtocol = client.protocol(transformedSchema['0']);
         this._responseProtocol = client.protocol(transformedSchema['1']);
-        this._errorProtocol = client.protocol(MuRPCErrorProtocol);
+        this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
 
-        this.server = new MuRPCRemoteServer(this._createServerPRC(this._callProtocol, schema.server));
+        this.server = new MuRemoteServerRPC(this._createServerPRC(this._callProtocol, schema.server));
     }
 
     private _createServerPRC(callProtocol, serverSchema) {
