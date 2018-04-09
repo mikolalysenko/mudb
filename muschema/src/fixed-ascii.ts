@@ -3,7 +3,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 
 let identityStr = ' ';
 
-export class MuFixedASCIIString implements MuSchema<string> {
+export class MuFixedASCII implements MuSchema<string> {
     public readonly identity:string;
     public readonly muType = 'fixed-ascii';
     public readonly json:object;
@@ -51,13 +51,13 @@ export class MuFixedASCIIString implements MuSchema<string> {
 
         if (base !== target) {
             out.grow(length);
-            out.writeASCII(target);
+            out.writeASCIINoLength(target);
             return true;
         }
         return false;
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII(this.length);
+        return inp.readASCIIOf(this.length);
     }
 }

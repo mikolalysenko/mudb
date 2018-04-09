@@ -1,6 +1,6 @@
 import test = require('tape');
 
-import { MuASCIIString } from '../';
+import { MuASCII } from '../';
 import { randomShortStr, testPatchingPairFactory } from '../_helper';
 
 test('ascii - diff() & patch()', (t) => {
@@ -13,7 +13,7 @@ test('ascii - diff() & patch()', (t) => {
         return String.fromCharCode.apply(null, codePoints);
     }
 
-    const schema = new MuASCIIString();
+    const schema = new MuASCII();
     const testPatchingPair = testPatchingPairFactory(t, schema);
 
     for (let i = 0; i < 200; ++i) {

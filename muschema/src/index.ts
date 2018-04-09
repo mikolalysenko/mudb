@@ -1,8 +1,8 @@
 import { MuArray } from './array';
-import { MuASCIIString } from './ascii';
+import { MuASCII } from './ascii';
 import { MuBoolean } from './boolean';
 import { MuDictionary } from './dictionary';
-import { MuFixedASCIIString } from './fixed-ascii';
+import { MuFixedASCII } from './fixed-ascii';
 import { MuFloat32 } from './float32';
 import { MuFloat64 } from './float64';
 import { MuInt8 } from './int8';
@@ -21,10 +21,10 @@ import { MuSortedArray } from './sorted';
 
 export {
     MuArray,
-    MuASCIIString,
+    MuASCII,
     MuBoolean,
     MuDictionary,
-    MuFixedASCIIString,
+    MuFixedASCII,
     MuFloat32,
     MuFloat64,
     MuInt8,
