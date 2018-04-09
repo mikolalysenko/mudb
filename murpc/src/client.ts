@@ -28,7 +28,6 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
 
     public server:MuRPCRemoteServer<Schema['server']>;
 
-    private _protocolSchema:MuRPCProtocolSchemaTransformed<Schema>;
     private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['0']>;
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaTransformed<Schema>['1']>;
     private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocol>;
@@ -40,9 +39,9 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         this.client = client;
         this.schema = schema;
 
-        this._protocolSchema = transformRPCProtocolSchema(schema);
-        this._callProtocol = client.protocol(this._protocolSchema['0']);
-        this._responseProtocol = client.protocol(this._protocolSchema['1']);
+        const transformedSchema = transformRPCProtocolSchema(schema);
+        this._callProtocol = client.protocol(transformedSchema['0']);
+        this._responseProtocol = client.protocol(transformedSchema['1']);
         this._errorProtocol = client.protocol(MuRPCErrorProtocol);
 
         this.server = new MuRPCRemoteServer(this._createServerPRC(this._callProtocol, schema.server));
@@ -66,9 +65,9 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         close?:() => void;
     }) {
         this._callProtocol.configure({
-            message: ((callSchema) => {
+            message: (() => {
                 const handlers = {} as { [method in keyof Schema['client']]:({base, id}) => void };
-                Object.keys(callSchema).forEach((method) => {
+                Object.keys(this.schema.client).forEach((method) => {
                     handlers[method] = ({ base, id }) => {
                         spec.rpc[method](base, (err, response) => {
                             if (err) {
@@ -80,20 +79,20 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                     };
                 });
                 return handlers;
-            })(this._protocolSchema['0']['client']),
+            })(),
         });
 
         this._responseProtocol.configure({
-            message: ((resopnseSchema) => {
+            message: (() => {
                 const handlers = {} as { [method in keyof Schema['client']]:({ base, id }) => void };
-                Object.keys(resopnseSchema).forEach((method) => {
+                Object.keys(this.schema.client).forEach((method) => {
                     handlers[method] = ({ base, id }) => {
                         this._callbacks[id](undefined, base);
                         delete this._callbacks[id];
                     };
                 });
                 return handlers;
-            })(this._protocolSchema['1']['client']),
+            })(),
             ready: () => {
                 if (spec && spec.ready) {
                     spec.ready();

@@ -47,7 +47,6 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
 
     private _callbacks:{ [sessionId:string]:{ [id:string]:(err, base) => void } } = {};
 
-    private _protocolSchema:MuRPCProtocolSchemaTransformed<Schema>;
     private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaTransformed<Schema>['0']>;
     private _responseProtocol:MuServerProtocol<MuRPCProtocolSchemaTransformed<Schema>['1']>;
     private _errorProtocol:MuServerProtocol<typeof MuRPCErrorProtocol>;
@@ -56,9 +55,9 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         this.server = server;
         this.schema = schema;
 
-        this._protocolSchema = transformRPCProtocolSchema(schema);
-        this._callProtocol = server.protocol(this._protocolSchema['0']);
-        this._responseProtocol = server.protocol(this._protocolSchema['1']);
+        const transformedSchema = transformRPCProtocolSchema(schema);
+        this._callProtocol = server.protocol(transformedSchema['0']);
+        this._responseProtocol = server.protocol(transformedSchema['1']);
         this._errorProtocol = server.protocol(MuRPCErrorProtocol);
     }
 
@@ -70,9 +69,9 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         close?:() => void;
     }) {
         this._callProtocol.configure({
-            message: ((callSchema) => {
+            message: (() => {
                 const handlers = {} as { [method in keyof Schema['server']]:(client, { base, id }) => void };
-                Object.keys(callSchema).forEach((method) => {
+                Object.keys(this.schema.server).forEach((method) => {
                     handlers[method] = (client, { base, id }) => {
                         spec.rpc[method](base, (err, response) => {
                             if (err) {
@@ -85,7 +84,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                     };
                 });
                 return handlers;
-            })(this._protocolSchema['0']['server']),
+            })(),
             ready: () => {
                 if (spec && spec.ready) {
                     spec.ready();
@@ -113,9 +112,9 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
         });
 
         this._responseProtocol.configure({
-            message: ((responseSchema) => {
+            message: (() => {
                 const handlers = {} as { [method in keyof Schema['client']]:(client, { base, id }) => void };
-                Object.keys(responseSchema).forEach((method) => {
+                Object.keys(this.schema.client).forEach((method) => {
                     handlers[method] = (client, { base, id }) => {
                         const clientId = client.sessionId;
                         if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
@@ -125,7 +124,7 @@ export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
                     };
                 });
                 return handlers;
-            })(this._protocolSchema['1']['client']),
+            })(),
         });
 
         this._errorProtocol.configure({
