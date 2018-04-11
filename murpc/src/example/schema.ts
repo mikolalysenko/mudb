@@ -1,21 +1,29 @@
 import {
-    MuInt8,
-    MuString,
     MuArray,
-    MuDictionary,
+    MuInt8,
+    MuInt32,
+    MuString,
+    MuFixedASCII,
 } from 'muschema';
 
+const IntegerSetSchema = new MuArray(new MuInt8());
+const TotalSchema = new MuInt32();
+
+const secretSchema = new MuString();
+const digestSchema = new MuFixedASCII(128);
+
+// always has two sides, client & server
 export const RPCSchema = {
     client: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
+        sum: {
+            0: IntegerSetSchema,    // schema for argument of `sum()`
+            1: TotalSchema,         // schema for return of `sum()`
         },
     },
     server: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
+        hash: {
+            0: secretSchema,
+            1: digestSchema,
         },
     },
 };

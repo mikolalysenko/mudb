@@ -4,23 +4,16 @@ import { MuUint32 } from 'muschema/uint32';
 import { MuString } from 'muschema/string';
 import { MuAnyMessageTable } from '../../mudb/protocol';
 
-export type MuRPCError = string;
-
 export type MuAnySchema = MuSchema<any>;
-
-export type MuRPCSchema = {
-    0:MuAnySchema;
-    1:MuAnySchema;
-} | [ MuAnySchema, MuAnySchema ];
-
-export type MuRPCTable = {
-    [method:string]:MuRPCSchema;
-};
+export type MuRPCSchema = { 0:MuAnySchema, 1:MuAnySchema } | [ MuAnySchema, MuAnySchema ];
+export type MuRPCTable = { [method:string]:MuRPCSchema };
 
 export type MuRPCProtocolSchema = {
     client:MuRPCTable;
     server:MuRPCTable;
 };
+
+export type MuRPCError = string;
 
 export interface MuRPCInterface<RPCTable extends MuRPCTable> {
     callAPI:{
@@ -35,44 +28,64 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
     };
 }
 
-export interface MuRPCProtocolTablePhase<RPCTable extends MuRPCTable, Phase extends '0' | '1'> {
-    schema:{
-        [method in keyof RPCTable]:MuStruct<{
-            base:RPCTable[method][Phase];
-            id:MuUint32;
-        }>;
+export type MuRPCProtocolTablePhase<RPCTable extends MuRPCTable, Phase extends '0' | '1'> = {
+    [method in keyof RPCTable]:MuStruct<{
+        base:RPCTable[method][Phase];
+        id:MuUint32;
+    }>;
+};
+
+export interface MuRPCProtocolSchemaUnfolded<ProtocolSchema extends MuRPCProtocolSchema> {
+    '0':{
+        client:MuRPCProtocolTablePhase<ProtocolSchema['client' | 'server'], '0'>;
+        server:MuRPCProtocolTablePhase<ProtocolSchema['client' | 'server'], '0'>;
+    };
+    '1':{
+        client:MuRPCProtocolTablePhase<ProtocolSchema['client' | 'server'], '1'>;
+        server:MuRPCProtocolTablePhase<ProtocolSchema['client' | 'server'], '1'>;
     };
 }
 
-export interface MuRPCProtocolSchemaPhase<ProtocolSchema extends MuRPCProtocolSchema, Phase extends '0' | '1'> {
-    client:MuRPCProtocolTablePhase<ProtocolSchema['client'], Phase>['schema'];
-    server:MuRPCProtocolTablePhase<ProtocolSchema['server'], Phase>['schema'];
-}
-
-export interface MuRPCProtocolSchemaInterface<ProtocolSchema extends MuRPCProtocolSchema> {
-    '0':MuRPCProtocolSchemaPhase<ProtocolSchema, '0'>;
-    '1':MuRPCProtocolSchemaPhase<ProtocolSchema, '1'>;
-}
-
-export function createRPCProtocolSchemas<ProtocolSchema extends MuRPCProtocolSchema>(
-    schema:ProtocolSchema) : MuRPCProtocolSchemaInterface<ProtocolSchema> {
-    const protocolSchema = {};
-    for (let i = 0; i < 2; ++i) {
-        const result = {
+export function unfoldRPCProtocolSchema<ProtocolSchema extends MuRPCProtocolSchema> (
+    schema:ProtocolSchema,
+) : MuRPCProtocolSchemaUnfolded<ProtocolSchema> {
+    const protocolSchema = {
+        0: {
             client: {},
             server: {},
-        };
-        Object.keys(schema.client).map((method) => result.client[method] = new MuStruct({
-            base: schema.client[method][i],
-            id: new MuUint32(),
-        }));
-        Object.keys(schema.server).map((method) => result.server[method] = new MuStruct({
-            base: schema.server[method][i],
-            id: new MuUint32(),
-        }));
-        protocolSchema[i] = result;
+        },
+        1: {
+            client: {},
+            server: {},
+        },
+    };
+    const idSchema = new MuUint32();
+
+    for (let i = 0; i < 2; ++i) {
+        Object.keys(schema.client).forEach((method) => {
+            protocolSchema[i].client[method] = new MuStruct({
+                base: schema.client[method][i],
+                id: idSchema,
+            });
+
+            protocolSchema[i].server[method] = new MuStruct({
+                base: schema.client[method][i],
+                id: idSchema,
+            });
+        });
+        Object.keys(schema.server).forEach((method) => {
+            protocolSchema[i].client[method] = new MuStruct({
+                base: schema.server[method][i],
+                id: idSchema,
+            });
+
+            protocolSchema[i].server[method] = new MuStruct({
+                base: schema.server[method][i],
+                id: idSchema,
+            });
+        });
     }
-    return <MuRPCProtocolSchemaInterface<ProtocolSchema>>protocolSchema;
+    return <MuRPCProtocolSchemaUnfolded<ProtocolSchema>>protocolSchema;
 }
 
 export const MuRPCErrorSchema = new MuStruct({
@@ -80,7 +93,7 @@ export const MuRPCErrorSchema = new MuStruct({
     id: new MuUint32(),
 });
 
-export const MuRPCErrorProtocol = {
+export const MuRPCErrorProtocolSchema = {
     client: {
         error: MuRPCErrorSchema,
     },
