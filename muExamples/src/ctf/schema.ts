@@ -7,6 +7,7 @@ import {
   MuArray,
   MuBoolean,
 } from 'muschema';
+import { MuRPC } from 'murpc/rpc';
 
 export const PlayerSchema = new MuStruct({
   team: new MuInt8(),
@@ -40,15 +41,9 @@ export const MsgSchema = {
 
 export const RpcSchema = {
   client: {
-    joinTeam: {
-      0: new MuString(),
-      1: new MuInt8(),
-    },
+    joinTeam: MuRPC(new MuString(), new MuInt8()),
   },
   server: {
-    joinTeam: {
-      0: new MuString(),
-      1: new MuInt8(),
-    },
+    joinTeam: MuRPC(new MuString(), new MuInt8()),
   },
 };

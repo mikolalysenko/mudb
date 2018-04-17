@@ -9,9 +9,9 @@ import {
 } from './rpc';
 
 export class MuRemoteServerRPC<Schema extends MuRPCTable> {
-    public readonly rpc:MuRPCInterface<Schema>['callAPI'];
+    public readonly rpc:MuRPCInterface<Schema>['callerAPI'];
 
-    constructor(rpc:MuRPCInterface<Schema>['callAPI']) {
+    constructor(rpc:MuRPCInterface<Schema>['callerAPI']) {
         this.rpc = rpc;
     }
 }
@@ -28,8 +28,8 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
 
     public server:MuRemoteServerRPC<Schema['server']>;
 
-    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<Schema>['0']>;
-    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<Schema>['1']>;
+    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<Schema>[0]>;
+    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<Schema>[1]>;
     private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocolSchema>;
 
     private _callbacks:{ [id:string]:(err, base) => void } = {};
@@ -40,8 +40,8 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
         this.schema = schema;
 
         const schemaUnfolded = unfoldRPCProtocolSchema(schema);
-        this._callProtocol = client.protocol(schemaUnfolded['0']);
-        this._responseProtocol = client.protocol(schemaUnfolded['1']);
+        this._callProtocol = client.protocol(schemaUnfolded[0]);
+        this._responseProtocol = client.protocol(schemaUnfolded[1]);
         this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
 
         this.server = new MuRemoteServerRPC(this._createServerPRC());
@@ -54,7 +54,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 const id = uniqueNumber();
                 this._callbacks[id] = next;
                 this._callProtocol.server.message[method]({
-                    base: this.schema.server[method]['0'].clone(arg),
+                    base: this.schema.server[method][0].clone(arg),
                     id,
                 });
             };
@@ -77,7 +77,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                                 this._responseProtocol.server.message.error({ base: err, id });
                             } else {
                                 this._responseProtocol.server.message[method]({
-                                    base: this.schema.client[method]['1'].clone(response),
+                                    base: this.schema.client[method][1].clone(response),
                                     id,
                                 });
                             }
@@ -93,7 +93,7 @@ export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
                 const handlers = {} as { [method in keyof Schema['server']]:({ base, id }) => void };
                 Object.keys(this.schema.server).forEach((method) => {
                     handlers[method] = ({ base, id }) => {
-                        this._callbacks[id](undefined, this.schema.server[method]['1'].clone(base));
+                        this._callbacks[id](undefined, this.schema.server[method][1].clone(base));
                         delete this._callbacks[id];
                     };
                 });
