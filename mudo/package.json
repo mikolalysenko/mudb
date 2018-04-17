@@ -1,6 +1,6 @@
 {
   "name": "mudo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Development framework for rapid prototyping systems based on mudb",
   "main": "mudo.js",
   "bin": {
@@ -21,9 +21,9 @@
     "browserify": "^14.5.0",
     "budo": "^10.0.4",
     "minimist": "^1.2.0",
-    "mudb": "0.0.1",
-    "mulocal-socket": "0.0.0",
-    "muweb-socket": "0.0.0",
+    "mudb": "0.1.0",
+    "mulocal-socket": "0.1.0",
+    "muweb-socket": "0.1.0",
     "temp": "^0.8.3"
   },
   "devDependencies": {

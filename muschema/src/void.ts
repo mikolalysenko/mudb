@@ -9,9 +9,9 @@ export class MuVoid implements MuSchema<void> {
         type: 'void',
     };
 
-    public alloc () : void {}
-    public free () : void {}
-    public clone () : void {}
+    public alloc () : void { }
+    public free (_:void) : void { }
+    public clone (_:void) : void { }
     public diff (b, t, stream:MuWriteStream) { return false; }
-    public patch (b, stream:MuReadStream) : void {}
+    public patch (b, stream:MuReadStream) : void { }
 }

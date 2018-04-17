@@ -123,7 +123,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     spec.disconnect(this.clients[clientId]);
                 }
                 const client = this.clients[clientId];
-                garbageCollectStates(this.schema.client, client.history, 0);
+                garbageCollectStates(this.schema.client, client.history, Infinity);
                 removeItem(this.clients, clientId);
                 removeItem(this._observedStates, clientId);
             },

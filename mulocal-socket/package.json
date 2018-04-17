@@ -1,6 +1,6 @@
 {
   "name": "mulocal-socket",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Local socket emulation for mudb",
   "main": "index.js",
   "scripts": {
@@ -15,8 +15,8 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.0.1",
-    "mustreams": "0.0.0"
+    "mudb": "0.1.0",
+    "mustreams": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",

@@ -1,317 +1,324 @@
 # mudb
-A database for HTML5 multiplayer games.
+A database for realtime server-client applications.
 
 A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.
 
 A *protocol* is a collection of message handlers which implement
 
 ## example
-This is heavily commented example showing how to create a server/client pair and protocol using `mudb`.  Each `mudb` instance consists of a `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
+Here is a minimal chat room example showing how to create a server/client pair and protocol using `mudb`.  A `mudb` instance consists of one `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
 
 1. A schema
-1. A server protocol handler
-1. A client protocol handler
-
-Here is an example of a simple chat protocol:
-
-### chat example
+2. A server protocol handler
+3. A client protocol handler
 
 **schema.js**
 
-```javascript
-// first, we define a
-import {
-    MuString,
-    MuStruct,
-    MuFloat32,
-    MuUnion,
-} from 'muschema';
+The first step of creating any applications with `mudb` is to specify a protocol schema using `muschema`.
 
-export const ChatSchema = {
+```javascript
+var muschema = require('muschema')
+var MuStruct = muschema.MuStruct
+var MuString = muschema.MuString
+
+// A protocol schema always has two properties, `server` and `client`.
+exports.ChatSchema = {
+    // data layouts of different messages received by client
     client: {
+        // data of each `chat` message contains
+        // a `name` property of string type
+        // a `text` property of string type
         chat: new MuStruct({
             name: new MuString(),
             text: new MuString(),
         }),
     },
+    // data layouts of different messages received by server
     server: {
+        // data of each `say` message is of string type
         say: new MuString(),
     },
-};
+}
 ```
 
 **server.js**
 
 ```javascript
-import { ChatSchema } from './schema';
+module.exports = function (server) {
+    var protocol = server.protocol(require('./schema').ChatSchema)
 
-export = function (server) {
-    const protocol = server.protocol(ChatSchema);
+    var clientNames = {}
 
+    // specify server-side event handlers
     protocol.configure({
+        // message handlers
         message: {
-            say: (client, text) => {
+            // called when receiving a `say` message from client
+            say: function (client, text) {
+                // Broadcast a `chat` message to all clients.  The data
+                // to be sent must conform to the structure defined by
+                // `ChatSchema.client.chat`
                 protocol.broadcast.chat({
-                    name: client.sessionId,
-                    text,
-                });
+                    name: clientNames[client.sessionId],
+                    text: text,
+                })
             },
         },
-    });
+        // called when a client connects
+        connect: function (client) {
+            clientNames[client.sessionId] = client.sessionId
+            protocol.broadcast.chat({
+                name: 'server',
+                text: clientNames[client.sessionId] + ' joined the channel',
+            })
+        },
+        // called when a client disconnects
+        disconnect: function (client) {
+            protocol.broadcast.chat({
+                name: 'server',
+                text: clientNames[client.sessionId] + ' left',
+            })
+        },
+    })
 
-    server.start();
-};
+    // launch server after adding and configuring all protocols needed
+    server.start()
+}
 ```
 
 **client.js**
 
 ```javascript
-import { ChatSchema } from './schema';
+module.exports = function (client) {
+    var messageDiv = document.createElement('div')
+    var textLabel = document.createElement('label')
+    var textInput = document.createElement('input')
 
-export = function (client) {
-    const messageDiv = document.createElement('div');
-    const messageStyle = messageDiv.style;
-    messageStyle.overflow = 'auto';
-    messageStyle.width = '400px';
-    messageStyle.height = '300px';
+    var protocol = client.protocol(require('./schema').ChatSchema)
 
-    const textDiv = document.createElement('input');
-    textDiv.type = 'text';
-    const textStyle = textDiv.style;
-    textStyle.width = '400px';
-    textStyle.padding = '0px';
-    textStyle.margin = '0px';
+    messageDiv.style.overflow = 'auto'
+    messageDiv.style.width = '400px'
+    messageDiv.style.height = '300px'
 
-    document.body.appendChild(messageDiv);
-    document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(textDiv);
+    textLabel.textContent = 'message: '
 
-    const protocol = client.protocol(ChatSchema);
+    textInput.type = 'text'
+    textInput.style.width = '400px'
+    textInput.style.padding = '0px'
+    textInput.style.margin = '0px'
 
+    document.body.appendChild(messageDiv)
+    document.body.appendChild(document.createElement('br'))
+    document.body.appendChild(textLabel)
+    document.body.appendChild(textInput)
+
+    // specify client-side event handlers
     protocol.configure({
-        ready: () => {
-            textDiv.addEventListener('keydown', (ev) => {
+        // called when client is ready to handle messages
+        ready: function () {
+            textInput.addEventListener('keydown', function (ev) {
                 if (ev.keyCode === 13) {
-                    const message = textDiv.value;
-                    textDiv.value = '';
-                    protocol.server.message.say(message);
+                    // Send a `say` message to server.  Similarly, data
+                    // to be sent must conform to the structure defined by
+                    // `ChatSchema.server.say`
+                    protocol.server.message.say(textInput.value)
+                    textInput.value = ''
                 }
-            });
+            })
         },
+        // message handlers
         message: {
-            chat: ({name, text}) => {
-                const textNode = document.createTextNode(`${name}: ${text}`);
-                messageDiv.appendChild(textNode);
-                messageDiv.appendChild(document.createElement('br'));
-            },
-        },
-    });
+            // called when receiving a `chat` message from server
+            chat: function (data) {
+                var name = data.name
+                var text = data.text
+                var textNode = document.createTextNode(name + ": " + text)
+                messageDiv.appendChild(textNode)
+                messageDiv.appendChild(document.createElement('br'))
+            }
+        }
+    })
 
-    client.start();
-};
+    // open client after adding and configuring all protocols needed
+    client.start()
+}
 ```
 
-### running the game
+To run the example,
 
+1. cd into the directory containing the three files above
+2. `npm i mudo`
+3. `mudo --socket websocket --open`
 
 # table of contents
 
 # install #
-
 ```
-npm install mudb muschema munet
+npm i mudb muweb-socket mulocal-socket
 ```
 
 # api #
 
-## protocols ##
-The first step to creating any application with `mudb` is to specify a protocol schema using [`muschema`](https://github.com/mikolalysenko/mudb/tree/master/muschema).  Each protocol then specifies two protocol interfaces, one for the client and one for the server.  A protocol interface is an object with the following properties:
+## interfaces ##
 
-* `state` which defines the state protocol
-* `message` which is an object containing all message types and their arguments
-* `rpc` which is an object containing all rpc types and their arguments
+Purely instructive interfaces:
 
-**Example:**
+* `TableOf<T>`: `{ [messageName:string]:T } | {}`
+* `ProtocolSchema`: `{ server:TableOf<AnyMuSchema>, client:TableOf<AnyMuSchema> }`
+* `Dispatch`: `(data, unreliable?:boolean) => undefined`
+* `SendRaw`: `(data:Uint8Array|string, unreliable?:boolean) => undefined`
+* `ServerMessageHandler`: `(client:MuRemoteClient, data, unreliable?:boolean) => undefined`
+* `ClientMessageHandler`: `(data, unreliable:boolean) => undefined`
 
-Here is a protocol for a simple game with a chat server
-
-```javascript
-const MuVoid = require('muschema/void')
-const MuFloat = require('muschema/float64')
-const MuStruct = require('muschema/struct')
-const MuString = require('muschema/string')
-const MuDictionary = require('muschema/dictionary')
-
-const Vec2 = MuStruct({
-    x: MuFloat(),
-    y: MuFLoat()
-})
-
-const Agent = MuStruct({
-    position: Vec2,
-    velocity: Vec2,
-    name: MuString('player')
-})
-
-module.exports = {
-    client: {
-        state: Agent,
-        message: {
-            chat: MuStruct({
-                sender: MuString(),
-                message: MuString()
-            }
-        },
-        rpc: {}
-    },
-    server: {
-        state: MuDictionary(Agent),
-        message: {
-            chat: MuString()
-        },
-        rpc: {
-            setName:[MuString(), MuVoid()]
-        }
-    }
-}
-```
-
-## server ##
-A server in `mudb` processes messages from many clients.  It may choose to accept or reject incoming connections and dispatch messages to clients as appropriate.
-
-### server constructor ###
-`mudb/server` exports the constructor for the server.  It takes an object which accepts the following arguments:
-
-* `protocol` which is a protocol schema as described above (see [`muschema`](../muschema) for more details)
-* `socketServer` a `munet` socket server instance (see [`munet`](FIXME) for more details)
-* `windowLength` an optional parameter describing the number of states to buffer
-
-**Example:**
-
-```javascript
-const server = require('mudb/server')({
-    socketServer: ..., // some socket server interface created by munet
-    protocol
-})
-```
-
-### server events ###
-Once a server is created, it is necessary to register event handlers and start the server.  This is done using the `server.start()` method.  This method takes an object that has the following properties:
-
-* `ready()` which is called when the server is started
-* `message` which is an object containing implementations of handlers for all of the message types
-* `raw`
-* `connect(client)` called when a client connects to the server
-* `disconnect(client)` called when a client disconnects from the server
-
-**Example:**
-
-Working from the chat server schema above, here is a simple server for the above chat log
-
-```javascript
-server.start({
-    ready() {
-        console.log('server started')
-    },
-    message: {
-        chat(client, msg) {
-            server.broadcast.chat(server.state[client.sessionId].name, msg)
-        }
-    },
-    rpc: {
-        setName(client, name, cb) {
-            const ids = Object.keys(server.state)
-            for (let i = 0; i < ids.length; ++i) {
-                if (server.state[ids[i]].name === name) {
-                    return cb('name already in use')
-                }
-            }
-            server.state[client.sessionId].name = name
-            return cb()
-        }
-    },
-    connect(client) {
-        server.state[client.sessionId] = client.schema.create()
-        server.broadcast.chat('server', 'player joined')
-        server.commit()
-    },
-    state(client) {
-        const serverState = server.state[client.sessionId]
-        const clientState = client.state
-
-        serverState.position.x = clientState.position.x
-        serverState.position.y = clientState.position.y
-        serverState.velocity.x = clientState.velocity.x
-        serverState.velocity.y = clientState.velocity.y
-
-        server.commit()
-    },
-    disconnect(client) {
-        delete server.state[client.sessionId]
-        server.commit()
-    }
-})
-```
-
-## client ##
-
-### client constructor ###
-
-```javascript
-const client = require('mudb/client')({
-    socket,
-    protocol
-})
-```
-
-### client events ###
-
-* `ready()`
-* `message`
-* `raw()`
-* `close()`
-
-## messages ##
-
-### broadcast ###
-
-## socket interface ##
-
+### `MuSocket` ###
 `MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.
-
-### properties ###
 
 #### `sessionId` ####
 A string representing a unique session id identifying the socket.
 
 #### `open` ####
-Boolean flag determing whether a socket is open or not.
-
-### methods ###
+A boolean flag determing whether the socket is open or not.
 
 #### `start(spec)` ####
 
-* `ready()`
-* `message(data:Uint8Array, unreliable:boolean)`
-* `close()`
+* `spec:{ ready, message, close }`
+    * `ready()`
+    * `message(data:Uint8Array|string, unreliable:boolean)`
+    * `close(error?)`
 
-#### `send(data:Uint8Array, unreliable?:boolean)` ####
+#### `send(data:Uint8Array|string, unreliable?:boolean)` ####
 
 #### `close()` ####
 
-## socket server interface ##
+### `MuSocketServer` ###
 
-### properties ###
-
-#### `clients[]` ####
+#### `clients:MuSocket[]` ####
 
 #### `open` ####
+A boolean flag determining whether the socket server is open or not.
 
-### method ###
+#### `start(spec)` ####
 
-#### `start()` ####
+* `spec:{ ready, connection, close }`
+    * `ready()`
+    * `connection(socket:MuSocket)`
+    * `close(error?)`
 
 #### `close()` ####
+
+## `MuServer(socketServer:MuSocketServer)` ##
+
+```javascript
+var httpServer = require('http').createServer(/* ... */)
+var socketServer = new require('muweb-socket').MuWebSocketServer(httpServer)
+var muServer = new require('mudb').MuServer(socketServer)
+```
+
+### `protocol(schema:ProtocolSchema) : MuServerProtocol` ###
+Adds a server protocol, and returns it to be configured.
+
+A `MuServer` can have multiple protocols.  Note that you cannot add any new protocols after the server is started.
+
+### `start(spec?)` ###
+Launches server.
+
+* `spec:{ ready?, close? }`
+    * `ready()`: called when the underlying socket server is launched
+    * `close(error?)`: called when the underlying socker server is shut down
+
+### `destroy()` ###
+Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
+
+## `MuServerProtocol` ##
+
+### `broadcast:TableOf<Dispatch>` ###
+An object of methods, each of which broadcasts to all connected clients.  Each message (delta encoded) will be handled by a specific handler.  For example, the message sent by `protocol.broadcast.shower(shampoo, true)` will be handled by the `shower` method on the corresponding client protocol, as `shower(shampoo, true)`.  So this is effectively dispatching method calls to a remote object.
+
+### `broadcastRaw:SendRaw`
+A method that broadcasts to all connected clients with "raw" (not processed, contrary to delta) messages.  The messages will be handled by the raw message handler of the corresponding client protocol.
+
+### `configure(spec)` ###
+Each protocol should be configured before the server is started and can be configured only once, by specifying the event handlers in `spec`.
+
+* `spec:{ message, ready?, connect?, raw?, disconnect?, close? }`
+    * `message:TableOf<ServerMessageHandler>` required
+    * `ready()` called when the underlying socket server is launched
+    * `connect(client:MuRemoteClient)` called when a client connects
+    * `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when a "raw" message is received
+    * `disconnect(client:MuRemoteClient)` called when a client disconnects
+    * `close()` called when the underlying socket server is shut down
+
+## `MuRemoteClient` ##
+A `MuRemoteClient` is the server-side representation of a client, used in the event handlers.
+
+### `sessionId` ###
+A string representing a unique session id identifying the client.
+
+### `message:TableOf<Dispatch>` ###
+An object of methods, each of which sends messages (delta encoded) to the corresponding client.
+
+### `sendRaw:SendRaw` ###
+A method that sends "raw" messages to the corresponding client.
+
+### `close()` ###
+Closes the reliable socket.
+
+## `MuClient(socket:MuSocket)` ##
+
+```javascript
+var socket = new require('muweb-socket/socket').MuWebSocket(spec)
+var muClient = new require('mudb').MuClient(socket)
+```
+
+### `protocol(schema:ProtocolSchema) : MuClientProtocol` ###
+Adds a client protocol, and returns it to be configured.
+
+A `MuClient` can have multiple protocols.  Note that you cannot add any new protocols after the client is started.
+
+### `start(spec?)` ###
+Runs client.
+
+* `spec:{ ready?, close? }`
+    * `ready(error?:string)` called when the client is ready to handle messages
+    * `close(error?:string)` called when all sockets are closed
+
+These happen in the given order when `client.start()`:
+
+0. client establishes a connection to server
+1. client sends its session id
+2. server receives session id and uses it to find related connection object
+    * if connection object exists, responds with `{ reliable: false }`
+    * otherwise, responds with `{ reliable: true }`
+3. server then sends schema hash (packets will arrive at client in order)
+4. client resets `onmessage` handler and `onclose` handler of underlying socket based on the value of `reliable`
+5. client then receives and verifies schema hash
+6. client sends schema hash
+7. server receives and verifies schema hash
+
+### `destroy()` ###
+Closes all sockets.
+
+## `MuClientProtocol` ##
+
+### `server:MuRemoteServer` ###
+The client-side representation of the server.
+
+### `configure(spec)` ###
+Each protocol should be configured before the client is started and can be configured only once, by specifying the event handlers in `spec`.
+
+* `spec:{ message, ready?, raw?, close? }`
+    * `message:TableOf<ClientMessageHandler>` required
+    * `ready()` called when the client is ready to handle messages
+    * `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message
+    * `close()` called when all sockets are closed
+
+## `MuRemoteServer` ##
+
+### `message:TableOf<Dispatch>` ###
+An object of methods, each of which sends specific messages (delta encoded) to the server.
+
+### `sendRaw:SendRaw`
+A method that sends "raw" messages to the server.
 
 # usage tips #
 
@@ -319,7 +326,7 @@ Boolean flag determing whether a socket is open or not.
 
 # more examples #
 
-# TODO
+# TODO #
 
 * more test cases
 
@@ -331,4 +338,3 @@ Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 Written in Shenzhen, China.
 
 (c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
-
