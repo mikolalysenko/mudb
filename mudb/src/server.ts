@@ -1,7 +1,7 @@
 import { MuSocket, MuSocketServer } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 
-export class MuRemoteClientProtocol<Schema extends MuAnyMessageTable> {
+export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
     public readonly message:MuMessageInterface<Schema>['userAPI'];
     public readonly sendRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void;
@@ -21,16 +21,22 @@ export class MuRemoteClientProtocol<Schema extends MuAnyMessageTable> {
 }
 
 export interface MuRemoteMessageInterface<Schema extends MuAnyProtocolSchema> {
-    api:{ [message in keyof Schema['server']]:(client:MuRemoteClientProtocol<Schema['client']>, data:Schema['server'][message]['identity'], unreliable?:boolean) => void };
+    api:{
+        [message in keyof Schema['server']]:(
+            client:MuRemoteClient<Schema['client']>,
+            data:Schema['server'][message]['identity'],
+            unreliable?:boolean,
+        ) => void;
+    };
 }
 
 const noop = function () {};
 
 export class MuServerProtocolSpec {
     public messageHandlers = {};
-    public rawHandler:(client, bytes:Uint8Array|string, unreliable:boolean) => void = noop;
     public readyHandler:() => void = noop;
     public connectHandler:(client) => void = noop;
+    public rawHandler:(client, bytes:Uint8Array|string, unreliable:boolean) => void = noop;
     public disconnectHandler:(client) => void = noop;
     public closeHandler:() => void = noop;
 }
@@ -38,39 +44,39 @@ export class MuServerProtocolSpec {
 export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly schema:Schema;
     public readonly server:MuServer;
-    public readonly clients:{ [sessionId:string]:MuRemoteClientProtocol<Schema['client']> } = {};
+    public readonly clients:{ [sessionId:string]:MuRemoteClient<Schema['client']> } = {};
 
     public broadcast = <MuMessageInterface<Schema['client']>['userAPI']>{};
     public broadcastRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void = noop;
 
     public configured:boolean = false;
 
-    private _protoSpec:MuServerProtocolSpec;
+    private _protocolSpec:MuServerProtocolSpec;
 
-    constructor (schema:Schema, server:MuServer, protoSpec:MuServerProtocolSpec) {
+    constructor (schema:Schema, server:MuServer, protocolSpec:MuServerProtocolSpec) {
         this.schema = schema;
         this.server = server;
-        this._protoSpec = protoSpec;
+        this._protocolSpec = protocolSpec;
     }
 
     public configure (spec:{
         message:MuRemoteMessageInterface<Schema>['api'];
-        raw?:(client:MuRemoteClientProtocol<Schema['client']>, data:Uint8Array|string, unreliable:boolean) => void;
+        raw?:(client:MuRemoteClient<Schema['client']>, data:Uint8Array|string, unreliable:boolean) => void;
         ready?:() => void;
-        connect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
-        disconnect?:(client:MuRemoteClientProtocol<Schema['client']>) => void;
+        connect?:(client:MuRemoteClient<Schema['client']>) => void;
+        disconnect?:(client:MuRemoteClient<Schema['client']>) => void;
         close?:() => void;
     }) {
         if (this.configured) {
             throw new Error('protocol already configured');
         }
         this.configured = true;
-        this._protoSpec.messageHandlers = spec.message;
-        this._protoSpec.rawHandler = spec.raw || noop;
-        this._protoSpec.connectHandler = spec.connect || noop;
-        this._protoSpec.disconnectHandler = spec.disconnect || noop;
-        this._protoSpec.readyHandler = spec.ready || noop;
-        this._protoSpec.closeHandler = spec.close || noop;
+        this._protocolSpec.messageHandlers = spec.message;
+        this._protocolSpec.readyHandler = spec.ready || noop;
+        this._protocolSpec.connectHandler = spec.connect || noop;
+        this._protocolSpec.rawHandler = spec.raw || noop;
+        this._protocolSpec.disconnectHandler = spec.disconnect || noop;
+        this._protocolSpec.closeHandler = spec.close || noop;
     }
 }
 
@@ -78,7 +84,7 @@ export interface MuAnyServerProtocol extends MuServerProtocol<MuAnyProtocolSchem
 
 export class MuServer {
     public protocols:MuAnyServerProtocol[] = [];
-    private _protocolSpec:MuServerProtocolSpec[] = [];
+    private _protocolSpecs:MuServerProtocolSpec[] = [];
 
     public running:boolean = false;
 
@@ -118,8 +124,8 @@ export class MuServer {
                     protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets);
                 });
 
-                this._protocolSpec.forEach((protoSpec) => {
-                    protoSpec.readyHandler();
+                this._protocolSpecs.forEach((protocolSpec) => {
+                    protocolSpec.readyHandler();
                 });
 
                 if (spec && spec.ready) {
@@ -132,26 +138,27 @@ export class MuServer {
                 }
             },
             connection: (socket) => {
+                // one client object per protocol
                 const clientObjects = new Array(this.protocols.length);
                 const protocolHandlers = new Array(this.protocols.length);
                 this.protocols.forEach((protocol, id) => {
                     const factory = clientFactory.protocolFactories[id];
 
-                    const client = new MuRemoteClientProtocol(
+                    const client = new MuRemoteClient(
                         socket,
                         factory.createDispatch([socket]),
                         factory.createSendRaw([socket]));
                     clientObjects[id] = client;
 
-                    const protoSpec = this._protocolSpec[id];
+                    const protocolSpec = this._protocolSpecs[id];
 
                     const messageHandlers = {};
-                    Object.keys(protoSpec.messageHandlers).forEach((message) => {
-                        const handler = protoSpec.messageHandlers[message];
+                    Object.keys(protocolSpec.messageHandlers).forEach((message) => {
+                        const handler = protocolSpec.messageHandlers[message];
                         messageHandlers[message] = function (data, unreliable) { handler(client, data, unreliable); };
                     });
 
-                    const rawHandler = protoSpec.rawHandler;
+                    const rawHandler = protocolSpec.rawHandler;
                     protocolHandlers[id] = {
                         rawHandler: function (bytes, unreliable) { rawHandler(client, bytes, unreliable); },
                         messageHandlers,
@@ -187,9 +194,9 @@ export class MuServer {
                             protocol.clients[socket.sessionId] = client;
                         });
 
-                        this._protocolSpec.forEach((protoSpec, id) => {
+                        this._protocolSpecs.forEach((protocolSpec, id) => {
                             const client = clientObjects[id];
-                            protoSpec.connectHandler(client);
+                            protocolSpec.connectHandler(client);
                         });
                     },
                     message: (data, unreliable) => {
@@ -200,9 +207,9 @@ export class MuServer {
                         firstPacket = false;
                     },
                     close: () => {
-                        this._protocolSpec.forEach((protoSpec, id) => {
+                        this._protocolSpecs.forEach((protocolSpec, id) => {
                             const client = clientObjects[id];
-                            protoSpec.disconnectHandler(client);
+                            protocolSpec.disconnectHandler(client);
                         });
 
                         this.protocols.forEach((protocol) => {
@@ -218,22 +225,22 @@ export class MuServer {
 
     public destroy () {
         if (!this.running) {
-            throw new Error('client not running');
+            throw new Error('server not running');
         }
         this._closed = true;
         this.running = false;
         this._socketServer.close();
-        this._protocolSpec.forEach((protoSpec) => protoSpec.closeHandler());
+        this._protocolSpecs.forEach((protocolSpec) => protocolSpec.closeHandler());
     }
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuServerProtocol<Schema> {
         if (this._started || this._closed) {
-            throw new Error('cannot add a protocol until the client has been initialized');
+            throw new Error('cannot add a protocol until the server has been initialized');
         }
         const spec = new MuServerProtocolSpec();
         const p = new MuServerProtocol(schema, this, spec);
         this.protocols.push(p);
-        this._protocolSpec.push(spec);
+        this._protocolSpecs.push(spec);
         return p;
     }
 }

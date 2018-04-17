@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
+import { MuServer, MuServerProtocol, MuRemoteClient } from 'mudb/server';
 import { MuRPCTable, MuRPCProtocolSchema, MuRPCInterface, MuRPCProtocolSchemaInterface, createRPCProtocolSchemas, MuRPCErrorProtocol } from './rpc';
 import { MuRPCClient } from './client';
 import { callbackify } from 'util';

@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol, MuRemoteClientProtocol } from 'mudb/server';
+import { MuServer, MuServerProtocol, MuRemoteClient } from 'mudb/server';
 import {
     MuStateSchema,
     MuAnySchema,
@@ -21,9 +21,9 @@ export class MuRemoteClientState<Schema extends MuAnySchema> implements MuStateR
     public history:MuStateSet<Schema['identity']>;
     public windowSize:number;
 
-    private _client:MuRemoteClientProtocol<typeof MuDefaultStateSchema['client']>;
+    private _client:MuRemoteClient<typeof MuDefaultStateSchema['client']>;
 
-    constructor(client:MuRemoteClientProtocol<typeof MuDefaultStateSchema['client']>, schema:Schema, windowSize:number) {
+    constructor(client:MuRemoteClient<typeof MuDefaultStateSchema['client']>, schema:Schema, windowSize:number) {
         this._client = client;
         this.sessionId = client.sessionId;
         this.windowSize = windowSize;
