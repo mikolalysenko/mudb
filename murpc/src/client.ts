@@ -17,11 +17,11 @@ export class MuRemoteServerRPC<Schema extends MuRPCTable> {
 }
 
 const uniqueNumber = (() => {
-    let current = 0;
-    return () => current++;
+    let next = 0;
+    return () => next++;
 })();
 
-export class MuClientRPC<Schema extends MuRPCProtocolSchema> {
+export class MuRPCClient<Schema extends MuRPCProtocolSchema> {
     public readonly sessionId:string;
     public readonly client:MuClient;
     public readonly schema:Schema;

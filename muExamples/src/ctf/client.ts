@@ -1,6 +1,6 @@
 import { MuClient } from 'mudb/client';
 import { MuClientState } from 'mustate/client';
-import { MuClientRPC } from 'murpc/client';
+import { MuRPCClient } from 'murpc/client';
 
 import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { Map, Player, Flag, Team, Direction, Config } from './game';
@@ -25,7 +25,7 @@ export = function(client:MuClient) {
     client,
   });
   const msgProtocol = client.protocol(MsgSchema);
-  const rpcProtocol = new MuClientRPC(client, RpcSchema);
+  const rpcProtocol = new MuRPCClient(client, RpcSchema);
 
   const map = new Map(canvas.width, canvas.height);
   let myPlayer;

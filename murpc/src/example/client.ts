@@ -1,9 +1,9 @@
 import { MuClient } from 'mudb/client';
-import { MuClientRPC } from '../client';
+import { MuRPCClient } from '../client';
 import { RPCSchema } from './schema';
 
 export = function (client:MuClient) {
-    const protocol = new MuClientRPC(client, RPCSchema);
+    const protocol = new MuRPCClient(client, RPCSchema);
 
     protocol.configure({
         // functions to be executed by RPCs from server go into `rpc`

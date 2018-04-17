@@ -36,11 +36,11 @@ function removeItem (array:any[], index:number) {
 }
 
 const uniqueNumber = (() => {
-    let current = 0;
-    return () => current++;
+    let next = 0;
+    return () => next++;
 })();
 
-export class MuServerRPC<Schema extends MuRPCProtocolSchema> {
+export class MuRPCServer<Schema extends MuRPCProtocolSchema> {
     public readonly server:MuServer;
     public readonly schema:Schema;
     public readonly clients:MuRemoteClientRPC<Schema['client']>[] = [];

@@ -1,7 +1,7 @@
-import { MuServerRPC } from './server';
-import { MuClientRPC } from './client';
+import { MuRPCServer } from './server';
+import { MuRPCClient } from './client';
 
 export = {
-    MuClientRPC,
-    MuServerRPC,
+    MuRPCServer,
+    MuRPCClient,
 };

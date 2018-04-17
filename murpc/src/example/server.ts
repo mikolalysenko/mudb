@@ -1,11 +1,11 @@
 import { createHash } from 'crypto';
 
 import { MuServer } from 'mudb/server';
-import { MuServerRPC } from '../server';
+import { MuRPCServer } from '../server';
 import { RPCSchema } from './schema';
 
 export = function (server:MuServer) {
-    const protocol = new MuServerRPC(server, RPCSchema);
+    const protocol = new MuRPCServer(server, RPCSchema);
 
     protocol.configure({
         // functions to be executed by RPCs from client go into `rpc`
