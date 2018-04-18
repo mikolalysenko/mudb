@@ -2,7 +2,7 @@ import { MuSchema } from 'muschema/schema';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
 import { MuString } from 'muschema/string';
-import { MuAnyMessageTable } from '../../mudb/protocol';
+import { MuRemoteRPCClient } from './server';
 
 export type MuAnySchema = MuSchema<any>;
 export type MuRPCSchema = [ MuAnySchema, MuAnySchema ];
@@ -22,10 +22,17 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
             callback?:(err:MuRPCError|undefined, response?:RPCTable[method][1]['identity']) => void,
         ) => void
     };
-    handlerAPI:{
+    clientHandlerAPI:{
         [method in keyof RPCTable]:(
             arg:RPCTable[method][0]['identity'],
             next:(err:MuRPCError|undefined, response?:RPCTable[method][1]['identity']) => void,
+        ) => void
+    };
+    serverHandlerAPI:{
+        [method in keyof RPCTable]:(
+            arg:RPCTable[method][0]['identity'],
+            next:(err:MuRPCError|undefined, response?:RPCTable[method][1]['identity']) => void,
+            client?:MuRemoteRPCClient<RPCTable>,
         ) => void
     };
 }
