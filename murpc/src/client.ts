@@ -33,20 +33,7 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
 
     private _callbacks:{ [id:string]:(err, base) => void } = {};
 
-    constructor (client:MuClient, schema:ProtocolSchema) {
-        this.sessionId = client.sessionId;
-        this.client = client;
-        this.schema = schema;
-
-        const schemaUnfolded = unfoldRPCProtocolSchema(schema);
-        this._callProtocol = client.protocol(schemaUnfolded[0]);
-        this._responseProtocol = client.protocol(schemaUnfolded[1]);
-        this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
-
-        this.server = new MuRemoteRPCServer(this._createServerPRC());
-    }
-
-    private _createServerPRC () {
+    private _createPRCToServer () {
         const rpc = {} as { [method in keyof ProtocolSchema['server']]:(arg, next) => void };
         Object.keys(this.schema.server).forEach((method) => {
             rpc[method] = (arg, next) => {
@@ -61,6 +48,19 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
         return rpc;
     }
 
+    constructor (client:MuClient, schema:ProtocolSchema) {
+        this.sessionId = client.sessionId;
+        this.client = client;
+        this.schema = schema;
+
+        const schemaUnfolded = unfoldRPCProtocolSchema(schema);
+        this._callProtocol = client.protocol(schemaUnfolded[0]);
+        this._responseProtocol = client.protocol(schemaUnfolded[1]);
+        this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
+
+        this.server = new MuRemoteRPCServer(this._createPRCToServer());
+    }
+
     public configure (spec:{
         rpc:MuRPCInterface<ProtocolSchema['client']>['clientHandlerAPI'];
         ready?:() => void;
@@ -73,7 +73,7 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
                     handlers[method] = ({ base, id }) => {
                         spec.rpc[method](base, (err, response) => {
                             if (err) {
-                                this._responseProtocol.server.message.error({ base: err, id });
+                                this._errorProtocol.server.message.error({ message: err, id });
                             } else {
                                 this._responseProtocol.server.message[method]({
                                     base: this.schema.client[method][1].clone(response),
@@ -113,7 +113,6 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
         this._errorProtocol.configure({
             message: {
                 error: ({ message, id }) => {
-                    console.log('Error:', message);
                     delete this._callbacks[id];
                 },
             },

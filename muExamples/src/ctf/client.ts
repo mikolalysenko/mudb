@@ -36,7 +36,7 @@ export = function(client:MuClient) {
     ready: () => {
       console.log(client.sessionId);
 
-      rpcProtocol.server.rpc.joinTeam(client.sessionId, (err, teamGroup) => {
+      rpcProtocol.server.rpc.joinTeam(client.sessionId, (teamGroup) => {
         const {x, y} = getInitPosition(teamGroup);
         myPlayer = new Player(x, y, teamGroup);
         runGame();

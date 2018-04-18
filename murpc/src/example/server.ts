@@ -36,12 +36,8 @@ export = function (server:MuServer) {
             // its value should match RPCSchema['client']['sum'][0]
 
             // second argument is a callback called when return value arrives,
-            // which is available as second argument of the callback
-            // so `total` is the sum of `set`
-            client.rpc.sum(set, (err, total) => {
-                if (err) {
-                    throw new Error(err);
-                }
+            // which is available as the argument of the callback, so `total` is the sum of `set`
+            client.rpc.sum(set, (total) => {
                 console.log(`sum of ${set}: ${total}`);
             });
         },

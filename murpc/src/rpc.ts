@@ -19,7 +19,7 @@ export interface MuRPCInterface<RPCTable extends MuRPCTable> {
     callerAPI:{
         [method in keyof RPCTable]:(
             arg:RPCTable[method][0]['identity'],
-            callback?:(err:MuRPCError|undefined, response?:RPCTable[method][1]['identity']) => void,
+            callback?:(response:RPCTable[method][1]['identity']) => void,
         ) => void
     };
     clientHandlerAPI:{

@@ -49,7 +49,22 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
     private _responseProtocol:MuServerProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[1]>;
     private _errorProtocol:MuServerProtocol<typeof MuRPCErrorProtocolSchema>;
 
-    private _callbacks:{ [sessionId:string]:{ [id:string]:(err, base) => void } } = {};
+    private _callbacks:{ [sessionId:string]:{ [id:string]:(base) => void } } = {};
+
+    private _createRPCToClient (clientId) {
+        const rpc = {} as { [method in keyof ProtocolSchema]:(arg, next) => void };
+        Object.keys(this.schema.client).forEach((method) => {
+            rpc[method] = (arg, next) => {
+                const id = uniqueNumber();
+                this._callbacks[clientId][id] = next;
+                this._callProtocol.clients[clientId].message[method]({
+                    base: this.schema.client[method][0].clone(arg),
+                    id,
+                });
+            };
+        });
+        return rpc;
+    }
 
     constructor (server:MuServer, schema:ProtocolSchema) {
         this.server = server;
@@ -80,7 +95,7 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                             base,
                             (err, response) => {
                                 if (err) {
-                                    this._responseProtocol.clients[client.sessionId].message.error({ base: err, id });
+                                    this._errorProtocol.clients[client.sessionId].message.error({ message: err, id });
                                 } else {
                                     this._responseProtocol.clients[client.sessionId].message[method]({
                                         base: this.schema.server[method][1].clone(response),
@@ -101,7 +116,7 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                 }
             },
             connect: (client_) => {
-                const client = new MuRemoteRPCClient(client_, this._createClientRPC(client_.sessionId));
+                const client = new MuRemoteRPCClient(client_, this._createRPCToClient(client_.sessionId));
                 this.clients.push(client);
 
                 this._callbacks[client_.sessionId] = {};
@@ -133,7 +148,7 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                     handlers[method] = (client, { base, id }) => {
                         const clientId = client.sessionId;
                         if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
-                            this._callbacks[clientId][id](undefined, this.schema.client[method][1].clone(base));
+                            this._callbacks[clientId][id](this.schema.client[method][1].clone(base));
                             delete this._callbacks[clientId][id];
                         }
                     };
@@ -147,27 +162,11 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
             message: {
                 error: (client, { message, id }) => {
                     const clientId = client.sessionId;
-                    console.log(clientId, ': Error!', message);
-                    if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
+                    if (this._callbacks[clientId]) {
                         delete this._callbacks[clientId][id];
                     }
                 },
             },
         });
-    }
-
-    private _createClientRPC (clientId) {
-        const rpc = {} as { [method in keyof ProtocolSchema]:(arg, next) => void };
-        Object.keys(this.schema.client).forEach((method) => {
-            rpc[method] = (arg, next) => {
-                const id = uniqueNumber();
-                this._callbacks[clientId][id] = next;
-                this._callProtocol.clients[clientId].message[method]({
-                    base: this.schema.client[method][0].clone(arg),
-                    id,
-                });
-            };
-        });
-        return rpc;
     }
 }
