@@ -1,41 +1,40 @@
 # mudb
-A database for realtime server-client applications.
+A database for real-time server-client applications.
 
-A `mudb` instance consists of multiple protocols which implement different behaviors between the server and client.
+A `mudb` application has one `MuServer` and several `MuClient`s.  Each node consists of one or more protocols which define different behaviors.
 
-A *protocol* is a collection of message handlers which implement
+A *protocol* is essentially a collection of event handlers.  To define a protocol, typically you need to specify
+1. a protocol schema
+2. a server protocol
+3. a client protocol
 
 ## example
-Here is a minimal chat room example showing how to create a server/client pair and protocol using `mudb`.  A `mudb` instance consists of one `MuServer` and several `MuClient`s.  Each node in the system consists of one or more protocols which define different behaviors.  To create a protocol a user must specify the following data:
-
-1. A schema
-2. A server protocol handler
-3. A client protocol handler
+Here is a minimal chat room demo, heavily documented to show how to define a protocol using `mudb`.
 
 **schema.js**
-
-The first step of creating any applications with `mudb` is to specify a protocol schema using `muschema`.
+The first step of creating any applications with `mudb` is to specify a protocol schema using `muschema`, defining the data structures of different messages that all parties agree on.
 
 ```javascript
 var muschema = require('muschema')
 var MuStruct = muschema.MuStruct
 var MuString = muschema.MuString
 
-// A protocol schema always has two properties, `server` and `client`.
+// define a protocol schema, which always contains a `server` and a `client` property
 exports.ChatSchema = {
-    // data layouts of different messages received by client
+    // define data structures of messages sent to client
     client: {
-        // data of each `chat` message contains
+        // each `chat` message contains a record with
         // a `name` property of string type
         // a `text` property of string type
+        // both should always be present
         chat: new MuStruct({
             name: new MuString(),
             text: new MuString(),
         }),
     },
-    // data layouts of different messages received by server
+    // define data structures of messages sent to server
     server: {
-        // data of each `say` message is of string type
+        // each `say` message contains a string
         say: new MuString(),
     },
 }
@@ -44,44 +43,59 @@ exports.ChatSchema = {
 **server.js**
 
 ```javascript
-module.exports = function (server) {
-    var protocol = server.protocol(require('./schema').ChatSchema)
+function randomName () {
+    return Math.random().toString(36).substr(2, 11)
+}
 
+// `server` should be a `MuServer`
+module.exports = function (server) {
+    // create a protocol and add it to `server`
+    var serverProtocol = server.protocol(require('./schema').ChatSchema)
+
+    // a dictionary of clients' displayed names
     var clientNames = {}
 
-    // specify server-side event handlers
-    protocol.configure({
-        // message handlers
+    // configure protocol by specifying handlers
+    serverProtocol.configure({
+        // handlers for client messages
         message: {
-            // called when receiving a `say` message from client
-            say: function (client, text) {
-                // Broadcast a `chat` message to all clients.  The data
-                // to be sent must conform to the structure defined by
-                // `ChatSchema.client.chat`
-                protocol.broadcast.chat({
+            // whenever a client sends a `say` message (i.e. clientProtocol.server.message.say()),
+            // server should broadcast the content to everyone, along with sender's displayed name
+            say: function (client, content) {
+                // fist argument of every client message handler is a reference
+                // to client who sent the message
+
+                // broadcast sender's name and text content, both of which are strings contained in a record,
+                // as described in `ChatSchema.client.chat`, to all connected clients in a `chat` message
+                serverProtocol.broadcast.chat({
                     name: clientNames[client.sessionId],
-                    text: text,
+                    text: content,
                 })
             },
         },
-        // called when a client connects
+        // when a client connects, server should inform everyone
         connect: function (client) {
-            clientNames[client.sessionId] = client.sessionId
-            protocol.broadcast.chat({
+            // set client's displayed name to a random string
+            clientNames[client.sessionId] = randomName()
+            // also broadcast a `chat` message to all connected clients
+            // except this time the message is from server
+            serverProtocol.broadcast.chat({
                 name: 'server',
                 text: clientNames[client.sessionId] + ' joined the channel',
             })
         },
-        // called when a client disconnects
+        // when a client disconnects, server should also inform everyone
         disconnect: function (client) {
-            protocol.broadcast.chat({
+            serverProtocol.broadcast.chat({
                 name: 'server',
                 text: clientNames[client.sessionId] + ' left',
             })
+            // stop tracking client's displayed name
+            delete clientNames[client.sessionId]
         },
     })
 
-    // launch server after adding and configuring all protocols needed
+    // launch server after creating and configuring all protocols
     server.start()
 }
 ```
@@ -89,12 +103,14 @@ module.exports = function (server) {
 **client.js**
 
 ```javascript
+// `client` should be a `MuClient`
 module.exports = function (client) {
     var messageDiv = document.createElement('div')
     var textLabel = document.createElement('label')
     var textInput = document.createElement('input')
 
-    var protocol = client.protocol(require('./schema').ChatSchema)
+    // create a protocol and add it to `client`
+    var clientProtocol = client.protocol(require('./schema').ChatSchema)
 
     messageDiv.style.overflow = 'auto'
     messageDiv.style.width = '400px'
@@ -112,26 +128,31 @@ module.exports = function (client) {
     document.body.appendChild(textLabel)
     document.body.appendChild(textInput)
 
-    // specify client-side event handlers
-    protocol.configure({
-        // called when client is ready to handle messages
+    // configure protocol by specifying handlers
+    clientProtocol.configure({
+        // when client is ready to handle messages
         ready: function () {
             textInput.addEventListener('keydown', function (ev) {
+                // when pressing `enter` on the input box
                 if (ev.keyCode === 13) {
-                    // Send a `say` message to server.  Similarly, data
-                    // to be sent must conform to the structure defined by
-                    // `ChatSchema.server.say`
-                    protocol.server.message.say(textInput.value)
+                    // send a `say` message to server
+                    // the message being sent contains the text in the input box,
+                    // a string, as described by `ChatSchema.server.say`
+                    clientProtocol.server.message.say(textInput.value)
+                    // empty input box
                     textInput.value = ''
                 }
             })
         },
-        // message handlers
+        // handlers for server messages
         message: {
-            // called when receiving a `chat` message from server
+            // whenever server sends a `chat` message (e.g. serverProtocol.broadcast.chat()),
             chat: function (data) {
+                // which contains name of whoever said something and the content
                 var name = data.name
                 var text = data.text
+
+                // print name and content out in message box
                 var textNode = document.createTextNode(name + ": " + text)
                 messageDiv.appendChild(textNode)
                 messageDiv.appendChild(document.createElement('br'))
@@ -139,12 +160,12 @@ module.exports = function (client) {
         }
     })
 
-    // open client after adding and configuring all protocols needed
+    // open client after creating and configuring all protocols
     client.start()
 }
 ```
 
-To run the example,
+To run the demo,
 
 1. cd into the directory containing the three files above
 2. `npm i mudo`
