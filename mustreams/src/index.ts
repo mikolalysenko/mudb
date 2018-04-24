@@ -186,7 +186,7 @@ export class MuReadStream {
     constructor (data:Uint8Array) {
         this.buffer = new MuBuffer(data.buffer);
         this.offset = data.byteOffset;
-        this.length = data.byteLength - data.byteOffset;
+        this.length = data.byteLength + data.byteOffset;
     }
 
     public readInt8 () : number {
@@ -247,14 +247,14 @@ export class MuReadStream {
             return (x0 & 0x7f) |
                 (x1 << 7);
         }
-        const x2 = bytes[offset++]
+        const x2 = bytes[offset++];
         if (x2 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
                 ((x1 & 0x7f) << 7) |
                 (x2 << 14);
         }
-        const x3 = bytes[offset++]
+        const x3 = bytes[offset++];
         if (x3 < 0x80) {
             this.offset = offset;
             return (x0 & 0x7f) |
@@ -272,11 +272,11 @@ export class MuReadStream {
     }
 
     public readASCIIOf (length:number) : string {
-        const offset = this.offset;
+        const head = this.offset;
         this.offset += length;
 
         let str = '';
-        for (let i = offset; i < this.offset; ++i) {
+        for (let i = head; i < this.offset; ++i) {
             str += String.fromCharCode(this.buffer.uint8[i]);
         }
         return str;
