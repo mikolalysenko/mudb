@@ -182,50 +182,60 @@ npm i mudb muweb-socket mulocal-socket
 
 ## interfaces ##
 
-Purely instructive interfaces:
-
+Purely instructive types used to describe the API:
 * `TableOf<T>`: `{ [messageName:string]:T } | {}`
 * `ProtocolSchema`: `{ server:TableOf<AnyMuSchema>, client:TableOf<AnyMuSchema> }`
-* `Dispatch`: `(data, unreliable?:boolean) => undefined`
-* `SendRaw`: `(data:Uint8Array|string, unreliable?:boolean) => undefined`
-* `ServerMessageHandler`: `(client:MuRemoteClient, data, unreliable?:boolean) => undefined`
-* `ClientMessageHandler`: `(data, unreliable:boolean) => undefined`
+* `DispatchFn`: `(data, unreliable?:boolean) => undefined`
+* `SendRawFn`: `(data:Uint8Array|string, unreliable?:boolean) => undefined`
+* `ClientMessageHandler`: `(client:MuRemoteClient, data, unreliable?:boolean) => undefined`
+* `ServerMessageHandler`: `(data, unreliable:boolean) => undefined`
+
+To create a `mudb` application, a socket (i.e. a `MuSocket` instance) and a corresponding socket server (i.e. a `MuSocketServer` instance) are required.  We try to make `mudb` extensible by allowing you to use a customized socket-server implementation.
+
+A few socket modules are provided out of the box alongside `mudb` (e.g. [muweb-socket](../muweb-socket)).  Make sure that you have checked those out before trying to create your own socket modules.
 
 ### `MuSocket` ###
-`MuSocket` sockets are bidirectional sockets.  They support both reliable, ordered streams and unreliable optimisitic packet transfer.
+`MuSocket`s are **bidirectional** sockets.  They support both reliable, ordered streams and unreliable optimistic packet transfer.  Any `mudb` sockets should implement the `MuSocket` interface as described below.
 
-#### `sessionId` ####
-A string representing a unique session id identifying the socket.
+#### `sessionId:string` ####
+Required property, a unique session id identifying the socket
 
-#### `open` ####
-A boolean flag determing whether the socket is open or not.
+#### `open:boolean` ####
+Required property, a flag determining whether the socket is open
 
 #### `start(spec)` ####
+Required method, can be used to establish a connection to the server from the client side
 
 * `spec:{ ready, message, close }`
-    * `ready()`
-    * `message(data:Uint8Array|string, unreliable:boolean)`
-    * `close(error?)`
+    * `ready()` should be called when the connection is ready
+    * `message(data:Uint8Array|string, unreliable:boolean)` should be called when receiving messages
+    * `close(error?)` should be called when the connection is closed
 
 #### `send(data:Uint8Array|string, unreliable?:boolean)` ####
+Required method, used to send messages to the other end of the connection
 
 #### `close()` ####
+Required method, used to close the connection
 
 ### `MuSocketServer` ###
+A `MuSocketServer` handles client communications coming through the corresponding `MuSocket`s.  Any `mudb` socket servers should implement the `MuSocketServer` interface as described below.
 
 #### `clients:MuSocket[]` ####
+Required property, server-side mocks of connected clients
 
-#### `open` ####
-A boolean flag determining whether the socket server is open or not.
+#### `open:boolean` ####
+Required property, a flag determining whether the socket server is running
 
 #### `start(spec)` ####
+Required method, used to launch the socket server
 
 * `spec:{ ready, connection, close }`
-    * `ready()`
-    * `connection(socket:MuSocket)`
-    * `close(error?)`
+    * `ready()` should be called when the socket server is launched
+    * `connection(client:MuSocket)` should be called when a client connects
+    * `close(error?)` should be called when the socket server is closed
 
 #### `close()` ####
+Required method, used to shut down the socket server
 
 ## `MuServer(socketServer:MuSocketServer)` ##
 
@@ -245,29 +255,29 @@ Launches server.
 
 * `spec:{ ready?, close? }`
     * `ready()`: called when the underlying socket server is launched
-    * `close(error?)`: called when the underlying socker server is shut down
+    * `close(error?)`: called when the underlying socket server is closed
 
 ### `destroy()` ###
 Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
 
 ## `MuServerProtocol` ##
 
-### `broadcast:TableOf<Dispatch>` ###
+### `broadcast:TableOf<DispatchFn>` ###
 An object of methods, each of which broadcasts to all connected clients.  Each message (delta encoded) will be handled by a specific handler.  For example, the message sent by `protocol.broadcast.shower(shampoo, true)` will be handled by the `shower` method on the corresponding client protocol, as `shower(shampoo, true)`.  So this is effectively dispatching method calls to a remote object.
 
-### `broadcastRaw:SendRaw`
+### `broadcastRaw:SendRawFn`
 A method that broadcasts to all connected clients with "raw" (not processed, contrary to delta) messages.  The messages will be handled by the raw message handler of the corresponding client protocol.
 
 ### `configure(spec)` ###
 Each protocol should be configured before the server is started and can be configured only once, by specifying the event handlers in `spec`.
 
 * `spec:{ message, ready?, connect?, raw?, disconnect?, close? }`
-    * `message:TableOf<ServerMessageHandler>` required
+    * `message:TableOf<ClientMessageHandler>` required
     * `ready()` called when the underlying socket server is launched
     * `connect(client:MuRemoteClient)` called when a client connects
     * `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when a "raw" message is received
     * `disconnect(client:MuRemoteClient)` called when a client disconnects
-    * `close()` called when the underlying socket server is shut down
+    * `close()` called when the underlying socket server is closed
 
 ## `MuRemoteClient` ##
 A `MuRemoteClient` is the server-side representation of a client, used in the event handlers.
@@ -275,10 +285,10 @@ A `MuRemoteClient` is the server-side representation of a client, used in the ev
 ### `sessionId` ###
 A string representing a unique session id identifying the client.
 
-### `message:TableOf<Dispatch>` ###
+### `message:TableOf<DispatchFn>` ###
 An object of methods, each of which sends messages (delta encoded) to the corresponding client.
 
-### `sendRaw:SendRaw` ###
+### `sendRaw:SendRawFn` ###
 A method that sends "raw" messages to the corresponding client.
 
 ### `close()` ###
@@ -303,19 +313,6 @@ Runs client.
     * `ready(error?:string)` called when the client is ready to handle messages
     * `close(error?:string)` called when all sockets are closed
 
-These happen in the given order when `client.start()`:
-
-0. client establishes a connection to server
-1. client sends its session id
-2. server receives session id and uses it to find related connection object
-    * if connection object exists, responds with `{ reliable: false }`
-    * otherwise, responds with `{ reliable: true }`
-3. server then sends schema hash (packets will arrive at client in order)
-4. client resets `onmessage` handler and `onclose` handler of underlying socket based on the value of `reliable`
-5. client then receives and verifies schema hash
-6. client sends schema hash
-7. server receives and verifies schema hash
-
 ### `destroy()` ###
 Closes all sockets.
 
@@ -328,17 +325,17 @@ The client-side representation of the server.
 Each protocol should be configured before the client is started and can be configured only once, by specifying the event handlers in `spec`.
 
 * `spec:{ message, ready?, raw?, close? }`
-    * `message:TableOf<ClientMessageHandler>` required
+    * `message:TableOf<ServerMessageHandler>` required
     * `ready()` called when the client is ready to handle messages
     * `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message
     * `close()` called when all sockets are closed
 
 ## `MuRemoteServer` ##
 
-### `message:TableOf<Dispatch>` ###
+### `message:TableOf<DispatchFn>` ###
 An object of methods, each of which sends specific messages (delta encoded) to the server.
 
-### `sendRaw:SendRaw`
+### `sendRaw:SendRawFn`
 A method that sends "raw" messages to the server.
 
 # usage tips #
