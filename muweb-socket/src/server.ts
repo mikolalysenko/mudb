@@ -58,7 +58,15 @@ export class MuWebSocketConnection {
             }
         };
         this.reliableSocket.onclose = () => {
-            this._handleClose();
+            this.closed = true;
+
+            for (let i = 0; i < this.unreliableSockets.length; ++i) {
+                this.unreliableSockets[i].close();
+            }
+
+            this.onClose();
+            // remove connection from server
+            this.serverClose();
         };
     }
 
@@ -96,18 +104,6 @@ export class MuWebSocketConnection {
 
     public close () {
         this.reliableSocket.close();
-    }
-
-    private _handleClose () {
-        this.closed = true;
-
-        for (let i = 0; i < this.unreliableSockets.length; ++i) {
-            this.unreliableSockets[i].close();
-        }
-
-        this.onClose();
-        // remove connection from server
-        this.serverClose();
     }
 }
 
