@@ -16,7 +16,7 @@ export interface UWSSocketInterface {
 
 function noop () {}
 
-export class MuWebSocketConnectionImpl {
+export class MuWebSocketConnection {
     public readonly sessionId:string;
 
     public started = false;
@@ -114,13 +114,13 @@ export class MuWebSocketConnectionImpl {
 export class MuWebSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
 
-    private _connection:MuWebSocketConnectionImpl;
+    private _connection:MuWebSocketConnection;
 
     public open = false;
     private _started = false;
     private _closed = false;
 
-    constructor (connection:MuWebSocketConnectionImpl) {
+    constructor (connection:MuWebSocketConnection) {
         this.sessionId = connection.sessionId;
         this._connection = connection;
     }
@@ -176,7 +176,7 @@ export class MuWebSocketClient implements MuSocket {
 }
 
 export class MuWebSocketServer implements MuSocketServer {
-    private _connections:MuWebSocketConnectionImpl[] = [];
+    private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
 
     public open = false;
@@ -194,7 +194,7 @@ export class MuWebSocketServer implements MuSocketServer {
         this._httpServer = spec.server;
     }
 
-    private _findConnection (sessionId:string) : MuWebSocketConnectionImpl | null {
+    private _findConnection (sessionId:string) : MuWebSocketConnection | null {
         for (let i = 0; i < this._connections.length; ++i) {
             if (this._connections[i].sessionId === sessionId) {
                 return this._connections[i];
@@ -244,7 +244,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                 }));
 
                                 // one connection object per client
-                                connection = new MuWebSocketConnectionImpl(sessionId, socket, () => {
+                                connection = new MuWebSocketConnection(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
                                         for (let i = this.clients.length - 1; i >= 0; --i) {
