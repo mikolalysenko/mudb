@@ -26,7 +26,7 @@ export class MuWebSocketConnection {
     public reliableSocket:UWSSocketInterface;
     public unreliableSockets:UWSSocketInterface[] = [];
 
-    public nextSocketSend = 0;
+    private _nextSocketSend = 0;
 
     public pendingMessages:(Uint8Array|string)[] = [];
 
@@ -87,7 +87,7 @@ export class MuWebSocketConnection {
 
         if (unreliable) {
             if (this.unreliableSockets.length > 0) {
-                this.unreliableSockets[this.nextSocketSend++ % this.unreliableSockets.length].send(data);
+                this.unreliableSockets[this._nextSocketSend++ % this.unreliableSockets.length].send(data);
             }
         } else {
             this.reliableSocket.send(data);
