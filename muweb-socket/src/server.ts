@@ -122,11 +122,11 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public start (spec:MuSocketSpec) {
+        if (this._closed) {
+            throw new Error('cannot start closed socket');
+        }
         if (this._started) {
             throw new Error('socket already started');
-        }
-        if (this._closed) {
-            throw new Error('socket already closed');
         }
         this._started = true;
 
@@ -200,11 +200,11 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
+        if (this._closed) {
+            throw new Error('cannot start closed socket server');
+        }
         if (this._started) {
             throw new Error('web socket server already started');
-        }
-        if (this._closed) {
-            throw new Error('web socket server already closed');
         }
         this._started = true;
 
