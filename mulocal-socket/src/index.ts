@@ -23,12 +23,11 @@ class BufferWrapper {
     public bytes:Uint8Array;
 
     constructor (data:Uint8Array) {
-        const size = data.length;
-        const buffer = allocBuffer(size);
-        const bytes = buffer.uint8.subarray(0, size);
-        bytes.set(data);
-        this._buffer = buffer;
-        this.bytes = bytes;
+        this._buffer = allocBuffer(data.length);
+
+        // make a copy of `data`
+        this.bytes = this._buffer.uint8.subarray(0, data.length);
+        this.bytes.set(data);
     }
 
     public free () {
@@ -44,13 +43,14 @@ export class MuLocalSocket implements MuSocket {
     private _server:MuLocalSocketServer;
 
     public _duplex:MuLocalSocket;
-    public _onMessage:MuMessageHandler = noop;
-    public _onUnreliableMessage:MuMessageHandler = noop;
-    public _onClose:MuCloseHandler = noop;
 
-    private _started:boolean = false;
-    public _closed:boolean = false;
-    public open:boolean = false;
+    private _onMessage:MuMessageHandler = noop;
+    private _onUnreliableMessage:MuMessageHandler = noop;
+    private _onClose:MuCloseHandler = noop;
+
+    private _started = false;
+    private _closed = false;
+    public open = false;
 
     constructor (sessionId:string, server:MuLocalSocketServer) {
         this.sessionId = sessionId;
@@ -61,65 +61,31 @@ export class MuLocalSocket implements MuSocket {
         setTimeout(
             () => {
                 if (this._closed) {
-                    spec.ready.call(this, 'socket closed');
+                    spec.close('cannot start closed socket');
                     return;
                 }
                 if (this._started) {
-                    spec.ready.call(this, 'socket already started');
+                    spec.close('socket already started');
                     return;
                 }
-                this._onMessage = spec.message;
-                this._onClose = spec.close;
+
                 this._started = true;
                 this.open = true;
 
-                spec.ready.call(this);
+                this._onMessage = spec.message;
+                this._onClose = spec.close;
+
+                spec.ready();
             },
             0);
     }
 
-    private _pendingMessages:PendingMessage[] = [];
-    private _pendingDrainTimeout;
-    private _handleDrain = () => {
-        this._pendingDrainTimeout = 0;
-        for (let i = 0; i < this._pendingMessages.length; ++i) {
-            if (this._closed) {
-                return;
-            }
-            const message = this._pendingMessages[i];
-            try {
-                if (typeof message === 'string') {
-                    this._duplex._onMessage(message, false);
-                } else {
-                    this._duplex._onMessage(message.bytes, false);
-                    message.free();
-                }
-            } catch (e) { }
-        }
-        this._pendingMessages.length = 0;
-    }
-
-    public send(data:MuData, unreliable?:boolean) {
-        if (this._closed) {
-            return;
-        }
-        const wrapped = typeof data === 'string' ? data : new BufferWrapper(data);
-        if (unreliable) {
-            this._pendingUnreliableMessages.push(wrapped);
-            setTimeout(this._handleUnreliableDrain, 0);
-        } else {
-            this._pendingMessages.push(wrapped);
-            if (!this._pendingDrainTimeout) {
-                this._pendingDrainTimeout = setTimeout(this._handleDrain, 0);
-            }
-        }
-    }
-
     private _pendingUnreliableMessages:PendingMessage[] = [];
-    private _handleUnreliableDrain = () => {
+    private _drainUnreliable = () => {
         if (this._closed) {
             return;
         }
+
         const message = this._pendingUnreliableMessages.pop();
         if (typeof message === 'string') {
             this._duplex._onMessage(message, true);
@@ -129,12 +95,59 @@ export class MuLocalSocket implements MuSocket {
         }
     }
 
+    private _pendingMessages:PendingMessage[] = [];
+    private _drainTimeout;
+    private _drain = () => {
+        // assuming timeout IDs always positive
+        // indicate the draining task has been carried out
+        this._drainTimeout = 0;
+
+        if (this._closed) {
+            return;
+        }
+
+        for (let i = 0; i < this._pendingMessages.length; ++i) {
+            const message = this._pendingMessages[i];
+            if (typeof message === 'string') {
+                this._duplex._onMessage(message, false);
+            } else {
+                this._duplex._onMessage(message.bytes, false);
+                message.free();
+            }
+        }
+        this._pendingMessages.length = 0;
+    }
+
+    // draining reliable messages is scheduled only when no draining tasks are waiting,
+    // to ensure messages are handled in correct order
+    // while scheduling of draining unreliable message happen whenever one is "sent"
+    // and they are "drained" one at a time, no handling order guaranteed
+    public send (data_:MuData, unreliable?:boolean) {
+        if (this._closed) {
+            return;
+        }
+
+        const data = typeof data_ === 'string' ? data_ : new BufferWrapper(data_);
+        if (unreliable) {
+            this._pendingUnreliableMessages.push(data);
+            setTimeout(this._drainUnreliable, 0);
+        } else {
+            this._pendingMessages.push(data);
+            // if no awaiting draining task
+            if (!this._drainTimeout) {
+                this._drainTimeout = setTimeout(this._drain, 0);
+            }
+        }
+    }
+
     public close () {
         if (this._closed) {
             return;
         }
+
         this._closed = true;
         this.open = false;
+
         this._server._removeSocket(this);
         this._onClose();
         this._duplex.close();
@@ -151,19 +164,16 @@ function removeIfExists (array, element) {
 
 export class MuLocalSocketServer implements MuSocketServer {
     public clients:MuSocket[] = [];
-
     public _pendingSockets:MuSocket[] = [];
 
-    private _started:boolean = false;
-    private _closed:boolean = false;
-    public open:boolean = false;
+    private _started = false;
+    private _closed = false;
+    public open = false;
 
     private _onConnection:MuConnectionHandler;
     private _onClose:MuCloseHandler;
 
-    constructor () {
-    }
-
+    // should only be used in this module
     public _handleConnection (socket) {
         if (this.open) {
             this.clients.push(socket);
@@ -175,6 +185,7 @@ export class MuLocalSocketServer implements MuSocketServer {
         }
     }
 
+    // should only be used in this module
     public _removeSocket (socket) {
         removeIfExists(this.clients, socket);
         removeIfExists(this._pendingSockets, socket);
@@ -183,28 +194,39 @@ export class MuLocalSocketServer implements MuSocketServer {
     public start (spec:MuSocketServerSpec) {
         setTimeout(
             () => {
-                if (this._started) {
-                    return spec.ready.call(this, 'server already started');
+                if (this._closed) {
+                    spec.close('cannot start closed socket server');
+                    return;
                 }
-                this._onConnection = spec.connection;
-                this._onClose = spec.close;
+                if (this._started) {
+                    spec.close('socket server already started');
+                    return;
+                }
+
                 this._started = true;
                 this.open = true;
-                spec.ready.call(this);
 
+                this._onConnection = spec.connection;
+                this._onClose = spec.close;
+
+                spec.ready();
+
+                // _pendingSockets -> clients
                 while (this._pendingSockets.length > 0) {
-                    const socket = this._pendingSockets.pop();
-                    this._handleConnection(socket);
+                    this._handleConnection(this._pendingSockets.pop());
                 }
             },
             0);
     }
 
-    public close() {
-        if (this._started || this._closed) {
+    public close () {
+        if (!this._started || this._closed) {
             return;
         }
+
+        this._closed = true;
         this.open = false;
+
         for (let i = this.clients.length - 1; i >= 0; --i) {
             this.clients[i].close();
         }
@@ -220,11 +242,14 @@ export function createLocalSocket (spec:{
     sessionId:MuSessionId;
     server:MuLocalSocketServer;
 }) : MuLocalSocket {
-    const server = <MuLocalSocketServer>spec.server;
+    const server = spec.server;
+
+    // manually spawn and relate sockets on both sides
     const clientSocket = new MuLocalSocket(spec.sessionId, server);
-    const serverSocket = new MuLocalSocket(clientSocket.sessionId, server);
+    const serverSocket = new MuLocalSocket(spec.sessionId, server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
+
     server._handleConnection(serverSocket);
     return clientSocket;
 }
