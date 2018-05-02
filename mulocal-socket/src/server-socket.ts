@@ -3,8 +3,8 @@ import {
     MuSocketServer,
     MuSocketServerSpec,
     MuSessionId,
-    MuSessionData,
     MuData,
+    MuSocketState,
     MuMessageHandler,
     MuCloseHandler,
     MuSocketSpec,
@@ -48,9 +48,7 @@ export class MuLocalSocket implements MuSocket {
     private _onUnreliableMessage:MuMessageHandler = noop;
     private _onClose:MuCloseHandler = noop;
 
-    private _started = false;
-    private _closed = false;
-    public open = false;
+    public state = MuSocketState.INIT;
 
     constructor (sessionId:string, server:MuLocalSocketServer) {
         this.sessionId = sessionId;
@@ -60,17 +58,16 @@ export class MuLocalSocket implements MuSocket {
     public start (spec:MuSocketSpec) {
         setTimeout(
             () => {
-                if (this._closed) {
-                    spec.close('cannot start closed socket');
+                if (this.state === MuSocketState.OPEN) {
+                    spec.close('socket already open');
                     return;
                 }
-                if (this._started) {
-                    spec.close('socket already started');
+                if (this.state === MuSocketState.CLOSED) {
+                    spec.close('cannot reopen closed socket');
                     return;
                 }
 
-                this._started = true;
-                this.open = true;
+                this.state = MuSocketState.OPEN;
 
                 this._onMessage = spec.message;
                 this._onClose = spec.close;
@@ -82,7 +79,7 @@ export class MuLocalSocket implements MuSocket {
 
     private _pendingUnreliableMessages:PendingMessage[] = [];
     private _drainUnreliable = () => {
-        if (this._closed) {
+        if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -102,7 +99,7 @@ export class MuLocalSocket implements MuSocket {
         // indicate the draining task has been carried out
         this._drainTimeout = 0;
 
-        if (this._closed) {
+        if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -123,7 +120,7 @@ export class MuLocalSocket implements MuSocket {
     // while scheduling of draining unreliable message happen whenever one is "sent"
     // and they are "drained" one at a time, no handling order guaranteed
     public send (data_:MuData, unreliable?:boolean) {
-        if (this._closed) {
+        if (this.state === MuSocketState.CLOSED) {
             return;
         }
 
@@ -141,12 +138,11 @@ export class MuLocalSocket implements MuSocket {
     }
 
     public close () {
-        if (this._closed) {
+        if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
-        this._closed = true;
-        this.open = false;
+        this.state = MuSocketState.CLOSED;
 
         this._server._removeSocket(this);
         this._onClose();

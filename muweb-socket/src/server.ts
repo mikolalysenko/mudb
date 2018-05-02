@@ -1,6 +1,7 @@
 import ws = require('uws');
 import {
     MuSessionId,
+    MuSocketState,
     MuSocket,
     MuSocketSpec,
     MuSocketServer,
@@ -112,9 +113,7 @@ export class MuWebSocketClient implements MuSocket {
 
     private _connection:MuWebSocketConnection;
 
-    public open = false;
-    private _started = false;
-    private _closed = false;
+    public state = MuSocketState.INIT;
 
     constructor (connection:MuWebSocketConnection) {
         this.sessionId = connection.sessionId;
@@ -122,13 +121,12 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public start (spec:MuSocketSpec) {
-        if (this._closed) {
-            throw new Error('cannot start closed socket');
+        if (this.state === MuSocketState.OPEN) {
+            throw new Error('socket already open');
         }
-        if (this._started) {
-            throw new Error('socket already started');
+        if (this.state === MuSocketState.CLOSED) {
+            throw new Error('cannot reopen closed socket');
         }
-        this._started = true;
 
         setTimeout(
             () => {
@@ -137,12 +135,11 @@ export class MuWebSocketClient implements MuSocket {
                 // hook handlers on socket
                 this._connection.onMessage = spec.message;
                 this._connection.onClose = () => {
-                    this._closed = true;
-                    this.open = false;
+                    this.state = MuSocketState.CLOSED;
                     spec.close();
                 };
 
-                this.open = true;
+                this.state = MuSocketState.OPEN;
 
                 spec.ready();
 
@@ -154,8 +151,7 @@ export class MuWebSocketClient implements MuSocket {
 
                 // if socket already closed, then fire close event immediately
                 if (this._connection.closed) {
-                    this._closed = true;
-                    this.open = false;
+                    this.state = MuSocketState.CLOSED;
                     spec.close();
                 }
             },
@@ -178,8 +174,6 @@ export class MuWebSocketServer implements MuSocketServer {
     public open = false;
     private _started = false;
     private _closed = false;
-
-    private _maxUnreliableConnections = 10;
 
     private _httpServer;
     private _websocketServer:ws.Server;

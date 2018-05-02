@@ -1,11 +1,14 @@
-import { MuSessionId, MuSocket, MuSocketSpec } from 'mudb/socket';
+import {
+    MuSessionId,
+    MuSocketState,
+    MuSocket,
+    MuSocketSpec,
+} from 'mudb/socket';
 
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
 
-    public open = false;
-    private _started = false;
-    private _closed = false;
+    public state = MuSocketState.INIT;
 
     private _url:string;
 
@@ -28,13 +31,12 @@ export class MuWebSocket implements MuSocket {
     }
 
     public start (spec:MuSocketSpec) {
-        if (this._started) {
-            throw new Error('socket already started');
+        if (this.state === MuSocketState.OPEN) {
+            throw new Error('socket already open');
         }
-        if (this._closed) {
-            throw new Error('socket already closed');
+        if (this.state === MuSocketState.CLOSED) {
+            throw new Error('cannot reopen closed socket');
         }
-        this._started = true;
 
         // used to reliably close sockets
         const sockets:WebSocket[] = [];
@@ -61,7 +63,7 @@ export class MuWebSocket implements MuSocket {
             // when connection is ready
             socket.onopen = () => {
                 socket.onmessage = (ev) => {
-                    if (this._closed) {
+                    if (this.state === MuSocketState.CLOSED) {
                         socket.close();
                         return;
                     }
@@ -69,11 +71,11 @@ export class MuWebSocket implements MuSocket {
                     if (typeof ev.data === 'string') {
                         // use the first message from server to decide whether this is a reliable socket
                         if (JSON.parse(ev.data).reliable) {
-                            this.open = true;
+                            this.state = MuSocketState.OPEN;
 
                             // reset message handler
                             socket.onmessage = ({ data }) => {
-                                if (!this.open) {
+                                if (this.state !== MuSocketState.OPEN) {
                                     return;
                                 }
 
@@ -84,8 +86,7 @@ export class MuWebSocket implements MuSocket {
                                 }
                             };
                             socket.onclose = () => {
-                                this._closed = true;
-                                this.open = false;
+                                this.state = MuSocketState.CLOSED;
 
                                 // avoid closing socket more than once
                                 removeSocket(socket);
@@ -102,7 +103,7 @@ export class MuWebSocket implements MuSocket {
                         } else {
                             // reset message handler
                             socket.onmessage = ({ data }) => {
-                                if (!this.open) {
+                                if (this.state !== MuSocketState.OPEN) {
                                     return;
                                 }
 
@@ -139,7 +140,7 @@ export class MuWebSocket implements MuSocket {
     }
 
     public send (data:Uint8Array, unreliable?:boolean) {
-        if (!this.open) {
+        if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -153,12 +154,12 @@ export class MuWebSocket implements MuSocket {
     }
 
     public close () {
-        if (this._closed) {
+        if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
         // necessary
-        this._closed = true;
+        this.state = MuSocketState.CLOSED;
 
         if (this._reliableSocket) {
             this._reliableSocket.close();
