@@ -23,7 +23,7 @@ export interface MuSocket {
     sessionId:MuSessionId;
     state:MuSocketState;
 
-    start(spec:MuSocketSpec);
+    open(spec:MuSocketSpec);
     send(data:MuData, unreliable?:boolean);
     close();
 }

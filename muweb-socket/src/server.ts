@@ -120,7 +120,7 @@ export class MuWebSocketClient implements MuSocket {
         this._connection = connection;
     }
 
-    public start (spec:MuSocketSpec) {
+    public open (spec:MuSocketSpec) {
         if (this.state === MuSocketState.OPEN) {
             throw new Error('socket already open');
         }

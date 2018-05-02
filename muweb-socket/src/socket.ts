@@ -30,7 +30,7 @@ export class MuWebSocket implements MuSocket {
         }
     }
 
-    public start (spec:MuSocketSpec) {
+    public open (spec:MuSocketSpec) {
         if (this.state === MuSocketState.OPEN) {
             throw new Error('socket already open');
         }

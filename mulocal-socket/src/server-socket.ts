@@ -55,7 +55,7 @@ export class MuLocalSocket implements MuSocket {
         this._server = server;
     }
 
-    public start (spec:MuSocketSpec) {
+    public open (spec:MuSocketSpec) {
         setTimeout(
             () => {
                 if (this.state === MuSocketState.OPEN) {

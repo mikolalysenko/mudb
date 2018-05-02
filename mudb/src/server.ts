@@ -180,7 +180,7 @@ export class MuServer {
                     }
                 }
 
-                socket.start({
+                socket.open({
                     ready: () => {
                         sockets.push(socket);
 
