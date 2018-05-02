@@ -1,13 +1,14 @@
 import {
     MuSocket,
+    MuSocketSpec,
     MuSocketServer,
     MuSocketServerSpec,
     MuSessionId,
     MuData,
     MuSocketState,
+    MuSocketServerState,
     MuMessageHandler,
     MuCloseHandler,
-    MuSocketSpec,
     MuConnectionHandler,
 } from 'mudb/socket';
 import {
@@ -162,22 +163,23 @@ export class MuLocalSocketServer implements MuSocketServer {
     public clients:MuSocket[] = [];
     public _pendingSockets:MuSocket[] = [];
 
-    private _started = false;
-    private _closed = false;
-    public open = false;
+    public state = MuSocketServerState.INIT;
 
     private _onConnection:MuConnectionHandler;
     private _onClose:MuCloseHandler;
 
     // should only be used in this module
     public _handleConnection (socket) {
-        if (this.open) {
-            this.clients.push(socket);
-            this._onConnection(socket);
-        } else if (this._closed) {
-            socket.close();
-        } else {
-            this._pendingSockets.push(socket);
+        switch (this.state) {
+            case MuSocketServerState.RUNNING:
+                this.clients.push(socket);
+                this._onConnection(socket);
+                break;
+            case MuSocketServerState.SHUTDOWN:
+                socket.close();
+                break;
+            default:
+                this._pendingSockets.push(socket);
         }
     }
 
@@ -190,17 +192,16 @@ export class MuLocalSocketServer implements MuSocketServer {
     public start (spec:MuSocketServerSpec) {
         setTimeout(
             () => {
-                if (this._closed) {
-                    spec.close('cannot start closed socket server');
+                if (this.state === MuSocketServerState.RUNNING) {
+                    spec.close('local socket server already running');
                     return;
                 }
-                if (this._started) {
-                    spec.close('socket server already started');
+                if (this.state === MuSocketServerState.SHUTDOWN) {
+                    spec.close('local socket server already shut down, cannot restart');
                     return;
                 }
 
-                this._started = true;
-                this.open = true;
+                this.state = MuSocketServerState.RUNNING;
 
                 this._onConnection = spec.connection;
                 this._onClose = spec.close;
@@ -216,12 +217,11 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (!this._started || this._closed) {
+        if (this.state !== MuSocketServerState.RUNNING) {
             return;
         }
 
-        this._closed = true;
-        this.open = false;
+        this.state = MuSocketServerState.SHUTDOWN;
 
         for (let i = this.clients.length - 1; i >= 0; --i) {
             this.clients[i].close();

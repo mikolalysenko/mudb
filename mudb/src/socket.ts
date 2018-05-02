@@ -28,6 +28,12 @@ export interface MuSocket {
     close();
 }
 
+export enum MuSocketServerState {
+    INIT,
+    RUNNING,
+    SHUTDOWN,
+}
+
 export type MuSocketServerSpec = {
     ready:MuReadyHandler;
     connection:MuConnectionHandler;
@@ -36,7 +42,7 @@ export type MuSocketServerSpec = {
 
 export interface MuSocketServer {
     clients:MuSocket[];
-    open:boolean;
+    state:MuSocketServerState;
 
     start(spec:MuSocketServerSpec);
     close();

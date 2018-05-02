@@ -2,6 +2,7 @@ import ws = require('uws');
 import {
     MuSessionId,
     MuSocketState,
+    MuSocketServerState,
     MuSocket,
     MuSocketSpec,
     MuSocketServer,
@@ -171,9 +172,7 @@ export class MuWebSocketServer implements MuSocketServer {
     private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
 
-    public open = false;
-    private _started = false;
-    private _closed = false;
+    public state = MuSocketServerState.INIT;
 
     private _httpServer;
     private _websocketServer:ws.Server;
@@ -194,13 +193,12 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this._closed) {
-            throw new Error('cannot start closed socket server');
+        if (this.state === MuSocketServerState.RUNNING) {
+            throw new Error('web socket server already running');
         }
-        if (this._started) {
-            throw new Error('web socket server already started');
+        if (this.state === MuSocketServerState.SHUTDOWN) {
+            throw new Error('web socket server already shut down, cannot restart');
         }
-        this._started = true;
 
         setTimeout(
             () => {
@@ -261,26 +259,25 @@ export class MuWebSocketServer implements MuSocketServer {
                     };
                 })
                 .on('close', () => {
-                    this._closed = true;
-                    this.open = false;
+                    this.state = MuSocketServerState.SHUTDOWN;
                     if (spec && spec.close) {
                         spec.close();
                     }
                 });
 
-                this.open = true;
+                this.state = MuSocketServerState.RUNNING;
                 spec.ready();
             },
             0);
     }
 
     public close () {
-        if (this._closed) {
+        if (this.state !== MuSocketServerState.RUNNING) {
             return;
         }
 
         // necessary
-        this._closed = true;
+        this.state = MuSocketServerState.SHUTDOWN;
 
         if (this._websocketServer) {
             this._websocketServer.close();
