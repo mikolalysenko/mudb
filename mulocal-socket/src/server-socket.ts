@@ -75,6 +75,11 @@ export class MuLocalSocket implements MuSocket {
                 this._onMessage = spec.message;
                 this._onClose = spec.close;
 
+                this._drain();
+                while (this._pendingUnreliableMessages.length) {
+                    this._drainUnreliable();
+                }
+
                 spec.ready();
             },
             0);
