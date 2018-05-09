@@ -43,6 +43,8 @@ export class MuLocalSocket implements MuSocket {
 
     private _server:MuLocalSocketServer;
 
+    // corresponding socket on the other end of the connection
+    // should only be used inside the module
     public _duplex:MuLocalSocket;
 
     private _onMessage:MuMessageHandler = noop;
@@ -60,11 +62,11 @@ export class MuLocalSocket implements MuSocket {
         setTimeout(
             () => {
                 if (this.state === MuSocketState.OPEN) {
-                    spec.close('socket already open');
+                    this._onClose('socket already open');
                     return;
                 }
                 if (this.state === MuSocketState.CLOSED) {
-                    spec.close('cannot reopen closed socket');
+                    this._onClose('cannot reopen closed socket');
                     return;
                 }
 
@@ -168,7 +170,7 @@ export class MuLocalSocketServer implements MuSocketServer {
     private _onConnection:MuConnectionHandler;
     private _onClose:MuCloseHandler;
 
-    // should only be used in this module
+    // should only be used inside the module
     public _handleConnection (socket) {
         switch (this.state) {
             case MuSocketServerState.RUNNING:
@@ -183,7 +185,7 @@ export class MuLocalSocketServer implements MuSocketServer {
         }
     }
 
-    // should only be used in this module
+    // should only be used inside the module
     public _removeSocket (socket) {
         removeIfExists(this.clients, socket);
         removeIfExists(this._pendingSockets, socket);
@@ -193,11 +195,11 @@ export class MuLocalSocketServer implements MuSocketServer {
         setTimeout(
             () => {
                 if (this.state === MuSocketServerState.RUNNING) {
-                    spec.close('local socket server already running');
+                    this._onClose('local socket server already running');
                     return;
                 }
                 if (this.state === MuSocketServerState.SHUTDOWN) {
-                    spec.close('local socket server already shut down, cannot restart');
+                    this._onClose('local socket server already shut down, cannot restart');
                     return;
                 }
 
@@ -206,12 +208,12 @@ export class MuLocalSocketServer implements MuSocketServer {
                 this._onConnection = spec.connection;
                 this._onClose = spec.close;
 
-                spec.ready();
-
                 // _pendingSockets -> clients
                 while (this._pendingSockets.length > 0) {
                     this._handleConnection(this._pendingSockets.pop());
                 }
+
+                spec.ready();
             },
             0);
     }
