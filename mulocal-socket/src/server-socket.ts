@@ -146,7 +146,7 @@ export class MuLocalSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this.state === MuSocketState.CLOSED) {
             return;
         }
 
@@ -224,7 +224,11 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state !== MuSocketServerState.RUNNING) {
+        if (this.state === MuSocketServerState.SHUTDOWN) {
+            return;
+        }
+        if (this.state === MuSocketServerState.INIT) {
+            this.state = MuSocketServerState.SHUTDOWN;
             return;
         }
 
