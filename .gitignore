@@ -9,6 +9,6 @@ node_modules/*
 !*/src/*.ts
 !*/src/*.js
 !*/types/*.d.ts
-!bin/*
+!*/bin/*.js
 .jsbeautifyrc
 yarn.lock
