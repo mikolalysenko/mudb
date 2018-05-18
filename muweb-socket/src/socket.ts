@@ -69,7 +69,8 @@ export class MuWebSocket implements MuSocket {
                     }
 
                     if (typeof ev.data === 'string') {
-                        // use the first message from server to decide whether this is a reliable socket
+                        // on receiving the first message from server,
+                        // determine whether this should be a reliable socket
                         if (JSON.parse(ev.data).reliable) {
                             this.state = MuSocketState.OPEN;
 
@@ -88,7 +89,7 @@ export class MuWebSocket implements MuSocket {
                             socket.onclose = () => {
                                 this.state = MuSocketState.CLOSED;
 
-                                // avoid closing socket more than once
+                                // remove the socket beforehand so that it will not be closed more than once
                                 removeSocket(socket);
 
                                 for (let i = 0; i < sockets.length; ++i) {
@@ -114,7 +115,7 @@ export class MuWebSocket implements MuSocket {
                                 }
                             };
                             socket.onclose = () => {
-                                // avoid closing socket more than once
+                                // to avoid closing the socket more than once
                                 removeSocket(socket);
 
                                 for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
@@ -154,7 +155,7 @@ export class MuWebSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this.state === MuSocketState.CLOSED) {
             return;
         }
 
