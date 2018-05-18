@@ -24,7 +24,7 @@ export class MuWebSocketConnection {
     public started = false;
     public closed = false;
 
-    // each client can have one reliable socket and several unreliable ones
+    // every client communicates through one reliable and several unreliable sockets
     public reliableSocket:UWSSocketInterface;
     public unreliableSockets:UWSSocketInterface[] = [];
 
@@ -177,6 +177,8 @@ export class MuWebSocketServer implements MuSocketServer {
     private _httpServer;
     private _websocketServer:ws.Server;
 
+    private _onClose;
+
     constructor (spec:{
         server:object,
     }) {
@@ -205,7 +207,7 @@ export class MuWebSocketServer implements MuSocketServer {
                 this._websocketServer = new ws.Server({
                     server: this._httpServer,
                 })
-                // when connection is ready
+                // called when connection is ready
                 .on('connection', (socket) => {
                     socket.onmessage = ({ data }) => {
                         try {
@@ -216,22 +218,25 @@ export class MuWebSocketServer implements MuSocketServer {
 
                             let connection = this._findConnection(sessionId);
                             if (connection) {
-                                // tell client to use this socket as unreliable one
+                                // tell client to use this socket as an unreliable one
                                 socket.send(JSON.stringify({
                                     reliable: false,
                                 }));
+
                                 // all sockets except the first one opened are used as unreliable ones
+                                // reset socket message handler
                                 connection.addUnreliableSocket(socket);
                                 return;
                             } else {
                                 // this is client's first connection since no related connection object is found
 
-                                // tell client to use this socket as reliable one
+                                // tell client to use this socket as a reliable one
                                 socket.send(JSON.stringify({
                                     reliable: true,
                                 }));
 
                                 // one connection object per client
+                                // reset socket message handler
                                 connection = new MuWebSocketConnection(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
@@ -257,13 +262,9 @@ export class MuWebSocketServer implements MuSocketServer {
                         // close connection on error
                         socket.terminate();
                     };
-                })
-                .on('close', () => {
-                    this.state = MuSocketServerState.SHUTDOWN;
-                    if (spec && spec.close) {
-                        spec.close();
-                    }
                 });
+
+                this._onClose = spec.close;
 
                 this.state = MuSocketServerState.RUNNING;
                 spec.ready();
@@ -272,15 +273,14 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state !== MuSocketServerState.RUNNING) {
+        if (this.state === MuSocketServerState.SHUTDOWN) {
             return;
         }
 
-        // necessary
         this.state = MuSocketServerState.SHUTDOWN;
 
         if (this._websocketServer) {
-            this._websocketServer.close();
+            this._websocketServer.close(this._onClose);
         }
     }
 }
