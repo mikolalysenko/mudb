@@ -12,6 +12,7 @@ socketServer.start({
     close: noop,
 })
 
-const PORT = 8888
-server.listen(PORT)
-console.log(`listening on port ${PORT}...\n`)
+const port = process.argv[2]
+server.listen(port, () => {
+    console.log(`server listening on port ${port}...\n`)
+})

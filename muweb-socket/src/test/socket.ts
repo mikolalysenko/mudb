@@ -25,8 +25,7 @@ function ipAddress () {
     return '127.0.0.1';
 }
 
-const PORT = 8888;
-const url = `ws://${ipAddress()}:${PORT}`;
+const url = `ws://${ipAddress()}:${process.env.PORT}`;
 
 test('socket initial state', (t) => {
     const socket = new MuWebSocket({

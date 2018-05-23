@@ -24,6 +24,7 @@
     "browserify": "^14.4.0",
     "budo": "^10.0.4",
     "chokidar": "^2.0.3",
+    "envify": "^4.1.0",
     "tape": "^4.8.0",
     "tape-run": "^4.0.0",
     "ts-node": "^3.3.0",
