@@ -4,7 +4,7 @@
   "description": "WebSocket emulation for mudb",
   "main": "index.js",
   "scripts": {
-    "test-server": "node test/server.js",
+    "test-server": "node bin/test-server.js",
     "test-socket": "node bin/test-socket.js"
   },
   "keywords": [
