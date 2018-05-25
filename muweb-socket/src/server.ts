@@ -257,10 +257,8 @@ export class MuWebSocketServer implements MuSocketServer {
                             }
                         } catch (e) {
                             console.error(e);
+                            socket.terminate();
                         }
-
-                        // close connection on error
-                        socket.terminate();
                     };
                 });
 
