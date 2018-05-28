@@ -1,6 +1,8 @@
 import ws = require('uws');
 import {
     MuSessionId,
+    MuSocketState,
+    MuSocketServerState,
     MuSocket,
     MuSocketSpec,
     MuSocketServer,
@@ -22,7 +24,7 @@ export class MuWebSocketConnection {
     public started = false;
     public closed = false;
 
-    // each client can have one reliable socket and several unreliable ones
+    // every client communicates through one reliable and several unreliable sockets
     public reliableSocket:UWSSocketInterface;
     public unreliableSockets:UWSSocketInterface[] = [];
 
@@ -112,23 +114,20 @@ export class MuWebSocketClient implements MuSocket {
 
     private _connection:MuWebSocketConnection;
 
-    public open = false;
-    private _started = false;
-    private _closed = false;
+    public state = MuSocketState.INIT;
 
     constructor (connection:MuWebSocketConnection) {
         this.sessionId = connection.sessionId;
         this._connection = connection;
     }
 
-    public start (spec:MuSocketSpec) {
-        if (this._closed) {
-            throw new Error('cannot start closed socket');
+    public open (spec:MuSocketSpec) {
+        if (this.state === MuSocketState.OPEN) {
+            throw new Error('socket already open');
         }
-        if (this._started) {
-            throw new Error('socket already started');
+        if (this.state === MuSocketState.CLOSED) {
+            throw new Error('cannot reopen closed socket');
         }
-        this._started = true;
 
         setTimeout(
             () => {
@@ -137,12 +136,11 @@ export class MuWebSocketClient implements MuSocket {
                 // hook handlers on socket
                 this._connection.onMessage = spec.message;
                 this._connection.onClose = () => {
-                    this._closed = true;
-                    this.open = false;
+                    this.state = MuSocketState.CLOSED;
                     spec.close();
                 };
 
-                this.open = true;
+                this.state = MuSocketState.OPEN;
 
                 spec.ready();
 
@@ -154,8 +152,7 @@ export class MuWebSocketClient implements MuSocket {
 
                 // if socket already closed, then fire close event immediately
                 if (this._connection.closed) {
-                    this._closed = true;
-                    this.open = false;
+                    this.state = MuSocketState.CLOSED;
                     spec.close();
                 }
             },
@@ -175,14 +172,12 @@ export class MuWebSocketServer implements MuSocketServer {
     private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
 
-    public open = false;
-    private _started = false;
-    private _closed = false;
-
-    private _maxUnreliableConnections = 10;
+    public state = MuSocketServerState.INIT;
 
     private _httpServer;
     private _websocketServer:ws.Server;
+
+    private _onClose;
 
     constructor (spec:{
         server:object,
@@ -200,20 +195,19 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this._closed) {
-            throw new Error('cannot start closed socket server');
+        if (this.state === MuSocketServerState.RUNNING) {
+            throw new Error('web socket server already running');
         }
-        if (this._started) {
-            throw new Error('web socket server already started');
+        if (this.state === MuSocketServerState.SHUTDOWN) {
+            throw new Error('web socket server already shut down, cannot restart');
         }
-        this._started = true;
 
         setTimeout(
             () => {
                 this._websocketServer = new ws.Server({
                     server: this._httpServer,
                 })
-                // when connection is ready
+                // called when connection is ready
                 .on('connection', (socket) => {
                     socket.onmessage = ({ data }) => {
                         try {
@@ -224,22 +218,25 @@ export class MuWebSocketServer implements MuSocketServer {
 
                             let connection = this._findConnection(sessionId);
                             if (connection) {
-                                // tell client to use this socket as unreliable one
+                                // tell client to use this socket as an unreliable one
                                 socket.send(JSON.stringify({
                                     reliable: false,
                                 }));
+
                                 // all sockets except the first one opened are used as unreliable ones
+                                // reset socket message handler
                                 connection.addUnreliableSocket(socket);
                                 return;
                             } else {
                                 // this is client's first connection since no related connection object is found
 
-                                // tell client to use this socket as reliable one
+                                // tell client to use this socket as a reliable one
                                 socket.send(JSON.stringify({
                                     reliable: true,
                                 }));
 
                                 // one connection object per client
+                                // reset socket message handler
                                 connection = new MuWebSocketConnection(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
@@ -260,36 +257,28 @@ export class MuWebSocketServer implements MuSocketServer {
                             }
                         } catch (e) {
                             console.error(e);
+                            socket.terminate();
                         }
-
-                        // close connection on error
-                        socket.terminate();
                     };
-                })
-                .on('close', () => {
-                    this._closed = true;
-                    this.open = false;
-                    if (spec && spec.close) {
-                        spec.close();
-                    }
                 });
 
-                this.open = true;
+                this._onClose = spec.close;
+
+                this.state = MuSocketServerState.RUNNING;
                 spec.ready();
             },
             0);
     }
 
     public close () {
-        if (this._closed) {
+        if (this.state === MuSocketServerState.SHUTDOWN) {
             return;
         }
 
-        // necessary
-        this._closed = true;
+        this.state = MuSocketServerState.SHUTDOWN;
 
         if (this._websocketServer) {
-            this._websocketServer.close();
+            this._websocketServer.close(this._onClose);
         }
     }
 }

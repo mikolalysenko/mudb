@@ -99,7 +99,7 @@ export class MuClient {
         };
         const parser = clientFactory.createParser(this._protocolSpecs);
 
-        this._socket.start({
+        this._socket.open({
             ready: () => {
                 this.running = true;
 

@@ -1,5 +1,4 @@
 export type MuSessionId = string;
-export type MuSessionData = any;
 
 export type MuData = Uint8Array | string;
 
@@ -7,6 +6,12 @@ export type MuReadyHandler = () => void;
 export type MuMessageHandler = (data:MuData, unreliable:boolean) => void;
 export type MuCloseHandler = (error?:any) => void;
 export type MuConnectionHandler = (socket:MuSocket) => void;
+
+export enum MuSocketState {
+    INIT,
+    OPEN,
+    CLOSED,
+}
 
 export type MuSocketSpec = {
     ready:MuReadyHandler;
@@ -16,11 +21,17 @@ export type MuSocketSpec = {
 
 export interface MuSocket {
     sessionId:MuSessionId;
-    open:boolean;
+    state:MuSocketState;
 
-    start(spec:MuSocketSpec);
+    open(spec:MuSocketSpec);
     send(data:MuData, unreliable?:boolean);
     close();
+}
+
+export enum MuSocketServerState {
+    INIT,
+    RUNNING,
+    SHUTDOWN,
 }
 
 export type MuSocketServerSpec = {
@@ -31,7 +42,7 @@ export type MuSocketServerSpec = {
 
 export interface MuSocketServer {
     clients:MuSocket[];
-    open:boolean;
+    state:MuSocketServerState;
 
     start(spec:MuSocketServerSpec);
     close();
