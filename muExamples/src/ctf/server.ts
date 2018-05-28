@@ -1,6 +1,6 @@
 import { MuServer } from 'mudb/server';
 import { MuServerState } from 'mustate/server';
-import { MuServerRPC } from 'murpc/server';
+import { MuRPCServer } from 'murpc/server';
 
 import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { Team, Config } from './game';
@@ -12,7 +12,7 @@ export = function(server:MuServer) {
     windowSize: 0,
   });
   const msgProtocol = server.protocol(MsgSchema);
-  const rpcProtocol = new MuServerRPC(server, RpcSchema);
+  const rpcProtocol = new MuRPCServer(server, RpcSchema);
 
   type TeamStruct = {
     'players':string[],

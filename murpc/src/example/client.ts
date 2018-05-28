@@ -1,9 +1,9 @@
 import { MuClient } from 'mudb/client';
-import { MuClientRPC } from '../client';
+import { MuRPCClient } from '../client';
 import { RPCSchema } from './schema';
 
 export = function (client:MuClient) {
-    const protocol = new MuClientRPC(client, RPCSchema);
+    const protocol = new MuRPCClient(client, RPCSchema);
 
     protocol.configure({
         // functions to be executed by RPCs from server go into `rpc`
@@ -34,12 +34,8 @@ export = function (client:MuClient) {
             // its value should match RPCSchema['server']['hash'][0]
 
             // second argument is a callback called when return value arrives,
-            // which is available as second argument of the callback
-            // so `digest` is the hash value of `secret`
-            protocol.server.rpc.hash(secret, (err, digest) => {
-                if (err) {
-                    throw new Error(err);
-                }
+            // which is available as the argument of the callback, so `digest` is the hash value of `secret`
+            protocol.server.rpc.hash(secret, (digest) => {
                 console.log('secret digest:', digest);
             });
         },

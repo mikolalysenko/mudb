@@ -1,11 +1,11 @@
 import { createHash } from 'crypto';
 
 import { MuServer } from 'mudb/server';
-import { MuServerRPC } from '../server';
+import { MuRPCServer } from '../server';
 import { RPCSchema } from './schema';
 
 export = function (server:MuServer) {
-    const protocol = new MuServerRPC(server, RPCSchema);
+    const protocol = new MuRPCServer(server, RPCSchema);
 
     protocol.configure({
         // functions to be executed by RPCs from client go into `rpc`
@@ -36,12 +36,8 @@ export = function (server:MuServer) {
             // its value should match RPCSchema['client']['sum'][0]
 
             // second argument is a callback called when return value arrives,
-            // which is available as second argument of the callback
-            // so `total` is the sum of `set`
-            client.rpc.sum(set, (err, total) => {
-                if (err) {
-                    throw new Error(err);
-                }
+            // which is available as the argument of the callback, so `total` is the sum of `set`
+            client.rpc.sum(set, (total) => {
                 console.log(`sum of ${set}: ${total}`);
             });
         },
