@@ -1,3 +1,33 @@
+# muclock
+A synchronized clock for realtime applications.
+
+# api
+
+## `MuClockClient`
+
+### `constructor()`
+
+### `tick()`
+
+### `now()`
+
+### `poll()`
+
+### `ping`
+
+## `MuClockServer`
+
+### `constructor()`
+
+### `tick()`
+
+### `now()`
+
+### `poll()`
+
+### `ping`
+
+
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 
