@@ -1,95 +1,107 @@
 # murpc
-Remote procedure calls for mudb
+Asynchronous [RPC](https://en.wikipedia.org/wiki/Remote_procedure_call) protocols for mudb
 
 # example
-**schema.ts**
-```js
-// import the necessary muschema
-import {
-    MuInt8,
-    MuString,
-    MuArray,
-    MuDictionary,
-} from 'muschema';
+See [src/example](src/example) for a contrived demo which will be explained below.  To run the demo
+
+0. `npm i mudo`
+1. cd into `src/example`
+2. `tsc ./*.ts`
+3. `mudo --socket websocket`
+
+A `mudb` instance can have multiple RPC protocols for different sets of behaviors.  Naturally each RPC protocol consistes of two sides, one for server and one for client, plus a schema to describe the RPC interfaces (the argument and return).
+
+## RPC protocol schema ##
+So the first step to define an RPC protocol is to specify a protocol schema using `muschema`.
+
+Like the protocol to be created, the schema always consists of two sides, the server side and the client side.  Each side in turn contains schemas for the RPC interfaces that they implement repectively, under the name of the corresponding function.  RPC schemas are created using the `MuRPC` function, which takes the schemas of the argument and return.
+
+```typescript
+const IntegerSetSchema = new MuArray(new MuInt8());
+const TotalSchema = new MuInt32();
+
+const SecretSchema = new MuString();
+const DigestSchema = new MuFixedASCII(128);
 
 export const RPCSchema = {
     client: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
-        }
+        // schema for a function that sums up all integers in a set
+        // which takes an array of int8 and returns an int32
+        sum: MuRPC(IntegerSetSchema, TotalSchema),
     },
     server: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
-        }
+        // schema for a function that hashes a secret string
+        // which takes a string and always returns an ASCII of length 128
+        hash: MuRPC(SecretSchema, DigestSchema),
     },
 };
 ```
 
-**server.ts**
-```js
-import { RPCSchema } from './schema';
-import { MuServer } from 'mudb/server';
-import { MuRPCServer } from '../server';
+## server-side protocol ##
+You can define the server side of the RPC protocol by creating and then configuring an instance of `MuRPCServer`.
 
+```typescript
 export = function (server:MuServer) {
     const protocol = new MuRPCServer(server, RPCSchema);
 
+    // content of the server side of the protocol
     protocol.configure({
-        // all the methods are defined in rpc
-        // handle the rpc calls from client
         rpc: {
-            // arg:RPCSchema['server'][method]['0']['identity']
-            // next:(err:string|undefined, response:RPCSchema['server'][method]['1']['identity']) => void
-            combine: (arg, next) => {
-                let result = 0;
-                arg.forEach((element) => { result += element; });
-                next(undefined, result);
-                // if error: next(error_message, result);
-            }
+            // a hash function to be called by clients
+            hash: (secret, next) => {
+                // hash `secret`
+                const digest = createHash('sha512').update(secret).digest('hex');
+                // pass the digest back to client
+                next(undefined, digest);
+            },
         },
+
+        // set up server to do something when a client connects
         connect: (client) => {
-            // send rpc call to client
-            client.rpc.combine([1, 2, 3], (result) => {
-                console.log('receive combine result:', result);
+            const set = [1, 2, 3, 4];
+            // call `sum()` on the client to get the total of all numbers in `set`
+            client.rpc.sum(set, (total) => {
+                console.log(`sum of ${set}: ${total}`);
             });
         },
     });
+
     server.start();
 };
 ```
 
-**client.ts**
-```js
-import { RPCSchema } from './schema';
-import { MuClient } from 'mudb/client';
-import { MuRPCClient } from '../client';
+## client-side protocol ##
+The last missing piece is the client side of the RPC protocol.  Similarly, you can define it through an instance of `MuRPCClient`.
 
-export  = function (client:MuClient) {
+```typescript
+export = function (client:MuClient) {
     const protocol = new MuRPCClient(client, RPCSchema);
 
+    // content of the client side of the protocol
     protocol.configure({
-        // handle the rpc calls from server
         rpc: {
-            // arg:RPCSchema['client'][method]['0']['identity']
-            // next:(err:string|undefined, response:RPCSchema['client'][method]['1']['identity']) => void
-            combine: (arg, next) => {
-                let result = 0;
-                arg.forEach((element) => { result += element; });
-                next(undefined, result);
+            // a function to be calle by server
+            sum: (set, next) => {
+                // calculate the total of all numbers in `set`
+                const total = set.reduce((acc, num) => acc + num);
+                // pass result back to server
+                next(undefined, total);
             },
         },
+
+        // set up client to do something when it is ready to handle messages
         ready: () => {
-            // send rpc call to server
-            protocol.server.rpc.combine([4, 10, 15], (result) => {
-                console.log('rpc combine result:', result);
+            // generate a secret string
+            const secret = Math.random().toString(36).substr(2, 11);
+            // call `hash()` on server to get the digest of `secret`
+            protocol.server.rpc.hash(secret, (digest) => {
+                console.log('secret digest:', digest);
             });
         },
     });
+
     client.start();
-}
+};
 ```
 
 # table of contents
@@ -97,147 +109,91 @@ export  = function (client:MuClient) {
 # install #
 
 ```
-npm install
+npm i murpc
 ```
 
 # api #
 
-## protocol schema ##
-Any `mustate` project should specify a protocol schema using `muschema`. Each protocol includes two protocol interfaces, one for client and one for server.
+## types ##
 
-The rpc method names should be defined in both client and server. Each method contains two keys: `0` for arguments data type and `1` for response data type.
+Purely instructive types used to describle the API:
+* `TableOf<T>`: `{ [name:string]:T } | {}`
+* `RPCSchema`: `[ AnyMuSchema, AnyMuSchema ]`
+* `RPCProtocolSchema`: `{ server:TableOf<RPCSchema>, client:TableOf<RPCSchema> }`
+* `NextFn`: `(errorMessage:string|undefined, returnValue?) => undefined`
+* `ServerRPCHandler`: `(rpcArgument, next:NextFn, client?:MuRemoteRPCClient) => undefined`
+* `ClientRPCHandler`: `(rpcArgument, next:NextFn) => undefined`
+* `CallbackFn`: `(returnValue) => undefined`
+* `RPCCaller`: `(rpcArgument, callback:CallbackFn) => undefined`
 
-**Example:**
-```js
-export const RPCSchema = {
-    client: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
-        }
-    },
-    server: {
-        combine: {
-            0: new MuArray(new MuInt8()), //arg
-            1: new MuInt8(), //response
-        }
-    },
-};
-```
+## MuRPC(argumentSchema, returnSchema) ##
+Exported from `murpc/rpc`, used when creating the RPC protocol schema, to define RPC interfaces in terms of the argument and the return:
+* `argumentSchema:AnyMuSchema` the data type of the argument
+* `returnSchema:AnyMuSchema` the data type of the return value
 
-## server ##
-A server in `mustate` processes rpc from many clients, and send rpc to one client or broadcast to all clients.
+## MuRPCServer(server, schema) ##
+Used to define the server side of an RPC protocol.  Exported from `murpc/server`, it takes these arguments:
+* `server:MuServer`
+* `schema:RPCProtocolSchema` the RPC protocol schema
 
-### server constructor ###
-`mustate/server` exports the constructor for the server. It taks an object which accepts the following arguments:
+### clients:MuRemoteRPCClient[] ###
+Mocks of all connected clients, used to initiate RPCs to a specific client
 
-- `server` which is the `MuServer` object, see `mudb` for details.
-- `schema` which is the protocol schema as described above.
+### server:MuServer ###
+The underlying `MuServer` object
 
-**Example:**
-```js
-import { RPCSchema } from './schema';
-import { MuServer } from 'mudb/server';
-import { MuRPCServer } from '../server';
+### schema:RPCProtocolSchema ###
+The RPC protocol schema
 
-export = function(server:MuServer) {
-    const protocol = new MuRPCServer(server, RPCSchema);
-}
-```
+### configure(spec) ###
+Registers event handlers specifed in `spec`
 
+`spec:{ rpc, ready?, connect?, disconnect?, close? }`
+* `rpc:TableOf<ServerRPCHandler>` an object containing the implementations of the functions to be called by clients
+* `ready()` called when the server is launched
+* `connect(client:MuRemoteRPCClient)` called when a client connects
+* `disconnect(client:MuRemoteRPCClient)` called when a client disconnects
+* `close()` called when the server is shut down
 
-### server configure ###
-The next step is to register event handlers, this is done using the `MuRPCServer.configure` method. This method takes an object that has the following properties:
+## MuRemoteRPCClient ##
+A `MuRemoteRPCClient` is the server-side mock of a connected client
 
-- `rpc` which is an object containing implementations of handlers for all of the rpc types. It should strict follow the rules as `protocol schema` defines.
-- `ready()` which is called when the server is started.
-- `connect(client)` called when a client connects to the server.
-- `disconnect(client)` called when a client disconnects from the server.
-- `close()` called when the server socket is closed.
+### sessionId:string ###
+A unique session id identifying the client
 
-**Example:**
-```js
-protocol.configure({
-    ready: () => { console.log('server start'); },
-    rpc: {
-        method_name: (arg, next) => {
-            console.log('received rpc call');
-        },
-    },
-    connect: (client) => { console.log(client.sessionId, 'connected'); },
-    disconnect: (client) => { console.log(client.sessionId, 'disconnect'); },
-    close: () => { console.log('protocol closed'); }
-}
-```
+### rpc:TableOf<RPCCaller> ###
+A table of RPC initiators each under the name of the corresponding remote function on a client
 
-### remote clients ###
-A server could get an array of remote clients: `MuRPCServer.clients`. Each client object includes `sessionId` and `rpc` properties. The `sessionId` can be used to find a client, and `rpc` could send the client a rpc call.
+## MuRPCClient(client, schema) ##
+Used to define the client side of an RPC protocol.  Exported from `murpc/client`, it takes these arguments:
+* `client:MuClient`
+* `schema:ProtocolSche4ma` the RPC protocol schema
 
-**Example:**
-```js
-protocol.clients[0].rpc['method_name'](arg, (result) => {
-    console.log('receive the rpc result:', result);
-})
-```
+### sessionId:string ###
+A unique session id identifying the client
 
-### start ###
-When all the event handlers are setting done, the last step is to start the server: `server.start()`.
+### server:MuRemoteRPCServer ###
+A mock used to initiate RPCs to the remote server
 
-## client ##
-A client in `mustate` sends the rpc to the server, and also it can receive the rpc from the server.
+### client:MuClient ###
+The underlying `MuClient` object
 
-### client constructor ###
-`mustate/client` exports the constructor for the client. It taks an object which accepts the following arguments:
+### schema:RPCProtocolSchema ###
+The RPC protocol schema
 
-- `client` which is the `MuClient` object, see `mudb` for details.
-- `schema` which is the protocol schema as described above.
+### configure(spec) ###
+Registers event handlers specified in `spec`
 
-**Example:**
-```js
-import { RPCSchema } from './schema';
-import { MuClient } from 'mudb/client';
-import { MuRPCClient } from '../client';
+`spec:{ rpc, ready?, close? }`
+- `rpc:TableOf<ClientRPCHandler>` an object containing the implementations of the functions to be called by the server
+- `ready()` called when client is ready to handle messages
+- `close()` called when the client is disconnected
 
-export  = function (client:MuClient) {
-    const protocol = new MuRPCClient(client, RPCSchema);
-}
-```
+## MuRemoteRPCServer ##
+A `MuRemoteRPCServer` is the client-side mock of the server
 
-### client configure ###
-The next step is to register event handlers just as the server, this is done using the `MuRPCClient.configure` method. This method has following properties:
-
-- `rpc` which is an object containing implementations of handlers for all of the rpc types. It should strict follow the rules as `protocol schema` defines.
-- `ready()` which is called when the client is started.
-- `close()` called when the client protocol is closed.
-
-**Example:**
-```js
-protocol.configure({
-    ready: () => { console.log('client start'); },
-    rpc: {
-        method_name: (arg, next) => {
-            console.log('received rpc call');
-        },
-    },
-    close: () => { console.log('protocol closed'); }
-}
-```
-
-### remote server ###
-A client could get the remote server by using `MuRPCServer.clients`. The server object has `rpc` property, which can be used to send rpc methods.
-
-**Example:**
-```js
-protocol.server.rpc['method_name'](arg, (result) => {
-    console.log('receive the rpc result:', result)
-})
-```
-
-### start ###
-As the server, the `client.start()` should be called to start the service.
-
-
-
+### rpc:TableOf<RPCCaller> ###
+A table of RPC initiators each under the name of the corresponding remote function on the server
 
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
