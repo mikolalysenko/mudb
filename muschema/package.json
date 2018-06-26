@@ -6,6 +6,10 @@
   "scripts": {
     "test": "ts-node src/test/index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
   "keywords": [
     "mudb",
     "schema",

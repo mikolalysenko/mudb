@@ -7,6 +7,10 @@
     "test-server": "node bin/test-server.js",
     "test-socket": "node bin/test-socket.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
   "keywords": [
     "mudb",
     "network",
