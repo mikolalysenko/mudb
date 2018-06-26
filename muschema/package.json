@@ -26,6 +26,6 @@
     "typescript": "^2.7.1"
   },
   "dependencies": {
-    "mustreams": "0.1.0"
+    "mustreams": "0.1.1"
   }
 }
