@@ -1,6 +1,6 @@
 {
   "name": "muweb-socket",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "WebSocket emulation for mudb",
   "main": "index.js",
   "scripts": {
