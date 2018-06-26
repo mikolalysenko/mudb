@@ -20,7 +20,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.1.0",
+    "mudb": "0.2.0",
     "uws": "^8.14.1"
   },
   "devDependencies": {
