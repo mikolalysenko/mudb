@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "mudb": "0.1.0",
-    "muschema": "0.1.1",
+    "muschema": "0.1.2",
     "murpc": "0.0.0",
     "mustate": "0.1.0"
   },
