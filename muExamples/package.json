@@ -22,7 +22,7 @@
     "mudb": "0.2.0",
     "muschema": "0.1.2",
     "murpc": "0.1.0",
-    "mustate": "0.1.0"
+    "mustate": "0.1.1"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",
