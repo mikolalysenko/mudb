@@ -1,11 +1,15 @@
 {
   "name": "muweb-socket",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "WebSocket emulation for mudb",
   "main": "index.js",
   "scripts": {
     "test-server": "node bin/test-server.js",
     "test-socket": "node bin/test-socket.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
   },
   "keywords": [
     "mudb",
@@ -16,7 +20,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.1.0",
+    "mudb": "0.2.0",
     "uws": "^8.14.1"
   },
   "devDependencies": {
