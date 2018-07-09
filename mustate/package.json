@@ -1,6 +1,6 @@
 {
   "name": "mustate",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "State replication for mudb",
   "main": "index.js",
   "scripts": {
