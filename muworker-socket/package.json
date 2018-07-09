@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "mudb": "0.2.0",
-    "mustreams": "0.1.1"
+    "mustreams": "^0.1.2"
   },
   "devDependencies": {
     "browserify": "^16.2.2",

@@ -1,6 +1,6 @@
 {
   "name": "mustreams",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Binary stream and buffer api for mudb",
   "main": "index.js",
   "scripts": {
