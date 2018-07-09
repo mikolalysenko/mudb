@@ -1,6 +1,6 @@
 {
   "name": "mudb",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Realtime database for multiplayer games",
   "main": "index.js",
   "scripts": {

@@ -19,7 +19,7 @@
   "author": "He Diyi",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.0",
+    "mudb": "^0.2.1",
     "mustreams": "^0.1.2"
   },
   "devDependencies": {
