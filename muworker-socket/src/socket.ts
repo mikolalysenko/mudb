@@ -6,32 +6,8 @@ import {
     MuSessionId,
     MuData,
 } from 'mudb/socket';
-import {
-    MuBuffer,
-    allocBuffer,
-    freeBuffer,
-} from 'mustreams';
 
 function noop () { }
-
-class MuBufferWrapper {
-    private _buffer:MuBuffer;
-    public bytes:Uint8Array;
-
-    constructor (data:Uint8Array) {
-        this._buffer = allocBuffer(data.length);
-
-        // make a copy of `data`
-        this.bytes = this._buffer.uint8.subarray(0, data.length);
-        this.bytes.set(data);
-    }
-
-    public free () {
-        freeBuffer(this._buffer);
-    }
-}
-
-type Message = MuBufferWrapper | string;
 
 export class MuWorkerSocket implements MuSocket {
     public state = MuSocketState.INIT;
@@ -77,12 +53,11 @@ export class MuWorkerSocket implements MuSocket {
         this._socket.postMessage({ sessionId: this.sessionId });
     }
 
-    public send (data:MuData, unreliable_?:boolean) {
+    public send (message:MuData, unreliable_?:boolean) {
         if (this.state !== MuSocketState.OPEN) {
             return;
         }
 
-        const message = typeof data === 'string' ? data : (new MuBufferWrapper(data)).bytes;
         const unreliable = !!unreliable_;
         if (typeof message === 'string') {
             this._socket.postMessage({
