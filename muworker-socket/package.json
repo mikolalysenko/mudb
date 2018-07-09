@@ -1,6 +1,6 @@
 {
   "name": "muworker-socket",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Web Worker made available to mudb",
   "scripts": {
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
