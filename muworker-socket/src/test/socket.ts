@@ -1,25 +1,20 @@
+import work = require('webworkify');
 import test = require('tape');
 import { MuWorkerSocket } from '../socket';
 import { MuSocketState } from 'mudb/socket';
 
 function noop () { }
 
-function id () {
+function sessionId () {
     return Math.random().toString(36).substr(2);
 }
 
-function dummyWorker () {
-    const workerURL = URL.createObjectURL(new Blob([], { type: 'text/javascript' }));
-    const dummy = new Worker(workerURL);
-
-    URL.revokeObjectURL(workerURL);
-    dummy.terminate();
-
-    return dummy;
+function serverWorker () : Worker {
+    return work(require('./_worker'));
 }
 
 test('workerSocket initial state', (t) => {
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     t.equal(socket.state, MuSocketState.INIT, 'should be MuSocketState.INIT');
     t.end();
 });
@@ -27,7 +22,7 @@ test('workerSocket initial state', (t) => {
 test('workerSocket.open() - when INIT', (t) => {
     t.plan(2);
 
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     socket.open({
         ready: () => {
             t.ok(true, 'should invoke ready handler');
@@ -41,7 +36,7 @@ test('workerSocket.open() - when INIT', (t) => {
 test('workerSocket.open() - when OPEN', (t) => {
     t.plan(1);
 
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     socket.open({
         ready: () => t.throws(
             // open socket when already open
@@ -59,7 +54,7 @@ test('workerSocket.open() - when OPEN', (t) => {
 test('workerSocket.open() - when CLOSED', (t) => {
     t.plan(1);
 
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     socket.open({
         // close socket when open
         ready: () => socket.close(),
@@ -78,7 +73,7 @@ test('workerSocket.open() - when CLOSED', (t) => {
 test('workerSocket.close() - when OPEN', (t) => {
     t.plan(2);
 
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     socket.open({
         // close socket when open
         ready: () => socket.close(),
@@ -91,7 +86,7 @@ test('workerSocket.close() - when OPEN', (t) => {
 });
 
 test('workerSocket.close() - when INIT', (t) => {
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     // close socket when init
     socket.close();
     t.equal(socket.state, MuSocketState.CLOSED, 'should change state to MuSocketState.CLOSED');
@@ -99,7 +94,7 @@ test('workerSocket.close() - when INIT', (t) => {
 });
 
 test('workerSocket.close() - when CLOSED', (t) => {
-    const socket = new MuWorkerSocket(id(), dummyWorker());
+    const socket = new MuWorkerSocket(sessionId(), serverWorker());
     socket.open({
         // close socket when open
         ready: () => socket.close(),

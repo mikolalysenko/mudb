@@ -17,7 +17,7 @@ export class MuWorkerSocket implements MuSocket {
 
     private _onclose:MuCloseHandler = noop;
 
-    constructor (sessionId:MuSessionId, socket) {
+    constructor (sessionId:MuSessionId, socket:Worker) {
         this.sessionId = sessionId;
         this._socket = socket;
 
