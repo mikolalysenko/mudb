@@ -62,10 +62,10 @@ export class MuWorkerSocketServer implements MuSocketServer {
     }
 
     public listen () {
+        // `self` is a DedicatedWorkerGlobalScope object
         self.onmessage = ({ data }) => {
             if (data.sessionId) {
-                const serverSocket = new MuWorkerServerSocket(data.sessionId, self);
-                this._handleConnection(serverSocket);
+                this._handleConnection(new MuWorkerServerSocket(data.sessionId, self));
             }
         };
         console.log('socket server listening');
@@ -94,6 +94,7 @@ class MuWorkerServerSocket implements MuSocket {
     public state = MuSocketState.INIT;
     public sessionId:MuSessionId;
 
+    // a DedicatedWorkerGlobalScope object
     private _socket;
 
     private _onclose:MuCloseHandler = noop;
@@ -120,6 +121,7 @@ class MuWorkerServerSocket implements MuSocket {
                 };
                 this._onclose = spec.close;
 
+                // send session id back to client as an ACK
                 this._socket.postMessage({ sessionId: this.sessionId });
 
                 spec.ready();

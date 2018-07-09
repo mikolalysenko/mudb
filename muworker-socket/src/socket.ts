@@ -36,12 +36,17 @@ export class MuWorkerSocket implements MuSocket {
 
         this.state = MuSocketState.OPEN;
 
+        // perform a two-way "handshake" to ensure server is ready before sending messages
+        // 1. client sends server the session id as a SYN
+        // 2. server responds with the session id as an ACK
+
         this._socket.onmessage = (ev) => {
             if (ev.data.sessionId !== this.sessionId) {
                 this._socket.terminate();
-                throw new Error('invalid session id');
+                throw new Error('invalid ACK from server');
             }
 
+            // reset handler after receiving the ACK from server
             this._socket.onmessage = ({ data }) => {
                 spec.message(data.message, data.unreliable);
             };
@@ -50,6 +55,7 @@ export class MuWorkerSocket implements MuSocket {
             spec.ready();
         };
 
+        // send session id to server as a SYN
         this._socket.postMessage({ sessionId: this.sessionId });
     }
 

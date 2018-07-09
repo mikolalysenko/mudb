@@ -38,34 +38,45 @@ muClient.start(/* listeners */)
 
 # table of contents
 
-# install #
+   * [1 install](#section_1)
+   * [2 api](#section_2)
+      * [2.1 interfaces](#section_2.1)
+      * [2.2 `createWorkerSocketServer()`](#section_2.2)
+      * [2.3 `createWorkerSocket(spec)`](#section_2.3)
+      * [2.4 `MuWorkerSocketServer`](#section_2.4)
+         * [2.4.1 `listen()`](#section_2.4.1)
+      * [2.5 `MuWorkerSocket`](#section_2.5)
+
+# <a name="section_1"></a> 1 install
 
 ```
 npm i muworker-socket
 ```
 
-# api #
+# <a name="section_2"></a> 2 api
 
-## interfaces ##
+## <a name="section_2.1"></a> 2.1 interfaces
 
 Purely instructive types used to describe the API:
 * `SessionId`: `string`
 
-## `createWorkerSocketServer()` ##
+## <a name="section_2.2"></a> 2.2 `createWorkerSocketServer()`
 A factory returning a new instance of `MuWorkerSocketServer`.
 
-## `createWorkerSocket(spec)` ##
+## <a name="section_2.3"></a> 2.3 `createWorkerSocket(spec)`
 A factory returning a new instance of `MuWorkerSocket`.
 
 * `spec:object`
     * `sessionId:SessionId`: a unique session id used to identify a client
     * `serverWorker:Worker`: the worker in which the server is running
 
-## `MuWorkerSocketServer` ##
+## <a name="section_2.4"></a> 2.4 `MuWorkerSocketServer`
 A `MuWorkerSocketServer` is a pseudo socket server that can be used to instantiate a `MuServer`.
 
-### `listen()` ###
+### <a name="section_2.4.1"></a> 2.4.1 `listen()`
 Starts the socket server listening for connections.
 
-## `MuWorkerSocket` ##
+## <a name="section_2.5"></a> 2.5 `MuWorkerSocket`
 A `MuLocalSocket` is a pseudo client-side socket that can be used to instantiate a `MuClient`.
+
+
