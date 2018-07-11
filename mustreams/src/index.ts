@@ -44,7 +44,9 @@ export function allocBuffer (size) : MuBuffer {
 }
 
 export function freeBuffer (buffer:MuBuffer) {
-    bufferPool[ceilLog2(buffer.uint8.length)].push(buffer);
+    if (buffer.uint8.length > 0) {
+        bufferPool[ceilLog2(buffer.uint8.length)].push(buffer);
+    }
 }
 
 export function reallocBuffer (buffer:MuBuffer, nsize:number) {

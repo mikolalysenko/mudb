@@ -19,10 +19,10 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.0",
-    "muschema": "0.1.2",
+    "mudb": "^0.2.1",
+    "muschema": "^0.1.3",
     "murpc": "0.1.0",
-    "mustate": "0.1.1"
+    "mustate": "^0.1.2"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",
