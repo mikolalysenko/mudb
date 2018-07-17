@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "mudb": "^0.2.1",
-    "uws": "^8.14.1"
+    "uws": "^10.148.1"
   },
   "devDependencies": {
     "@types/node": "^8.0.28",
