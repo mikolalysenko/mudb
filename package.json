@@ -27,5 +27,8 @@
   "homepage": "https://github.com/mikolalysenko/mudb#readme",
   "dependencies": {
     "typescript": "^2.7.1"
+  },
+  "devDependencies": {
+    "lerna": "^2.11.0"
   }
 }
