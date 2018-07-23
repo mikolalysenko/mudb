@@ -1,33 +1,14 @@
 {
   "name": "mudb-root-repo",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Root directory for project. Contains scripts to run",
-  "main": "index.js",
   "scripts": {
-    "watch": "node bin/watch-all.js",
+    "docs": "node bin/docs.js",
     "link-all": "node bin/link-all.js",
-    "docs": "node bin/docs.js"
+    "watch": "node bin/watch-all.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikolalysenko/mudb.git"
-  },
-  "keywords": [
-    "object",
-    "replication",
-    "database",
-    "realtime"
-  ],
   "author": "Mikola Lysenko",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mikolalysenko/mudb/issues"
-  },
-  "homepage": "https://github.com/mikolalysenko/mudb#readme",
-  "dependencies": {
-    "typescript": "^2.7.1"
-  },
   "devDependencies": {
     "lerna": "^2.11.0"
   }
