@@ -1,5 +1,5 @@
 {
-  "name": "muExamples",
+  "name": "demos",
   "version": "0.0.0",
   "description": "State replication for mudb",
   "main": "index.js",
