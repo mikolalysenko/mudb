@@ -20,13 +20,5 @@
   "license": "MIT",
   "dependencies": {
     "mudb": "^0.2.1"
-  },
-  "devDependencies": {
-    "browserify": "^16.2.2",
-    "tape": "^4.9.1",
-    "tape-run": "^4.0.0",
-    "tslint": "^5.10.0",
-    "typescript": "^2.9.2",
-    "webworkify": "^1.5.0"
   }
 }

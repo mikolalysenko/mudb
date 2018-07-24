@@ -29,12 +29,5 @@
     "mulocal-socket": "^0.2.1",
     "muweb-socket": "0.2.0",
     "temp": "^0.8.3"
-  },
-  "devDependencies": {
-    "ts-node": "^3.3.0",
-    "tsify": "^3.0.3",
-    "tslint": "^5.9.1",
-    "tslint-language-service": "^0.9.6",
-    "typescript": "^2.7.1"
   }
 }
