@@ -3,18 +3,17 @@
   "version": "0.1.0",
   "description": "RPC protocol for mudb",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mikolalysenko/mudb.git"
   },
   "keywords": [
     "mudb",
-    "network",
+    "real-time",
     "multiplayer",
-    "game"
+    "game",
+    "network",
+    "rpc"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

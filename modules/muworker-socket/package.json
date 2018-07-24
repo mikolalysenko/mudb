@@ -1,7 +1,7 @@
 {
   "name": "muworker-socket",
   "version": "0.1.0",
-  "description": "Web Worker made available to mudb",
+  "description": "Run mudb server in Web Worker",
   "scripts": {
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "test": "browserify test/*.js | tape-run"
@@ -12,9 +12,11 @@
   },
   "keywords": [
     "mudb",
-    "network",
+    "real-time",
     "multiplayer",
-    "game"
+    "game",
+    "network",
+    "webworker"
   ],
   "author": "He Diyi",
   "license": "MIT",

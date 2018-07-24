@@ -3,18 +3,16 @@
   "version": "0.2.1",
   "description": "Local socket emulation for mudb",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mikolalysenko/mudb.git"
   },
   "keywords": [
     "mudb",
-    "network",
+    "real-time",
     "multiplayer",
-    "game"
+    "game",
+    "network"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

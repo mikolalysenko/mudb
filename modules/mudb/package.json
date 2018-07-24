@@ -1,20 +1,20 @@
 {
   "name": "mudb",
   "version": "0.2.1",
-  "description": "Realtime database for multiplayer games",
+  "description": "Real-time database for multiplayer games",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mikolalysenko/mudb.git"
   },
   "keywords": [
     "mudb",
+    "real-time",
     "multiplayer",
     "game",
-    "network"
+    "network",
+    "server",
+    "client"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",

@@ -1,8 +1,7 @@
 {
   "name": "muweb-socket",
   "version": "0.2.0",
-  "description": "WebSocket emulation for mudb",
-  "main": "index.js",
+  "description": "WebSocket communication for mudb",
   "scripts": {
     "test-server": "node bin/test-server.js",
     "test-socket": "node bin/test-socket.js"
@@ -13,9 +12,11 @@
   },
   "keywords": [
     "mudb",
-    "network",
+    "real-time",
     "multiplayer",
-    "game"
+    "game",
+    "network",
+    "websocket"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",
