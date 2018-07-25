@@ -21,14 +21,8 @@
     "target": "es5",
     "strictPropertyInitialization": false
   },
-  "paths": {
-      "*": [
-        "./types/*"
-      ]
-  },
   "include": [
-    "src/**/*",
-    "types"
+    "src/**/*"
   ],
   "exclude": [
     "build",

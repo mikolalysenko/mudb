@@ -20,14 +20,8 @@
     "strict": true,
     "target": "es5"
   },
-  "paths": {
-      "*": [
-        "./types/*"
-      ]
-  },
   "include": [
-    "src/**/*",
-    "types"
+    "src/**/*"
   ],
   "exclude": [
     "build",
