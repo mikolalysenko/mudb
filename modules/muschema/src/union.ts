@@ -84,7 +84,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
                 tracker = 1;
             }
         } else {
-            stream.writeUint8(this._types.indexOf(target.type));
+            stream.writeUint8(this._types.indexOf(target.type as string));
             if (dataSchema.diff(dataSchema.identity, target.data, stream)) {
                 tracker = 2;
             } else {
