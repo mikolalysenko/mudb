@@ -10,7 +10,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^10.5.2",
+    "@types/node": "^8.10.21",
     "@types/tape": "^4.2.32",
     "browserify": "^16.2.2",
     "budo": "^11.3.2",
