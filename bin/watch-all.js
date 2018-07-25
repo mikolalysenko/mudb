@@ -2,24 +2,15 @@ const fs = require('fs')
 const path = require('path')
 const spawn = require('child_process').spawn
 
-const repoPath = path.resolve(__dirname, '..')
+const repoRoot = path.resolve(__dirname, '..')
+const modulesRoot = `${repoRoot}/modules`
+const moduleNames = fs.readdirSync(modulesRoot)
+const modulePaths = moduleNames.map((moduleName) => path.join(modulesRoot, moduleName))
 
-const repoContents = fs.readdirSync(repoPath)
-const muModules = repoContents.filter((filename) => filename.indexOf('mu') === 0)
-const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
-
-function spawnInDirectory (dir, command, args) {
-    console.log('spawn:', command, 'in', dir, 'with args', args)
-    spawn(command, args, {
-        cwd: dir
-    })
-}
-
-console.log('starting all typescript instances...')
 modulePaths.forEach((dir) => {
-    console.log(`starting tsc for ${dir}`)
+    console.log(`initiating tsc for ${dir}`)
     spawn('tsc', ['--watch'], {
         cwd: dir,
-        stdio: 'inherit'
+        stdio: 'inherit',
     })
 })
