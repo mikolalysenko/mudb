@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "bootstrap": "lerna bootstrap",
+    "build": "node bin/build.js",
     "docs": "node bin/docs.js",
     "watch": "node bin/watch-all.js"
   },
