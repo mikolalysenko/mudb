@@ -5,7 +5,7 @@
     "build": "node bin/build.js",
     "clean": "lerna exec -- rm -rf bench test *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
-    "watch": "node bin/watch-all.js"
+    "watch": "node bin/watch.js"
   },
   "author": "Mikola Lysenko",
   "devDependencies": {
