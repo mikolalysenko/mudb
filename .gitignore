@@ -13,7 +13,7 @@ yarn-error.log*
 node_modules
 
 # build
-*/build/
+build
 *.d.ts
 *.js
 *.map
@@ -23,6 +23,5 @@ node_modules
 yarn.lock
 
 # unignore
-!*/src/*.js
-!*/types/*.d.ts
-!*/bin/*.js
+!src/*.js
+!bin/*.js
