@@ -1,14 +1,13 @@
 const fs = require('fs')
 const path = require('path')
-const spawn = require('child_process').spawn
+const { spawnSync, spawn } = require('child_process')
 
-const repoRoot = path.resolve(__dirname, '..')
-const modulesRoot = `${repoRoot}/modules`
-const moduleNames = fs.readdirSync(modulesRoot).filter((moduleName) => /^[A-Za-z0-9-]+$/.test(moduleName))
+const modulesRoot = path.resolve(__dirname, '../modules')
+const moduleNames = fs.readdirSync(modulesRoot).filter((fileName) => /^[A-Za-z0-9-]+$/.test(fileName))
 const modulePaths = moduleNames.map((moduleName) => path.join(modulesRoot, moduleName))
 
 modulePaths.forEach((dir) => {
-    console.log(`initiating tsc for ${dir}`)
+    console.log(`initiate tsc for ${dir}`)
     spawn('tsc', ['--watch'], {
         cwd: dir,
         stdio: 'inherit',
