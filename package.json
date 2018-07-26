@@ -1,14 +1,10 @@
 {
-  "name": "mudb-root-repo",
-  "version": "0.3.0",
   "private": true,
   "scripts": {
     "docs": "node bin/docs.js",
-    "link-all": "node bin/link-all.js",
     "watch": "node bin/watch-all.js"
   },
   "author": "Mikola Lysenko",
-  "license": "MIT",
   "devDependencies": {
     "@types/node": "^8.10.21",
     "@types/tape": "^4.2.32",
