@@ -4,7 +4,7 @@ const spawn = require('child_process').spawn
 
 const repoRoot = path.resolve(__dirname, '..')
 const modulesRoot = `${repoRoot}/modules`
-const moduleNames = fs.readdirSync(modulesRoot)
+const moduleNames = fs.readdirSync(modulesRoot).filter((moduleName) => /^[A-Za-z0-9-]+$/.test(moduleName))
 
 const modulePaths = moduleNames.map((moduleName) => path.join(modulesRoot, moduleName))
 modulePaths.push(repoRoot)
