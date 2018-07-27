@@ -3,7 +3,7 @@
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "build": "lerna exec --no-bail -- tsc",
-    "clean": "lerna exec -- rm -rf bench test *.d.ts *.js *.js.map",
+    "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
     "publish": "npm run clean && npm run build && npm run docs && lerna publish --exact --skip-git",
     "watch": "node bin/watch.js"
