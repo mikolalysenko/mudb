@@ -22,6 +22,6 @@
   "license": "MIT",
   "dependencies": {
     "mudb": "^0.2.1",
-    "uws": "^10.148.1"
+    "uws": "10.148.0"
   }
 }
