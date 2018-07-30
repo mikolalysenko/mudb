@@ -2,21 +2,13 @@ const fs = require('fs')
 const path = require('path')
 const spawn = require('child_process').spawn
 
-const repoPath = path.resolve(__dirname, '..')
+const repoRoot = path.resolve(__dirname, '..')
+const modulesRoot = `${repoRoot}/modules`
+const moduleNames = fs.readdirSync(modulesRoot).filter((fileName) => /^[A-Za-z0-9-]+$/.test(fileName))
 
-const repoContents = fs.readdirSync(repoPath)
-const muModules = repoContents.filter((filename) => filename.indexOf('mu') === 0)
-const modulePaths = muModules.map((modName) => path.join(repoPath, modName))
-modulePaths.push(repoPath)
+const modulePaths = moduleNames.map((moduleName) => path.join(modulesRoot, moduleName))
+modulePaths.push(repoRoot)
 
-function spawnInDirectory (dir, command, args) {
-    console.log('spawn:', command, 'in', dir, 'with args', args)
-    spawn(command, args, {
-        cwd: dir
-    })
-}
-
-console.log('processing readme files...')
 modulePaths.forEach((dir) => {
     const tocPath = path.join(dir, 'README-toc.md')
     const mdPath = path.join(dir, 'README.md')
@@ -28,6 +20,7 @@ modulePaths.forEach((dir) => {
         stdio: [
             fs.openSync(tocPath, 'r+'),
             fs.openSync(mdPath, 'w+'),
-            'inherit']
+            'inherit',
+        ],
     })
 })

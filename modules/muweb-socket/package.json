@@ -1,0 +1,27 @@
+{
+  "name": "muweb-socket",
+  "version": "0.2.0",
+  "description": "WebSocket communication for mudb",
+  "scripts": {
+    "test-server": "node bin/test-server.js",
+    "test-socket": "node bin/test-socket.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
+  "keywords": [
+    "mudb",
+    "real-time",
+    "multiplayer",
+    "game",
+    "network",
+    "websocket"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "dependencies": {
+    "mudb": "^0.2.1",
+    "uws": "10.148.0"
+  }
+}

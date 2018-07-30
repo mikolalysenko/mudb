@@ -1,0 +1,25 @@
+{
+  "name": "muclock",
+  "version": "0.1.2",
+  "description": "Clock synchronization for mudb",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
+  "keywords": [
+    "mudb",
+    "real-time",
+    "multiplayer",
+    "game",
+    "network",
+    "clock",
+    "sync"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "dependencies": {
+    "mudb": "^0.2.1",
+    "muschema": "^0.1.3"
+  }
+}

@@ -1,31 +1,31 @@
 {
-  "name": "mudb-root-repo",
-  "version": "1.0.0",
   "private": true,
-  "description": "Root directory for project. Contains scripts to run",
-  "main": "index.js",
   "scripts": {
-    "watch": "node bin/watch-all.js",
-    "link-all": "node bin/link-all.js",
-    "docs": "node bin/docs.js"
+    "bootstrap": "lerna bootstrap",
+    "build": "lerna exec --no-bail -- tsc",
+    "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
+    "docs": "node bin/docs.js",
+    "publish": "npm run clean && npm run build && npm run docs && lerna publish --exact --skip-git",
+    "test": "lerna run test",
+    "watch": "node bin/watch.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikolalysenko/mudb.git"
-  },
-  "keywords": [
-    "object",
-    "replication",
-    "database",
-    "realtime"
-  ],
   "author": "Mikola Lysenko",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mikolalysenko/mudb/issues"
-  },
-  "homepage": "https://github.com/mikolalysenko/mudb#readme",
-  "dependencies": {
-    "typescript": "^2.7.1"
+  "devDependencies": {
+    "@types/node": "^8.10.21",
+    "@types/tape": "^4.2.32",
+    "browserify": "^16.2.2",
+    "budo": "^11.3.2",
+    "chokidar": "^2.0.4",
+    "envify": "^4.1.0",
+    "lerna": "^2.11.0",
+    "shx": "^0.3.2",
+    "tape": "^4.9.1",
+    "tape-run": "^4.0.0",
+    "ts-node": "^7.0.0",
+    "tsify": "^4.0.0",
+    "tslint": "^5.11.0",
+    "tslint-language-service": "^0.9.9",
+    "typescript": "^2.9.2",
+    "webworkify": "^1.5.0"
   }
 }

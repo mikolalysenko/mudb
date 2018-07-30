@@ -1,0 +1,31 @@
+{
+  "name": "mudo",
+  "version": "0.1.0",
+  "description": "Development framework for prototyping mudb applications",
+  "main": "mudo.js",
+  "bin": {
+    "mudo": "./bin/mudo.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
+  "keywords": [
+    "mudb",
+    "real-time",
+    "multiplayer",
+    "game",
+    "network"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^16.2.2",
+    "budo": "^11.3.2",
+    "minimist": "^1.2.0",
+    "mudb": "^0.2.1",
+    "mulocal-socket": "^0.2.1",
+    "muweb-socket": "0.2.0",
+    "temp": "^0.8.3"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "muschema",
+  "version": "0.1.3",
+  "description": "Schemas for mudb",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
+  "keywords": [
+    "mudb",
+    "real-time",
+    "multiplayer",
+    "game",
+    "network",
+    "schema",
+    "diff",
+    "patch",
+    "binary"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "MIT",
+  "dependencies": {
+    "mustreams": "^0.1.2"
+  }
+}
