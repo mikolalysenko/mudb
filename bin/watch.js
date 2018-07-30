@@ -1,15 +1,20 @@
-const fs = require('fs')
+const { spawn } = require('child_process')
 const path = require('path')
-const { spawnSync, spawn } = require('child_process')
 
-const modulesRoot = path.resolve(__dirname, '../modules')
-const moduleNames = fs.readdirSync(modulesRoot).filter((fileName) => /^[A-Za-z0-9-]+$/.test(fileName))
-const modulePaths = moduleNames.map((moduleName) => path.join(modulesRoot, moduleName))
+const moduleNames = process.argv.slice(2).map((moduleName) => {
+    return /^\*/.test(moduleName) ? moduleName : `*${moduleName}`
+})
+const watchGlob = moduleNames.length > 0 ? `+(${moduleNames.join('|')})` : '*'
+const repoRoot = path.resolve(__dirname, '..')
 
-modulePaths.forEach((dir) => {
-    console.log(`initiate tsc for ${dir}`)
-    spawn('tsc', ['--watch'], {
-        cwd: dir,
-        stdio: 'inherit',
-    })
+// lerna exec --parallel --scope <watchGlob> -- tsc --watch
+spawn('lerna', [
+    'exec',
+    '--parallel',
+    '--scope', watchGlob,
+    '--',
+    'tsc --watch',
+], {
+    cwd: repoRoot,
+    stdio: 'inherit',
 })

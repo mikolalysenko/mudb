@@ -2,7 +2,7 @@
 By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.md).
 
 * [bootstrap](#bootstrap)
-* [build](#build)
+* [compile](#compile)
 * [document](#document)
 * [publish](#publish)
 * [coding style](#coding-style)
@@ -14,13 +14,25 @@ npm i
 npm run bootstrap
 ```
 
-## build
+## compile
 ```
+# watch all modules
 npm run watch
+
+# watch both stream and schema, and modules depending on them
+npm run watch stream schema
+
+# watch all socket modules, and modules depending on them
+npm run watch *-socket
 ```
 
 ## document
-Edit `README-toc.md`, **not** `README.md`.  To generate table of contents,
+[`mdtoc.js`](https://github.com/kitcambridge/mdtoc.js) is required to generate TOC:
+```
+npm i -g mdtoc
+```
+
+Edit `README-toc.md`, **not** `README.md`.  To generate TOC,
 ```
 npm run docs
 ```
