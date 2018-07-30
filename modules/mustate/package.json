@@ -1,6 +1,6 @@
 {
   "name": "mustate",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "State replication for mudb",
   "main": "index.js",
   "repository": {
@@ -18,8 +18,8 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "^0.2.1",
-    "muschema": "^0.1.3",
-    "mustreams": "^0.1.2"
+    "mudb": "0.2.2",
+    "muschema": "0.1.4",
+    "mustreams": "0.1.3"
   }
 }
