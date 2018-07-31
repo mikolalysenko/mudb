@@ -25,3 +25,4 @@ yarn.lock
 # unignore
 !src/*.js
 !bin/*.js
+!**/bin/*.js
