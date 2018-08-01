@@ -1,27 +1,23 @@
 const path = require('path')
 const { exec, spawn } = require('child_process')
+const getPort = require('get-port')
 const { watch } = require('chokidar')
 
-const getFreePort = require('./get-free-port')
-
 let port = 0
-getFreePort((error, port_) => {
-    if (error) {
-        console.error(error)
-        return
-    }
 
-    port = port_
-
-    spawn(
-        'node',
-        [ 'start-server.js', port_ ],
-        {
-            cwd: __dirname,
-            stdio: 'inherit',
-        },
-    )
-})
+getPort().then(
+    (port_) => {
+        port = port_
+        spawn(
+            'node', [ 'start-server.js', port_ ],
+            {
+                cwd: __dirname,
+                stdio: 'inherit',
+            },
+        )
+    },
+    console.error,
+)
 
 const modulePath = path.resolve(__dirname, '..')
 watch(`${modulePath}/src`)
