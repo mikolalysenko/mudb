@@ -9,7 +9,6 @@ import { MuWebSocketServer } from '../server';
 function noop () {}
 
 const server = http.createServer();
-server.unref();
 
 test('server initial state', (t) => {
     const socketServer = new MuWebSocketServer({ server });
@@ -156,8 +155,6 @@ test('socketServer.close() - when INIT', (t) => {
 });
 
 test('socketServer.close() - when RUNNING', (t) => {
-    t.plan(2);
-
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -167,6 +164,9 @@ test('socketServer.close() - when RUNNING', (t) => {
         connection: noop,
         close: (error) => {
             t.equals(error, undefined, 'should invoke close handler without error message');
+            t.end();
+
+            process.exit();
         },
     });
 });
