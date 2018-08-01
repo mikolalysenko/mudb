@@ -6,7 +6,7 @@
     "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
     "publish": "npm run clean && npm run build && npm run docs && lerna publish --exact --skip-git",
-    "test": "lerna run test",
+    "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "node bin/watch.js"
   },
   "author": "Mikola Lysenko",

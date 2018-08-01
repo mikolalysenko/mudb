@@ -3,6 +3,7 @@ By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.m
 
 * [bootstrap](#bootstrap)
 * [compile](#compile)
+* [test](#test)
 * [document](#document)
 * [publish](#publish)
 * [coding style](#coding-style)
@@ -24,6 +25,12 @@ npm run watch *-socket
 
 # watch both mudb and muweb-socket
 npm run watch mudb muweb-socket
+```
+
+## test
+```
+# run tests in all modules
+npm run test
 ```
 
 ## document
