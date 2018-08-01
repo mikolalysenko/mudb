@@ -3,8 +3,7 @@
   "version": "0.2.1",
   "description": "WebSocket communication for mudb",
   "scripts": {
-    "test-server": "node bin/test-server.js",
-    "test-socket": "node bin/test-socket.js"
+    "test": "node bin/test.js"
   },
   "repository": {
     "type": "git",

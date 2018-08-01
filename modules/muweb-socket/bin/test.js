@@ -1,7 +1,9 @@
 const path = require('path')
-const { spawn } = require('child_process')
+const { spawn, spawnSync } = require('child_process')
 
 const getPort = require('get-port')
+
+const moduleRoot = path.resolve(__dirname, '..')
 
 getPort().then(
     (port) => {
@@ -13,7 +15,7 @@ getPort().then(
         server.stdout.on('data', (msg) => {
             console.log(msg.toString())
 
-            const moduleRoot = path.resolve(__dirname, '..')
+            console.log('testing socket...')
             spawn(
                 `browserify test/socket.js -t [ envify --PORT ${port} ] | tape-run`,
                 {
@@ -24,4 +26,13 @@ getPort().then(
             )
         })
     },
+)
+
+console.log('testing server...')
+spawnSync(
+    'node', [ 'test/server.js' ],
+    {
+        cwd: moduleRoot,
+        stdio: 'inherit',
+    }
 )
