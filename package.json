@@ -6,7 +6,7 @@
     "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
     "publish": "npm run clean && npm run build && npm run docs && lerna publish --exact --skip-git",
-    "test": "lerna run test",
+    "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "node bin/watch.js"
   },
   "author": "Mikola Lysenko",
@@ -15,8 +15,8 @@
     "@types/tape": "^4.2.32",
     "browserify": "^16.2.2",
     "budo": "^11.3.2",
-    "chokidar": "^2.0.4",
     "envify": "^4.1.0",
+    "ip": "^1.1.5",
     "lerna": "^2.11.0",
     "shx": "^0.3.2",
     "tape": "^4.9.1",

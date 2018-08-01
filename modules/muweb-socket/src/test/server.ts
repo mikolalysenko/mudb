@@ -1,15 +1,15 @@
 import http = require('http');
-import os = require('os');
+
 import test = require('tape');
+import ip = require('ip');
 import WebSocket = require('uws');
 
 import { MuSocketServerState } from 'mudb/socket';
 import { MuWebSocketServer } from '../server';
 
-function noop () {}
+function noop () { }
 
 const server = http.createServer();
-server.unref();
 
 test('server initial state', (t) => {
     const socketServer = new MuWebSocketServer({ server });
@@ -73,21 +73,6 @@ test('socketServer.start() - when SHUTDOWN', (t) => {
 test('when a client connects', (t) => {
     t.plan(3);
 
-    function ipAddress () {
-        const networkInterfaces = os.networkInterfaces();
-        const interfaceNames = Object.keys(networkInterfaces);
-
-        for (let i = 0; i < interfaceNames.length; ++i) {
-            const networkInterface = networkInterfaces[interfaceNames[i]];
-            for (let j = 0; j < networkInterface.length; ++j) {
-                if (networkInterface[j].family === 'IPv4' && !networkInterface[j].internal) {
-                    return networkInterface[j].address;
-                }
-            }
-        }
-        return '127.0.0.1';
-    }
-
     function id () {
         return Math.random().toString(36).substr(2);
     }
@@ -143,7 +128,7 @@ test('when a client connects', (t) => {
     });
 
     server.listen(() => {
-        url = `ws://${ipAddress()}:${server.address().port}`;
+        url = `ws://${ip.address()}:${server.address().port}`;
     });
 });
 
@@ -156,8 +141,6 @@ test('socketServer.close() - when INIT', (t) => {
 });
 
 test('socketServer.close() - when RUNNING', (t) => {
-    t.plan(2);
-
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -167,6 +150,9 @@ test('socketServer.close() - when RUNNING', (t) => {
         connection: noop,
         close: (error) => {
             t.equals(error, undefined, 'should invoke close handler without error message');
+            t.end();
+
+            process.exit();
         },
     });
 });
