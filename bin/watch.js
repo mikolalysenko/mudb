@@ -1,20 +1,15 @@
 const { spawn } = require('child_process')
 const path = require('path')
 
-const moduleNames = process.argv.slice(2).map((moduleName) => {
-    return /^\*/.test(moduleName) ? moduleName : `*${moduleName}`
-})
-const watchGlob = moduleNames.length > 0 ? `+(${moduleNames.join('|')})` : '*'
+const patterns = process.argv.slice(2)
+const scopeGlob = patterns.length > 0 ? `+(${patterns.join('|')})` : '*'
 const repoRoot = path.resolve(__dirname, '..')
 
-// lerna exec --parallel --scope <watchGlob> -- tsc --watch
-spawn('lerna', [
-    'exec',
-    '--parallel',
-    '--scope', watchGlob,
-    '--',
-    'tsc --watch',
-], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-})
+spawn(
+    `lerna exec --parallel --scope "${scopeGlob}" -- tsc --watch`,
+    {
+        shell: true,
+        cwd: repoRoot,
+        stdio: 'inherit',
+    },
+)

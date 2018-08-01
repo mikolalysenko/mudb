@@ -19,11 +19,11 @@ npm run bootstrap
 # watch all modules
 npm run watch
 
-# watch both stream and schema, and modules depending on them
-npm run watch stream schema
-
-# watch all socket modules, and modules depending on them
+# watch all socket modules
 npm run watch *-socket
+
+# watch both mudb and muweb-socket
+npm run watch mudb muweb-socket
 ```
 
 ## document
