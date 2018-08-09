@@ -112,10 +112,18 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 const client = new MuRemoteClientState(client_, this.schema.client, this.windowSize);
                 this.clients.push(client);
                 this._observedStates.push([0]);
+
                 if (spec && spec.connect) {
                     spec.connect(client);
                 }
-                // TODO send initial state packet to client
+
+                publishState(
+                    this.schema.server,
+                    this._observedStates,
+                    this,
+                    client_.sendRaw,
+                    true,
+                );
             },
             disconnect: (client_) => {
                 const clientId = findClient(this.clients, client_.sessionId);
