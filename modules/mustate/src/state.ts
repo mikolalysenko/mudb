@@ -51,7 +51,7 @@ export interface MuStateReplica<Schema extends MuAnySchema> {
     windowSize:number;
 }
 
-// store tick and state in history whill keeping all ticks in
+// store tick and state in history while keeping all ticks in
 // increasing order
 function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;
@@ -149,10 +149,10 @@ export function forgetObservation (ticks:number[], horizon:number) {
 }
 
 // Returns false if
-// 1. `nextTick` already in history
-// 2. `baseTick` not in history
-// 3. `nextTick` is less than the current tick
-// Otherwise udpate current tick and state, then returns true.
+// `nextTick` already in history
+// `baseTick` not in history
+// `nextTick` is less than the current tick
+// Otherwise update current tick and state, then returns true.
 export function parseState<Schema extends MuAnySchema> (
     packet:Uint8Array,
     schema:Schema,
@@ -201,7 +201,7 @@ export function parseState<Schema extends MuAnySchema> (
     return false;
 }
 
-// 1. find the largest common tick and use it as base tick
+// 1. find the base tick (most recent common tick)
 // 2. increment replica.tick
 // 3. store new tick and state in history
 // 4. send new tick, base tick, and patch to new state
