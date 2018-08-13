@@ -30,6 +30,10 @@ export class MuRemoteClientState<Schema extends MuAnySchema> implements MuStateR
         this.state = schema.clone(schema.identity);
         this.history = new MuStateSet(this.state);
     }
+
+    public close () {
+        this._client.close();
+    }
 }
 
 function findClient<ClientType extends MuRemoteClientState<MuAnySchema>>(clients:ClientType[], id:string) {
@@ -46,16 +50,26 @@ function removeItem (array:any[], index:number) {
     array.pop();
 }
 
+function maxOfArrays (array:number[][]) {
+    const lastItems = new Array(array.length);
+    for (let i = 0; i < array.length; ++i) {
+        const subArray = array[i];
+        lastItems[i] = subArray[subArray.length - 1];
+    }
+    return Math.max.apply(null, lastItems);
+}
+
 export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema>> implements MuStateReplica<Schema['server']> {
     public readonly clients:MuRemoteClientState<Schema['client']>[] = [];
     public readonly schema:Schema;
     public server:MuServer;
 
     // replica stuff
-    public tick:number = 0;
+    public tick = 0;
     public state:Schema['server']['identity'];
     public history:MuStateSet<Schema['server']['identity']>;
-    public windowSize:number = Infinity;
+    public windowSize = Infinity;
+    public maxHistorySize = Infinity;
 
     private _protocol:MuServerProtocol<typeof MuDefaultStateSchema>;
     private _observedStates:number[][] = [];
@@ -64,11 +78,15 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         server:MuServer,
         schema:Schema,
         windowSize?:number,
+        maxHistorySize?:number,
     }) {
         this.server = spec.server;
         this.schema = spec.schema;
         if (typeof spec.windowSize === 'number') {
             this.windowSize = spec.windowSize;
+        }
+        if (typeof spec.maxHistorySize === 'number') {
+            this.maxHistorySize = spec.maxHistorySize;
         }
         this.state = this.schema.server.clone(this.schema.server.identity);
         this.history = new MuStateSet(this.schema.server.identity);
@@ -140,24 +158,37 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
 
     public commit(reliable?:boolean) {
         const observedStates = this._observedStates;
-        const baseTick = publishState(
+        const mostRecentCommonTick = publishState(
             this.schema.server,
             observedStates,
             this,
             this._protocol.broadcastRaw,
-            !!reliable);
+            !!reliable,
+        );
 
+        const mostRecentTick = maxOfArrays(observedStates);
+        const hasStaleUsers = mostRecentCommonTick > 0 && (mostRecentTick - mostRecentCommonTick >= this.maxHistorySize);
+        if (hasStaleUsers) {
+            for (let i = 0; i < observedStates.length; ++i) {
+                const states = observedStates[i];
+                if (states[states.length - 1] === mostRecentCommonTick) {
+                    this.clients[i].close();
+                }
+            }
+        }
+
+        // remove ticks smaller than mostRecentCommonTick
         for (let i = 0; i < observedStates.length; ++i) {
-            const observations = observedStates[i];
+            const states = observedStates[i];
             let ptr = 1;
-            while (ptr < observations.length && observations[ptr] < baseTick) {
+            while (ptr < states.length && states[ptr] < mostRecentCommonTick) {
                 ++ptr;
             }
             let optr = 1;
-            while (ptr < observations.length) {
-                observations[optr++] = observations[ptr++];
+            while (ptr < states.length) {
+                states[optr++] = states[ptr++];
             }
-            observations.length = optr;
+            states.length = optr;
         }
     }
 }
