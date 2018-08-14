@@ -50,15 +50,6 @@ function removeItem (array:any[], index:number) {
     array.pop();
 }
 
-function maxOfArrays (array:number[][]) {
-    const lastItems = new Array(array.length);
-    for (let i = 0; i < array.length; ++i) {
-        const subArray = array[i];
-        lastItems[i] = subArray[subArray.length - 1];
-    }
-    return Math.max.apply(null, lastItems);
-}
-
 export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema>> implements MuStateReplica<Schema['server']> {
     public readonly clients:MuRemoteClientState<Schema['client']>[] = [];
     public readonly schema:Schema;
@@ -166,8 +157,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
             !!reliable,
         );
 
-        const mostRecentTick = maxOfArrays(observedStates);
-        const hasStaleUsers = mostRecentCommonTick > 0 && (mostRecentTick - mostRecentCommonTick >= this.maxHistorySize);
+        const hasStaleUsers = mostRecentCommonTick > 0 && (this.tick - mostRecentCommonTick >= this.maxHistorySize);
         if (hasStaleUsers) {
             for (let i = 0; i < observedStates.length; ++i) {
                 const states = observedStates[i];
