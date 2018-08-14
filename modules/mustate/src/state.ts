@@ -31,8 +31,6 @@ export class MuStateSet<State> {
         this.states.push(initialState);
     }
 
-    // search backwards for the index of the first tick that is
-    // less than or equal to `tick`
     public at (tick:number) : number {
         // FIXME: replace with binary search
         for (let i = this.ticks.length - 1; i >= 0; --i) {
@@ -51,8 +49,7 @@ export interface MuStateReplica<Schema extends MuAnySchema> {
     windowSize:number;
 }
 
-// store tick and state in history while keeping all ticks in
-// increasing order
+// update history while keeping all ticks in increasing order
 function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State) {
     const {ticks, states} = stateSet;
     ticks.push(tick);
@@ -69,7 +66,6 @@ function pushState<State> (stateSet:MuStateSet<State>, tick:number, state:State)
     }
 }
 
-// pool and remove states from history
 export function garbageCollectStates<State> (schema:MuSchema<State>, stateSet:MuStateSet<State>, horizon:number) : boolean {
     const { ticks, states } = stateSet;
     let ptr = 1;
@@ -91,7 +87,6 @@ export function garbageCollectStates<State> (schema:MuSchema<State>, stateSet:Mu
 
 const _pointers:number[] = [];
 const _heads:number[] = [];
-// find the largest common tick of the tick sets
 function mostRecentCommonState (tickSets:number[][]) : number {
     _pointers.length = tickSets.length;
     _heads.length = tickSets.length;
@@ -136,7 +131,7 @@ export function addObservation (ticks:number[], newTick:number) {
     }
 }
 
-// remove ticks that are below horizon, except the first one
+// remove ticks that are below horizon while always keeping the 0-tick
 export function forgetObservation (ticks:number[], horizon:number) {
     let pointer = 1;
     for (let i = 1; i < ticks.length; ++i) {
@@ -148,17 +143,17 @@ export function forgetObservation (ticks:number[], horizon:number) {
     ticks.length = pointer;
 }
 
-// Returns false if
+// return false if
 // `nextTick` already in history
 // `baseTick` not in history
 // `nextTick` is less than the current tick
-// Otherwise update current tick and state, then returns true.
 export function parseState<Schema extends MuAnySchema> (
     packet:Uint8Array,
     schema:Schema,
     replica:MuStateReplica<Schema>,
     ack:(tick:number, unreliable?:boolean) => void,
     forget:(horizon:number, unreliable?:boolean) => void,
+    unreliable:boolean,
 ) : boolean {
     const { history, windowSize, state } = replica;
 
@@ -186,7 +181,7 @@ export function parseState<Schema extends MuAnySchema> (
     }
 
     pushState(history, nextTick, nextState);
-    ack(nextTick, true);
+    ack(nextTick, unreliable);
 
     const horizon = baseTick - windowSize - 1;
     if (garbageCollectStates(schema, history, horizon)) {
@@ -201,11 +196,6 @@ export function parseState<Schema extends MuAnySchema> (
     return false;
 }
 
-// 1. find the base tick (most recent common tick)
-// 2. increment replica.tick
-// 3. store new tick and state in history
-// 4. send new tick, base tick, and patch to new state
-// 5. pool and remove states from history
 export function publishState<Schema extends MuAnySchema> (
     schema:Schema,
     observations:number[][],
@@ -229,12 +219,15 @@ export function publishState<Schema extends MuAnySchema> (
     const stream = new MuWriteStream(4096);
     stream.writeUint32(nextTick);
     stream.writeUint32(baseTick);
-
     schema.diff(baseState, state, stream);
     const contentBytes = stream.bytes();
     raw(contentBytes, !reliable);
-
     stream.destroy();
+
+    if (reliable) {
+        // ack state immediately
+        observations[observations.length - 1].push(nextTick);
+    }
 
     const horizon = baseTick - windowSize - 1;
     garbageCollectStates(schema, history, horizon);

@@ -92,9 +92,11 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     }) {
         this._protocol.configure({
             message: {
-                ackState: (client, tick) => {
-                    const index = findClient(this.clients, client.sessionId);
-                    addObservation(this._observedStates[index], tick);
+                ackState: (client, tick, unreliable) => {
+                    if (unreliable) {
+                        const index = findClient(this.clients, client.sessionId);
+                        addObservation(this._observedStates[index], tick);
+                    }
                 },
                 forgetState: (client, tick) => {
                     const index = findClient(this.clients, client.sessionId);
@@ -111,7 +113,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     return;
                 }
                 const client = this.clients[findClient(this.clients, client_.sessionId)];
-                if (parseState(data, this.schema.client, client, client_.message.ackState, client_.message.forgetState)) {
+                if (parseState(data, this.schema.client, client, client_.message.ackState, client_.message.forgetState, unreliable)) {
                     if (spec && spec.state) {
                         spec.state(client, client.state, client.tick, !unreliable);
                     }
@@ -158,26 +160,24 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         );
 
         for (let i = 0; i < observedStates.length; ++i) {
-            const states = observedStates[i];
+            const ticks = observedStates[i];
 
-            // kick stale clients
-            const mostRecentTick = states[states.length - 1];
-            const stale = mostRecentTick > 0 && (this.tick - mostRecentTick >= this.maxHistorySize);
-            if (stale) {
+            // kick client if the latest acked state is stale
+            if (this.tick - ticks[ticks.length - 1] >= this.maxHistorySize) {
                 this.clients[i].close();
                 continue;
             }
 
             // remove ticks smaller than mostRecentCommonTick
             let ptr = 1;
-            while (ptr < states.length && states[ptr] < mostRecentCommonTick) {
+            while (ptr < ticks.length && ticks[ptr] < mostRecentCommonTick) {
                 ++ptr;
             }
             let optr = 1;
-            while (ptr < states.length) {
-                states[optr++] = states[ptr++];
+            while (ptr < ticks.length) {
+                ticks[optr++] = ticks[ptr++];
             }
-            states.length = optr;
+            ticks.length = optr;
         }
     }
 }
