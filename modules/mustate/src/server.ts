@@ -157,19 +157,18 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
             !!reliable,
         );
 
-        const hasStaleUsers = mostRecentCommonTick > 0 && (this.tick - mostRecentCommonTick >= this.maxHistorySize);
-        if (hasStaleUsers) {
-            for (let i = 0; i < observedStates.length; ++i) {
-                const states = observedStates[i];
-                if (states[states.length - 1] === mostRecentCommonTick) {
-                    this.clients[i].close();
-                }
-            }
-        }
-
-        // remove ticks smaller than mostRecentCommonTick
         for (let i = 0; i < observedStates.length; ++i) {
             const states = observedStates[i];
+
+            // kick stale clients
+            const mostRecentTick = states[states.length - 1];
+            const stale = mostRecentTick > 0 && (this.tick - mostRecentTick >= this.maxHistorySize);
+            if (stale) {
+                this.clients[i].close();
+                continue;
+            }
+
+            // remove ticks smaller than mostRecentCommonTick
             let ptr = 1;
             while (ptr < states.length && states[ptr] < mostRecentCommonTick) {
                 ++ptr;
