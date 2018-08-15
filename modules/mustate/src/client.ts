@@ -76,7 +76,7 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 if (!(data instanceof Uint8Array)) {
                     return;
                 }
-                if (parseState(data, this.schema.server, this.server, this._protocol.server.message.ackState, this._protocol.server.message.forgetState, unreliable)) {
+                if (parseState(data, this.schema.server, this.server, this._protocol.server.message.ackState, this._protocol.server.message.forgetState)) {
                     if (spec && spec.state) {
                         spec.state(this.server.state, this.server.tick, !unreliable);
                     }

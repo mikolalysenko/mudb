@@ -92,11 +92,9 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     }) {
         this._protocol.configure({
             message: {
-                ackState: (client, tick, unreliable) => {
-                    if (unreliable) {
-                        const index = findClient(this.clients, client.sessionId);
-                        addObservation(this._observedStates[index], tick);
-                    }
+                ackState: (client, tick) => {
+                    const index = findClient(this.clients, client.sessionId);
+                    addObservation(this._observedStates[index], tick);
                 },
                 forgetState: (client, tick) => {
                     const index = findClient(this.clients, client.sessionId);
@@ -113,7 +111,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                     return;
                 }
                 const client = this.clients[findClient(this.clients, client_.sessionId)];
-                if (parseState(data, this.schema.client, client, client_.message.ackState, client_.message.forgetState, unreliable)) {
+                if (parseState(data, this.schema.client, client, client_.message.ackState, client_.message.forgetState)) {
                     if (spec && spec.state) {
                         spec.state(client, client.state, client.tick, !unreliable);
                     }

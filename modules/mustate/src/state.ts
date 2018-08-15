@@ -126,6 +126,7 @@ export function addObservation (ticks:number[], newTick:number) {
         } else if (ticks[i] > newTick) {
             ticks[i + 1] = ticks[i];
         } else {
+            ticks.splice(i + 1, 1);
             break;
         }
     }
@@ -153,7 +154,6 @@ export function parseState<Schema extends MuAnySchema> (
     replica:MuStateReplica<Schema>,
     ack:(tick:number, unreliable?:boolean) => void,
     forget:(horizon:number, unreliable?:boolean) => void,
-    unreliable:boolean,
 ) : boolean {
     const { history, windowSize, state } = replica;
 
@@ -181,7 +181,7 @@ export function parseState<Schema extends MuAnySchema> (
     }
 
     pushState(history, nextTick, nextState);
-    ack(nextTick, unreliable);
+    ack(nextTick, true);
 
     const horizon = baseTick - windowSize - 1;
     if (garbageCollectStates(schema, history, horizon)) {
