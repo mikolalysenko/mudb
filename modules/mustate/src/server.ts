@@ -30,6 +30,10 @@ export class MuRemoteClientState<Schema extends MuAnySchema> implements MuStateR
         this.state = schema.clone(schema.identity);
         this.history = new MuStateSet(this.state);
     }
+
+    public close () {
+        this._client.close();
+    }
 }
 
 function findClient<ClientType extends MuRemoteClientState<MuAnySchema>>(clients:ClientType[], id:string) {
@@ -52,10 +56,11 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     public server:MuServer;
 
     // replica stuff
-    public tick:number = 0;
+    public tick = 0;
     public state:Schema['server']['identity'];
     public history:MuStateSet<Schema['server']['identity']>;
-    public windowSize:number = Infinity;
+    public windowSize = Infinity;
+    public maxHistorySize = Infinity;
 
     private _protocol:MuServerProtocol<typeof MuDefaultStateSchema>;
     private _observedStates:number[][] = [];
@@ -64,11 +69,15 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         server:MuServer,
         schema:Schema,
         windowSize?:number,
+        maxHistorySize?:number,
     }) {
         this.server = spec.server;
         this.schema = spec.schema;
         if (typeof spec.windowSize === 'number') {
             this.windowSize = spec.windowSize;
+        }
+        if (typeof spec.maxHistorySize === 'number') {
+            this.maxHistorySize = spec.maxHistorySize;
         }
         this.state = this.schema.server.clone(this.schema.server.identity);
         this.history = new MuStateSet(this.schema.server.identity);
@@ -112,10 +121,18 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
                 const client = new MuRemoteClientState(client_, this.schema.client, this.windowSize);
                 this.clients.push(client);
                 this._observedStates.push([0]);
+
                 if (spec && spec.connect) {
                     spec.connect(client);
                 }
-                // TODO send initial state packet to client
+
+                publishState(
+                    this.schema.server,
+                    this._observedStates,
+                    this,
+                    client_.sendRaw,
+                    true,
+                );
             },
             disconnect: (client_) => {
                 const clientId = findClient(this.clients, client_.sessionId);
@@ -132,24 +149,33 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
 
     public commit(reliable?:boolean) {
         const observedStates = this._observedStates;
-        const baseTick = publishState(
+        const mostRecentCommonTick = publishState(
             this.schema.server,
             observedStates,
             this,
             this._protocol.broadcastRaw,
-            !!reliable);
+            !!reliable,
+        );
 
         for (let i = 0; i < observedStates.length; ++i) {
-            const observations = observedStates[i];
+            const ticks = observedStates[i];
+
+            // kick client if the latest acked state is stale
+            if (this.tick - ticks[ticks.length - 1] >= this.maxHistorySize) {
+                this.clients[i].close();
+                continue;
+            }
+
+            // remove ticks smaller than mostRecentCommonTick
             let ptr = 1;
-            while (ptr < observations.length && observations[ptr] < baseTick) {
+            while (ptr < ticks.length && ticks[ptr] < mostRecentCommonTick) {
                 ++ptr;
             }
             let optr = 1;
-            while (ptr < observations.length) {
-                observations[optr++] = observations[ptr++];
+            while (ptr < ticks.length) {
+                ticks[optr++] = ticks[ptr++];
             }
-            observations.length = optr;
+            ticks.length = optr;
         }
     }
 }
