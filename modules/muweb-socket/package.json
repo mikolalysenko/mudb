@@ -1,6 +1,6 @@
 {
   "name": "muweb-socket",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "WebSocket communication for mudb",
   "scripts": {
     "test": "node bin/test.js"
@@ -20,7 +20,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.2",
+    "mudb": "0.2.3",
     "uws": "10.148.0"
   }
 }
