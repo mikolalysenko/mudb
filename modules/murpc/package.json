@@ -1,6 +1,6 @@
 {
   "name": "murpc",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "RPC protocol for mudb",
   "main": "index.js",
   "repository": {
@@ -18,7 +18,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.3",
-    "muschema": "0.1.5"
+    "mudb": "0.2.4",
+    "muschema": "0.1.6"
   }
 }
