@@ -8,6 +8,27 @@ import {
     MuSessionId,
     MuData,
 } from 'mudb/socket';
+import {
+    MuBuffer,
+    allocBuffer,
+    freeBuffer,
+} from 'mustreams';
+
+class MuBufferWrapper {
+    private _buffer:MuBuffer;
+    public bytes:Uint8Array;
+
+    constructor (bytes:Uint8Array) {
+        this._buffer = allocBuffer(bytes.length);
+        this.bytes = this._buffer.uint8.subarray(0, bytes.length);
+        this.bytes.set(bytes);
+    }
+
+    public free () {
+        freeBuffer(this._buffer);
+    }
+
+}
 
 export class MuDebugServerSocket implements MuSocket {
     public socket:MuSocket;
@@ -58,22 +79,28 @@ export class MuDebugServerSocket implements MuSocket {
         return this.latency + Math.floor(Math.random() * this.jitter);
     }
 
-    private _pendingMessages:MuData[] = [];
+    private _pendingMessages:(string|MuBufferWrapper)[] = [];
     private _drainTimeout;
     private _drainMessages () {
         this._drainTimeout = 0;
         for (let i = 0; i < this._pendingMessages.length; ++i) {
-            this.socket.send(this._pendingMessages[i], false);
+            const message = this._pendingMessages[i];
+            if (typeof message === 'string') {
+                this.socket.send(message, false);
+            } else {
+                this.socket.send(message.bytes, false);
+                message.free();
+            }
         }
         this._pendingMessages.length = 0;
     }
 
-    public send (data_:MuData, unreliable?:boolean) {
-        const data = typeof data_ === 'string' ? data_ : data_.slice(0);
+    public send (data:MuData, unreliable?:boolean) {
         if (unreliable) {
             setTimeout(() => this.socket.send(data, true), this.calcDelay());
         } else {
-            this._pendingMessages.push(data);
+            const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
+            this._pendingMessages.push(message);
 
             if (!this.configured) {
                 return;

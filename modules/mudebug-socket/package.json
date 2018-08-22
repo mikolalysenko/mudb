@@ -22,7 +22,8 @@
   "author": "He Diyi",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.4"
+    "mudb": "0.2.4",
+    "mustreams": "0.1.5"
   },
   "devDependencies": {
     "muschema": "0.1.6",
