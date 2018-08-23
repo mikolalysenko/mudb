@@ -1,31 +1,16 @@
-import os = require('os');
+import ip = require('ip');
 import test = require('tape');
 
 import { MuSocketState } from 'mudb/socket';
 import { MuWebSocket } from '../socket';
 
-function noop () {}
+function noop () { }
 
 function id () {
     return Math.random().toString(36).substr(2);
 }
 
-function ipAddress () {
-    const networkInterfaces = os.networkInterfaces();
-    const interfaceNames = Object.keys(networkInterfaces);
-
-    for (let i = 0; i < interfaceNames.length; ++i) {
-        const networkInterface = networkInterfaces[interfaceNames[i]];
-        for (let j = 0; j < networkInterface.length; ++j) {
-            if (networkInterface[j].family === 'IPv4' && !networkInterface[j].internal) {
-                return networkInterface[j].address;
-            }
-        }
-    }
-    return '127.0.0.1';
-}
-
-const url = `ws://${ipAddress()}:${process.env.PORT}`;
+const url = `ws://${ip.address()}:${process.env.PORT}`;
 
 test('socket initial state', (t) => {
     const socket = new MuWebSocket({
