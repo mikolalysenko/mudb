@@ -12,7 +12,7 @@ getPort().then(
             { cwd: __dirname },
         )
 
-        server.stdout.on('data', (msg) => {
+        server.stdout.once('data', (msg) => {
             console.log(msg.toString())
 
             console.log('testing socket...')
