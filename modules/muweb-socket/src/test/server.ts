@@ -11,6 +11,8 @@ function noop () { }
 
 const server = http.createServer();
 
+test.onFinish(() => process.exit(0));
+
 test('server initial state', (t) => {
     const socketServer = new MuWebSocketServer({ server });
     t.equals(socketServer.state, MuSocketServerState.INIT, 'should be INIT');
@@ -151,8 +153,6 @@ test('socketServer.close() - when RUNNING', (t) => {
         close: (error) => {
             t.equals(error, undefined, 'should invoke close handler without error message');
             t.end();
-
-            process.exit();
         },
     });
 });
