@@ -23,16 +23,20 @@ getPort().then(
                     cwd: moduleRoot,
                     stdio: 'inherit',
                 },
-            )
+            ).on('exit', process.exit)
         })
     },
 )
 
 console.log('testing server...')
-spawnSync(
+const serverTest = spawnSync(
     'node', [ 'test/server.js' ],
     {
         cwd: moduleRoot,
         stdio: 'inherit',
     }
 )
+
+if (serverTest.status) {
+    process.exit(serverTest.status)
+}
