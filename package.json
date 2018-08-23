@@ -5,7 +5,7 @@
     "build": "lerna exec --no-bail -- tsc",
     "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
-    "publish": "npm run clean && npm run build && lerna publish --exact",
+    "publish": "npm run clean && npm run build && npm run test && lerna publish --exact",
     "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "node bin/watch.js"
   },
