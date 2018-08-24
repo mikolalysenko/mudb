@@ -55,7 +55,7 @@ export class MuWebSocketConnection {
                 if (typeof data === 'string') {
                     this.pendingMessages.push(data);
                 } else {
-                    this.pendingMessages.push(new Uint8Array(data));
+                    this.pendingMessages.push(new Uint8Array(data).slice(0));
                 }
             }
         };
