@@ -5,6 +5,9 @@ import {
     MuSocketSpec,
 } from 'mudb/socket';
 
+const hasWindow = typeof window === 'object' && 'addEventListener' in window;
+const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require('uws');
+
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
 
@@ -49,14 +52,16 @@ export class MuWebSocket implements MuSocket {
             }
         }
 
-        window.addEventListener('beforeunload', () => {
-            for (let i = 0; i < sockets.length; ++i) {
-                sockets[i].close();
-            }
-        });
+        if (hasWindow) {
+            window.addEventListener('beforeunload', () => {
+                for (let i = 0; i < sockets.length; ++i) {
+                    sockets[i].close();
+                }
+            });
+        }
 
         const openSocket = () => {
-            const socket = new WebSocket(this._url);
+            const socket = new WS(this._url);
             socket.binaryType = 'arraybuffer';
             sockets.push(socket);
 
