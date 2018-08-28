@@ -15,7 +15,7 @@ getPort().then(
         server.stdout.once('data', (msg) => {
             console.log(msg.toString())
 
-            console.log('testing socket...')
+            console.log('testing socket in browser...')
             spawn(
                 `browserify test/socket.js -t [ envify --PORT ${port} ] | tape-run`,
                 {
@@ -23,7 +23,17 @@ getPort().then(
                     cwd: moduleRoot,
                     stdio: 'inherit',
                 },
-            ).on('exit', process.exit)
+            ).on('exit', () => {
+                console.log('testing socket in node...')
+                spawn(
+                    'node', [ 'test/socket.js' ],
+                    {
+                        cwd: moduleRoot,
+                        env: Object.assign({}, process.env, { PORT: port }),
+                        stdio: 'inherit',
+                    },
+                ).on('exit', process.exit)
+            })
         })
     },
 )

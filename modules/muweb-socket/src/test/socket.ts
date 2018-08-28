@@ -12,6 +12,10 @@ function id () {
 
 const url = `ws://${ip.address()}:${process.env.PORT}`;
 
+if (typeof process === 'object' && 'exit' in process) {
+    test.onFinish(() => process.exit(0));
+}
+
 test('socket initial state', (t) => {
     const socket = new MuWebSocket({
         sessionId: id(),
