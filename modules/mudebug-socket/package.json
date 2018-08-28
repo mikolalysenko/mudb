@@ -28,6 +28,6 @@
   "devDependencies": {
     "mulocal-socket": "^0.2.4",
     "muschema": "0.1.6",
-    "muweb-socket": "0.2.3"
+    "muweb-socket": "0.2.4"
   }
 }
