@@ -366,3 +366,103 @@ test('LocalSocket - maintaining order of messages from both sides', (t) => {
         },
     });
 });
+
+test('LocalSocket - simulating packet loss on client side', (t) => {
+    t.plan(1);
+
+    const socketServer = createLocalSocketServer();
+    const muServer = new MuServer(socketServer);
+
+    const serverProtocol = muServer.protocol(protocolSchema);
+    serverProtocol.configure({
+        message: {
+            ping: (client, data) => {
+                if (data === PING_OPCODE) {
+                    t.pass('server should receive opcode');
+                    client.message.pong(PONG_OPCODE);
+                }
+            },
+        },
+    });
+
+    muServer.start({
+        ready: () => {
+            const socket = createLocalSocket({
+                sessionId: randomId(),
+                server: socketServer,
+            });
+            const debugSocket = new MuDebugSocket({
+                socket,
+                inPacketLoss: 100,
+            });
+            const muClient = new MuClient(debugSocket);
+
+            const clientProtocol = muClient.protocol(protocolSchema);
+            clientProtocol.configure({
+                message: {
+                    pong: (data) => {
+                        if (data === PONG_OPCODE) {
+                            t.fail('client should not receive opcode');
+                        }
+                    },
+                },
+            });
+
+            muClient.start({
+                ready: () => {
+                    clientProtocol.server.message.ping(PING_OPCODE);
+                },
+            });
+        },
+    });
+});
+
+test('LocalSocket - simulating packet loss on server side', (t) => {
+    t.plan(1);
+
+    const socketServer = createLocalSocketServer();
+    const debugServer = new MuDebugServer({
+        socketServer,
+        outPacketLoss: 100,
+    });
+    const muServer = new MuServer(debugServer);
+
+    const serverProtocol = muServer.protocol(protocolSchema);
+    serverProtocol.configure({
+        message: {
+            ping: (client, data) => {
+                if (data === PING_OPCODE) {
+                    t.pass('server should receive opcode');
+                    client.message.pong(PONG_OPCODE);
+                }
+            },
+        },
+    });
+
+    muServer.start({
+        ready: () => {
+            const socket = createLocalSocket({
+                sessionId: randomId(),
+                server: socketServer,
+            });
+            const muClient = new MuClient(socket);
+
+            const clientProtocol = muClient.protocol(protocolSchema);
+            clientProtocol.configure({
+                message: {
+                    pong: (data) => {
+                        if (data === PONG_OPCODE) {
+                            t.fail('client should not receive opcode');
+                        }
+                    },
+                },
+            });
+
+            muClient.start({
+                ready: () => {
+                    clientProtocol.server.message.ping(PING_OPCODE);
+                },
+            });
+        },
+    });
+});
