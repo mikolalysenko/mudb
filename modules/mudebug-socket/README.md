@@ -49,17 +49,25 @@ Unlike in other `mudb` socket modules, `MuDebugSocket` and `MuDebugServer` are d
 
 ## table of contents
 
-## install ##
+   * [1 install](#section_1)
+   * [2 api](#section_2)
+      * [2.1 class: MuDebugServer](#section_2.1)
+         * [2.1.1 new MuDebugServer(spec)](#section_2.1.1)
+      * [2.2 class: MuDebugSocket](#section_2.2)
+         * [2.2.1 new MuDebugSocket(spec)](#section_2.2.1)
+   * [3 TODO](#section_3)
+
+## <a name="section_1"></a> 1 install
 
 ```
 npm i mudebug-socket
 ```
 
-## api ##
+## <a name="section_2"></a> 2 api
 
-### class: MuDebugServer ###
+### <a name="section_2.1"></a> 2.1 class: MuDebugServer
 
-#### new MuDebugServer(spec) ####
+#### <a name="section_2.1.1"></a> 2.1.1 new MuDebugServer(spec)
 * `spec:object`
     * `socketServer:MuSocketServer`
     * `inLatency?:number`
@@ -69,9 +77,9 @@ npm i mudebug-socket
     * `outJitter?:number`
     * `outPacketLoss?:number`
 
-### class: MuDebugSocket ###
+### <a name="section_2.2"></a> 2.2 class: MuDebugSocket
 
-#### new MuDebugSocket(spec) ####
+#### <a name="section_2.2.1"></a> 2.2.1 new MuDebugSocket(spec)
 * `spec:object`
     * `socket:MuSocket`
     * `inLatency?:number`
@@ -81,10 +89,12 @@ npm i mudebug-socket
     * `outJitter?:number`
     * `outPacketLoss?:number`
 
-## TODO ##
+## <a name="section_3"></a> 3 TODO
 * **tampered packets**
 * low bandwidth
 * slow open
 * out-of-order packets
 * duplicate packets
 * throttling
+
+
