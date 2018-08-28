@@ -37,17 +37,13 @@ function drain (
     pendingMessages:(string|MuBufferWrapper)[],
     handle:(data:MuData, unreliable:boolean) => void,
 ) {
-    for (let i = 0; i < pendingMessages.length; ++i) {
-        const message = pendingMessages[i];
-        if (typeof message === 'string') {
-            handle(message, false);
-        } else {
-            handle(message.bytes, false);
-            message.free();
-        }
+    const message = pendingMessages.shift();
+    if (typeof message === 'string') {
+        handle(message, false);
+    } else if (message) {
+        handle(message.bytes, false);
+        message.free();
     }
-
-    pendingMessages.length = 0;
 }
 
 export class MuDebugSocket implements MuSocket {
@@ -85,7 +81,6 @@ export class MuDebugSocket implements MuSocket {
         }
     }
 
-    private _drainInboxTimeout;
     private _inbox:(string|MuBufferWrapper)[] = [];
 
     public open (spec:MuSocketSpec) {
@@ -100,23 +95,16 @@ export class MuDebugSocket implements MuSocket {
                 } else {
                     const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
                     this._inbox.push(message);
-
-                    if (!this._drainInboxTimeout) {
-                        this._drainInboxTimeout = setTimeout(
-                            () => {
-                                this._drainInboxTimeout = 0;
-                                drain(this._inbox, spec.message);
-                            },
-                            calcDelay(this.inLatency, this.inJitter),
-                        );
-                    }
+                    setTimeout(
+                        () => drain(this._inbox, spec.message),
+                        calcDelay(this.inLatency, this.inJitter),
+                    );
                 }
             },
             close: spec.close,
         });
     }
 
-    private _drainOutboxTimeout;
     private _outbox:(string|MuBufferWrapper)[] = [];
 
     public send (data:MuData, unreliable?:boolean) {
@@ -128,19 +116,13 @@ export class MuDebugSocket implements MuSocket {
         } else {
             const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
             this._outbox.push(message);
-
-            if (!this._drainOutboxTimeout) {
-                this._drainOutboxTimeout = setTimeout(
-                    () => {
-                        this._drainOutboxTimeout = 0;
-                        drain(
-                            this._outbox,
-                            (data_, unreliable_) => this.socket.send(data_, unreliable_),
-                        );
-                    },
-                    calcDelay(this.outLatency, this.outJitter),
-                );
-            }
+            setTimeout(
+                () => drain(
+                    this._outbox,
+                    (data_, unreliable_) => this.socket.send(data_, unreliable_),
+                ),
+                calcDelay(this.outLatency, this.outJitter),
+            );
         }
     }
 
