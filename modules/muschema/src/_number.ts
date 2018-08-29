@@ -28,6 +28,11 @@ export abstract class MuNumber implements MuSchema<number> {
 
     public alloc () { return this.identity; }
     public free (_:number) : void { }
+
+    public equal (x:number, y:number) {
+        return x === y;
+    }
+
     public clone (x:number) { return x; }
 
     public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
