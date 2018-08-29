@@ -10,7 +10,7 @@ const DEFAULT_TIMEOUT = Infinity;
 const DEFAULT_FRAMESKIP = Infinity;
 
 function genUUID () {
-    return Math.floor(Math.random() * 1e12) | 0;
+    return Math.floor(Math.random() * 1e10) | 0;
 }
 
 class MuClockClientPingHandler {
