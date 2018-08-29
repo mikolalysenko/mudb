@@ -23,6 +23,8 @@ export class MuASCII implements MuSchema<string> {
 
     public clone (x:string) { return x; }
 
+    public copy (source:string, target:string) { }
+
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4 + target.length);

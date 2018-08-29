@@ -45,6 +45,8 @@ export class MuFixedASCII implements MuSchema<string> {
 
     public clone (x:string) { return x; }
 
+    public copy (source:string, target:string) { }
+
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         const length = this.length;
         if (base.length !== length) {

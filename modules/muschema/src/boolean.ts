@@ -24,6 +24,8 @@ export class MuBoolean implements MuSchema<boolean> {
 
     public clone (b:boolean) { return b; }
 
+    public copy (source:boolean, target:boolean) { }
+
     public diff (a:boolean, b:boolean, stream:MuWriteStream) {
         if (a !== b) {
             stream.grow(1);
