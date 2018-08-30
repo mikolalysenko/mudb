@@ -21,6 +21,7 @@ build
 # misc
 .jsbeautifyrc
 yarn.lock
+.vscode
 
 # unignore
 !src/*.js
