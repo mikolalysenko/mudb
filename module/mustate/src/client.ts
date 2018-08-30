@@ -35,7 +35,7 @@ export class MuClientState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     public tick:number = 0;
     public history:MuStateSet<Schema['client']['identity']>;
     public state:Schema['client']['identity'];
-    public windowSize:number = Infinity;
+    public windowSize:number = 5;
 
     // underlying protocol
     private _protocol:MuClientProtocol<typeof MuDefaultStateSchema>;
