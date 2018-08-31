@@ -7,10 +7,11 @@ const DEFAULT_TICK_RATE = 30;
 const DEFAULT_PING = 200;
 const PING_BUFFER_SIZE = 256;
 const DEFAULT_TIMEOUT = Infinity;
+const DEFAULT_IDLE_TIMEOUT = Infinity;
 const DEFAULT_FRAMESKIP = Infinity;
 
 function genUUID () {
-    return Math.floor(Math.random() * 1e12) | 0;
+    return Math.floor(Math.random() * 1e10) | 0;
 }
 
 class MuClockClientPingHandler {
@@ -22,10 +23,12 @@ class MuClockClientPingHandler {
     private _pingStatistic:MuPingStatistic = new MuPingStatistic(PING_BUFFER_SIZE);
 
     private _lastPingUUID:number = 0;
-    private _lastPing:number = 0;
+    private _lastPingOut:number = 0;
+    private _lastPingIn:number = 0;
     private _lastPong:number = 0;
     private _pingRate:number = 0;
     private _timeout:number;
+    private _idleTimeout:number;
 
     constructor (spec:{
         client:MuRemoteClient<typeof MuClockProtocol.client>;
@@ -33,23 +36,26 @@ class MuClockClientPingHandler {
         clock:MuClock;
         pingRate:number;
         timeout:number;
+        idleTimeout:number;
     }) {
         this._client = spec.client;
         this._server = spec.server;
         this._clock = spec.clock;
         this._pingRate = spec.pingRate;
         this._timeout = spec.timeout;
+        this._idleTimeout = spec.idleTimeout;
     }
 
     public poll (now:number) {
-        if (this._lastPong + this._timeout < now) {
+        if (this._lastPong + this._timeout < now ||
+            this._lastPingIn + this._idleTimeout < now) {
             this._client.close();
             return;
         }
         if (this._lastPingUUID || this._lastPong + this._pingRate > now) {
             return;
         }
-        this._lastPing = now;
+        this._lastPingOut = now;
         this._lastPingUUID = genUUID();
         this._client.message.ping(this._lastPingUUID);
     }
@@ -60,8 +66,12 @@ class MuClockClientPingHandler {
         }
         this._lastPingUUID = 0;
         this._lastPong = this._clock.now();
-        this._pingStatistic.addSample(this._lastPong - this._lastPing);
+        this._pingStatistic.addSample(this._lastPong - this._lastPingOut);
         this._server.ping[this._client.sessionId] = this._pingStatistic.median;
+    }
+
+    public pingIn () {
+        this._lastPingIn = this._clock.now();
     }
 }
 
@@ -93,6 +103,7 @@ export class MuClockServer {
         timeout?:number,
         pingBufferSize?:number,
         frameSkip?:number,
+        idleTimeout?:number,
     }) {
         this._protocol = spec.server.protocol(MuClockProtocol);
         this._pingBufferSize = spec.pingBufferSize || 256;
@@ -117,6 +128,7 @@ export class MuClockServer {
             },
             message: {
                 ping: (client) => {
+                    this._clientPingHandlers[client.sessionId].pingIn();
                     client.message.pong(this._clock.now());
                 },
                 pong: (client, uuid) => {
@@ -137,6 +149,7 @@ export class MuClockServer {
                     clock: this._clock,
                     pingRate: this._pingRate,
                     timeout: spec.timeout || DEFAULT_TIMEOUT,
+                    idleTimeout: spec.idleTimeout || DEFAULT_IDLE_TIMEOUT,
                 });
 
                 this.ping[client.sessionId] = spec.defaultPing || DEFAULT_PING;
