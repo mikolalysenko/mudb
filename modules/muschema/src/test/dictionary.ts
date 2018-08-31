@@ -6,7 +6,7 @@ import {
     MuVoid,
 } from '../';
 
-import { muPrimitiveTypes } from '../_constants';
+import { muPrimitiveTypes } from '../constants';
 import {
     muPrimitiveSchema,
     randomShortStr,

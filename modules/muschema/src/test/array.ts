@@ -10,7 +10,7 @@ import {
 import {
     muType2TypedArray,
     muPrimitiveTypes,
-} from '../_constants';
+} from '../constants';
 import {
     muPrimitiveSchema,
     randomValueOf,

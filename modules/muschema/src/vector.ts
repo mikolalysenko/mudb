@@ -5,7 +5,7 @@ import {
     MuWriteStream,
 } from 'mustreams';
 
-import { muType2TypedArray } from './_constants';
+import { muType2TypedArray } from './constants';
 
 export type _MuVectorType<ValueSchema extends MuNumber> = {
     float32:Float32Array;

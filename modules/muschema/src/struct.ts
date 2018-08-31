@@ -6,7 +6,7 @@ import {
     muPrimitiveTypes,
     muType2ReadMethod,
     muType2WriteMethod,
-} from './_constants';
+} from './constants';
 
 export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
     [P in keyof Spec]:Spec[P]['identity'];

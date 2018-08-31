@@ -14,7 +14,7 @@ import {
     MuUnion,
 } from '../';
 
-import { muPrimitiveTypes } from '../_constants';
+import { muPrimitiveTypes } from '../constants';
 import {
     randomValueOf,
     testPatchingPairFactory,
