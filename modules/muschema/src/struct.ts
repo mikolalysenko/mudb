@@ -131,6 +131,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint32':
                     prelude.append(`this[${propRef}]=${type.identity};`);
                     break;
+                case 'ascii':
                 case 'string':
                     prelude.append(`this[${propRef}]=${inject(type.identity)};`);
                     break;
@@ -144,6 +145,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'ascii':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -166,6 +168,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'ascii':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -189,6 +192,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'ascii':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -211,6 +215,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
+                case 'ascii':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -277,7 +282,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         if (numProps & 7) {
             methods.diff.append(`s.writeUint8At(${dTrackerOffset}+${trackerBytes - 1},${dTracker});`);
         }
-        // return the number of tracker bytes plus content bytes
         methods.diff.append(`if(${numPatch}){return true;}else{s.offset=${dTrackerOffset};return false;}`);
 
         // patch subroutine
@@ -292,6 +296,9 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const muType = structTypes[i].muType;
             methods.patch.append(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?`);
             switch (muType) {
+                case 'ascii':
+                    methods.patch.append(`s.readASCII():b[${propRef}];`);
+                    break;
                 case 'boolean':
                     methods.patch.append(`!!s.readUint8():b[${propRef}];`);
                     break;
