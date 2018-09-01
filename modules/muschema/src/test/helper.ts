@@ -5,6 +5,7 @@ import {
 
 import {
     MuSchema,
+    MuASCII,
     MuBoolean,
     MuFloat32,
     MuFloat64,
@@ -17,6 +18,22 @@ import {
     MuUint32,
 } from '../index';
 import { Constants } from '../constants';
+
+export function muPrimitiveSchema (muType) {
+    return {
+        ascii: () => new MuASCII(),
+        boolean: () => new MuBoolean(),
+        float32: () => new MuFloat32(),
+        float64: () => new MuFloat64(),
+        int8: () => new MuInt8(),
+        int16: () => new MuInt16(),
+        int32: () => new MuInt32(),
+        string: () => new MuString(),
+        uint8: () => new MuUint8(),
+        uint16: () => new MuUint16(),
+        uint32: () => new MuUint32(),
+    }[muType]();
+}
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
@@ -40,22 +57,6 @@ const muNumType2SchemaType = {
 };
 export function muNumSchema (muType) {
     return new muNumType2SchemaType[muType]();
-}
-
-const muPrimitiveType2SchemaType = {
-    'boolean': MuBoolean,
-    'float32': MuFloat32,
-    'float64': MuFloat64,
-    'int8': MuInt8,
-    'int16': MuInt16,
-    'int32': MuInt32,
-    'string': MuString,
-    'uint8': MuUint8,
-    'uint16': MuUint16,
-    'uint32': MuUint32,
-};
-export function muPrimitiveSchema (muType) {
-    return new muPrimitiveType2SchemaType[muType]();
 }
 
 export function strOfLeng (length) {
