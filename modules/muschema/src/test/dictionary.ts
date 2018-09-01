@@ -14,7 +14,7 @@ import {
     randomValueOf,
     testPatchingFactory,
     testPatchingPairFactory,
-} from '../_helper';
+} from './helper';
 
 test('dictionary - identity', (t) => {
     const dictA = new MuDictionary(new MuVoid());

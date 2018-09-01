@@ -20,7 +20,7 @@ import {
     randomStr,
     randomValueOf,
     testPatchingPairFactory,
-} from '../_helper';
+} from './helper';
 
 test('struct - muData', (t) => {
     const spec = {

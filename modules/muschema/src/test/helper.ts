@@ -1,4 +1,9 @@
 import {
+    MuReadStream,
+    MuWriteStream,
+} from 'mustreams';
+
+import {
     MuSchema,
     MuBoolean,
     MuFloat32,
@@ -10,16 +15,8 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-} from './';
-import {
-    MuReadStream,
-    MuWriteStream,
-} from 'mustreams';
-
-import {
-    Constants,
-    muPrimitiveTypes,
-} from './constants';
+} from '../index';
+import { Constants } from '../constants';
 
 function randomSign () {
     return Math.random() < 0.5 ? -1 : 1;
