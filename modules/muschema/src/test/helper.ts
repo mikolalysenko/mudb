@@ -19,6 +19,19 @@ import {
 } from '../index';
 import { Constants } from '../constants';
 
+export function muNumberSchema (muType) {
+    return {
+        float32: () => new MuFloat32(),
+        float64: () => new MuFloat64(),
+        int8: () => new MuInt8(),
+        int16: () => new MuInt16(),
+        int32: () => new MuInt32(),
+        uint8: () => new MuUint8(),
+        uint16: () => new MuUint16(),
+        uint32: () => new MuUint32(),
+    }[muType]();
+}
+
 export function muPrimitiveSchema (muType) {
     return {
         ascii: () => new MuASCII(),
@@ -43,20 +56,6 @@ function fround (float) {
     const fa = new Float32Array(1);
     fa[0] = float;
     return fa[0];
-}
-
-const muNumType2SchemaType = {
-    'float32': MuFloat32,
-    'float64': MuFloat64,
-    'int8': MuInt8,
-    'int16': MuInt16,
-    'int32': MuInt32,
-    'uint8': MuUint8,
-    'uint16': MuUint16,
-    'uint32': MuUint32,
-};
-export function muNumSchema (muType) {
-    return new muNumType2SchemaType[muType]();
 }
 
 export function strOfLeng (length) {

@@ -9,7 +9,7 @@ import {
 import { MuWriteStream, MuReadStream } from 'mustreams';
 import { muType2TypedArray } from '../constants';
 import {
-    muNumSchema,
+    muNumberSchema,
     randomValueOf,
     testPatchingPairFactory,
 } from './helper';
@@ -52,7 +52,7 @@ const muNumTypes = [
 
 test('vector - clone()', (t) => {
     for (const muType of muNumTypes) {
-        const valueSchema = muNumSchema(muType);
+        const valueSchema = muNumberSchema(muType);
         const dimension = 100;
         const vecSchema = new MuVector(valueSchema, dimension);
 
@@ -70,7 +70,7 @@ test('vector - clone()', (t) => {
 
 test('vector - diff() & patch()', (t) => {
     for (const muType of muNumTypes) {
-        const valueSchema = muNumSchema(muType);
+        const valueSchema = muNumberSchema(muType);
         const dimension = 5;
         const vecSchema = new MuVector(valueSchema, dimension);
 
