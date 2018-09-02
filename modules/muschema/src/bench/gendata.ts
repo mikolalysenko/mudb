@@ -1,7 +1,5 @@
 import { MuWriteStream, MuReadStream } from 'mustreams';
-import {
-    randomValue,
-} from '../_helper';
+import { randomValue } from '../test/helper';
 
 export function createWriteStreams (numStreams:number) : MuWriteStream[] {
     const result = new Array(numStreams);
