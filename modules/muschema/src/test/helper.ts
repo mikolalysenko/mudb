@@ -48,30 +48,6 @@ export function muPrimitiveSchema (muType) {
     }[muType]();
 }
 
-function randomSign () {
-    return Math.random() < 0.5 ? -1 : 1;
-}
-
-function fround (float) {
-    const fa = new Float32Array(1);
-    fa[0] = float;
-    return fa[0];
-}
-
-export function strOfLeng (length) {
-    function randomCodePoint () {
-        // to avoid the surrogates issue
-        const MAX_CODE_POINT = 0xD7FF;
-        return Math.random() * MAX_CODE_POINT | 0;
-    }
-
-    const codePoints = new Array(length);
-    for (let i = 0; i < length; ++i) {
-        codePoints[i] = randomCodePoint();
-    }
-    return String.fromCharCode.apply(String, codePoints);
-}
-
 export function simpleStrOfLeng (length) {
     const ingredient = 'abc';
 
@@ -83,8 +59,19 @@ export function simpleStrOfLeng (length) {
 }
 
 export function randomStr () {
+    function randomCodePoint () {
+        // to avoid the surrogates issue
+        const MAX_CODE_POINT = 0xD7FF;
+        return Math.random() * MAX_CODE_POINT | 0;
+    }
+
     const length = Math.random() * 20 + 1 | 0;
-    return strOfLeng(length);
+    const codePoints = new Array(length);
+    for (let i = 0; i < length; ++i) {
+        codePoints[i] = randomCodePoint();
+    }
+
+    return String.fromCharCode.apply(String, codePoints);
 }
 
 export function randomShortStr () {
@@ -92,15 +79,27 @@ export function randomShortStr () {
     return simpleStrOfLeng(length);
 }
 
-export function randomFloat32 () {
-    return fround(Math.random() * 10 ** (randomSign() * (Math.random() * 38 | 0)));
-}
-
-export function randomFloat64 () {
-    return Math.random() * 10 ** (randomSign() * (Math.random() * 308 | 0));
-}
-
 export function randomValueOf (muType:string) {
+    function randomSign () {
+        return Math.random() < 0.5 ? -1 : 1;
+    }
+
+    function randomFloat32 () {
+        function fround (n:number) {
+            const fa = new Float32Array(1);
+            fa[0] = n;
+            return fa[0];
+        }
+
+        const exponent = randomSign() * (Math.random() * 38 | 0);
+        return fround(Math.random() * 10 ** exponent);
+    }
+
+    function randomFloat64 () {
+        const exponent = randomSign() * (Math.random() * 308 | 0);
+        return Math.random() * 10 ** exponent;
+    }
+
     switch (muType) {
         case 'boolean':
             return Math.random() < 0.5 ? false : true;
