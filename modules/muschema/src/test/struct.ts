@@ -17,7 +17,7 @@ import {
 import { muPrimitiveTypes } from '../constants';
 import {
     muPrimitiveSchema,
-    randomStr,
+    randomString,
     randomValue,
     testPatchingPairFactory,
 } from './helper';
@@ -54,7 +54,7 @@ test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const muType of muPrimitiveTypes) {
-            result[randomStr()] = muPrimitiveSchema(muType);
+            result[randomString()] = muPrimitiveSchema(muType);
         }
         return result;
     }

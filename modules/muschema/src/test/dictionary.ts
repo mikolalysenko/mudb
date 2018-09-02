@@ -10,7 +10,7 @@ import { muPrimitiveTypes } from '../constants';
 import {
     muPrimitiveSchema,
     randomShortStr,
-    randomStr,
+    randomString,
     randomValue,
     testPatchingFactory,
     testPatchingPairFactory,
@@ -50,7 +50,7 @@ function dictOfDepth (depth, muType, genStr=randomShortStr) {
     return result;
 }
 
-function flatDictOf (muType, genStrFn=randomStr) {
+function flatDictOf (muType, genStrFn=randomString) {
     return dictOfDepth(1, muType, genStrFn);
 }
 
@@ -79,7 +79,7 @@ test('dictionary (nested) - clone()', (t) => {
             new MuDictionary(valueSchema),
         );
         for (let i = 0; i < 100; ++i) {
-            const dict = dictOfDepth(2, muType, randomStr);
+            const dict = dictOfDepth(2, muType, randomString);
             const copy = dictSchema.clone(dict);
 
             t.notEquals(copy, dict);
@@ -92,7 +92,7 @@ test('dictionary (nested) - clone()', (t) => {
             ),
         );
         for (let i = 0; i < 100; ++i) {
-            const dict = dictOfDepth(3, muType, randomStr);
+            const dict = dictOfDepth(3, muType, randomString);
             const copy = dictSchema.clone(dict);
 
             t.notEquals(copy, dict);
@@ -112,8 +112,8 @@ test('dictionary (flat) - diff() & patch()', (t) => {
 
         for (let i = 0; i < 200; ++i) {
             testPatchingPair(
-                flatDictOf(muType, randomStr),
-                flatDictOf(muType, randomStr),
+                flatDictOf(muType, randomString),
+                flatDictOf(muType, randomString),
             );
         }
 

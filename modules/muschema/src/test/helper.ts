@@ -58,7 +58,7 @@ export function simpleStrOfLeng (length) {
     return chars.join('');
 }
 
-export function randomStr () {
+export function randomString () {
     function randomCodePoint () {
         // to avoid the surrogates issue
         const MAX_CODE_POINT = 0xD7FF;
@@ -112,7 +112,7 @@ export function randomValue (muType:string) {
         case 'int32':
             return randomSign() * Math.round(Math.random() * Constants[muType].MAX);
         case 'string':
-            return randomStr();
+            return randomString();
         case 'uint8':
         case 'uint16':
         case 'uint32':
