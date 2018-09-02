@@ -10,7 +10,7 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 import { muType2TypedArray } from '../constants';
 import {
     muNumberSchema,
-    randomValueOf,
+    randomValue,
     testPatchingPairFactory,
 } from './helper';
 
@@ -34,7 +34,7 @@ test('vector - alloc() when the pool is empty', (t) => {
 function typedArrayOf (muType, length) {
     const result = new muType2TypedArray[muType](length);
     for (let i = 0; i < length; ++i) {
-        result[i] = randomValueOf(muType);
+        result[i] = randomValue(muType);
     }
     return result;
 }

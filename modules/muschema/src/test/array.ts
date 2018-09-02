@@ -13,7 +13,7 @@ import {
 } from '../constants';
 import {
     muPrimitiveSchema,
-    randomValueOf,
+    randomValue,
     testPatchingFactory,
     testPatchingPairFactory,
 } from './helper';
@@ -48,7 +48,7 @@ function nDArray (n, muType) {
 
     if (n <= 1) {
         for (let i = 0; i < length; ++i) {
-            result[i] = randomValueOf(muType);
+            result[i] = randomValue(muType);
         }
         return result;
     }

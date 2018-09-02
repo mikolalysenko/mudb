@@ -18,7 +18,7 @@ import { muPrimitiveTypes } from '../constants';
 import {
     muPrimitiveSchema,
     randomStr,
-    randomValueOf,
+    randomValue,
     testPatchingPairFactory,
 } from './helper';
 
@@ -71,7 +71,7 @@ test('struct (flat) - diff() & patch()', (t) => {
             const propNames = Object.keys(spec);
             const muTypes = propNames.map((name) => spec[name].muType);
             propNames.forEach((propName, idx) => {
-                result[propName] = randomValueOf(muTypes[idx]);
+                result[propName] = randomValue(muTypes[idx]);
             });
 
             return result;

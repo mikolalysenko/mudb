@@ -1,6 +1,6 @@
 import { MuWriteStream, MuReadStream } from 'mustreams';
 import {
-    randomValueOf,
+    randomValue,
 } from '../_helper';
 
 export function createWriteStreams (numStreams:number) : MuWriteStream[] {
@@ -23,7 +23,7 @@ export function createReadStreams (outStreams:MuWriteStream[]) : MuReadStream[] 
 export function genArray (muType:string, length:number) {
     const result = new Array(length);
     for (let i = 0; i < length; ++i) {
-        result[i] = randomValueOf(muType);
+        result[i] = randomValue(muType);
     }
     return result;
 }
@@ -40,7 +40,7 @@ export function genDictionary (muType:string, numProps:number) {
 
     const result = {};
     for (let i = 0; i < numProps; ++i) {
-        result[propName()] = randomValueOf(muType);
+        result[propName()] = randomValue(muType);
     }
     return result;
 }
@@ -51,7 +51,7 @@ export function changeValues<T extends object> (
 ) : T {
     const result = JSON.parse(JSON.stringify(dict));
     Object.keys(result).forEach((k) => {
-        result[k] = randomValueOf(muType);
+        result[k] = randomValue(muType);
     });
     return result;
 }
@@ -70,7 +70,7 @@ export function genStruct (spec) : any {
 
     const result = {};
     props.forEach((p, idx) => {
-        result[p] = randomValueOf(muTypes[idx]);
+        result[p] = randomValue(muTypes[idx]);
     });
     return result;
 }
@@ -89,7 +89,7 @@ export const muType2ArrayType = {
 export function genVector (muType:keyof typeof muType2ArrayType, dimension:number) {
     const result = new muType2ArrayType[muType](dimension);
     for (let i = 0; i < dimension; ++i) {
-        result[i] = randomValueOf(muType);
+        result[i] = randomValue(muType);
     }
     return result;
 }

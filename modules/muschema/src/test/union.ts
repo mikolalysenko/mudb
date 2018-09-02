@@ -16,7 +16,7 @@ import {
 
 import { muPrimitiveTypes } from '../constants';
 import {
-    randomValueOf,
+    randomValue,
     testPatchingPairFactory,
 } from './helper';
 
@@ -67,7 +67,7 @@ test('union - alloc()', (t) => {
 function randomPairOf (type) {
     return {
         type,
-        data: randomValueOf(type),
+        data: randomValue(type),
     };
 }
 
@@ -190,14 +190,14 @@ test('union (nested type-data pair) - diff() & patch()', (t) => {
                 type: 'subType' as TypeName,
                 data: {
                     type: typeA as InnerTypeName,
-                    data: randomValueOf(typeA),
+                    data: randomValue(typeA),
                 },
             };
             const pairB = {
                 type: 'subType' as TypeName,
                 data: {
                     type: typeA as InnerTypeName,
-                    data: randomValueOf(typeA),
+                    data: randomValue(typeA),
                 },
             };
             testPatchingPair(pairA, pairB);
@@ -214,14 +214,14 @@ test('union (nested type-data pair) - diff() & patch()', (t) => {
                     type: 'subType' as TypeName,
                     data: {
                         type: typeA as InnerTypeName,
-                        data: randomValueOf(typeA),
+                        data: randomValue(typeA),
                     },
                 };
                 const pairB = {
                     type: 'subType' as TypeName,
                     data: {
                         type: typeB as InnerTypeName,
-                        data: randomValueOf(typeB),
+                        data: randomValue(typeB),
                     },
                 };
                 testPatchingPair(pairA, pairB);

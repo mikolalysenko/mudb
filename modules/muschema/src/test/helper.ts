@@ -79,7 +79,7 @@ export function randomShortStr () {
     return simpleStrOfLeng(length);
 }
 
-export function randomValueOf (muType:string) {
+export function randomValue (muType:string) {
     function randomSign () {
         return Math.random() < 0.5 ? -1 : 1;
     }

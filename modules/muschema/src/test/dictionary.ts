@@ -11,7 +11,7 @@ import {
     muPrimitiveSchema,
     randomShortStr,
     randomStr,
-    randomValueOf,
+    randomValue,
     testPatchingFactory,
     testPatchingPairFactory,
 } from './helper';
@@ -39,7 +39,7 @@ function dictOfDepth (depth, muType, genStr=randomShortStr) {
 
     if (depth <= 1) {
         for (let i = 0; i < numProps; ++i) {
-            result[genStr()] = randomValueOf(muType);
+            result[genStr()] = randomValue(muType);
         }
         return result;
     }
