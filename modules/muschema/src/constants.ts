@@ -10,7 +10,21 @@ export const muPrimitiveSize = {
     'float64': 8,
 };
 
-export const muPrimitiveTypes = Object.keys(muPrimitiveSize);
+export const muPrimitiveTypes = [
+    'ascii',
+    'boolean',
+    'fixed-ascii',
+    'float32',
+    'float64',
+    'int8',
+    'int16',
+    'int32',
+    'string',
+    'uint8',
+    'uint16',
+    'uint32',
+    'void',
+];
 
 export const muNonPrimitiveTypes = [
     'array',

@@ -3,10 +3,11 @@ import { MuWriteStream, MuReadStream } from 'mustreams';
 
 import {
     muPrimitiveSize,
-    muPrimitiveTypes,
     muType2ReadMethod,
     muType2WriteMethod,
 } from './constants';
+
+const muPrimitiveTypes = Object.keys(muPrimitiveSize);
 
 export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
     [P in keyof Spec]:Spec[P]['identity'];
