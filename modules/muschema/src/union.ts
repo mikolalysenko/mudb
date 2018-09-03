@@ -1,5 +1,6 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
+
+import { MuSchema } from './schema';
 
 // tslint:disable-next-line:class-name
 export interface _TypeDataPair<SubTypes extends { [type:string]:MuSchema<any> }> {
@@ -56,6 +57,13 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
     public free (data:_TypeDataPair<SubTypes>) {
         this.muData[data.type].free(data.data);
+    }
+
+    public equal (x:_TypeDataPair<SubTypes>, y:_TypeDataPair<SubTypes>) {
+        if (x.type !== y.type) {
+            return false;
+        }
+        return this.muData[x.type].equal(x.data, y.data);
     }
 
     public clone (data:_TypeDataPair<SubTypes>) : _TypeDataPair<SubTypes> {

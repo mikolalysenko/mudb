@@ -23,7 +23,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly alloc:() => Struct<Spec>;
     public readonly free:(value:Struct<Spec>) => void;
 
-    public readonly equal:(x:Struct<Spec>, y:Struct<Spec>) => boolean = (x, y) => false;
+    public readonly equal:(x:Struct<Spec>, y:Struct<Spec>) => boolean;
 
     public readonly clone:(value:Struct<Spec>) => Struct<Spec>;
     public readonly copy:(source:Struct<Spec>, target:Struct<Spec>) => void = (source, target) => {};
@@ -111,6 +111,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         const methods = {
             alloc: func('alloc', []),
             free: func('free', ['x']),
+            equal: func('equal', ['a', 'b']),
             clone: func('clone', ['x']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
@@ -210,6 +211,29 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     break;
             }
         });
+
+        // equal subroutine
+        propRefs.forEach((propRef, i) => {
+            const type = structTypes[i];
+            switch (type.muType) {
+                case 'ascii':
+                case 'boolean':
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'string':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                    methods.equal.append(`if(a[${propRef}]!==b[${propRef}]){return false}`);
+                    break;
+                default:
+                    methods.equal.append(`if(!${typeRefs[i]}.equal(a[${propRef}],b[${propRef}])){return false}`);
+            }
+        });
+        methods.equal.append(`return true;`);
 
         // clone subroutine
         methods.clone.append(`var result=_alloc();`);
@@ -343,6 +367,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.identity = compiled.identity;
         this.alloc = compiled.alloc;
         this.free = compiled.free;
+        this.equal = compiled.equal;
         this.clone = compiled.clone;
         this.diff = compiled.diff;
         this.patch = compiled.patch;

@@ -1,4 +1,4 @@
-import * as test from 'tape';
+import test = require('tape');
 
 import {
     MuFloat32,
@@ -31,7 +31,7 @@ test('vector - alloc() when the pool is empty', (t) => {
     t.end();
 });
 
-function typedArrayOf (muType, length) {
+function randomTypedArray (muType, length) {
     const result = new muType2TypedArray[muType](length);
     for (let i = 0; i < length; ++i) {
         result[i] = randomValue(muType);
@@ -39,7 +39,7 @@ function typedArrayOf (muType, length) {
     return result;
 }
 
-const muNumTypes = [
+const muNumberTypes = [
     'float32',
     'float64',
     'int8',
@@ -50,14 +50,37 @@ const muNumTypes = [
     'uint32',
 ];
 
+test('vector - equal()', (t) => {
+    const valueSchema = muNumberSchema('uint8');
+    const vectorSchema = new MuVector(valueSchema, 1);
+
+    const a = new Uint8Array([0]);
+    const b = new Uint8Array([0]);
+    t.ok(vectorSchema.equal(a, b));
+
+    b[0] = 1;
+    t.notOk(vectorSchema.equal(a, b));
+
+    const c = new Uint8Array([0, 0]);
+    t.notOk(vectorSchema.equal(a, c));
+
+    const d = new Int8Array([0]);
+    t.notOk(vectorSchema.equal(a, d));
+
+    const f = new Int8Array([0]);
+    t.notOk(vectorSchema.equal(d, f));
+
+    t.end();
+});
+
 test('vector - clone()', (t) => {
-    for (const muType of muNumTypes) {
+    for (const muType of muNumberTypes) {
         const valueSchema = muNumberSchema(muType);
         const dimension = 100;
         const vecSchema = new MuVector(valueSchema, dimension);
 
         for (let i = 0; i < 200; ++i) {
-            const vec = typedArrayOf(muType, dimension);
+            const vec = randomTypedArray(muType, dimension);
             const copy = vecSchema.clone(vec);
 
             t.notEquals(copy, vec);
@@ -69,7 +92,7 @@ test('vector - clone()', (t) => {
 });
 
 test('vector - diff() & patch()', (t) => {
-    for (const muType of muNumTypes) {
+    for (const muType of muNumberTypes) {
         const valueSchema = muNumberSchema(muType);
         const dimension = 5;
         const vecSchema = new MuVector(valueSchema, dimension);
@@ -80,8 +103,8 @@ test('vector - diff() & patch()', (t) => {
 
         for (let i = 0; i < 200; ++i) {
             testPatchingPair(
-                typedArrayOf(muType, dimension),
-                typedArrayOf(muType, dimension),
+                randomTypedArray(muType, dimension),
+                randomTypedArray(muType, dimension),
             );
         }
     }
@@ -100,7 +123,6 @@ test('random test', (t) => {
         result[2] = ((Math.random() * 4) / 2) - 1;
         return result;
     }
-
 
     function calcDiff (a:vectorT, b:vectorT) : MuReadStream {
         const x = new MuWriteStream(1);

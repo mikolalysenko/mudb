@@ -1,5 +1,6 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
+
+import { MuSchema } from './schema';
 
 export type Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
@@ -30,6 +31,33 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < props.length; ++i) {
             valueSchema.free(x[props[i]]);
         }
+    }
+
+    public equal (x:Dictionary<ValueSchema>, y:Dictionary<ValueSchema>) {
+        if (x !== Object(x) || y !== Object(y)) {
+            return false;
+        }
+
+        const xProps = Object.keys(x);
+        if (xProps.length !== Object.keys(y).length) {
+            return false;
+        }
+
+        const hasOwnProperty = Object.prototype.hasOwnProperty;
+        for (let i = xProps.length - 1; i >= 0; --i) {
+            if (!hasOwnProperty.call(y, xProps[i])) {
+                return false;
+            }
+        }
+
+        for (let i = xProps.length - 1; i >= 0; --i) {
+            const prop = xProps[i];
+            if (!this.muData.equal(x[prop], y[prop])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public clone (x:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {

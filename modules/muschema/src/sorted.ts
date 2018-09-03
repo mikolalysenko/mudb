@@ -1,5 +1,6 @@
+import { MuWriteStream, MuReadStream } from 'mustreams';
+
 import { MuSchema } from './schema';
-import { MuWriteStream, MuReadStream, MuBuffer } from 'mustreams';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -64,6 +65,22 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         }
         set.length = 0;
         this.pool.push(set);
+    }
+
+    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
+        if (!Array.isArray(x) || !Array.isArray(y)) {
+            return false;
+        }
+        if (x.length !== y.length) {
+            return false;
+        }
+        for (let i = x.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(x[i], y[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public clone (set:ValueSchema['identity'][]) : ValueSchema['identity'][] {

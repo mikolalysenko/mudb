@@ -6,7 +6,7 @@ import {
 } from '../';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-function cmp (a, b) { return a - b }
+function cmp (a, b) { return a - b; }
 
 test('simple sorted set', function (t) {
     const schema = new MuSortedArray(new MuFloat64());
@@ -14,7 +14,7 @@ test('simple sorted set', function (t) {
     function testPatch (a:number[], b:number[]) {
         const s = new MuWriteStream(1);
         if (!schema.diff(a, b, s)) {
-            t.same(a, b, 'diff returned arrays identical')
+            t.same(a, b, 'diff returned arrays identical');
             t.equals(s.offset, 0, 'no bytes written to stream');
         } else {
             t.notSame(a, b, 'diff returned arrays different');
@@ -42,7 +42,7 @@ test('simple sorted set', function (t) {
     testPair([0, 1, 1], [0, 0, 0, 0]);
     testPair([1, 2, 3], [1, 2, 3]);
     testPair([1, 1, 5], [3, 5, 11, 12]);
-    testPatch([0,0,1,2,3,3,3,4], [1,1,2]);
+    testPatch([0, 0, 1, 2, 3, 3, 3, 4], [1, 1, 2]);
 
     function randomArray () {
         const n = Math.floor(Math.random() * 10);
@@ -58,4 +58,4 @@ test('simple sorted set', function (t) {
     }
 
     t.end();
-})
+});

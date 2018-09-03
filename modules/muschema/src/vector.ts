@@ -55,6 +55,19 @@ export class MuVector<ValueSchema extends MuNumber>
         this._pool.push(vec);
     }
 
+    public equal (x:_MuVectorType<ValueSchema>, y:_MuVectorType<ValueSchema>) {
+        if (x.length !== y.length) {
+            return false;
+        }
+        for (let i = x.length - 1; i >= 0 ; --i) {
+            if (x[i] !== y[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public clone (vec:_MuVectorType<ValueSchema>) : _MuVectorType<ValueSchema> {
         const copy = this.alloc();
         copy.set(vec);
@@ -114,7 +127,7 @@ export class MuVector<ValueSchema extends MuNumber>
         const trackerOffset = stream.offset;
         const trackerBits = this.dimension * this.identity.BYTES_PER_ELEMENT;
         const trackerFullBytes = Math.floor(trackerBits / 8);
-        const trackerBytes = Math.ceil(trackerBits / 8)
+        const trackerBytes = Math.ceil(trackerBits / 8);
         stream.offset = trackerOffset + trackerBytes;
 
         for (let i = 0; i < trackerFullBytes; ++i) {

@@ -1,10 +1,6 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-import {
-    muType2ReadMethod,
-    muType2WriteMethod,
-} from './_constants';
+import { MuSchema } from './schema';
 
 export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
 
@@ -38,6 +34,22 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
         arr.length = 0;
         this.pool.push(arr);
+    }
+
+    public equal (x:_MuArrayType<ValueSchema>, y:_MuArrayType<ValueSchema>) {
+        if (!Array.isArray(x) || !Array.isArray(y)) {
+            return false;
+        }
+        if (x.length !== y.length) {
+            return false;
+        }
+        for (let i = x.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(x[i], y[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public clone (arr:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {

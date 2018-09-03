@@ -1,4 +1,5 @@
 import test = require('tape');
+import equal = require('fast-deep-equal');
 
 import {
     MuBoolean,
@@ -33,26 +34,127 @@ test('dictionary - identity', (t) => {
     t.end();
 });
 
-function dictOfDepth (depth, muType, genStr=randomShortStr) {
+function randomDictionary (depth, muType, genKey, numProps_?:number) {
     const result = {};
-    const numProps = Math.random() * 5 | 0;
+    const numProps = numProps_ || Math.random() * 5 | 0;
 
     if (depth <= 1) {
         for (let i = 0; i < numProps; ++i) {
-            result[genStr()] = randomValue(muType);
+            result[genKey()] = randomValue(muType);
         }
         return result;
     }
 
     for (let i = 0; i < numProps; ++i) {
-        result[genStr()] = dictOfDepth(depth - 1, muType, genStr);
+        result[genKey()] = randomDictionary(depth - 1, muType, genKey, numProps_);
     }
+
     return result;
 }
 
-function flatDictOf (muType, genStrFn=randomString) {
-    return dictOfDepth(1, muType, genStrFn);
+function genDictionary (depth, muType, numProps=5) {
+    const result = {};
+    let charCode = 97;
+
+    if (depth === 1) {
+        for (let i = 0; i < numProps; ++i) {
+            result[String.fromCharCode(charCode++)] = randomValue(muType);
+        }
+        return result;
+    }
+
+    for (let i = 0; i < numProps; ++i) {
+        result[String.fromCharCode(charCode++)] = genDictionary(depth - 1, muType, numProps);
+    }
+
+    return result;
 }
+
+test('dictionary - equal()', (t) => {
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        if (valueSchema) {
+            const dictionarySchema = new MuDictionary(valueSchema);
+
+            t.ok(dictionarySchema.equal({}, {}));
+
+            const dictionary = randomDictionary(1, valueSchema, randomString);
+            t.ok(dictionarySchema.equal(dictionarySchema.clone(dictionary), dictionary));
+
+            let a = genDictionary(1, muType);
+            let b = genDictionary(1, muType);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            a = randomDictionary(1, muType, randomString, 5);
+            b = randomDictionary(1, muType, randomString, 5);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            for (let i = 0; i < 10; ++i) {
+                a = randomDictionary(1, muType, randomString);
+                b = randomDictionary(1, muType, randomString);
+                t.equal(dictionarySchema.equal(a, b), equal(a, b));
+            }
+        }
+    }
+
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        if (valueSchema) {
+            const dictionarySchema = new MuDictionary(
+                new MuDictionary(valueSchema),
+            );
+
+            t.ok(dictionarySchema.equal({}, {}));
+
+            const dictionary = randomDictionary(2, valueSchema, randomString);
+            t.ok(dictionarySchema.equal(dictionarySchema.clone(dictionary), dictionary));
+
+            let a = genDictionary(2, muType);
+            let b = genDictionary(2, muType);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            a = randomDictionary(2, muType, randomString, 5);
+            b = randomDictionary(2, muType, randomString, 5);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            for (let i = 0; i < 10; ++i) {
+                a = randomDictionary(2, muType, randomString);
+                b = randomDictionary(2, muType, randomString);
+                t.equal(dictionarySchema.equal(a, b), equal(a, b));
+            }
+        }
+    }
+
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        if (valueSchema) {
+            const dictionarySchema = new MuDictionary(
+                new MuDictionary(valueSchema),
+            );
+
+            t.ok(dictionarySchema.equal({}, {}));
+
+            const dictionary = randomDictionary(3, valueSchema, randomString);
+            t.ok(dictionarySchema.equal(dictionarySchema.clone(dictionary), dictionary));
+
+            let a = genDictionary(3, muType);
+            let b = genDictionary(3, muType);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            a = randomDictionary(3, muType, randomString, 5);
+            b = randomDictionary(3, muType, randomString, 5);
+            t.equal(dictionarySchema.equal(a, b), equal(a, b));
+
+            for (let i = 0; i < 10; ++i) {
+                a = randomDictionary(3, muType, randomString);
+                b = randomDictionary(3, muType, randomString);
+                t.equal(dictionarySchema.equal(a, b), equal(a, b));
+            }
+        }
+    }
+
+    t.end();
+});
 
 test('dictionary (flat) - clone()', (t) => {
     for (const muType of muPrimitiveTypes) {
@@ -61,7 +163,7 @@ test('dictionary (flat) - clone()', (t) => {
             const dictSchema = new MuDictionary(valueSchema);
 
             for (let i = 0; i < 200; ++i) {
-                const dict = flatDictOf(muType);
+                const dict = randomDictionary(1, muType, randomString);
                 const copy = dictSchema.clone(dict);
 
                 t.notEquals(copy, dict);
@@ -81,7 +183,7 @@ test('dictionary (nested) - clone()', (t) => {
                 new MuDictionary(valueSchema),
             );
             for (let i = 0; i < 100; ++i) {
-                const dict = dictOfDepth(2, muType, randomString);
+                const dict = randomDictionary(2, muType, randomString);
                 const copy = dictSchema.clone(dict);
 
                 t.notEquals(copy, dict);
@@ -94,7 +196,7 @@ test('dictionary (nested) - clone()', (t) => {
                 ),
             );
             for (let i = 0; i < 100; ++i) {
-                const dict = dictOfDepth(3, muType, randomString);
+                const dict = randomDictionary(3, muType, randomString);
                 const copy = dictSchema.clone(dict);
 
                 t.notEquals(copy, dict);
@@ -116,21 +218,21 @@ test('dictionary (flat) - diff() & patch()', (t) => {
 
             for (let i = 0; i < 200; ++i) {
                 testPatchingPair(
-                    flatDictOf(muType, randomString),
-                    flatDictOf(muType, randomString),
+                    randomDictionary(1, muType, randomString),
+                    randomDictionary(1, muType, randomString),
                 );
             }
 
             for (let i = 0; i < 200; ++i) {
                 // increase the chance of getting properties with the same name
                 testPatchingPair(
-                    flatDictOf(muType, randomShortStr),
-                    flatDictOf(muType, randomShortStr),
+                    randomDictionary(1, muType, randomShortStr),
+                    randomDictionary(1, muType, randomShortStr),
                 );
             }
 
             const testPatching = testPatchingFactory(t, dictSchema);
-            const dict = flatDictOf(muType);
+            const dict = randomDictionary(1, muType, randomString);
             testPatching(dict, dict);
         }
     }
@@ -148,8 +250,8 @@ test('dictionary (nested) - diff() & patch()', (t) => {
             let testPatchingPair = testPatchingPairFactory(t, dictSchema);
             for (let i = 0; i < 200; ++i) {
                 testPatchingPair(
-                    dictOfDepth(2, muType),
-                    dictOfDepth(2, muType),
+                    randomDictionary(2, muType, randomShortStr),
+                    randomDictionary(2, muType, randomShortStr),
                 );
             }
 
@@ -161,8 +263,8 @@ test('dictionary (nested) - diff() & patch()', (t) => {
             testPatchingPair = testPatchingPairFactory(t, dictSchema);
             for (let i = 0; i < 200; ++i) {
                 testPatchingPair(
-                    dictOfDepth(3, muType),
-                    dictOfDepth(3, muType),
+                    randomDictionary(3, muType, randomShortStr),
+                    randomDictionary(3, muType, randomShortStr),
                 );
             }
 
@@ -176,13 +278,13 @@ test('dictionary (nested) - diff() & patch()', (t) => {
             testPatchingPair = testPatchingPairFactory(t, dictSchema);
             for (let i = 0; i < 200; ++i) {
                 testPatchingPair(
-                    dictOfDepth(4, muType),
-                    dictOfDepth(4, muType),
+                    randomDictionary(4, muType, randomShortStr),
+                    randomDictionary(4, muType, randomShortStr),
                 );
             }
 
             const testPatching = testPatchingFactory(t, dictSchema);
-            const dict = dictOfDepth(4, muType);
+            const dict = randomDictionary(4, muType, randomShortStr);
             testPatching(dict, dict);
         }
     }

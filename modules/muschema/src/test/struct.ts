@@ -50,6 +50,27 @@ test('struct - identity', (t) => {
     t.end();
 });
 
+test('struct - equal()', (t) => {
+    const structSchema = new MuStruct({
+        b: new MuBoolean(),
+        s: new MuStruct({
+            b: new MuBoolean(),
+            s: new MuStruct({
+                b: new MuBoolean(),
+            }),
+        }),
+    });
+
+    const a = structSchema.alloc();
+    const b = structSchema.alloc();
+    t.ok(structSchema.equal(a, b));
+
+    b.s.s.b = !b.s.s.b;
+    t.notOk(structSchema.equal(a, b));
+
+    t.end();
+});
+
 test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
@@ -160,7 +181,6 @@ test('random test', (t) => {
         result.foo = Math.round(Math.random() * 8).toString();
         return result;
     }
-
 
     function calcDiff (a:structT, b:structT) : MuReadStream {
         const x = new MuWriteStream(1);
