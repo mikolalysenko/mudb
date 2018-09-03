@@ -54,7 +54,10 @@ test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const muType of muPrimitiveTypes) {
-            result[randomString()] = muPrimitiveSchema(muType);
+            const valueSchema = muPrimitiveSchema(muType);
+            if (valueSchema) {
+                result[randomString()] = valueSchema;
+            }
         }
         return result;
     }

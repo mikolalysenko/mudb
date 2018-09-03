@@ -20,7 +20,7 @@ import {
 import { Constants } from '../constants';
 
 export function muNumberSchema (muType) {
-    return {
+    const map = {
         float32: () => new MuFloat32(),
         float64: () => new MuFloat64(),
         int8: () => new MuInt8(),
@@ -29,11 +29,14 @@ export function muNumberSchema (muType) {
         uint8: () => new MuUint8(),
         uint16: () => new MuUint16(),
         uint32: () => new MuUint32(),
-    }[muType]();
+    };
+    if (muType in map) {
+        return map[muType]();
+    }
 }
 
 export function muPrimitiveSchema (muType) {
-    return {
+    const map = {
         ascii: () => new MuASCII(),
         boolean: () => new MuBoolean(),
         float32: () => new MuFloat32(),
@@ -45,7 +48,10 @@ export function muPrimitiveSchema (muType) {
         uint8: () => new MuUint8(),
         uint16: () => new MuUint16(),
         uint32: () => new MuUint32(),
-    }[muType]();
+    };
+    if (muType in map) {
+        return map[muType]();
+    }
 }
 
 export function simpleStrOfLeng (length) {
@@ -80,6 +86,15 @@ export function randomShortStr () {
 }
 
 export function randomValue (muType:string) {
+    function randomASCII () {
+        const length = Math.random() * 21 | 0;
+        const codePoints = new Array(length);
+        for (let i = 0; i < length; ++i) {
+            codePoints[i] = Math.random() * 0x80 | 0;
+        }
+        return String.fromCharCode.apply(null, codePoints);
+    }
+
     function randomSign () {
         return Math.random() < 0.5 ? -1 : 1;
     }
@@ -101,6 +116,8 @@ export function randomValue (muType:string) {
     }
 
     switch (muType) {
+        case 'ascii':
+            return randomASCII();
         case 'boolean':
             return Math.random() < 0.5 ? false : true;
         case 'float32':

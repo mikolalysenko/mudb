@@ -46,7 +46,7 @@ function nDArray (n, muType) {
     const length = Math.random() * 10 | 0;
     const result = new Array(length);
 
-    if (n <= 1) {
+    if (n === 1) {
         for (let i = 0; i < length; ++i) {
             result[i] = randomValue(muType);
         }
@@ -66,14 +66,16 @@ function flatArrayOf (muType) {
 test('array (flat) - clone()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
-        const arraySchema = new MuArray(valueSchema);
+        if (valueSchema) {
+            const arraySchema = new MuArray(valueSchema);
 
-        for (let i = 0; i < 200; ++i) {
-            const arr = flatArrayOf(muType);
-            const copy = arraySchema.clone(arr);
+            for (let i = 0; i < 200; ++i) {
+                const arr = flatArrayOf(muType);
+                const copy = arraySchema.clone(arr);
 
-            t.notEquals(copy, arr);
-            t.same(copy, arr);
+                t.notEquals(copy, arr);
+                t.same(copy, arr);
+            }
         }
     }
 
@@ -83,44 +85,45 @@ test('array (flat) - clone()', (t) => {
 test('array (nested) - clone()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
-
-        let arraySchema = new MuArray(
-            new MuArray(valueSchema),
-        );
-        for (let i = 0; i < 100; ++i) {
-            const array2D = nDArray(2, muType);
-            const copy = arraySchema.clone(array2D);
-
-            t.notEquals(copy, array2D);
-            t.same(copy, array2D);
-        }
-
-        arraySchema = new MuArray(
-            new MuArray(
+        if (valueSchema) {
+            let arraySchema = new MuArray(
                 new MuArray(valueSchema),
-            ),
-        );
-        for (let i = 0; i < 100; ++i) {
-            const array3D = nDArray(3, muType);
-            const copy = arraySchema.clone(array3D);
+            );
+            for (let i = 0; i < 100; ++i) {
+                const array2D = nDArray(2, muType);
+                const copy = arraySchema.clone(array2D);
 
-            t.notEquals(copy, array3D);
-            t.same(copy, array3D);
-        }
+                t.notEquals(copy, array2D);
+                t.same(copy, array2D);
+            }
 
-        arraySchema = new MuArray(
-            new MuArray(
+            arraySchema = new MuArray(
                 new MuArray(
                     new MuArray(valueSchema),
                 ),
-            ),
-        );
-        for (let i = 0; i < 100; ++i) {
-            const array4D = nDArray(4, muType);
-            const copy = arraySchema.clone(array4D);
+            );
+            for (let i = 0; i < 100; ++i) {
+                const array3D = nDArray(3, muType);
+                const copy = arraySchema.clone(array3D);
 
-            t.notEquals(copy, array4D);
-            t.same(copy, array4D);
+                t.notEquals(copy, array3D);
+                t.same(copy, array3D);
+            }
+
+            arraySchema = new MuArray(
+                new MuArray(
+                    new MuArray(
+                        new MuArray(valueSchema),
+                    ),
+                ),
+            );
+            for (let i = 0; i < 100; ++i) {
+                const array4D = nDArray(4, muType);
+                const copy = arraySchema.clone(array4D);
+
+                t.notEquals(copy, array4D);
+                t.same(copy, array4D);
+            }
         }
     }
 
@@ -130,18 +133,20 @@ test('array (nested) - clone()', (t) => {
 test('array (flat) - diff() & patch()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
-        const arraySchema = new MuArray(valueSchema);
+        if (valueSchema) {
+            const arraySchema = new MuArray(valueSchema);
 
-        const testPatching = testPatchingFactory(t, arraySchema);
-        const arr = flatArrayOf(muType);
-        testPatching(arr, arr);
+            const testPatching = testPatchingFactory(t, arraySchema);
+            const arr = flatArrayOf(muType);
+            testPatching(arr, arr);
 
-        const testPatchingPair = testPatchingPairFactory(t, arraySchema);
-        for (let i = 0; i < 200; ++i) {
-            testPatchingPair(
-                flatArrayOf(muType),
-                flatArrayOf(muType),
-            );
+            const testPatchingPair = testPatchingPairFactory(t, arraySchema);
+            for (let i = 0; i < 200; ++i) {
+                testPatchingPair(
+                    flatArrayOf(muType),
+                    flatArrayOf(muType),
+                );
+            }
         }
     }
 
