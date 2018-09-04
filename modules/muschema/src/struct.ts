@@ -113,6 +113,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             free: func('free', ['x']),
             equal: func('equal', ['a', 'b']),
             clone: func('clone', ['x']),
+            copy: func('copy', ['s', 't']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
         };
@@ -260,6 +261,29 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         });
         methods.clone.append('return result');
 
+        // copy subroutine
+        propRefs.forEach((propRef, i) => {
+            const type = structTypes[i];
+            switch (type.muType) {
+                case 'ascii':
+                case 'boolean':
+                case 'fixed-ascii':
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'string':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                    methods.copy.append(`t[${propRef}]=s[${propRef}];`);
+                    break;
+                default:
+                    methods.copy.append(`${typeRefs[i]}.copy(s[${propRef}],t[${propRef}]);`);
+            }
+        });
+
         // common constants
         const numProps = structProps.length;
         const trackerBytes = Math.ceil(numProps / 8);
@@ -369,6 +393,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.free = compiled.free;
         this.equal = compiled.equal;
         this.clone = compiled.clone;
+        this.copy = compiled.copy;
         this.diff = compiled.diff;
         this.patch = compiled.patch;
     }

@@ -1,6 +1,7 @@
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 import { MuSchema } from './schema';
+import { isMuPrimitive } from './util';
 
 export type Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
@@ -68,6 +69,42 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             result[props[i]] = schema.clone(x[props[i]]);
         }
         return result;
+    }
+
+    public copy (source:Dictionary<ValueSchema>, target:Dictionary<ValueSchema>) {
+        if (source === target) {
+            return;
+        }
+
+        const sourceProps = Object.keys(source);
+        const targetProps = Object.keys(target);
+
+        const hasOwnProperty = Object.prototype.hasOwnProperty;
+
+        for (let i = 0; i < targetProps.length; ++i) {
+            const prop = targetProps[i];
+            if (!hasOwnProperty.call(source, prop)) {
+                this.muData.free(target[prop]);
+                delete target[prop];
+            }
+        }
+
+        if (isMuPrimitive(this.muData.muType)) {
+            for (let i = 0; i < sourceProps.length; ++i) {
+                const prop = sourceProps[i];
+                target[prop] = source[prop];
+            }
+            return;
+        }
+
+        for (let i = 0; i < sourceProps.length; ++i) {
+            const prop = sourceProps[i];
+            if (!hasOwnProperty.call(target, prop)) {
+                target[prop] = this.muData.clone(source[prop]);
+            } else {
+                this.muData.copy(source[prop], target[prop]);
+            }
+        }
     }
 
     public diff (

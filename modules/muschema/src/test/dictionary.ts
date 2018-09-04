@@ -208,6 +208,54 @@ test('dictionary (nested) - clone()', (t) => {
     t.end();
 });
 
+test('dictionary - copy()', (t) => {
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        if (valueSchema) {
+            let source;
+            let target;
+
+            let dictionarySchema = new MuDictionary(valueSchema);
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomDictionary(1, muType, randomString);
+                target = randomDictionary(1, muType, randomString);
+
+                dictionarySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+
+            dictionarySchema = new MuDictionary(
+                new MuDictionary(valueSchema),
+            );
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomDictionary(2, muType, randomString);
+                target = randomDictionary(2, muType, randomString);
+
+                dictionarySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+
+            dictionarySchema = new MuDictionary(
+                new MuDictionary(
+                    new MuDictionary(valueSchema),
+                ),
+            );
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomDictionary(3, muType, randomString);
+                target = randomDictionary(3, muType, randomString);
+
+                dictionarySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+        }
+    }
+
+    t.end();
+});
+
 test('dictionary (flat) - diff() & patch()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);

@@ -127,6 +127,54 @@ test('array (nested) - clone()', (t) => {
     t.end();
 });
 
+test('array - copy()', (t) => {
+    for (const muType of muPrimitiveTypes) {
+        const valueSchema = muPrimitiveSchema(muType);
+        if (valueSchema) {
+            let source:any[];
+            let target:any[];
+
+            let arraySchema = new MuArray(valueSchema);
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomArray(1, muType);
+                target = randomArray(1, muType);
+
+                arraySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+
+            arraySchema = new MuArray(
+                new MuArray(valueSchema),
+            );
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomArray(2, muType);
+                target = randomArray(2, muType);
+
+                arraySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+
+            arraySchema = new MuArray(
+                new MuArray(
+                    new MuArray(valueSchema),
+                ),
+            );
+
+            for (let i = 0; i < 10; ++i) {
+                source = randomArray(3, muType);
+                target = randomArray(3, muType);
+
+                arraySchema.copy(source, target);
+                t.deepEqual(target, source);
+            }
+        }
+    }
+
+    t.end();
+});
+
 test('array - equal()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);

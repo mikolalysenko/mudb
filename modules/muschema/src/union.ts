@@ -8,6 +8,25 @@ export interface _TypeDataPair<SubTypes extends { [type:string]:MuSchema<any> }>
     data:SubTypes[keyof SubTypes]['identity'];
 }
 
+function isUnion (x) {
+    if (x !== Object(x)) {
+        return false;
+    }
+    if (Object.keys(x).length !== 2) {
+        return false;
+    }
+
+    const hasOwnProperty = Object.prototype.hasOwnProperty;
+    if (!hasOwnProperty.call(x, 'type')) {
+        return false;
+    }
+    if (!hasOwnProperty.call(x, 'data')) {
+        return false;
+    }
+
+    return true;
+}
+
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         implements MuSchema<_TypeDataPair<SubTypes>> {
     private _types:string[];
@@ -60,6 +79,9 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public equal (x:_TypeDataPair<SubTypes>, y:_TypeDataPair<SubTypes>) {
+        if (!isUnion(x) || !isUnion(y)) {
+            return false;
+        }
         if (x.type !== y.type) {
             return false;
         }
@@ -72,6 +94,20 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             type: data.type,
             data: schema.clone(data.data),
         };
+    }
+
+    public copy (source:_TypeDataPair<SubTypes>, target:_TypeDataPair<SubTypes>) {
+        if (source === target) {
+            return;
+        }
+
+        if (source.type === target.type) {
+            this.muData[source.type].copy(source.data, target.data);
+        }
+
+        target.type = source.type;
+        this.muData[target.type].free(target.data);
+        target.data = this.muData[source.type].clone(source.data);
     }
 
     public diff (

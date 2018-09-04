@@ -1,6 +1,7 @@
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
 import { MuSchema } from './schema';
+import { isMuPrimitive } from './util';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -91,6 +92,34 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             result[i] = schema.clone(set[i]);
         }
         return result;
+    }
+
+    public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
+        if (source === target) {
+            return;
+        }
+
+        const sourceLength = source.length;
+        const targetLength = target.length;
+
+        for (let i = sourceLength; i < targetLength; ++i) {
+            this.muData.free(target[i]);
+        }
+        target.length = sourceLength;
+
+        if (isMuPrimitive(this.muData.muType)) {
+            for (let i = 0; i < sourceLength; ++i) {
+                target[i] = source[i];
+            }
+            return;
+        }
+
+        for (let i = targetLength; i < target.length; ++i) {
+            target[i] = this.muData.clone(source[i]);
+        }
+        for (let i = 0; i < Math.min(sourceLength, targetLength); ++i) {
+            this.muData.copy(source[i], target[i]);
+        }
     }
 
     public diff (base:ValueSchema['identity'][], target:ValueSchema['identity'][], out:MuWriteStream) : boolean {

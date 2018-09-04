@@ -56,6 +56,9 @@ export class MuVector<ValueSchema extends MuNumber>
     }
 
     public equal (x:_MuVectorType<ValueSchema>, y:_MuVectorType<ValueSchema>) {
+        if (!(x instanceof this._constructor) || !(y instanceof this._constructor)) {
+            return false;
+        }
         if (x.length !== y.length) {
             return false;
         }
@@ -72,6 +75,13 @@ export class MuVector<ValueSchema extends MuNumber>
         const copy = this.alloc();
         copy.set(vec);
         return copy;
+    }
+
+    public copy (source:_MuVectorType<ValueSchema>, target:_MuVectorType<ValueSchema>) {
+        if (source === target) {
+            return;
+        }
+        target.set(source);
     }
 
     public diff (
