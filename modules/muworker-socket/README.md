@@ -79,4 +79,7 @@ Starts the socket server listening for connections.
 ## <a name="section_2.5"></a> 2.5 `MuWorkerSocket`
 A `MuLocalSocket` is a pseudo client-side socket that can be used to instantiate a `MuClient`.
 
+## credits
+Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited
+
 

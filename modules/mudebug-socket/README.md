@@ -97,4 +97,7 @@ npm i mudebug-socket
 * duplicate packets
 * throttling
 
+## credits
+Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited
+
 

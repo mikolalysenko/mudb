@@ -135,12 +135,6 @@ Sends data to the server, either via the in-order channel or the out-of-order ch
 Closes all connections.  `state` is set to `SocketState.CLOSED`.
 
 # credits
-Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
-
-<img src="https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png" />
-
-Written in Shenzhen, China.
-
-(c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
 
 

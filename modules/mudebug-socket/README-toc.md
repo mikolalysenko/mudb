@@ -88,3 +88,6 @@ npm i mudebug-socket
 * out-of-order packets
 * duplicate packets
 * throttling
+
+## credits
+Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited

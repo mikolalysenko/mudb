@@ -196,10 +196,4 @@ A `MuRemoteRPCServer` is the client-side mock of the server
 A table of RPC initiators each under the name of the corresponding remote function on the server
 
 # credits
-Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
-
-<img src="https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png" />
-
-Written in Shenzhen, China.
-
-(c) 2017 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
