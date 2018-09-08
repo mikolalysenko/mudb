@@ -17,7 +17,14 @@ export class MuString implements MuSchema<string> {
 
     public alloc () { return this.identity; }
     public free (_:string) : void { }
+
+    public equal (x:string, y:string) {
+        return x === y;
+    }
+
     public clone (x:string) { return x; }
+
+    public copy (source:string, target:string) { }
 
     public diff (base:string, target:string, stream:MuWriteStream) {
         if (base !== target) {

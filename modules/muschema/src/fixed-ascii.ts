@@ -38,7 +38,14 @@ export class MuFixedASCII implements MuSchema<string> {
 
     public alloc () : string { return this.identity; }
     public free (_:string) : void { }
+
+    public equal (x:string, y:string) {
+        return x === y;
+    }
+
     public clone (x:string) { return x; }
+
+    public copy (source:string, target:string) { }
 
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         const length = this.length;

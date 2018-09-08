@@ -1,26 +1,33 @@
 import test = require('tape');
 
 import {
-    MuBoolean,
-    MuUint8,
-    MuFloat32,
-    MuFloat64,
-    MuString,
-    MuStruct,
-    MuVector,
-} from '../';
-import {
     MuWriteStream,
     MuReadStream,
 } from 'mustreams';
 
-import { muPrimitiveTypes } from '../_constants';
+import {
+    MuASCII,
+    MuBoolean,
+    MuFixedASCII,
+    MuFloat32,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuString,
+    MuStruct,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVector,
+} from '../';
+import { muPrimitiveTypes } from '../constants';
 import {
     muPrimitiveSchema,
-    randomStr,
-    randomValueOf,
+    randomString,
+    randomValue,
     testPatchingPairFactory,
-} from '../_helper';
+} from './helper';
 
 test('struct - muData', (t) => {
     const spec = {
@@ -50,11 +57,77 @@ test('struct - identity', (t) => {
     t.end();
 });
 
+test('struct - equal()', (t) => {
+    const structSchema = new MuStruct({
+        b: new MuBoolean(),
+        s: new MuStruct({
+            b: new MuBoolean(),
+            s: new MuStruct({
+                b: new MuBoolean(),
+            }),
+        }),
+    });
+
+    const a = structSchema.alloc();
+    const b = structSchema.alloc();
+    t.ok(structSchema.equal(a, b));
+
+    b.s.s.b = !b.s.s.b;
+    t.notOk(structSchema.equal(a, b));
+
+    t.end();
+});
+
+test('struct - copy()', (t) => {
+    const structSchema = new MuStruct({
+        s: new MuStruct({
+            s: new MuStruct({
+                a: new MuASCII(),
+                b: new MuBoolean(),
+                fa: new MuFixedASCII(5),
+                f32: new MuFloat32(),
+                f64: new MuFloat64(),
+                i8: new MuInt8(),
+                i16: new MuInt16(),
+                i32: new MuInt32(),
+                str: new MuString(),
+                u8: new MuUint8(),
+                u16: new MuUint16(),
+                u32: new MuUint32(),
+            }),
+        }),
+    });
+
+    const source = structSchema.alloc();
+    const target = structSchema.alloc();
+
+    source.s.s.a = randomValue('ascii');
+    source.s.s.b = true;
+    source.s.s.fa = 'abcde';
+    source.s.s.f32 = randomValue('float32');
+    source.s.s.f64 = randomValue('float64');
+    source.s.s.i8 = randomValue('int8');
+    source.s.s.i16 = randomValue('int16');
+    source.s.s.i32 = randomValue('int32');
+    source.s.s.str = randomValue('string');
+    source.s.s.u8 = randomValue('uint8');
+    source.s.s.u16 = randomValue('uint16');
+    source.s.s.u32 = randomValue('uint32');
+
+    structSchema.copy(source, target);
+    t.deepEqual(target, source);
+
+    t.end();
+});
+
 test('struct (flat) - diff() & patch()', (t) => {
     function structSpec () {
         const result = {};
         for (const muType of muPrimitiveTypes) {
-            result[randomStr()] = muPrimitiveSchema(muType);
+            const valueSchema = muPrimitiveSchema(muType);
+            if (valueSchema) {
+                result[randomString()] = valueSchema;
+            }
         }
         return result;
     }
@@ -71,7 +144,7 @@ test('struct (flat) - diff() & patch()', (t) => {
             const propNames = Object.keys(spec);
             const muTypes = propNames.map((name) => spec[name].muType);
             propNames.forEach((propName, idx) => {
-                result[propName] = randomValueOf(muTypes[idx]);
+                result[propName] = randomValue(muTypes[idx]);
             });
 
             return result;
@@ -157,7 +230,6 @@ test('random test', (t) => {
         result.foo = Math.round(Math.random() * 8).toString();
         return result;
     }
-
 
     function calcDiff (a:structT, b:structT) : MuReadStream {
         const x = new MuWriteStream(1);

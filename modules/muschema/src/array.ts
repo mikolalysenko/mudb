@@ -1,10 +1,7 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
 
-import {
-    muType2ReadMethod,
-    muType2WriteMethod,
-} from './_constants';
+import { MuSchema } from './schema';
+import { isMuPrimitive } from './util';
 
 export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
 
@@ -40,6 +37,22 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.pool.push(arr);
     }
 
+    public equal (x:_MuArrayType<ValueSchema>, y:_MuArrayType<ValueSchema>) {
+        if (!Array.isArray(x) || !Array.isArray(y)) {
+            return false;
+        }
+        if (x.length !== y.length) {
+            return false;
+        }
+        for (let i = x.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(x[i], y[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public clone (arr:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
         const result = this.alloc();
         result.length = arr.length;
@@ -50,6 +63,34 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
 
         return result;
+    }
+
+    public copy (source:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {
+        if (source === target) {
+            return;
+        }
+
+        const sourceLength = source.length;
+        const targetLength = target.length;
+
+        for (let i = sourceLength; i < targetLength; ++i) {
+            this.muData.free(target[i]);
+        }
+        target.length = sourceLength;
+
+        if (isMuPrimitive(this.muData.muType)) {
+            for (let i = 0; i < sourceLength; ++i) {
+                target[i] = source[i];
+            }
+            return;
+        }
+
+        for (let i = targetLength; i < target.length; ++i) {
+            target[i] = this.muData.clone(source[i]);
+        }
+        for (let i = 0; i < Math.min(sourceLength, targetLength); ++i) {
+            this.muData.copy(source[i], target[i]);
+        }
     }
 
     public diff (

@@ -1,5 +1,7 @@
+import { MuWriteStream, MuReadStream } from 'mustreams';
+
 import { MuSchema } from './schema';
-import { MuWriteStream, MuReadStream, MuBuffer } from 'mustreams';
+import { isMuPrimitive } from './util';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -66,6 +68,22 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.pool.push(set);
     }
 
+    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
+        if (!Array.isArray(x) || !Array.isArray(y)) {
+            return false;
+        }
+        if (x.length !== y.length) {
+            return false;
+        }
+        for (let i = x.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(x[i], y[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public clone (set:ValueSchema['identity'][]) : ValueSchema['identity'][] {
         const schema = this.muData;
         const result = this.alloc();
@@ -74,6 +92,34 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             result[i] = schema.clone(set[i]);
         }
         return result;
+    }
+
+    public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
+        if (source === target) {
+            return;
+        }
+
+        const sourceLength = source.length;
+        const targetLength = target.length;
+
+        for (let i = sourceLength; i < targetLength; ++i) {
+            this.muData.free(target[i]);
+        }
+        target.length = sourceLength;
+
+        if (isMuPrimitive(this.muData.muType)) {
+            for (let i = 0; i < sourceLength; ++i) {
+                target[i] = source[i];
+            }
+            return;
+        }
+
+        for (let i = targetLength; i < target.length; ++i) {
+            target[i] = this.muData.clone(source[i]);
+        }
+        for (let i = 0; i < Math.min(sourceLength, targetLength); ++i) {
+            this.muData.copy(source[i], target[i]);
+        }
     }
 
     public diff (base:ValueSchema['identity'][], target:ValueSchema['identity'][], out:MuWriteStream) : boolean {

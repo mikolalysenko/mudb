@@ -1,5 +1,7 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from 'mustreams';
+
+import { MuSchema } from './schema';
+import { isMuPrimitive } from './util';
 
 export type Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
@@ -32,6 +34,33 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
     }
 
+    public equal (x:Dictionary<ValueSchema>, y:Dictionary<ValueSchema>) {
+        if (x !== Object(x) || y !== Object(y)) {
+            return false;
+        }
+
+        const xProps = Object.keys(x);
+        if (xProps.length !== Object.keys(y).length) {
+            return false;
+        }
+
+        const hasOwnProperty = Object.prototype.hasOwnProperty;
+        for (let i = xProps.length - 1; i >= 0; --i) {
+            if (!hasOwnProperty.call(y, xProps[i])) {
+                return false;
+            }
+        }
+
+        for (let i = xProps.length - 1; i >= 0; --i) {
+            const prop = xProps[i];
+            if (!this.muData.equal(x[prop], y[prop])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public clone (x:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
         const result:Dictionary<ValueSchema> = {};
         const props = Object.keys(x);
@@ -40,6 +69,42 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             result[props[i]] = schema.clone(x[props[i]]);
         }
         return result;
+    }
+
+    public copy (source:Dictionary<ValueSchema>, target:Dictionary<ValueSchema>) {
+        if (source === target) {
+            return;
+        }
+
+        const sourceProps = Object.keys(source);
+        const targetProps = Object.keys(target);
+
+        const hasOwnProperty = Object.prototype.hasOwnProperty;
+
+        for (let i = 0; i < targetProps.length; ++i) {
+            const prop = targetProps[i];
+            if (!hasOwnProperty.call(source, prop)) {
+                this.muData.free(target[prop]);
+                delete target[prop];
+            }
+        }
+
+        if (isMuPrimitive(this.muData.muType)) {
+            for (let i = 0; i < sourceProps.length; ++i) {
+                const prop = sourceProps[i];
+                target[prop] = source[prop];
+            }
+            return;
+        }
+
+        for (let i = 0; i < sourceProps.length; ++i) {
+            const prop = sourceProps[i];
+            if (!hasOwnProperty.call(target, prop)) {
+                target[prop] = this.muData.clone(source[prop]);
+            } else {
+                this.muData.copy(source[prop], target[prop]);
+            }
+        }
     }
 
     public diff (

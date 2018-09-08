@@ -1,7 +1,7 @@
 import { MuReadStream, MuWriteStream } from 'mustreams';
 
 export interface MuSchema<Value> {
-    /** Base value type */
+    /** Base value */
     readonly identity:Value;
 
     /** Run time type info */
@@ -19,8 +19,14 @@ export interface MuSchema<Value> {
     /** Returns a value to the memory pool */
     free (state:Value) : void;
 
+    /** Checks equality of two values */
+    equal (base:Value, target:Value) : boolean;
+
     /** Makes a copy of a value */
     clone (state:Value) : Value;
+
+    /** Copies source to target */
+    copy (source:Value, target:Value) : void;
 
     /** Computes a binary patch */
     diff (base:Value, target:Value, out:MuWriteStream) : boolean;

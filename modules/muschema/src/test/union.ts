@@ -14,11 +14,10 @@ import {
     MuUnion,
 } from '../';
 
-import { muPrimitiveTypes } from '../_constants';
 import {
-    randomValueOf,
+    randomValue,
     testPatchingPairFactory,
-} from '../_helper';
+} from './helper';
 
 test('union - identity', (t) => {
     let unionSchema = new MuUnion({
@@ -64,12 +63,44 @@ test('union - alloc()', (t) => {
     t.end();
 });
 
-function randomPairOf (type) {
+function randomUnion (type) {
     return {
         type,
-        data: randomValueOf(type),
+        data: randomValue(type),
     };
 }
+
+test('union - equal()', (t) => {
+    const schemaSpec = {
+        uint8: new MuUint8(),
+        uint16: new MuUint16(),
+    };
+    const unionSchema = new MuUnion(schemaSpec);
+
+    const a = randomUnion('uint8');
+    const b = { type: a.type, data: a.data };
+    t.ok(unionSchema.equal(a, b));
+
+    const c = { type: a.type, data: a.data - 1 };
+    t.notOk(unionSchema.equal(a, c));
+
+    const d = randomUnion('uint16');
+    d.data = a.data;
+    t.notOk(unionSchema.equal(a, d));
+
+    const e = { type: a.type, data: a.data };
+    const f = { type: a.type, data: a.data };
+    t.ok(unionSchema.equal(e, f));
+    delete e.data;
+    t.notOk(unionSchema.equal(e, f));
+    delete f.data;
+    t.notOk(unionSchema.equal(e, f));
+    delete e.type;
+    delete f.type;
+    t.notOk(unionSchema.equal(e, f));
+
+    t.end();
+});
 
 test('union (flat type-data pair) - clone()', (t) => {
     // the spec keys can have arbitrary names
@@ -87,8 +118,8 @@ test('union (flat type-data pair) - clone()', (t) => {
     };
     const unionSchema = new MuUnion(schemaSpec);
 
-    for (const muType of muPrimitiveTypes) {
-        const pair = randomPairOf(muType);
+    for (const muType of Object.keys(schemaSpec)) {
+        const pair = randomUnion(muType);
         const copy = unionSchema.clone(pair);
 
         t.notEquals(copy, pair);
@@ -145,15 +176,15 @@ test('union (flat type-data pair) - diff() & patch()', (t) => {
 
     const testPatchingPair = testPatchingPairFactory(t, unionSchema);
 
-    for (const typeA of muPrimitiveTypes) {
-        testPatchingPair(randomPairOf(typeA), randomPairOf(typeA));
+    for (const typeA of Object.keys(schemaSpec)) {
+        testPatchingPair(randomUnion(typeA), randomUnion(typeA));
 
         // pair of pairs with different types
-        for (const typeB of muPrimitiveTypes) {
+        for (const typeB of Object.keys(schemaSpec)) {
             if (typeB === typeA) {
                 continue;
             }
-            testPatchingPair(randomPairOf(typeA), randomPairOf(typeB));
+            testPatchingPair(randomUnion(typeA), randomUnion(typeB));
         }
     }
 
@@ -183,27 +214,27 @@ test('union (nested type-data pair) - diff() & patch()', (t) => {
 
     const testPatchingPair = testPatchingPairFactory(t, unionSchema);
 
-    for (const typeA of muPrimitiveTypes) {
+    for (const typeA of Object.keys(schemaSpec.subType.muData)) {
         // pair of pairs of the same type
         for (let i = 0; i < 200; ++i) {
             const pairA = {
                 type: 'subType' as TypeName,
                 data: {
                     type: typeA as InnerTypeName,
-                    data: randomValueOf(typeA),
+                    data: randomValue(typeA),
                 },
             };
             const pairB = {
                 type: 'subType' as TypeName,
                 data: {
                     type: typeA as InnerTypeName,
-                    data: randomValueOf(typeA),
+                    data: randomValue(typeA),
                 },
             };
             testPatchingPair(pairA, pairB);
         }
 
-        for (const typeB of muPrimitiveTypes) {
+        for (const typeB of Object.keys(schemaSpec.subType.muData)) {
             if (typeA === typeB) {
                 continue;
             }
@@ -214,14 +245,14 @@ test('union (nested type-data pair) - diff() & patch()', (t) => {
                     type: 'subType' as TypeName,
                     data: {
                         type: typeA as InnerTypeName,
-                        data: randomValueOf(typeA),
+                        data: randomValue(typeA),
                     },
                 };
                 const pairB = {
                     type: 'subType' as TypeName,
                     data: {
                         type: typeB as InnerTypeName,
-                        data: randomValueOf(typeB),
+                        data: randomValue(typeB),
                     },
                 };
                 testPatchingPair(pairA, pairB);

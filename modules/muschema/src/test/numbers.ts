@@ -1,5 +1,5 @@
 import test = require('tape');
-import { Constants } from '../_constants';
+import { Constants } from '../constants';
 
 import {
     MuInt8,
