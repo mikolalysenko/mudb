@@ -89,14 +89,23 @@ Each schema should implement the `MuSchema` interface:
 * `muData` (optional) additional run-time information, usually the schema of members
 * `alloc()` creates a new value from scratch, or fetches a value from the object pool
 * `free(value)` recycles the value to the object pool
+* `equal(a, b)` determines whether two values are equal
 * `clone(value)` duplicates the value
+* `copy(source, target)` copies the content of `source` to `target`
 * `diff(base, target, outStream)` computes a patch from `base` to `target`
 * `patch(base, inpStream)` applies a patch to `base` to create a new value
 
-`diff` and `patch` obey the following semantics:
+Methods should obey the following semantics.
 ```js
-diff(base, target, outStream)
-patch(base, inpStream)  // equal to target
+equal(a, b) === !diff(a, b, out)
+```
+```js
+copy(source, target)
+equal(target, clone(source)) === true
+```
+```js
+diff(base, target, out)
+equal(patch(base, inp), target) === true
 ```
 
 For situations where you don't have a base,
