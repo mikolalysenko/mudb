@@ -1,9 +1,11 @@
 # muschema
-An extensible system for specifying diff/patch based replication [schemas](https://en.wikipedia.org/wiki/Database_schema).  In `mudb`, schemas are used to define message interfaces and RPC, as well as define state layouts.  Schemas allow for run time reflection on type information, and are necessary to support serialization and memory management.
+An extensible system for defining [schemas](https://en.wikipedia.org/wiki/Database_schema), which describe structures of the data.
 
-It is kind of like protobufs for JavaScript, only better in that it supports [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding) and is easier to customize (and worse in the sense that it only works in JavaScript).
+Schemas allow run-time type reflection, object pooling, and more importantly, [binary serialization](https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization).  And in `mudb`, all message interfaces are specified by schemas.
 
-[Typescript](https://www.typescriptlang.org/) and [node.js](https://nodejs.org/) friendly!
+Compared to protobuf, `muschema` is better in that it supports [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding) and is easier to customize (and worse in the sense that it only works in JavaScript).
+
+TypeScript and Node.js friendly!
 
 ## example
 Here is a contrived example showing how all of the methods of the schemas work.
@@ -81,27 +83,23 @@ npm i muschema
 # api #
 
 ## interface ##
-Each schema implements the following interface:
-
-* `identity` the default value of the schema, usually set when initializing a schema
-* `muType` a string containing type information of the schema for runtime reflection
-* `muData` (optional) additional runtime information about the schema, such as the schema of members
-* `alloc()` creates a new value from scratch, or recycles an object from the memory pool when possible
-* `free(value)` returns the value to the memory pool
-* `clone(value)` makes a copy of the value
-* `diff(base, target, out:MuWriteStream)` computes a patch from `base` to `target`, and writes it to `stream`
-* `patch(base, inp:MuReadStream)` reads a patch from `stream`, and applies to `base`
+Each schema should implement the `MuSchema` interface:
+* `identity` the default value of the schema
+* `muType` a string of type name for run-time reflection
+* `muData` (optional) additional run-time information, usually the schema of members
+* `alloc()` creates a new value from scratch, or fetches a value from the object pool
+* `free(value)` recycles the value to the object pool
+* `clone(value)` duplicates the value
+* `diff(base, target, outStream)` computes a patch from `base` to `target`
+* `patch(base, inpStream)` applies a patch to `base` to create a new value
 
 `diff` and `patch` obey the following semantics:
-
-```
-diff(base, target, out)
-patchedBase = patch(base, inp)
-// now patchedBase is equivalent to target
+```js
+diff(base, target, outStream)
+patch(base, inpStream)  // equal to target
 ```
 
-For situations when you don't have a specific base, use the identity.
-
+For situations where you don't have a base,
 ```javascript
 schema.diff(schema.identity, value, out)
 schema.patch(schema.identity, inp)
@@ -302,7 +300,7 @@ const CardSchema = new MuStruct({
 const DeckSchema = new MuSortedArray(CardSchema, compare, identity)
 
 DeckSchema.identity     // defaults to []
-                        // if identity sepcified, will be a sorted copy of it
+                        // if identity specified, will be a sorted copy of it
 DeckSchema.muType       // 'sorted-set'
 DeckSchema.muData       // CardSchema
 DeckSchema.compare      // reference to the compare function
@@ -337,7 +335,7 @@ FloatOrString.diff(FloatOrString.identity, x, out)
 
 // apply a patch
 const inp = new MuReadStream(out.buffer.uint32)
-const y = FloatOrString.patch(FloatOrString.idenity, inp)
+const y = FloatOrString.patch(FloatOrString.identity, inp)
 ```
 
 ## data structures ##
