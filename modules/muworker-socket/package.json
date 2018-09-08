@@ -1,6 +1,6 @@
 {
   "name": "muworker-socket",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Run mudb server in Web Worker",
   "scripts": {
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
@@ -21,6 +21,6 @@
   "author": "He Diyi",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.4"
+    "mudb": "0.2.5"
   }
 }
