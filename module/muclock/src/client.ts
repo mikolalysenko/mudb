@@ -38,7 +38,7 @@ export class MuClockClient {
 
     private _started = false;
 
-    private _onTick:(t:number) => void = function () {};
+    private _onTick:(t:number) => void;
 
     constructor(spec:{
         client:MuClient,
@@ -56,9 +56,7 @@ export class MuClockClient {
         this._pingStatistic = new MuPingStatistic(spec.pingBufferSize || DEFAULT_PING_BUFFER_SIZE);
         this._pingRate = spec.pingRate || DEFAULT_PING_RATE;
 
-        if (spec.tick) {
-            this._onTick = spec.tick;
-        }
+        this._onTick = spec.tick || function () { };
 
         if (spec.frameSkip) {
             this.frameSkip = spec.frameSkip | 0;

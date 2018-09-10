@@ -76,19 +76,19 @@ class MuClockClientPingHandler {
 }
 
 export class MuClockServer {
-    public tickRate:number = 30;
+    public tickRate:number;
 
     public ping:{ [sessionId:string]:number } = {};
 
-    private _clock:MuClock;
+    private _clock:MuClock = new MuClock();
     private _tickCount:number = 0;
     private _protocol:MuServerProtocol<typeof MuClockProtocol>;
 
     private _pingRate:number = 1000;
-    private _pingBufferSize:number = 256;
+    private _pingBufferSize:number;
 
     private _pollInterval:any;
-    private _onTick:(tick:number) => void = function () {};
+    private _onTick:(tick:number) => void;
 
     public frameSkip:number = DEFAULT_FRAMESKIP;
     private _skippedFrames:number = 0;
@@ -108,14 +108,9 @@ export class MuClockServer {
         this._protocol = spec.server.protocol(MuClockProtocol);
         this._pingBufferSize = spec.pingBufferSize || 256;
 
-        this._clock = new MuClock();
+        this.tickRate = spec.tickRate || 30;
+        this._onTick = spec.tick || function () { };
 
-        if ('tickRate' in spec) {
-            this.tickRate = spec.tickRate || 30;
-        }
-        if ('tick' in spec) {
-            this._onTick = spec.tick || function () {};
-        }
         if ('frameSkip' in spec) {
             this.frameSkip = +(spec.frameSkip || 0);
         }
