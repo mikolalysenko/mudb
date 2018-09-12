@@ -1,6 +1,6 @@
 {
   "name": "muclock",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Clock synchronization for mudb",
   "main": "index.js",
   "repository": {
@@ -19,7 +19,7 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.5",
-    "muschema": "0.2.0"
+    "mudb": "0.2.6",
+    "muschema": "0.2.1"
   }
 }
