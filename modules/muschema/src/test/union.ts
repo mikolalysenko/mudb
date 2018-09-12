@@ -99,6 +99,10 @@ test('union - equal()', (t) => {
     delete f.type;
     t.notOk(unionSchema.equal(e, f));
 
+    const g = unionSchema.alloc();
+    const h = unionSchema.alloc();
+    t.ok(unionSchema.equal(g, h));
+
     t.end();
 });
 
