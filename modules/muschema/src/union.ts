@@ -85,6 +85,9 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         if (x.type !== y.type) {
             return false;
         }
+        if (x.type === '') {
+            return true;
+        }
         return this.muData[x.type].equal(x.data, y.data);
     }
 
