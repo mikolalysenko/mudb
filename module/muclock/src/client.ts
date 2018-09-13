@@ -11,6 +11,11 @@ const DEFAULT_PING_BUFFER_SIZE = 1024;
 const DEFAULT_CLOCK_BUFFER_SIZE = 64;
 const DEFAULT_FRAME_SKIP = 0;
 
+const ric = (<any>window).requestIdleCallback ||
+    ((cb, { timeout }) => setTimeout(cb, timeout));
+
+const cic = (<any>window).cancelIdleCallback || clearTimeout;
+
 export class MuClockClient {
     private _protocol:MuClientProtocol<typeof MuClockProtocol>;
 
@@ -86,7 +91,11 @@ export class MuClockClient {
                         pollRate = spec.pollRate || 0;
                     }
                     if (pollRate) {
-                        this._pollHandle = setInterval(() => this.poll(), pollRate);
+                        const pollClock = () => {
+                            this.poll();
+                            this._pollHandle = ric(pollClock, { timeout: pollRate });
+                        };
+                        this._pollHandle = ric(pollClock, { timeout: pollRate });
                     }
 
                     if (spec.ready) {
@@ -107,9 +116,7 @@ export class MuClockClient {
                 },
             },
             close: () => {
-                if (this._pollHandle) {
-                    clearInterval(this._pollHandle);
-                }
+                cic(this._pollHandle);
             },
         });
     }
