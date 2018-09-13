@@ -87,7 +87,7 @@ export class MuClockServer {
     private _pingRate:number = 1000;
     private _pingBufferSize:number;
 
-    private _pollInterval:any;
+    private _pollHandle:any;
     private _onTick:(tick:number) => void;
 
     public frameSkip:number = DEFAULT_FRAMESKIP;
@@ -117,7 +117,7 @@ export class MuClockServer {
 
         this._protocol.configure({
             ready: () => {
-                this._pollInterval = setInterval(
+                this._pollHandle = setInterval(
                     () => this.poll(),
                     Math.min(this.tickRate, this._pingRate) / 2);
             },

@@ -23,7 +23,7 @@ export class MuClockClient {
     private _remoteTimeSamples:number[] = [];
     private _clockBufferSize:number;
 
-    private _pollInterval:any;
+    private _pollHandle:any;
 
     private _pingStatistic:MuPingStatistic;
     private _pingCount:number = 0;
@@ -86,7 +86,7 @@ export class MuClockClient {
                         pollRate = spec.pollRate || 0;
                     }
                     if (pollRate) {
-                        this._pollInterval = setInterval(() => this.poll(), pollRate);
+                        this._pollHandle = setInterval(() => this.poll(), pollRate);
                     }
 
                     if (spec.ready) {
@@ -107,8 +107,8 @@ export class MuClockClient {
                 },
             },
             close: () => {
-                if (this._pollInterval) {
-                    clearInterval(this._pollInterval);
+                if (this._pollHandle) {
+                    clearInterval(this._pollHandle);
                 }
             },
         });
