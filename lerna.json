@@ -2,7 +2,7 @@
   "lerna": "2.11.0",
   "version": "independent",
   "packages": [
-    "modules/*"
+    "module/*"
   ],
   "npmClient": "npm"
 }
