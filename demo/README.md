@@ -1,7 +1,7 @@
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 
-![codemao logo](https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png)
+![codemao logo](https://user-images.githubusercontent.com/18070858/45590160-19c55b80-b965-11e8-875f-e04881ffa86e.png)
 
 Written in Shenzhen, China.
 
