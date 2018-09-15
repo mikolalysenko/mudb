@@ -87,7 +87,7 @@ Academic references:
 # credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 
-<img src="img/logo.png" />
+![codemao logo](https://raw.githubusercontent.com/mikolalysenko/mudb/master/img/logo.png)
 
 Written in Shenzhen, China.
 
