@@ -11,10 +11,10 @@ const DEFAULT_PING_BUFFER_SIZE = 1024;
 const DEFAULT_CLOCK_BUFFER_SIZE = 64;
 const DEFAULT_FRAME_SKIP = 0;
 
-const ric = (<any>window).requestIdleCallback ||
+const ric = (typeof window !== 'undefined' && (<any>window).requestIdleCallback) ||
     ((cb, { timeout }) => setTimeout(cb, timeout));
 
-const cic = (<any>window).cancelIdleCallback || clearTimeout;
+const cic = (typeof window !== 'undefined' && (<any>window).cancelIdleCallback) || clearTimeout;
 
 export class MuClockClient {
     private _protocol:MuClientProtocol<typeof MuClockProtocol>;
