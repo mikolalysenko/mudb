@@ -11,6 +11,11 @@ const DEFAULT_PING_BUFFER_SIZE = 1024;
 const DEFAULT_CLOCK_BUFFER_SIZE = 64;
 const DEFAULT_FRAME_SKIP = 0;
 
+const ric = (typeof window !== 'undefined' && (<any>window).requestIdleCallback) ||
+    ((cb, { timeout }) => setTimeout(cb, timeout));
+
+const cic = (typeof window !== 'undefined' && (<any>window).cancelIdleCallback) || clearTimeout;
+
 export class MuClockClient {
     private _protocol:MuClientProtocol<typeof MuClockProtocol>;
 
@@ -23,7 +28,7 @@ export class MuClockClient {
     private _remoteTimeSamples:number[] = [];
     private _clockBufferSize:number;
 
-    private _pollInterval:any;
+    private _pollHandle:any;
 
     private _pingStatistic:MuPingStatistic;
     private _pingCount:number = 0;
@@ -38,7 +43,7 @@ export class MuClockClient {
 
     private _started = false;
 
-    private _onTick:(t:number) => void = function () {};
+    private _onTick:(t:number) => void;
 
     constructor(spec:{
         client:MuClient,
@@ -56,9 +61,7 @@ export class MuClockClient {
         this._pingStatistic = new MuPingStatistic(spec.pingBufferSize || DEFAULT_PING_BUFFER_SIZE);
         this._pingRate = spec.pingRate || DEFAULT_PING_RATE;
 
-        if (spec.tick) {
-            this._onTick = spec.tick;
-        }
+        this._onTick = spec.tick || function () { };
 
         if (spec.frameSkip) {
             this.frameSkip = spec.frameSkip | 0;
@@ -88,7 +91,11 @@ export class MuClockClient {
                         pollRate = spec.pollRate || 0;
                     }
                     if (pollRate) {
-                        this._pollInterval = setInterval(() => this.poll(), pollRate);
+                        const pollClock = () => {
+                            this.poll();
+                            this._pollHandle = ric(pollClock, { timeout: pollRate });
+                        };
+                        this._pollHandle = ric(pollClock, { timeout: pollRate });
                     }
 
                     if (spec.ready) {
@@ -109,9 +116,7 @@ export class MuClockClient {
                 },
             },
             close: () => {
-                if (this._pollInterval) {
-                    clearInterval(this._pollInterval);
-                }
+                cic(this._pollHandle);
             },
         });
     }
