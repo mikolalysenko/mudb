@@ -35,13 +35,13 @@ function calcDelay (latency:number, jitter:number) {
 
 function drain (
     pendingMessages:(string|MuBufferWrapper)[],
-    handle:(data:MuData, unreliable:boolean) => void,
+    handler:(data:MuData) => void,
 ) {
     const message = pendingMessages.shift();
     if (typeof message === 'string') {
-        handle(message, false);
+        handler(message);
     } else if (message) {
-        handle(message.bytes, false);
+        handler(message.bytes);
         message.free();
     }
 }
@@ -97,7 +97,7 @@ export class MuDebugSocket implements MuSocket {
         this.socket.open({
             ready: spec.ready,
             message: (data, unreliable) => {
-                if (Math.random() * 100 <= this.inPacketLoss) {
+                if (Math.random() * 100 < this.inPacketLoss) {
                     return;
                 }
 
@@ -110,7 +110,10 @@ export class MuDebugSocket implements MuSocket {
                     const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
                     this._inbox.push(message);
                     setTimeout(
-                        () => drain(this._inbox, spec.message),
+                        () => drain(
+                            this._inbox,
+                            (data_) => spec.message(data_, false),
+                        ),
                         calcDelay(this.inLatency, this.inJitter),
                     );
                 }
@@ -122,26 +125,21 @@ export class MuDebugSocket implements MuSocket {
     private _outbox:(string|MuBufferWrapper)[] = [];
 
     public send (data:MuData, unreliable?:boolean) {
-        if (Math.random() * 100 <= this.outPacketLoss) {
+        if (Math.random() * 100 < this.outPacketLoss) {
             return;
         }
 
-        if (unreliable) {
-            setTimeout(
-                () => this.socket.send(data, true),
-                calcDelay(this.outLatency, this.outJitter),
-            );
-        } else {
-            const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
-            this._outbox.push(message);
-            setTimeout(
-                () => drain(
-                    this._outbox,
-                    (data_, unreliable_) => this.socket.send(data_, unreliable_),
-                ),
-                calcDelay(this.outLatency, this.outJitter),
-            );
-        }
+        const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
+        this._outbox.push(message);
+
+        const unreliable_ = !!unreliable;
+        setTimeout(
+            () => drain(
+                this._outbox,
+                (data_) => this.socket.send(data_, unreliable_),
+            ),
+            calcDelay(this.outLatency, this.outJitter),
+        );
     }
 
     public close () {
