@@ -97,7 +97,7 @@ export class MuDebugSocket implements MuSocket {
         this.socket.open({
             ready: spec.ready,
             message: (data, unreliable) => {
-                if (Math.random() * 100 <= this.inPacketLoss) {
+                if (Math.random() * 100 < this.inPacketLoss) {
                     return;
                 }
 
@@ -122,7 +122,7 @@ export class MuDebugSocket implements MuSocket {
     private _outbox:(string|MuBufferWrapper)[] = [];
 
     public send (data:MuData, unreliable?:boolean) {
-        if (Math.random() * 100 <= this.outPacketLoss) {
+        if (Math.random() * 100 < this.outPacketLoss) {
             return;
         }
 
