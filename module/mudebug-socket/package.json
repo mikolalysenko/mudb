@@ -1,6 +1,6 @@
 {
   "name": "mudebug-socket",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Simulate network conditions",
   "main": "index.js",
   "scripts": {
@@ -22,12 +22,12 @@
   "author": "He Diyi",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.6",
-    "mustreams": "0.1.6"
+    "mudb": "0.2.7",
+    "mustreams": "0.1.7"
   },
   "devDependencies": {
-    "mulocal-socket": "0.2.6",
-    "muschema": "0.2.1",
-    "muweb-socket": "0.2.6"
+    "mulocal-socket": "0.2.7",
+    "muschema": "0.2.2",
+    "muweb-socket": "0.2.7"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "mudo",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Development framework for prototyping mudb applications",
   "main": "mudo.js",
   "bin": {
@@ -23,9 +23,9 @@
     "browserify": "^16.2.2",
     "budo": "^11.3.2",
     "minimist": "^1.2.0",
-    "mudb": "0.2.6",
-    "mulocal-socket": "0.2.6",
-    "muweb-socket": "0.2.6",
+    "mudb": "0.2.7",
+    "mulocal-socket": "0.2.7",
+    "muweb-socket": "0.2.7",
     "temp": "^0.8.3"
   }
 }
