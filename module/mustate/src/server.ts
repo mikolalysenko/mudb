@@ -59,7 +59,7 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
     public tick = 0;
     public state:Schema['server']['identity'];
     public history:MuStateSet<Schema['server']['identity']>;
-    public windowSize = Infinity;
+    public windowSize = 0;
     public maxHistorySize = Infinity;
 
     private _protocol:MuServerProtocol<typeof MuDefaultStateSchema>;
