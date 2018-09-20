@@ -379,7 +379,7 @@ test('LocalSocket - simulating packet loss on client side', (t) => {
             ping: (client, data) => {
                 if (data === PING_OPCODE) {
                     t.pass('server should receive opcode');
-                    client.message.pong(PONG_OPCODE);
+                    client.message.pong(PONG_OPCODE, true);
                 }
             },
         },
@@ -433,7 +433,7 @@ test('LocalSocket - simulating packet loss on server side', (t) => {
             ping: (client, data) => {
                 if (data === PING_OPCODE) {
                     t.pass('server should receive opcode');
-                    client.message.pong(PONG_OPCODE);
+                    client.message.pong(PONG_OPCODE, true);
                 }
             },
         },
