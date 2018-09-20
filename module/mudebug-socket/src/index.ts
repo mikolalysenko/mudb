@@ -97,11 +97,10 @@ export class MuDebugSocket implements MuSocket {
         this.socket.open({
             ready: spec.ready,
             message: (data, unreliable) => {
-                if (Math.random() * 100 < this.inPacketLoss) {
-                    return;
-                }
-
                 if (unreliable) {
+                    if (Math.random() * 100 < this.inPacketLoss) {
+                        return;
+                    }
                     setTimeout(
                         () => spec.message(data, true),
                         calcDelay(this.inLatency, this.inJitter),
@@ -125,14 +124,16 @@ export class MuDebugSocket implements MuSocket {
     private _outbox:(string|MuBufferWrapper)[] = [];
 
     public send (data:MuData, unreliable?:boolean) {
-        if (Math.random() * 100 < this.outPacketLoss) {
-            return;
-        }
-
         const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
         this._outbox.push(message);
 
         const unreliable_ = !!unreliable;
+        if (unreliable_) {
+            if (Math.random() * 100 < this.outPacketLoss) {
+                return;
+            }
+        }
+
         setTimeout(
             () => drain(
                 this._outbox,
