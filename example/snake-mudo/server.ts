@@ -1,5 +1,5 @@
 import { GameSchema } from './schema';
-import { MuServer } from '../../server';
+import { MuServer } from 'mudb/server';
 import { Snake, PointInterface, Food } from './snakeAPI';
 
 export  = function (server:MuServer) {

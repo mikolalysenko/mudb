@@ -1,5 +1,5 @@
 import { MuClient } from 'mudb/client';
-import { MuClockClient } from '../../client';
+import { MuClockClient } from 'muclock/client';
 
 export = function (client:MuClient) {
     const tickDiv = document.createElement('div');

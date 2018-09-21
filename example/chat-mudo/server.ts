@@ -1,5 +1,5 @@
 import { ChatSchema } from './schema';
-import { MuServer } from '../../server';
+import { MuServer } from 'mudb/server';
 
 export = function (server:MuServer) {
     const protocol = server.protocol(ChatSchema);

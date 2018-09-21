@@ -1,5 +1,5 @@
 import { SnakeSchema } from './schema';
-import { MuClient } from '../../client';
+import { MuClient } from 'mudb/client';
 import { PointInterface, GameMap, Snake, DirectDict, Food } from './snakeAPI';
 import { GameSchema } from './schema';
 

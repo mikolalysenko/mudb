@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 
 import { MuServer } from 'mudb/server';
-import { MuRPCServer } from '../server';
+import { MuRPCServer } from 'murpc/server';
 import { RPCSchema } from './schema';
 
 export = function (server:MuServer) {

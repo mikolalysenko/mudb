@@ -1,5 +1,5 @@
 import { MuClient } from 'mudb/client';
-import { MuRPCClient } from '../client';
+import { MuRPCClient } from 'murpc/client';
 import { RPCSchema } from './schema';
 
 export = function (client:MuClient) {

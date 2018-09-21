@@ -5,7 +5,7 @@ import {
     MuString,
     MuFixedASCII,
 } from 'muschema';
-import { MuRPC } from '../rpc';
+import { MuRPC } from 'murpc/rpc';
 
 const IntegerSetSchema = new MuArray(new MuInt8());
 const TotalSchema = new MuInt32();

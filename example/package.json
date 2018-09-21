@@ -2,6 +2,7 @@
   "private": true,
   "author": "Mikola Lysenko",
   "devDependencies": {
+    "muclock": "^0.1.8",
     "mudb": "^0.2.7",
     "murpc": "^0.1.6",
     "muschema": "^0.2.2",

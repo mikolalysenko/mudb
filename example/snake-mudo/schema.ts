@@ -3,7 +3,6 @@ import {
     MuStruct,
     MuFloat32,
     MuUnion,
-    MuDictionary,
     MuInt8,
     MuArray,
 } from 'muschema';

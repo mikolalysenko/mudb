@@ -42,6 +42,32 @@ export const DirectDict = {
     down: 40,
 };
 
+export class Food {
+    public static new(color:string = 'green') : PointInterface {
+        const x = getRandomNumber(0, config.mapWidth / config.size - 1);
+        const y = getRandomNumber(0, config.mapHeight / config.size - 1);
+        return {x: x, y: y};
+    }
+
+    public static draw(context:CanvasRenderingContext2D, food:PointInterface, color:string = 'green') {
+        rect(context, food, color);
+    }
+}
+
+function rect(context:CanvasRenderingContext2D, point:PointInterface, color:string) : void {
+    context.beginPath();
+    context.fillStyle = color;
+    context.rect(point.x * config.size, point.y * config.size, config.size, config.size);
+    context.fill();
+    // context.stroke();
+}
+
+function getRandomNumber(min, max) {
+    const range = max - min;
+    const r = Math.random();
+    return Math.round(r * range + min);
+}
+
 export class Snake {
     public color:SnakeColor;
     public body:SnakeBody;
@@ -138,30 +164,4 @@ export class Snake {
             rect(context, bodyArray[i], color.body);
         }
     }
-}
-
-export class Food {
-    public static new(color:string = 'green') : PointInterface {
-        const x = getRandomNumber(0, config.mapWidth / config.size - 1);
-        const y = getRandomNumber(0, config.mapHeight / config.size - 1);
-        return {x: x, y: y};
-    }
-
-    public static draw(context:CanvasRenderingContext2D, food:PointInterface, color:string = 'green') {
-        rect(context, food, color);
-    }
-}
-
-function rect(context:CanvasRenderingContext2D, point:PointInterface, color:string) : void {
-    context.beginPath();
-    context.fillStyle = color;
-    context.rect(point.x * config.size, point.y * config.size, config.size, config.size);
-    context.fill();
-    // context.stroke();
-}
-
-function getRandomNumber(min, max) {
-    const range = max - min;
-    const r = Math.random();
-    return Math.round(r * range + min);
 }
