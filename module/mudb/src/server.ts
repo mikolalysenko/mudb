@@ -173,9 +173,10 @@ export class MuServer {
                         const info = JSON.parse(packet);
                         if (info.clientHash !== clientFactory.hash ||
                             info.serverHash !== serverFactory.hash) {
-                            socket.close();
+                            throw new Error('incompatible protocols');
                         }
                     } catch (e) {
+                        console.error(`mudb/core: closing socket ${socket.sessionId} due to ${e}`);
                         socket.close();
                     }
                 }
