@@ -68,7 +68,7 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
         close?:() => void;
     }) {
         if (this.configured) {
-            throw new Error('protocol already configured');
+            throw new Error('mudb/core: protocol has been configured');
         }
         this.configured = true;
         this._protocolSpec.messageHandlers = spec.message;
@@ -102,7 +102,7 @@ export class MuServer {
         close?:(error?:any) => void,
     }) {
         if (this._started || this._closed) {
-            throw new Error('server already started');
+            throw new Error('mudb/core: server already started');
         }
 
         this._started = true;
@@ -226,7 +226,7 @@ export class MuServer {
 
     public destroy () {
         if (!this.running) {
-            throw new Error('server not running');
+            throw new Error('mudb/core: server not running');
         }
         this._closed = true;
         this.running = false;
@@ -236,7 +236,7 @@ export class MuServer {
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuServerProtocol<Schema> {
         if (this._started || this._closed) {
-            throw new Error('cannot add a protocol until the server has been initialized');
+            throw new Error('mudb/core: cannot add a protocol until the server has been initialized');
         }
         const spec = new MuServerProtocolSpec();
         const p = new MuServerProtocol(schema, this, spec);

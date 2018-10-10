@@ -67,7 +67,7 @@ function utf8ToBytes(str:string) : number[] {
                 codePoint & 0x3F | 0x80,
             );
         } else {
-            throw new Error('Invalid code point');
+            throw new Error('mudb/stream: invalid code point');
         }
     }
 
