@@ -38,7 +38,7 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         close?:() => void;
     }) {
         if (this.configured) {
-            throw new Error('protocol already configured');
+            throw new Error('mudb/core: protocol already configured');
         }
         this.configured = true;
         this._protocolSpec.messageHandlers = spec.message;
@@ -71,7 +71,7 @@ export class MuClient {
         close?:(error?:string) => void,
     }) {
         if (this._started || this._closed) {
-            throw new Error('client already started');
+            throw new Error('mudb/core: client already started');
         }
 
         this._started = true;
@@ -147,14 +147,14 @@ export class MuClient {
 
     public destroy () {
         if (!this.running) {
-            throw new Error('client not running');
+            throw new Error('mudb/core: client not running');
         }
         this._socket.close();
     }
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuClientProtocol<Schema> {
         if (this._started || this._closed) {
-            throw new Error('cannot add a protocol until the client has been initialized');
+            throw new Error('mudb/core: cannot add a protocol until the client has been initialized');
         }
         const spec = new MuClientProtocolSpec();
         const p = new MuClientProtocol(schema, this, spec);

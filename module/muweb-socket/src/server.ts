@@ -256,7 +256,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                 return;
                             }
                         } catch (e) {
-                            console.error(e);
+                            console.error(`mudb/web-socket: terminating socket due to ${e}`);
                             socket.terminate();
                         }
                     };
