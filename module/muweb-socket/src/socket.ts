@@ -35,10 +35,10 @@ export class MuWebSocket implements MuSocket {
 
     public open (spec:MuSocketSpec) {
         if (this.state === MuSocketState.OPEN) {
-            throw new Error('socket already open');
+            throw new Error('mudb/web-socket: socket already open');
         }
         if (this.state === MuSocketState.CLOSED) {
-            throw new Error('cannot reopen closed socket');
+            throw new Error('mudb/web-socket: cannot reopen closed socket');
         }
 
         // used to reliably close sockets

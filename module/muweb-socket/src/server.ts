@@ -123,10 +123,10 @@ export class MuWebSocketClient implements MuSocket {
 
     public open (spec:MuSocketSpec) {
         if (this.state === MuSocketState.OPEN) {
-            throw new Error('socket already open');
+            throw new Error('mudb/web-socket: socket already open');
         }
         if (this.state === MuSocketState.CLOSED) {
-            throw new Error('cannot reopen closed socket');
+            throw new Error('mudb/web-socket: cannot reopen closed socket');
         }
 
         setTimeout(
@@ -196,10 +196,10 @@ export class MuWebSocketServer implements MuSocketServer {
 
     public start (spec:MuSocketServerSpec) {
         if (this.state === MuSocketServerState.RUNNING) {
-            throw new Error('web socket server already running');
+            throw new Error('mudb/web-socket: server already running');
         }
         if (this.state === MuSocketServerState.SHUTDOWN) {
-            throw new Error('web socket server already shut down, cannot restart');
+            throw new Error('mudb/web-socket: server already shut down, cannot restart');
         }
 
         setTimeout(
