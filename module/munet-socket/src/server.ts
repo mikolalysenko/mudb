@@ -155,76 +155,71 @@ export class MuNetSocketServer implements MuSocketServer {
             throw new Error('mudb/net-socket: server was already started');
         }
 
-        setTimeout(
-            () => {
-                this._tcpServer.on('connection', (socket) => {
-                    socket.once('data', (data) => {
-                        try {
-                            if (typeof data !== 'string') {
-                                throw new Error('first packet was not string');
-                            }
-
-                            const clientInfo = JSON.parse(data);
-                            if (typeof clientInfo.i !== 'string' ||
-                                typeof clientInfo.p !== 'number' ||
-                                typeof clientInfo.a !== 'string') {
-                                throw new Error('bad client info');
-                            }
-
-                            const udpServerInfo = this._udpServer.address();
-                            socket.write(JSON.stringify({
-                                p: udpServerInfo.port,
-                                a: udpServerInfo.address,
-                            }));
-
-                            const url = `${clientInfo.a}:${clientInfo.p}`;
-                            const client = new MuNetSocketClient(
-                                clientInfo.i,
-                                socket,
-                                this._udpServer,
-                                clientInfo.p,
-                                clientInfo.a,
-                                () => {
-                                    this.clients.splice(this.clients.indexOf(client), 1);
-                                    delete this._unreliableMsgHandlers[url];
-                                },
-                            );
-                            this.clients.push(client);
-
-                            this._unreliableMsgHandlers[url] = function (msg) {
-                                if (client.state !== MuSocketState.OPEN) {
-                                    return;
-                                }
-
-                                if (isJSON(msg)) {
-                                    client.onmessage(msg.toString(), true);
-                                } else {
-                                    client.onmessage(new Uint8Array(msg.buffer), true);
-                                }
-                            };
-
-                            spec.connection(client);
-                        } catch (e) {
-                            console.error(`mudb/net-socket: destroying socket due to ${e}`);
-                            socket.destroy();
-                        }
-                    });
-                });
-
-                this._udpServer.on('message', (msg, client) => {
-                    const onmessage = this._unreliableMsgHandlers[`${client.address}:${client.port}`];
-                    if (typeof onmessage === 'function') {
-                        onmessage(msg);
+        this._tcpServer.on('connection', (socket) => {
+            socket.once('data', (data) => {
+                try {
+                    if (typeof data !== 'string') {
+                        throw new Error('first packet was not string');
                     }
-                });
 
-                this._onclose = spec.close;
-                this._state = MuSocketServerState.RUNNING;
+                    const clientInfo = JSON.parse(data);
+                    if (typeof clientInfo.i !== 'string' ||
+                        typeof clientInfo.p !== 'number' ||
+                        typeof clientInfo.a !== 'string') {
+                        throw new Error('bad client info');
+                    }
 
-                spec.ready();
-            },
-            0,
-        );
+                    const udpServerInfo = this._udpServer.address();
+                    socket.write(JSON.stringify({
+                        p: udpServerInfo.port,
+                        a: udpServerInfo.address,
+                    }));
+
+                    const url = `${clientInfo.a}:${clientInfo.p}`;
+                    const client = new MuNetSocketClient(
+                        clientInfo.i,
+                        socket,
+                        this._udpServer,
+                        clientInfo.p,
+                        clientInfo.a,
+                        () => {
+                            this.clients.splice(this.clients.indexOf(client), 1);
+                            delete this._unreliableMsgHandlers[url];
+                        },
+                    );
+                    this.clients.push(client);
+
+                    this._unreliableMsgHandlers[url] = function (msg) {
+                        if (client.state !== MuSocketState.OPEN) {
+                            return;
+                        }
+
+                        if (isJSON(msg)) {
+                            client.onmessage(msg.toString(), true);
+                        } else {
+                            client.onmessage(new Uint8Array(msg.buffer), true);
+                        }
+                    };
+
+                    spec.connection(client);
+                } catch (e) {
+                    console.error(`mudb/net-socket: destroying socket due to ${e}`);
+                    socket.destroy();
+                }
+            });
+        });
+
+        this._udpServer.on('message', (msg, client) => {
+            const onmessage = this._unreliableMsgHandlers[`${client.address}:${client.port}`];
+            if (typeof onmessage === 'function') {
+                onmessage(msg);
+            }
+        });
+
+        this._onclose = spec.close;
+        this._state = MuSocketServerState.RUNNING;
+
+        spec.ready();
     }
 
     public close () {
