@@ -20,7 +20,11 @@ function noop () { }
 
 class MuNetSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
-    public state = MuSocketState.INIT;
+
+    private _state = MuSocketState.INIT;
+    get state () : MuSocketState {
+        return this._state;
+    }
 
     private _reliableSocket:tcp.Socket;
 
@@ -57,7 +61,7 @@ class MuNetSocketClient implements MuSocket {
         });
         this._reliableSocket.on('close', (hadError) => {
             // in case of errors
-            this.state = MuSocketState.CLOSED;
+            this._state = MuSocketState.CLOSED;
 
             this._onclose();
             removeConnection();
@@ -68,7 +72,7 @@ class MuNetSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw new Error('mudb/net-socket: socket was already opened');
         }
 
@@ -76,12 +80,12 @@ class MuNetSocketClient implements MuSocket {
             () => {
                 const onmessage = this.onmessage = spec.message;
                 this._onclose = spec.close;
-                this.state = MuSocketState.OPEN;
+                this._state = MuSocketState.OPEN;
 
                 spec.ready();
 
                 this._reliableSocket.on('data', (data) => {
-                    if (this.state !== MuSocketState.OPEN) {
+                    if (this._state !== MuSocketState.OPEN) {
                         return;
                     }
 
@@ -102,7 +106,7 @@ class MuNetSocketClient implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -114,17 +118,21 @@ class MuNetSocketClient implements MuSocket {
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._reliableSocket.end();
     }
 }
 
 export class MuNetSocketServer implements MuSocketServer {
-    public state = MuSocketServerState.INIT;
+    private _state = MuSocketServerState.INIT;
+    get state () : MuSocketServerState {
+        return this._state;
+    }
+
     public clients:MuSocket[] = [];
 
     private _tcpServer:tcp.Server;
@@ -143,7 +151,7 @@ export class MuNetSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state !== MuSocketServerState.INIT) {
+        if (this._state !== MuSocketServerState.INIT) {
             throw new Error('mudb/net-socket: server was already started');
         }
 
@@ -211,7 +219,7 @@ export class MuNetSocketServer implements MuSocketServer {
                 });
 
                 this._onclose = spec.close;
-                this.state = MuSocketServerState.RUNNING;
+                this._state = MuSocketServerState.RUNNING;
 
                 spec.ready();
             },
@@ -220,11 +228,11 @@ export class MuNetSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state === MuSocketServerState.SHUTDOWN) {
+        if (this._state === MuSocketServerState.SHUTDOWN) {
             return;
         }
 
-        this.state = MuSocketServerState.SHUTDOWN;
+        this._state = MuSocketServerState.SHUTDOWN;
         this._tcpServer.close(this._onclose);
         this._udpServer.close();
     }

@@ -13,7 +13,11 @@ import { isJSON } from './util';
 
 export class MuNetSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
-    public state = MuSocketState.INIT;
+
+    private _state = MuSocketState.INIT;
+    get state () : MuSocketState {
+        return this._state;
+    }
 
     private _reliableSocket:tcp.Socket;
     private _connectOpts:tcp.TcpSocketConnectOpts;
@@ -43,7 +47,7 @@ export class MuNetSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw new Error('mudb/net-socket: socket was already opened');
         }
 
@@ -53,7 +57,7 @@ export class MuNetSocket implements MuSocket {
             this._connectOpts,
             () => {
                 this._reliableSocket.once('data', (info) => {
-                    if (this.state !== MuSocketState.INIT) {
+                    if (this._state !== MuSocketState.INIT) {
                         return;
                     }
 
@@ -62,10 +66,10 @@ export class MuNetSocket implements MuSocket {
                         this._remotePort = serverInfo.p;
                         this._remoteAddr = serverInfo.a;
 
-                        this.state = MuSocketState.OPEN;
+                        this._state = MuSocketState.OPEN;
 
                         this._reliableSocket.on('data', (data) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                            if (this._state !== MuSocketState.OPEN) {
                                 return;
                             }
 
@@ -77,7 +81,7 @@ export class MuNetSocket implements MuSocket {
                         });
                         this._reliableSocket.on('close', (hadError) => {
                             // in case of errors
-                            this.state = MuSocketState.CLOSED;
+                            this._state = MuSocketState.CLOSED;
 
                             spec.close();
                             if (hadError) {
@@ -93,7 +97,7 @@ export class MuNetSocket implements MuSocket {
                     this._bindOpts,
                     () => {
                         this._unreliableSocket.on('message', (msg) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                            if (this._state !== MuSocketState.OPEN) {
                                 return;
                             }
 
@@ -117,7 +121,7 @@ export class MuNetSocket implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -129,11 +133,11 @@ export class MuNetSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._reliableSocket.end();
         this._unreliableSocket.close();
     }
