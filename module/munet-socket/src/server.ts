@@ -158,11 +158,7 @@ export class MuNetSocketServer implements MuSocketServer {
         this._tcpServer.on('connection', (socket) => {
             socket.once('data', (data) => {
                 try {
-                    if (typeof data !== 'string') {
-                        throw new Error('first packet was not string');
-                    }
-
-                    const clientInfo = JSON.parse(data);
+                    const clientInfo = JSON.parse(data.toString());
                     if (typeof clientInfo.i !== 'string' ||
                         typeof clientInfo.p !== 'number' ||
                         typeof clientInfo.a !== 'string') {
