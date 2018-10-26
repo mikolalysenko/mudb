@@ -111,7 +111,8 @@ class MuNetSocketClient implements MuSocket {
         }
 
         if (unreliable) {
-            this._unreliableSocket.send(data, this._remotePort, this._remoteAddr);
+            const buf = Buffer.from(data);
+            this._unreliableSocket.send(buf, 0, buf.length, this._remotePort, this._remoteAddr);
         } else {
             this._reliableSocket.write(data);
         }
