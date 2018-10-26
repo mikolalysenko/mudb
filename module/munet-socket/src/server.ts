@@ -14,7 +14,7 @@ import {
     MuCloseHandler,
 } from 'mudb/socket';
 
-import { isJSON } from './util';
+import { messagify, isJSON } from './util';
 
 function noop () { }
 
@@ -51,12 +51,12 @@ class MuNetSocketClient implements MuSocket {
         this._remotePort = remotePort;
         this._remoteAddr = remoteAddr;
 
-        this._reliableSocket.on('data', (data) => {
-            if (typeof data === 'string') {
-                this._pendingMessages.push(data);
+        this._reliableSocket.on('message', (msg) => {
+            if (isJSON(msg)) {
+                this._pendingMessages.push(msg.toString());
             } else {
                 // make a copy in case buffer is reused
-                this._pendingMessages.push(new Uint8Array(data.buffer).slice(0));
+                this._pendingMessages.push(new Uint8Array(msg).slice(0));
             }
         });
         this._reliableSocket.on('close', (hadError) => {
@@ -84,15 +84,15 @@ class MuNetSocketClient implements MuSocket {
 
                 spec.ready();
 
-                this._reliableSocket.on('data', (data) => {
+                this._reliableSocket.on('message', (msg) => {
                     if (this._state !== MuSocketState.OPEN) {
                         return;
                     }
 
-                    if (typeof data === 'string') {
-                        onmessage(data, false);
+                    if (isJSON(msg)) {
+                        onmessage(msg.toString(), false);
                     } else {
-                        onmessage(new Uint8Array(data.buffer), false);
+                        onmessage(new Uint8Array(msg), false);
                     }
                 });
 
@@ -156,9 +156,10 @@ export class MuNetSocketServer implements MuSocketServer {
         }
 
         this._tcpServer.on('connection', (socket) => {
-            socket.once('data', (data) => {
+            messagify(socket);
+            socket.once('message', (message) => {
                 try {
-                    const clientInfo = JSON.parse(data.toString());
+                    const clientInfo = JSON.parse(message.toString());
                     if (typeof clientInfo.i !== 'string' ||
                         typeof clientInfo.p !== 'number' ||
                         typeof clientInfo.a !== 'string') {
@@ -193,7 +194,7 @@ export class MuNetSocketServer implements MuSocketServer {
                         if (isJSON(msg)) {
                             client.onmessage(msg.toString(), true);
                         } else {
-                            client.onmessage(new Uint8Array(msg.buffer), true);
+                            client.onmessage(new Uint8Array(msg), true);
                         }
                     };
 

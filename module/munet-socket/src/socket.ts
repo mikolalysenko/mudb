@@ -9,7 +9,7 @@ import {
     MuData,
 } from 'mudb/socket';
 
-import { isJSON } from './util';
+import { messagify, isJSON } from './util';
 
 export class MuNetSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
@@ -56,41 +56,45 @@ export class MuNetSocket implements MuSocket {
         this._reliableSocket.connect(
             this._connectOpts,
             () => {
-                this._reliableSocket.once('data', (info) => {
+                messagify(this._reliableSocket);
+                this._reliableSocket.once('message', (info) => {
                     if (this._state !== MuSocketState.INIT) {
                         return;
                     }
 
-                    if (typeof info === 'string') {
-                        const serverInfo = JSON.parse(info);
-                        this._remotePort = serverInfo.p;
-                        this._remoteAddr = serverInfo.a;
-
-                        this._state = MuSocketState.OPEN;
-
-                        this._reliableSocket.on('data', (data) => {
-                            if (this._state !== MuSocketState.OPEN) {
-                                return;
-                            }
-
-                            if (typeof data === 'string') {
-                                onmessage(data, false);
-                            } else {
-                                onmessage(new Uint8Array(data.buffer), false);
-                            }
-                        });
-                        this._reliableSocket.on('close', (hadError) => {
-                            // in case of errors
-                            this._state = MuSocketState.CLOSED;
-
-                            spec.close();
-                            if (hadError) {
-                                console.error('mudb/net-socket: socket was closed due to a transmission error');
-                            }
-                        });
-
-                        spec.ready();
+                    const serverInfo = JSON.parse(info.toString());
+                    if (typeof serverInfo.p !== 'number' ||
+                        typeof serverInfo.a !== 'string') {
+                        throw new Error('bad server info');
                     }
+
+                    this._remotePort = serverInfo.p;
+                    this._remoteAddr = serverInfo.a;
+
+                    this._state = MuSocketState.OPEN;
+
+                    this._reliableSocket.on('message', (msg) => {
+                        if (this._state !== MuSocketState.OPEN) {
+                            return;
+                        }
+
+                        if (isJSON(msg)) {
+                            onmessage(msg.toString(), false);
+                        } else {
+                            onmessage(new Uint8Array(msg), false);
+                        }
+                    });
+                    this._reliableSocket.on('close', (hadError) => {
+                        // in case of errors
+                        this._state = MuSocketState.CLOSED;
+
+                        spec.close();
+                        if (hadError) {
+                            console.error('mudb/net-socket: socket was closed due to a transmission error');
+                        }
+                    });
+
+                    spec.ready();
                 });
 
                 this._unreliableSocket.bind(
@@ -104,7 +108,7 @@ export class MuNetSocket implements MuSocket {
                             if (isJSON(msg)) {
                                 onmessage(msg.toString(), true);
                             } else {
-                                onmessage(new Uint8Array(msg.buffer), true);
+                                onmessage(new Uint8Array(msg), true);
                             }
                         });
 
