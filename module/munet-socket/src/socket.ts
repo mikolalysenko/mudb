@@ -67,7 +67,7 @@ export class MuNetSocket implements MuSocket {
                     const serverInfo = JSON.parse(info.toString());
                     if (typeof serverInfo.p !== 'number' ||
                         typeof serverInfo.a !== 'string') {
-                        throw new Error('bad server info');
+                        throw new Error('mudb/net-socket: bad server info');
                     }
 
                     this._remotePort = serverInfo.p;
