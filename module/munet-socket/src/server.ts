@@ -212,6 +212,12 @@ export class MuNetSocketServer implements MuSocketServer {
             });
         });
 
+        this._udpServer.on('listening', () => {
+            const addr = this._udpServer.address().address;
+            if (addr === '0.0.0.0' || addr === '::') {
+                console.warn(`mudb/net-socket: UDP server is bound to ${addr}. Are you sure?`);
+            }
+        });
         this._udpServer.on('message', (msg, client) => {
             const onmessage = this._unreliableMsgHandlers[`${client.address}:${client.port}`];
             if (typeof onmessage === 'function') {
