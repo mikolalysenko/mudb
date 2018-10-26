@@ -156,7 +156,9 @@ export class MuNetSocketServer implements MuSocketServer {
         }
 
         this._tcpServer.on('connection', (socket) => {
+            socket.setNoDelay(true);
             messagify(socket);
+
             socket.once('message', (message) => {
                 try {
                     const clientInfo = JSON.parse(message.toString());

@@ -56,7 +56,9 @@ export class MuNetSocket implements MuSocket {
         this._reliableSocket.connect(
             this._connectOpts,
             () => {
+                this._reliableSocket.setNoDelay(true);
                 messagify(this._reliableSocket);
+
                 this._reliableSocket.once('message', (info) => {
                     if (this._state !== MuSocketState.INIT) {
                         return;
