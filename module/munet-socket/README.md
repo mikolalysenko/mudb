@@ -59,24 +59,31 @@ muClient.start()
 
 # table of contents
 
-# install #
+   * [1 install](#section_1)
+   * [2 api](#section_2)
+      * [2.1 class: MuNetSocketServer](#section_2.1)
+         * [2.1.1 new MuNetSocketServer(spec)](#section_2.1.1)
+      * [2.2 class: MuNetSocket](#section_2.2)
+         * [2.2.1 new MuNetSocket(spec)](#section_2.2.1)
+
+# <a name="section_1"></a> 1 install
 
 ```
 npm i munet-socket
 ```
 
-# api #
+# <a name="section_2"></a> 2 api
 
-## class: MuNetSocketServer ##
+## <a name="section_2.1"></a> 2.1 class: MuNetSocketServer
 
-### new MuNetSocketServer(spec) ###
+### <a name="section_2.1.1"></a> 2.1.1 new MuNetSocketServer(spec)
 * `spec` `<Object>`
     * `tcpServer` `<net.Server>` the underlying TCP server
     * `udpServer` `<dgram.Socket>` the underlying UDP server
 
-## class: MuNetSocket ##
+## <a name="section_2.2"></a> 2.2 class: MuNetSocket
 
-### new MuNetSocket(spec) ###
+### <a name="section_2.2.1"></a> 2.2.1 new MuNetSocket(spec)
 * `spec` `<Object>`
     * `sessionId` `<string>` a unique session id used to identify the client
     * `connectOpts` `<Object>` used by [connect()](https://nodejs.org/dist/latest/docs/api/net.html#net_socket_connect_options_connectlistener) to initiate a connection when the client starts
@@ -86,3 +93,5 @@ npm i munet-socket
 
 ## credits
 Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited
+
+
