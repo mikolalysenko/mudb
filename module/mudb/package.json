@@ -1,6 +1,6 @@
 {
   "name": "mudb",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Real-time database for multiplayer games",
   "main": "index.js",
   "repository": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "hash.js": "^1.1.3",
     "json-stable-stringify": "^1.0.1",
-    "muschema": "0.2.2",
-    "mustreams": "0.1.7"
+    "muschema": "0.2.3",
+    "mustreams": "0.1.8"
   }
 }

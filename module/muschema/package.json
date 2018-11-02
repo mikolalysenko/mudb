@@ -1,6 +1,6 @@
 {
   "name": "muschema",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Schemas for mudb",
   "main": "index.js",
   "repository": {
@@ -21,6 +21,6 @@
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "mustreams": "0.1.7"
+    "mustreams": "0.1.8"
   }
 }

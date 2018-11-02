@@ -20,6 +20,6 @@
   "author": "He Diyi",
   "license": "MIT",
   "dependencies": {
-    "mudb": "0.2.7"
+    "mudb": "0.2.8"
   }
 }
