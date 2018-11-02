@@ -1,26 +1,24 @@
-import { MuBoolean } from 'muschema/boolean';
 import { MuStruct } from 'muschema/struct';
 import { MuUint32 } from 'muschema/uint32';
-import { MuInt32 } from 'muschema/int32';
-import { MuVoid } from 'muschema/void';
 import { MuFloat64 } from 'muschema/float64';
+
+export const MuPingResponseSchema = new MuStruct({
+    clientClock: new MuFloat64(),
+    serverClock: new MuFloat64(),
+    skippedFrames: new MuUint32(),
+});
 
 export const MuClockProtocol = {
     client: {
+        frameSkip: new MuUint32(),
         init: new MuStruct({
-            tickRate: new MuUint32(),
+            tickRate: new MuFloat64(),
             serverClock: new MuFloat64(),
             skippedFrames: new MuUint32(),
         }),
-        frameSkip: new MuStruct({
-            skippedFrames: new MuUint32(),
-            serverClock: new MuFloat64(),
-        }),
-        ping: new MuInt32(),
-        pong: new MuFloat64(),
+        pong: MuPingResponseSchema,
     },
     server: {
-        ping: new MuVoid(),
-        pong: new MuInt32(),
+        ping: new MuFloat64(),
     },
 };

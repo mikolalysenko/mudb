@@ -7,7 +7,7 @@ export class MuClock {
         return now() - this.startTime;
     }
 
-    public reset () {
-        this.startTime = now();
+    public reset (t:number) {
+        this.startTime = now() - t;
     }
 }
