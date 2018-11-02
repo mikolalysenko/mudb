@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "TCP/UDP communication for mudb",
   "scripts": {
+    "test": "node test/server.js && node test/socket.js"
   },
   "repository": {
     "type": "git",
