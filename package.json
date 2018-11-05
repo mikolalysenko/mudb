@@ -12,6 +12,11 @@
     "watch": "node bin/watch.js"
   },
   "author": "Mikola Lysenko",
+  "dependencies": {
+    "hash.js": "^1.1.5",
+    "json-stable-stringify": "^1.0.1",
+    "uws": "^10.148.0"
+  },
   "devDependencies": {
     "@types/node": "^8.10.21",
     "@types/tape": "^4.2.32",
