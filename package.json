@@ -1,5 +1,7 @@
 {
-  "private": true,
+  "name": "mudb",
+  "version": "0.2.8",
+  "description": "Real-time database for multiplayer games",
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "build": "lerna exec --no-bail -- tsc",
@@ -7,11 +9,34 @@
     "docs": "node bin/docs.js",
     "link": "lerna exec -- npm link",
     "link-all": "npm run link && npm run bootstrap",
-    "publish": "npm run clean && npm run build && npm run test && lerna publish --exact",
     "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "node bin/watch.js"
   },
+  "main": "core/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikolalysenko/mudb.git"
+  },
+  "keywords": [
+    "mudb",
+    "real-time",
+    "multiplayer",
+    "game",
+    "network",
+    "server",
+    "client",
+    "clock",
+    "replicate",
+    "schema",
+    "binary",
+    "buffer",
+    "stream",
+    "websocket",
+    "tcp",
+    "udp"
+  ],
   "author": "Mikola Lysenko",
+  "license": "MIT",
   "dependencies": {
     "hash.js": "^1.1.5",
     "json-stable-stringify": "^1.0.1",
