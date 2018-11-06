@@ -14,7 +14,6 @@ node_modules
 
 # build
 build
-dist
 *.d.ts
 *.js
 *.map

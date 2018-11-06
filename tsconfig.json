@@ -8,7 +8,7 @@
     "moduleResolution": "node",
     "noImplicitAny": false,
     "noImplicitReturns": true,
-    "outDir": "dist",
+    "outDir": ".",
     "plugins": [
       {
         "name": "tslint-language-service"
@@ -25,7 +25,6 @@
   ],
   "exclude": [
     "build",
-    "dist",
     "node_modules"
   ]
 }
