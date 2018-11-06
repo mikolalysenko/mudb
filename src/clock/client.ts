@@ -1,4 +1,4 @@
-import { MuClient, MuClientProtocol } from 'mudb/client';
+import { MuClient, MuClientProtocol } from '../core/client';
 import { MuClockProtocol } from './schema';
 import { MuClock } from './clock';
 

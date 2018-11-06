@@ -1,4 +1,4 @@
-import { MuSessionId } from 'mudb/socket';
+import { MuSessionId } from '../../core/socket';
 import { MuLocalSocket, MuLocalSocketServer } from './server-socket';
 
 export function createLocalSocketServer () : MuLocalSocketServer {

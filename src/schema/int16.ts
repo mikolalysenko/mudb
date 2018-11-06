@@ -1,5 +1,5 @@
 import { MuNumber, MuNumberType } from './_number';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../stream';
 
 export class MuInt16 extends MuNumber {
     constructor(value?:number) {

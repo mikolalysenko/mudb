@@ -4,7 +4,7 @@ import {
     MuSortedArray,
     MuFloat64,
 } from '../';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../../stream';
 
 function cmp (a, b) { return a - b; }
 

@@ -13,7 +13,7 @@ import {
     MuString,
     MuUint8,
 } from '../';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../../stream';
 
 function diffPatch<T> (
     schema:MuSchema<T>,

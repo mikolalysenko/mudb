@@ -1,5 +1,5 @@
 import { MuSchema } from './schema';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../stream';
 
 /** The empty type */
 export class MuVoid implements MuSchema<void> {

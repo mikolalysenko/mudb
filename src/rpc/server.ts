@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol } from 'mudb/server';
+import { MuServer, MuServerProtocol } from '../core/server';
 import {
     MuRPCTable,
     MuRPCProtocolSchema,

@@ -1,6 +1,6 @@
-import { MuSchema } from 'muschema/schema';
-import { MuUint32 } from 'muschema/uint32';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuSchema } from '../schema/schema';
+import { MuUint32 } from '../schema/uint32';
+import { MuWriteStream, MuReadStream } from '../stream';
 
 export type MuAnySchema = MuSchema<any>;
 

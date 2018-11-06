@@ -7,12 +7,12 @@ import {
     MuSocketSpec,
     MuSessionId,
     MuData,
-} from 'mudb/socket';
+} from '../../core/socket';
 import {
     MuBuffer,
     allocBuffer,
     freeBuffer,
-} from 'mustreams';
+} from '../../stream';
 
 class MuBufferWrapper {
     private _buffer:MuBuffer;

@@ -1,10 +1,14 @@
 import test = require('tape');
 
-import { createLocalSocketServer, createLocalSocket } from 'mulocal-socket';
+import { createLocalSocketServer, createLocalSocket } from '../../local';
 import { MuDebugServer, MuDebugSocket } from '../index';
-import { MuServer, MuClient } from 'mudb';
+
+import mudb = require('../../../core');
 
 import { protocolSchema } from './schema';
+
+const MuServer = mudb.MuServer;
+const MuClient = mudb.MuClient;
 
 const PING_OPCODE = 0x9;
 const PONG_OPCODE = 0xA;

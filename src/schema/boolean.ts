@@ -1,5 +1,5 @@
 import { MuSchema } from './schema';
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../stream';
 
 /** Boolean type schema */
 export class MuBoolean implements MuSchema<boolean> {

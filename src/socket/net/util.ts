@@ -1,4 +1,4 @@
-import { MuData } from 'mudb/socket';
+import { MuData } from '../../core/socket';
 
 enum Read {
     HEADER,

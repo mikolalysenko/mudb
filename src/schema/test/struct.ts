@@ -3,7 +3,7 @@ import test = require('tape');
 import {
     MuWriteStream,
     MuReadStream,
-} from 'mustreams';
+} from '../../stream';
 
 import {
     MuASCII,

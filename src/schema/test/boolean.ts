@@ -1,7 +1,7 @@
 import test = require('tape');
 
 import { MuBoolean } from '../boolean';
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../../stream';
 
 test('boolean', (t) => {
     const defaultValue = false;

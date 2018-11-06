@@ -1,5 +1,5 @@
 import { createWorkerSocketServer } from '../server';
-import { MuServer } from 'mudb/server';
+import { MuServer } from '../../../core/server';
 
 module.exports = () => {
     const socketServer = createWorkerSocketServer();

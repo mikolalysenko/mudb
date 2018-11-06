@@ -11,7 +11,7 @@ import {
     MuFloat32,
     MuFloat64,
 } from '../';
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../../stream';
 
 const numSchemaTypes = [
     MuInt8, MuInt16, MuInt32,

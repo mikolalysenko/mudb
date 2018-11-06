@@ -1,4 +1,4 @@
-import { MuClient, MuClientProtocol } from 'mudb/client';
+import { MuClient, MuClientProtocol } from '../core/client';
 import {
     MuStateSchema,
     MuAnySchema,

@@ -6,7 +6,7 @@ import {
     MuUint8,
     MuVector,
 } from '../';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../../stream';
 import { muType2TypedArray } from '../constants';
 import {
     muNumberSchema,

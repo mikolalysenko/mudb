@@ -1,7 +1,7 @@
 import {
     MuReadStream,
     MuWriteStream,
-} from 'mustreams';
+} from '../../stream';
 
 import {
     MuSchema,

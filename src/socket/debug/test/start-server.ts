@@ -2,9 +2,9 @@ import { createServer } from 'http';
 
 import ip = require('ip');
 
-import { MuWebSocketServer } from 'muweb-socket/server';
+import { MuWebSocketServer } from '../../web/server';
 import { MuDebugServer } from '../index';
-import { MuServer } from 'mudb/server';
+import { MuServer } from '../../../core/server';
 import { protocolSchema } from './schema';
 
 const PING_OPCODE = 0x9;

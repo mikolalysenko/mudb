@@ -1,6 +1,6 @@
-import { MuStruct } from 'muschema/struct';
-import { MuUint32 } from 'muschema/uint32';
-import { MuFloat64 } from 'muschema/float64';
+import { MuStruct } from '../schema/struct';
+import { MuUint32 } from '../schema/uint32';
+import { MuFloat64 } from '../schema/float64';
 
 export const MuPingResponseSchema = new MuStruct({
     clientClock: new MuFloat64(),

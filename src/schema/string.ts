@@ -1,5 +1,5 @@
 import { MuSchema } from './schema';
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../stream';
 
 /** String type schema */
 export class MuString implements MuSchema<string> {

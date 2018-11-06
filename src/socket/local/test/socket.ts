@@ -1,6 +1,6 @@
 import test = require('tape');
 import { createLocalSocket, createLocalSocketServer } from '../';
-import { MuSocketState, MuSocketServerState } from 'mudb/socket';
+import { MuSocketState, MuSocketServerState } from '../../../core/socket';
 
 function noop () {}
 

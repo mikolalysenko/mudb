@@ -1,7 +1,7 @@
 import ip = require('ip');
 import test = require('tape');
 
-import { MuSocketState } from 'mudb/socket';
+import { MuSocketState } from '../../../core/socket';
 import { MuWebSocket } from '../socket';
 
 function noop () { }

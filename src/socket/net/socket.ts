@@ -7,7 +7,7 @@ import {
     MuSocketSpec,
     MuSessionId,
     MuData,
-} from 'mudb/socket';
+} from '../../core/socket';
 
 import { messagify, isJSON } from './util';
 

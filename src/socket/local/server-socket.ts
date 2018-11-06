@@ -10,12 +10,12 @@ import {
     MuMessageHandler,
     MuCloseHandler,
     MuConnectionHandler,
-} from 'mudb/socket';
+} from '../../core/socket';
 import {
     allocBuffer,
     freeBuffer,
     MuBuffer,
-} from 'mustreams';
+} from '../../stream';
 
 function noop () {}
 

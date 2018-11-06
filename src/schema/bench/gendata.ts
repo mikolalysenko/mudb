@@ -1,4 +1,4 @@
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../../stream';
 import { randomValue } from '../test/helper';
 
 export function createWriteStreams (numStreams:number) : MuWriteStream[] {

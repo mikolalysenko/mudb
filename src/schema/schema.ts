@@ -1,4 +1,4 @@
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../stream';
 
 export interface MuSchema<Value> {
     /** Base value */

@@ -3,7 +3,7 @@ import { MuNumber } from './_number';
 import {
     MuReadStream,
     MuWriteStream,
-} from 'mustreams';
+} from '../stream';
 
 import { muType2TypedArray } from './constants';
 

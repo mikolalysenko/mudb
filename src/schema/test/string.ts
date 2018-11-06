@@ -1,7 +1,7 @@
 import test = require('tape');
 
 import { MuString } from '../string';
-import { MuReadStream, MuWriteStream } from 'mustreams';
+import { MuReadStream, MuWriteStream } from '../../stream';
 
 test('string', (t) => {
     const defaultValue = '';

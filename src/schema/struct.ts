@@ -1,5 +1,5 @@
 import { MuSchema } from './schema';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../stream';
 
 import {
     muPrimitiveSize,

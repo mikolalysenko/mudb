@@ -3,7 +3,7 @@ import {
     MuSocketState,
     MuSocket,
     MuSocketSpec,
-} from 'mudb/socket';
+} from '../../core/socket';
 
 const hasWindow = typeof window === 'object' && 'addEventListener' in window;
 const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'uws');

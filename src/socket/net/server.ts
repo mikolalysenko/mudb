@@ -12,7 +12,7 @@ import {
     MuData,
     MuMessageHandler,
     MuCloseHandler,
-} from 'mudb/socket';
+} from '../../core/socket';
 
 import { messagify, isJSON } from './util';
 

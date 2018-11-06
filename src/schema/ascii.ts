@@ -1,5 +1,5 @@
 import { MuSchema } from './schema';
-import { MuWriteStream, MuReadStream } from 'mustreams';
+import { MuWriteStream, MuReadStream } from '../stream';
 
 export class MuASCII implements MuSchema<string> {
     public readonly identity:string;

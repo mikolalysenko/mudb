@@ -1,9 +1,9 @@
 import test = require('tape');
 import ip = require('ip');
 
-import { MuWebSocket } from 'muweb-socket/socket';
+import { MuWebSocket } from '../../web/socket';
 import { MuDebugSocket } from '../index';
-import { MuClient } from 'mudb/client';
+import { MuClient } from '../../../core/client';
 import { protocolSchema } from './schema';
 
 const url = `ws://${ip.address()}:${process.env.PORT}`;

@@ -1,7 +1,7 @@
-import { MuSchema } from 'muschema/schema';
-import { MuStruct } from 'muschema/struct';
-import { MuUint32 } from 'muschema/uint32';
-import { MuString } from 'muschema/string';
+import { MuSchema } from '../schema/schema';
+import { MuStruct } from '../schema/struct';
+import { MuUint32 } from '../schema/uint32';
+import { MuString } from '../schema/string';
 import { MuRemoteRPCClient } from './server';
 
 export type MuAnySchema = MuSchema<any>;

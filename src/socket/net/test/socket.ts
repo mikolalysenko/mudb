@@ -5,7 +5,7 @@ import test = require('tape');
 
 import { MuNetSocketServer } from '../server';
 import { MuNetSocket } from '../socket';
-import { MuSocketState } from 'mudb/socket';
+import { MuSocketState } from '../../../core/socket';
 
 function getFreePort (cb) {
     const server = tcp.createServer();
