@@ -4,7 +4,7 @@ import udp = require('dgram');
 import test = require('tape');
 
 import { MuNetSocketServer } from '../server';
-import { MuNetSocket } from '../socket';
+import { MuNetSocket } from '../client';
 import { MuSocketState } from '../../../core/socket';
 
 function getFreePort (cb) {

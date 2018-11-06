@@ -1,7 +1,7 @@
 import test = require('tape');
 import ip = require('ip');
 
-import { MuWebSocket } from '../../web/socket';
+import { MuWebSocket } from '../../web/client';
 import { MuDebugSocket } from '../index';
 import { MuClient } from '../../../core/client';
 import { protocolSchema } from './schema';
