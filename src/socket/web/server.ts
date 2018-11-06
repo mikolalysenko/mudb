@@ -7,7 +7,7 @@ import {
     MuSocketSpec,
     MuSocketServer,
     MuSocketServerSpec,
-} from '../../core/socket';
+} from '../../socket';
 
 export interface UWSSocketInterface {
     onmessage:(message:{ data:Uint8Array|string }) => void;

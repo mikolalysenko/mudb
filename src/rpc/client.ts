@@ -1,4 +1,4 @@
-import { MuClient, MuClientProtocol } from '../core/client';
+import { MuClient, MuClientProtocol } from '../client';
 import {
     MuRPCProtocolSchema,
     MuRPCErrorProtocolSchema,

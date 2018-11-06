@@ -3,7 +3,7 @@ import ip = require('ip');
 
 import { MuWebSocket } from '../../web/client';
 import { MuDebugSocket } from '../index';
-import { MuClient } from '../../../core/client';
+import { MuClient } from '../../../client';
 import { protocolSchema } from './schema';
 
 const url = `ws://${ip.address()}:${process.env.PORT}`;

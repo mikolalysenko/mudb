@@ -3,7 +3,7 @@ import test = require('tape');
 import { createLocalSocketServer, createLocalSocket } from '../../local';
 import { MuDebugServer, MuDebugSocket } from '../index';
 
-import mudb = require('../../../core');
+import mudb = require('../../../');
 
 import { protocolSchema } from './schema';
 

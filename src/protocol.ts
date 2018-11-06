@@ -1,6 +1,6 @@
 import { MuSocket, MuData } from './socket';
-import { MuSchema } from '../schema/schema';
-import { MuWriteStream, MuReadStream } from '../stream';
+import { MuSchema } from './schema/schema';
+import { MuWriteStream, MuReadStream } from './stream';
 
 import stableStringify = require('json-stable-stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');

@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol } from '../core/server';
+import { MuServer, MuServerProtocol } from '../server';
 import { MuClock } from './clock';
 import { MuClockProtocol, MuPingResponseSchema } from './schema';
 

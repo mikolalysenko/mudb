@@ -10,7 +10,7 @@ import {
     MuMessageHandler,
     MuCloseHandler,
     MuConnectionHandler,
-} from '../../core/socket';
+} from '../../socket';
 import {
     allocBuffer,
     freeBuffer,

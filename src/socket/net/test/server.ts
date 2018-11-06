@@ -4,7 +4,7 @@ import udp = require('dgram');
 import test = require('tape');
 
 import { MuNetSocketServer } from '../server';
-import { MuSocketServerState } from '../../../core/socket';
+import { MuSocketServerState } from '../../../socket';
 
 function noop () { }
 

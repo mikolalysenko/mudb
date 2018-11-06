@@ -1,4 +1,4 @@
-import { MuServer, MuServerProtocol, MuRemoteClient } from '../core/server';
+import { MuServer, MuServerProtocol, MuRemoteClient } from '../server';
 import {
     MuStateSchema,
     MuAnySchema,

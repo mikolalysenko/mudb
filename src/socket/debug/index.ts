@@ -7,7 +7,7 @@ import {
     MuSocketSpec,
     MuSessionId,
     MuData,
-} from '../../core/socket';
+} from '../../socket';
 import {
     MuBuffer,
     allocBuffer,

@@ -4,7 +4,7 @@ import test = require('tape');
 import ip = require('ip');
 import WebSocket = require('uws');
 
-import { MuSocketServerState } from '../../../core/socket';
+import { MuSocketServerState } from '../../../socket';
 import { MuWebSocketServer } from '../server';
 
 function noop () { }

@@ -9,7 +9,7 @@ import {
     MuData,
     MuConnectionHandler,
     MuCloseHandler,
-} from '../../core/socket';
+} from '../../socket';
 
 function noop () { }
 

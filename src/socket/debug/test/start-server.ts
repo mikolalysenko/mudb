@@ -4,7 +4,7 @@ import ip = require('ip');
 
 import { MuWebSocketServer } from '../../web/server';
 import { MuDebugServer } from '../index';
-import { MuServer } from '../../../core/server';
+import { MuServer } from '../../../server';
 import { protocolSchema } from './schema';
 
 const PING_OPCODE = 0x9;

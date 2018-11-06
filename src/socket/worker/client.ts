@@ -5,7 +5,7 @@ import {
     MuCloseHandler,
     MuSessionId,
     MuData,
-} from '../../core/socket';
+} from '../../socket';
 
 function noop () { }
 
