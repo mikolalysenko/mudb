@@ -9,7 +9,7 @@
     "docs": "node bin/docs.js",
     "link": "npm link && npm run clean && npm run build",
     "test": "lerna exec --concurrency=1 -- npm run test",
-    "watch": "node bin/watch.js"
+    "watch": "tsc -w"
   },
   "main": "core/index.js",
   "repository": {
