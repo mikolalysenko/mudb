@@ -4,11 +4,10 @@
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "bootstrap": "lerna bootstrap",
-    "build": "lerna exec --no-bail -- tsc",
-    "clean": "lerna exec -- shx rm -rf bench test *.d.ts *.js *.js.map",
+    "build": "tsc",
+    "clean": "shx rm -rf clock rpc schema socket state stream *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
-    "link": "lerna exec -- npm link",
-    "link-all": "npm run link && npm run bootstrap",
+    "link": "npm link && npm run clean && npm run build",
     "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "node bin/watch.js"
   },
