@@ -1,6 +1,6 @@
 {
   "name": "mudb",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
@@ -38,7 +38,7 @@
   "dependencies": {
     "hash.js": "^1.1.5",
     "json-stable-stringify": "^1.0.1",
-    "uws": "^10.148.0"
+    "uws": "10.148.0"
   },
   "devDependencies": {
     "@types/node": "^8.10.21",
