@@ -1,7 +1,24 @@
-import {
-    encodeString,
-    decodeString,
-} from './browser-string';
+let encodeString:(str:string) => Uint8Array;
+let decodeString:(bytes:Uint8Array) => string;
+
+// @ts-ignore: No implicit this
+if (this.TextEncoder) {
+    // @ts-ignore: No implicit this
+    const encoder = new this.TextEncoder();
+    encodeString = function (str) {
+        return encoder.encode(str);
+    };
+
+    // @ts-ignore: No implicit this
+    const decoder = new this.TextDecoder();
+    decodeString = function (bytes) {
+        return decoder.decode(bytes);
+    };
+} else {
+    const StringCodec = require('./codec');
+    encodeString = StringCodec.encodeString;
+    decodeString = StringCodec.decodeString;
+}
 
 // round to next highest power of 2
 function ceilLog2 (v_) {

@@ -2,7 +2,7 @@ import * as test from 'tape';
 import { MuWriteStream, MuReadStream } from '../';
 import { reallocBuffer, allocBuffer, freeBuffer } from '../';
 
-import StringCodec = require('../string');
+import StringCodec = require('../codec');
 
 const {
     encodeString,
