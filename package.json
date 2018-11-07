@@ -3,12 +3,10 @@
   "version": "0.2.8",
   "description": "Real-time database for multiplayer games",
   "scripts": {
-    "bootstrap": "lerna bootstrap",
     "build": "tsc",
     "clean": "shx rm -rf clock rpc schema socket state stream *.d.ts *.js *.js.map",
     "docs": "node bin/docs.js",
     "link": "npm link && npm run clean && npm run build",
-    "test": "lerna exec --concurrency=1 -- npm run test",
     "watch": "tsc -w"
   },
   "main": "core/index.js",
@@ -50,7 +48,6 @@
     "fast-deep-equal": "^2.0.1",
     "get-port": "^4.0.0",
     "ip": "^1.1.5",
-    "lerna": "^2.11.0",
     "shx": "^0.3.2",
     "tape": "^4.9.1",
     "tape-run": "^4.0.0",
