@@ -2,14 +2,18 @@ const fs = require('fs')
 const path = require('path')
 const spawn = require('child_process').spawn
 
-const repoRoot = path.resolve(__dirname, '..')
-const moduleRoot = `${repoRoot}/module`
-const moduleNames = fs.readdirSync(moduleRoot).filter((fileName) => /^[A-Za-z0-9-]+$/.test(fileName))
+const root = path.resolve(__dirname, '..')
+const srcDir = `${root}/src`
 
-const modulePaths = moduleNames.map((moduleName) => path.join(moduleRoot, moduleName))
-modulePaths.push(repoRoot)
+const mods = fs.readdirSync(srcDir).filter((file) => {
+    return /^[a-z]+$/.test(file) && file !== 'socket'
+})
+fs.readdirSync(`${srcDir}/socket`).forEach((dir) => mods.push(`socket/${dir}`))
 
-modulePaths.forEach((dir) => {
+const modPaths = mods.map((moduleName) => path.join(srcDir, moduleName))
+modPaths.push(srcDir, root)
+
+modPaths.forEach((dir) => {
     const tocPath = path.join(dir, 'README-toc.md')
     const mdPath = path.join(dir, 'README.md')
 

@@ -13,9 +13,10 @@ yarn-error.log*
 # deps
 node_modules
 
-# build
-build
-
 # misc
+bin
+build
+example
+tool
 .jsbeautifyrc
 yarn.lock
