@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util';
+import { isMuPrimitive } from './util/type';
 
 export type Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
