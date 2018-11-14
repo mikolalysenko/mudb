@@ -37,4 +37,7 @@ export class MuASCII implements MuSchema<string> {
     public patch (base:string, inp:MuReadStream) : string {
         return inp.readASCII();
     }
+
+    public toJSON (str:string) : string { return str; }
+    public fromJSON (json:string) : string { return json; }
 }

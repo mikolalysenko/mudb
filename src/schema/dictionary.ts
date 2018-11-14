@@ -204,4 +204,24 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         return result;
     }
+
+    public toJSON (dict:Dictionary<ValueSchema>) : Dictionary<any> {
+        const json = {};
+        const keys = Object.keys(dict);
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            json[k] = this.muData.toJSON(dict[k]);
+        }
+        return json;
+    }
+
+    public fromJSON (json:Dictionary<any>) : Dictionary<ValueSchema> {
+        const dict = {};
+        const keys = Object.keys(json);
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            dict[k] = this.muData.fromJSON(json[k]);
+        }
+        return dict;
+    }
 }

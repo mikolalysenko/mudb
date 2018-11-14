@@ -16,4 +16,6 @@ export class MuVoid implements MuSchema<void> {
     public copy (s:void, t:void) { }
     public diff (b, t, stream:MuWriteStream) { return false; }
     public patch (b, stream:MuReadStream) : void { }
+    public toJSON (_:void) : null { return null; }
+    public fromJSON (_:null) : void { return; }
 }

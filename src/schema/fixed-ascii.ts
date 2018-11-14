@@ -67,4 +67,7 @@ export class MuFixedASCII implements MuSchema<string> {
     public patch (base:string, inp:MuReadStream) : string {
         return inp.readASCIIOf(this.length);
     }
+
+    public toJSON (str:string) : string { return str; }
+    public fromJSON (json:string) : string { return json; }
 }

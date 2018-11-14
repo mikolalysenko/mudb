@@ -194,4 +194,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         return result;
     }
+
+    public toJSON (arr:_MuArrayType<ValueSchema>) : any[] {
+        return arr.map((v) => this.muData.toJSON(v));
+    }
+
+    public fromJSON (json:any[]) : _MuArrayType<ValueSchema> {
+        const arr = this.alloc();
+        for (let i = 0; i < json.length; ++i) {
+            arr[i] = this.muData.fromJSON(json[i]);
+        }
+        return arr;
+    }
 }

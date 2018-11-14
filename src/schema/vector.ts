@@ -165,4 +165,20 @@ export class MuVector<ValueSchema extends MuNumber>
 
         return resultArray;
     }
+
+    public toJSON (vec:_MuVectorType<ValueSchema>) : number[] {
+        const arr = new Array(vec.length);
+        for (let i = 0; i < arr.length; ++i) {
+            arr[i] = vec[i];
+        }
+        return arr;
+    }
+
+    public fromJSON (json:number[]) : _MuVectorType<ValueSchema> {
+        const vec = this.alloc();
+        for (let i = 0; i < vec.length; ++i) {
+            vec[i] = json[i];
+        }
+        return vec;
+    }
 }
