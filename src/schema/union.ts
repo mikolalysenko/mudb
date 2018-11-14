@@ -68,9 +68,10 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public alloc () : _TypeDataPair<SubTypes> {
+        const type = this.identity.type;
         return {
-            type: '',
-            data: void 0,
+            type,
+            data: type ? this.muData[type].clone(this.identity.data) : void 0,
         };
     }
 
