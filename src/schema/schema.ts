@@ -10,27 +10,33 @@ export interface MuSchema<Value> {
     /** Additional schema-specific type info */
     readonly muData?:any;
 
-    /** Converts schema to a JSON description.  Used to compare schemas */
+    /** JSON description of schema, used to compare schemas */
     readonly json:object;
 
     /** Allocates a new value */
     alloc () : Value;
 
-    /** Returns a value to the memory pool */
-    free (state:Value) : void;
+    /** Returns value to memory pool */
+    free (value:Value) : void;
 
     /** Checks equality of two values */
     equal (base:Value, target:Value) : boolean;
 
-    /** Makes a copy of a value */
-    clone (state:Value) : Value;
+    /** Makes a copy of value */
+    clone (value:Value) : Value;
 
-    /** Copies source to target */
+    /** Copies content of source to target */
     copy (source:Value, target:Value) : void;
 
     /** Computes a binary patch */
     diff (base:Value, target:Value, out:MuWriteStream) : boolean;
 
-    /** Apply a patch to an object */
+    /** Applies a binary patch to base */
     patch (base:Value, inp:MuReadStream) : Value;
+
+    /** Creates a JSON serializable object from value */
+    toJSON (value:Value) : any;
+
+    /** Creates a value conformed to schema from json */
+    fromJSON (json:any) : Value;
 }
