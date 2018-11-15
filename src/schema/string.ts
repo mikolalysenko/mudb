@@ -38,4 +38,7 @@ export class MuString implements MuSchema<string> {
     public patch (base:string, stream:MuReadStream) {
         return stream.readString();
     }
+
+    public toJSON (str:string) : string { return str; }
+    public fromJSON (json:string) : string { return json; }
 }

@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util';
+import { isMuPrimitive } from './util/type';
 
 export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
 
@@ -193,5 +193,21 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         }
 
         return result;
+    }
+
+    public toJSON (arr:_MuArrayType<ValueSchema>) : any[] {
+        const valueSchema = this.muData;
+        return arr.map((v) => valueSchema.toJSON(v));
+    }
+
+    public fromJSON (json:any[]) : _MuArrayType<ValueSchema> {
+        const arr = this.alloc();
+        arr.length = json.length;
+
+        const valueSchema = this.muData;
+        for (let i = 0; i < json.length; ++i) {
+            arr[i] = valueSchema.fromJSON(json[i]);
+        }
+        return arr;
     }
 }

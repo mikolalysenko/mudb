@@ -31,6 +31,9 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly diff:(base:Struct<Spec>, target:Struct<Spec>, stream:MuWriteStream) => boolean;
     public readonly patch:(base:Struct<Spec>, stream:MuReadStream) => Struct<Spec>;
 
+    public readonly toJSON:(struct:Struct<Spec>) => Struct<any>;
+    public readonly fromJSON:(json:Struct<any>) => Struct<Spec>;
+
     constructor (spec:Spec) {
         // sort struct properties so primitives come first
         const structProps:string[] = Object.keys(spec).sort(
@@ -116,6 +119,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             copy: func('copy', ['s', 't']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
+            toJSON: func('toJSON', ['s']),
+            fromJSON: func('fromJSON', ['j']),
         };
 
         const poolRef = prelude.def('[]');
@@ -368,6 +373,20 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         });
         methods.patch.append(`return result`);
 
+        // toJSON subroutine
+        methods.toJSON.append(`var j={};`);
+        propRefs.forEach((propRef, i) => {
+            methods.toJSON.append(`j[${propRef}]=${typeRefs[i]}.toJSON(s[${propRef}]);`);
+        });
+        methods.toJSON.append(`return j`);
+
+        // fromJSON subroutine
+        methods.fromJSON.append(`var s=_alloc();`);
+        propRefs.forEach((propRef, i) => {
+            methods.fromJSON.append(`s[${propRef}]=${typeRefs[i]}.fromJSON(j[${propRef}]);`);
+        });
+        methods.fromJSON.append(`return s`);
+
         const muDataRef = prelude.def('{}');
         propRefs.forEach((propRef, i) => {
             prelude.append(`${muDataRef}[${propRef}]=${typeRefs[i]};`);
@@ -396,5 +415,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.copy = compiled.copy;
         this.diff = compiled.diff;
         this.patch = compiled.patch;
+        this.toJSON = compiled.toJSON;
+        this.fromJSON = compiled.fromJSON;
     }
 }

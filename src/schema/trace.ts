@@ -106,4 +106,12 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         this.allocCount++;
         return this.schema.patch(base, inp);
     }
+
+    public toJSON (x:BaseSchema['identity']) : any {
+        return this.schema.toJSON(x);
+    }
+
+    public fromJSON (json:any) : BaseSchema['identity'] {
+        return this.schema.fromJSON(json);
+    }
 }

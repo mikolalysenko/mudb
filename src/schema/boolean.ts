@@ -38,4 +38,7 @@ export class MuBoolean implements MuSchema<boolean> {
     public patch (a:boolean, stream:MuReadStream) {
         return !!stream.readUint8();
     }
+
+    public toJSON (bool:boolean) : boolean { return bool; }
+    public fromJSON (json:boolean) : boolean { return json; }
 }

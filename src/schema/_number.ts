@@ -39,4 +39,7 @@ export abstract class MuNumber implements MuSchema<number> {
 
     public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
     public abstract patch (b:number, stream:MuReadStream) : number;
+
+    public toJSON (num:number) : number { return num; }
+    public fromJSON (json:number) : number { return json; }
 }

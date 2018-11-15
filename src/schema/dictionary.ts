@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util';
+import { isMuPrimitive } from './util/type';
 
 export type Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
@@ -203,5 +203,29 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
 
         return result;
+    }
+
+    public toJSON (dict:Dictionary<ValueSchema>) : Dictionary<any> {
+        const json = {};
+        const keys = Object.keys(dict);
+
+        const valueSchema = this.muData;
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            json[k] = valueSchema.toJSON(dict[k]);
+        }
+        return json;
+    }
+
+    public fromJSON (json:Dictionary<any>) : Dictionary<ValueSchema> {
+        const dict = {};
+        const keys = Object.keys(json);
+
+        const valueSchema = this.muData;
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            dict[k] = valueSchema.fromJSON(json[k]);
+        }
+        return dict;
     }
 }

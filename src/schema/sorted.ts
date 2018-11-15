@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util';
+import { isMuPrimitive } from './util/type';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -340,5 +340,21 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             }
         }
         return result;
+    }
+
+    public toJSON (set:ValueSchema['identity'][]) : any[] {
+        const valueSchema = this.muData;
+        return set.map((v) => valueSchema.toJSON(v));
+    }
+
+    public fromJSON (json:any[]) : ValueSchema['identity'][] {
+        const set = this.alloc();
+        set.length = json.length;
+
+        const valueSchema = this.muData;
+        for (let i = 0; i < json.length; ++i) {
+            set[i] = valueSchema.fromJSON(json[i]);
+        }
+        return set;
     }
 }
