@@ -38,22 +38,19 @@
   "dependencies": {
     "hash.js": "^1.1.5",
     "json-stable-stringify": "^1.0.1",
+    "right-now": "^1.0.0",
     "uws": "10.148.0"
   },
   "devDependencies": {
     "@types/node": "^8.10.21",
     "@types/tape": "^4.2.32",
     "browserify": "^16.2.2",
-    "budo": "^11.3.2",
     "envify": "^4.1.0",
     "fast-deep-equal": "^2.0.1",
-    "get-port": "^4.0.0",
     "ip": "^1.1.5",
     "shx": "^0.3.2",
     "tape": "^4.9.1",
     "tape-run": "^4.0.0",
-    "ts-node": "^7.0.0",
-    "tsify": "^4.0.0",
     "tslint": "^5.11.0",
     "tslint-language-service": "^0.9.9",
     "typescript": "^2.9.2",
