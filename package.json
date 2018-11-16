@@ -51,7 +51,6 @@
     "shx": "^0.3.2",
     "tape": "^4.9.1",
     "tape-run": "^4.0.0",
-    "ts-node": "^7.0.0",
     "tsify": "^4.0.0",
     "tslint": "^5.11.0",
     "tslint-language-service": "^0.9.9",
