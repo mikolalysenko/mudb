@@ -1,5 +1,5 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from '../stream';
+import { MuSchema } from './schema';
 
 export type MuNumberType =
     'float32' |
@@ -17,8 +17,8 @@ export abstract class MuNumber implements MuSchema<number> {
     public readonly muType:MuNumberType;
     public readonly json:object;
 
-    constructor (value:number, type:MuNumberType) {
-        this.identity = value;
+    constructor (identity:number, type:MuNumberType) {
+        this.identity = identity;
         this.muType = type;
         this.json = {
             type: this.muType,
@@ -26,20 +26,30 @@ export abstract class MuNumber implements MuSchema<number> {
         };
     }
 
-    public alloc () { return this.identity; }
-    public free (_:number) : void { }
-
-    public equal (x:number, y:number) {
-        return x === y;
+    public alloc () {
+        return this.identity;
     }
 
-    public clone (x:number) { return x; }
+    public free (_:number) : void { }
+
+    public equal (a:number, b:number) {
+        return a === b;
+    }
+
+    public clone (num:number) {
+        return num;
+    }
 
     public copy (source:number, target:number) { }
 
-    public abstract diff (b:number, t:number, stream:MuWriteStream) : boolean;
-    public abstract patch (b:number, stream:MuReadStream) : number;
+    public toJSON (num:number) : number {
+        return num;
+    }
 
-    public toJSON (num:number) : number { return num; }
-    public fromJSON (json:number) : number { return json; }
+    public fromJSON (json:number) : number {
+        return json;
+    }
+
+    public abstract diff (base:number, target:number, out:MuWriteStream) : boolean;
+    public abstract patch (base:number, inp:MuReadStream) : number;
 }

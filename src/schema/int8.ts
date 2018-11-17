@@ -1,21 +1,21 @@
-import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from '../stream';
+import { MuNumber } from './_number';
 
 export class MuInt8 extends MuNumber {
-    constructor(value?:number) {
-        super((value || 0) << 24 >> 24, 'int8');
+    constructor(identity?:number) {
+        super((identity || 0) << 24 >> 24, 'int8');
     }
 
-    public diff (base:number, target:number, stream:MuWriteStream) {
+    public diff (base:number, target:number, out:MuWriteStream) {
         if ((base << 24 >> 24) !== (target << 24 >> 24)) {
-            stream.grow(1);
-            stream.writeInt8(target);
+            out.grow(1);
+            out.writeInt8(target);
             return true;
         }
         return false;
     }
 
-    public patch (base:number, stream:MuReadStream) {
-        return stream.readInt8();
+    public patch (_:number, inp:MuReadStream) {
+        return inp.readInt8();
     }
 }
