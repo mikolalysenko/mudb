@@ -16,27 +16,27 @@ export interface MuSchema<Value> {
     /** Allocates a new value */
     alloc () : Value;
 
-    /** Returns value to memory pool */
+    /** Returns `value` to memory pool */
     free (value:Value) : void;
 
-    /** Checks equality of two values */
-    equal (base:Value, target:Value) : boolean;
+    /** Checks equality of `a` and `b` */
+    equal (a:Value, b:Value) : boolean;
 
-    /** Makes a copy of value */
+    /** Makes a copy of `value` */
     clone (value:Value) : Value;
 
-    /** Copies content of source to target */
+    /** Copies content of `source` to `target` */
     copy (source:Value, target:Value) : void;
 
-    /** Computes a binary patch */
+    /** Computes a binary patch from `base` to `target` */
     diff (base:Value, target:Value, out:MuWriteStream) : boolean;
 
-    /** Applies a binary patch to base */
+    /** Applies a binary patch to `base` */
     patch (base:Value, inp:MuReadStream) : Value;
 
-    /** Creates a JSON serializable object from value */
+    /** Creates a JSON serializable object from `value` */
     toJSON (value:Value) : any;
 
-    /** Creates a value conformed to schema from json */
+    /** Creates a value conforming to schema from `json` */
     fromJSON (json:any) : Value;
 }
