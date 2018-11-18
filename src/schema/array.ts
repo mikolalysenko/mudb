@@ -3,18 +3,16 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitive } from './util/type';
 
-export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
-
 export class MuArray<ValueSchema extends MuSchema<any>>
-        implements MuSchema<_MuArrayType<ValueSchema>> {
-    public readonly identity:_MuArrayType<ValueSchema> = [];
+        implements MuSchema<ValueSchema['identity'][]> {
+    public readonly identity:ValueSchema['identity'][] = [];
     public readonly muType = 'array';
     public readonly muData:ValueSchema;
     public readonly json:object;
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor(valueSchema:ValueSchema, id?:_MuArrayType<ValueSchema>) {
+    constructor(valueSchema:ValueSchema, id?:ValueSchema['identity'][]) {
         this.identity = id || [];
         this.muData = valueSchema;
         this.json = {
@@ -24,11 +22,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : _MuArrayType<ValueSchema> {
+    public alloc () : ValueSchema['identity'][] {
         return this.pool.pop() || [];
     }
 
-    public free (arr:_MuArrayType<ValueSchema>) : void {
+    public free (arr:ValueSchema['identity'][]) : void {
         const valueSchema = this.muData;
         for (let i = 0; i < arr.length; ++i) {
             valueSchema.free(arr[i]);
@@ -37,7 +35,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.pool.push(arr);
     }
 
-    public equal (x:_MuArrayType<ValueSchema>, y:_MuArrayType<ValueSchema>) {
+    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
         if (!Array.isArray(x) || !Array.isArray(y)) {
             return false;
         }
@@ -53,7 +51,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return true;
     }
 
-    public clone (arr:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
+    public clone (arr:ValueSchema['identity'][]) : ValueSchema['identity'][] {
         const result = this.alloc();
         result.length = arr.length;
 
@@ -65,7 +63,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public copy (source:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {
+    public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
         if (source === target) {
             return;
         }
@@ -94,8 +92,8 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public diff (
-        base:_MuArrayType<ValueSchema>,
-        target:_MuArrayType<ValueSchema>,
+        base:ValueSchema['identity'][],
+        target:ValueSchema['identity'][],
         stream:MuWriteStream,
     ) : boolean {
         const prefixOffset = stream.offset;
@@ -150,9 +148,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public patch (
-        base:_MuArrayType<ValueSchema>,
+        base:ValueSchema['identity'][],
         stream:MuReadStream,
-    ) : _MuArrayType<ValueSchema> {
+    ) : ValueSchema['identity'][] {
         const result = this.clone(base);
 
         const targetLength = stream.readUint32();
@@ -195,12 +193,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public toJSON (arr:_MuArrayType<ValueSchema>) : any[] {
+    public toJSON (arr:ValueSchema['identity'][]) : any[] {
         const valueSchema = this.muData;
         return arr.map((v) => valueSchema.toJSON(v));
     }
 
-    public fromJSON (json:any[]) : _MuArrayType<ValueSchema> {
+    public fromJSON (json:any[]) : ValueSchema['identity'][] {
         const arr = this.alloc();
         arr.length = json.length;
 
