@@ -15,7 +15,7 @@ export class MuUint32 extends MuNumber {
         return false;
     }
 
-    public patch (_:number, inp:MuReadStream) {
+    public patch (base:number, inp:MuReadStream) {
         return inp.readUint32();
     }
 }

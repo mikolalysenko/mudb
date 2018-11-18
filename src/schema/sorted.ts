@@ -68,15 +68,15 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.pool.push(set);
     }
 
-    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
-        if (!Array.isArray(x) || !Array.isArray(y)) {
+    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
+        if (!Array.isArray(a) || !Array.isArray(b)) {
             return false;
         }
-        if (x.length !== y.length) {
+        if (a.length !== b.length) {
             return false;
         }
-        for (let i = x.length - 1; i >= 0 ; --i) {
-            if (!this.muData.equal(x[i], y[i])) {
+        for (let i = a.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(a[i], b[i])) {
                 return false;
             }
         }

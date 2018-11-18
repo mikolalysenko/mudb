@@ -7,8 +7,8 @@ export class MuBoolean implements MuSchema<boolean> {
     public readonly muType = 'boolean';
     public readonly json:object;
 
-    constructor (id?:boolean) {
-        this.identity = !!id;
+    constructor (identity?:boolean) {
+        this.identity = !!identity;
         this.json = {
             type: 'boolean',
             identity: this.identity,
@@ -16,27 +16,27 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public alloc () { return this.identity; }
-    public free (_:boolean) : void { }
+    public free (bool:boolean) : void { }
 
-    public equal (x:boolean, y:boolean) {
-        return x === y;
+    public equal (a:boolean, b:boolean) {
+        return a === b;
     }
 
-    public clone (b:boolean) { return b; }
+    public clone (bool:boolean) { return bool; }
 
     public copy (source:boolean, target:boolean) { }
 
-    public diff (a:boolean, b:boolean, stream:MuWriteStream) {
-        if (a !== b) {
-            stream.grow(1);
-            stream.writeUint8(b ? 1 : 0);
+    public diff (base:boolean, target:boolean, out:MuWriteStream) {
+        if (base !== target) {
+            out.grow(1);
+            out.writeUint8(target ? 1 : 0);
             return true;
         }
         return false;
     }
 
-    public patch (a:boolean, stream:MuReadStream) {
-        return !!stream.readUint8();
+    public patch (base:boolean, inp:MuReadStream) {
+        return !!inp.readUint8();
     }
 
     public toJSON (bool:boolean) : boolean { return bool; }

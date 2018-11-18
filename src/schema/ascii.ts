@@ -6,8 +6,8 @@ export class MuASCII implements MuSchema<string> {
     public readonly muType = 'ascii';
     public readonly json:object;
 
-    constructor (id?:string) {
-        this.identity = id || '';
+    constructor (identity?:string) {
+        this.identity = identity || '';
         this.json = {
             type: 'ascii',
             identity: this.identity,
@@ -15,13 +15,13 @@ export class MuASCII implements MuSchema<string> {
     }
 
     public alloc () : string { return this.identity; }
-    public free (_:string) : void { }
+    public free (str:string) : void { }
 
-    public equal (x:string, y:string) {
-        return x === y;
+    public equal (a:string, b:string) {
+        return a === b;
     }
 
-    public clone (x:string) { return x; }
+    public clone (str:string) { return str; }
 
     public copy (source:string, target:string) { }
 

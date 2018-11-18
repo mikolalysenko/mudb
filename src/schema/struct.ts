@@ -21,15 +21,15 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly json:object;
 
     public readonly alloc:() => _Struct<Spec>;
-    public readonly free:(value:_Struct<Spec>) => void;
+    public readonly free:(struct:_Struct<Spec>) => void;
 
-    public readonly equal:(x:_Struct<Spec>, y:_Struct<Spec>) => boolean;
+    public readonly equal:(a:_Struct<Spec>, b:_Struct<Spec>) => boolean;
 
     public readonly clone:(value:_Struct<Spec>) => _Struct<Spec>;
     public readonly copy:(source:_Struct<Spec>, target:_Struct<Spec>) => void = (source, target) => {};
 
-    public readonly diff:(base:_Struct<Spec>, target:_Struct<Spec>, stream:MuWriteStream) => boolean;
-    public readonly patch:(base:_Struct<Spec>, stream:MuReadStream) => _Struct<Spec>;
+    public readonly diff:(base:_Struct<Spec>, target:_Struct<Spec>, out:MuWriteStream) => boolean;
+    public readonly patch:(base:_Struct<Spec>, inp:MuReadStream) => _Struct<Spec>;
 
     public readonly toJSON:(struct:_Struct<Spec>) => _Struct<any>;
     public readonly fromJSON:(json:_Struct<any>) => _Struct<Spec>;

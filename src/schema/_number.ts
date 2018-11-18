@@ -30,7 +30,7 @@ export abstract class MuNumber implements MuSchema<number> {
         return this.identity;
     }
 
-    public free (_:number) : void { }
+    public free (num:number) : void { }
 
     public equal (a:number, b:number) {
         return a === b;

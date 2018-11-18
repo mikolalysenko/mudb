@@ -79,28 +79,28 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public free (data:_Union<SubTypes>) {
-        this.muData[data.type].free(data.data);
+    public free (union:_Union<SubTypes>) {
+        this.muData[union.type].free(union.data);
     }
 
-    public equal (x:_Union<SubTypes>, y:_Union<SubTypes>) {
-        if (!isUnion(x) || !isUnion(y)) {
+    public equal (a:_Union<SubTypes>, b:_Union<SubTypes>) {
+        if (!isUnion(a) || !isUnion(b)) {
             return false;
         }
-        if (x.type !== y.type) {
+        if (a.type !== b.type) {
             return false;
         }
-        if (x.type === '') {
+        if (a.type === '') {
             return true;
         }
-        return this.muData[x.type].equal(x.data, y.data);
+        return this.muData[a.type].equal(a.data, b.data);
     }
 
-    public clone (data:_Union<SubTypes>) : _Union<SubTypes> {
-        const schema = this.muData[data.type];
+    public clone (union:_Union<SubTypes>) : _Union<SubTypes> {
+        const schema = this.muData[union.type];
         return {
-            type: data.type,
-            data: schema.clone(data.data),
+            type: union.type,
+            data: schema.clone(union.data),
         };
     }
 
@@ -121,23 +121,23 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     public diff (
         base:_Union<SubTypes>,
         target:_Union<SubTypes>,
-        stream:MuWriteStream,
+        out:MuWriteStream,
     ) : boolean {
-        stream.grow(8);
+        out.grow(8);
 
-        const trackerOffset = stream.offset;
-        ++stream.offset;
+        const trackerOffset = out.offset;
+        ++out.offset;
 
         let tracker = 0;
 
         const dataSchema = this.muData[target.type];
         if (base.type === target.type) {
-            if (dataSchema.diff(base.data, target.data, stream)) {
+            if (dataSchema.diff(base.data, target.data, out)) {
                 tracker = 1;
             }
         } else {
-            stream.writeUint8(this._types.indexOf(target.type as string));
-            if (dataSchema.diff(dataSchema.identity, target.data, stream)) {
+            out.writeUint8(this._types.indexOf(target.type as string));
+            if (dataSchema.diff(dataSchema.identity, target.data, out)) {
                 tracker = 2;
             } else {
                 tracker = 4;
@@ -145,28 +145,28 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         }
 
         if (tracker) {
-            stream.writeUint8At(trackerOffset, tracker);
+            out.writeUint8At(trackerOffset, tracker);
             return true;
         }
-        stream.offset = trackerOffset;
+        out.offset = trackerOffset;
         return false;
     }
 
     public patch (
         base:_Union<SubTypes>,
-        stream:MuReadStream,
+        inp:MuReadStream,
     ) : _Union<SubTypes> {
         const result = this.clone(base);
 
-        const tracker = stream.readUint8();
+        const tracker = inp.readUint8();
         if (tracker & 1) {
-            result.data = this.muData[result.type].patch(result.data, stream);
+            result.data = this.muData[result.type].patch(result.data, inp);
         } else if (tracker & 2) {
-            result.type = this._types[stream.readUint8()];
+            result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            result.data = schema.patch(result.data, stream);
+            result.data = schema.patch(result.data, inp);
         } else {
-            result.type = this._types[stream.readUint8()];
+            result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
             result.data = schema.clone(schema.identity);
         }

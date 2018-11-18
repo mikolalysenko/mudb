@@ -37,13 +37,13 @@ export class MuFixedASCII implements MuSchema<string> {
     }
 
     public alloc () : string { return this.identity; }
-    public free (_:string) : void { }
+    public free (str:string) : void { }
 
-    public equal (x:string, y:string) {
-        return x === y;
+    public equal (a:string, b:string) {
+        return a === b;
     }
 
-    public clone (x:string) { return x; }
+    public clone (str:string) { return str; }
 
     public copy (source:string, target:string) { }
 

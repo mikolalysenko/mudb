@@ -12,8 +12,8 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor(valueSchema:ValueSchema, id?:ValueSchema['identity'][]) {
-        this.identity = id || [];
+    constructor(valueSchema:ValueSchema, identity?:ValueSchema['identity'][]) {
+        this.identity = identity || [];
         this.muData = valueSchema;
         this.json = {
             type: 'array',
@@ -35,15 +35,15 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.pool.push(arr);
     }
 
-    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
-        if (!Array.isArray(x) || !Array.isArray(y)) {
+    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
+        if (!Array.isArray(a) || !Array.isArray(b)) {
             return false;
         }
-        if (x.length !== y.length) {
+        if (a.length !== b.length) {
             return false;
         }
-        for (let i = x.length - 1; i >= 0 ; --i) {
-            if (!this.muData.equal(x[i], y[i])) {
+        for (let i = a.length - 1; i >= 0 ; --i) {
+            if (!this.muData.equal(a[i], b[i])) {
                 return false;
             }
         }
@@ -94,18 +94,18 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     public diff (
         base:ValueSchema['identity'][],
         target:ValueSchema['identity'][],
-        stream:MuWriteStream,
+        out:MuWriteStream,
     ) : boolean {
-        const prefixOffset = stream.offset;
+        const prefixOffset = out.offset;
         const targetLength = target.length;
 
         const numTrackers = Math.ceil(targetLength / 8);
-        stream.grow(4 + numTrackers);
+        out.grow(4 + numTrackers);
 
-        stream.writeUint32(targetLength);
+        out.writeUint32(targetLength);
 
-        let trackerOffset = stream.offset;
-        stream.offset = trackerOffset + numTrackers;
+        let trackerOffset = out.offset;
+        out.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
         let numPatch = 0;
@@ -113,52 +113,52 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const baseLength = base.length;
         const valueSchema = this.muData;
         for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
-            if (valueSchema.diff(base[i], target[i], stream)) {
+            if (valueSchema.diff(base[i], target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
 
             if ((i & 7) === 7) {
-                stream.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
         for (let i = baseLength; i < targetLength; ++i) {
-            if (valueSchema.diff(valueSchema.identity, target[i], stream)) {
+            if (valueSchema.diff(valueSchema.identity, target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
 
             if ((i & 7) === 7) {
-                stream.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
         if (targetLength & 7) {
-            stream.writeUint8At(trackerOffset, tracker);
+            out.writeUint8At(trackerOffset, tracker);
         }
 
         if (numPatch > 0 || baseLength !== targetLength) {
             return true;
         }
-        stream.offset = prefixOffset;
+        out.offset = prefixOffset;
         return false;
     }
 
     public patch (
         base:ValueSchema['identity'][],
-        stream:MuReadStream,
+        inp:MuReadStream,
     ) : ValueSchema['identity'][] {
         const result = this.clone(base);
 
-        const targetLength = stream.readUint32();
+        const targetLength = inp.readUint32();
         result.length = targetLength;
 
-        let trackerOffset = stream.offset;
+        let trackerOffset = inp.offset;
         const numTrackers = Math.ceil(targetLength / 8);
-        stream.offset = trackerOffset + numTrackers;
+        inp.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
 
@@ -168,11 +168,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             const mod8 = i & 7;
 
             if (!mod8) {
-                tracker = stream.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(base[i], stream);
+                result[i] = valueSchema.patch(base[i], inp);
             }
         }
 
@@ -180,11 +180,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             const mod8 = i & 7;
 
             if (!mod8) {
-                tracker = stream.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(valueSchema.identity, stream);
+                result[i] = valueSchema.patch(valueSchema.identity, inp);
             } else {
                 result[i] = valueSchema.clone(valueSchema.identity);
             }
