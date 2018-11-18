@@ -10,7 +10,7 @@
     "release": "npm run clean && npm run build && npm run docs && npm publish",
     "watch": "tsc -w"
   },
-  "main": "core/index.js",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/mikolalysenko/mudb.git"
