@@ -24,7 +24,9 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : _Dictionary<ValueSchema> { return {}; }
+    public alloc () : _Dictionary<ValueSchema> {
+        return {};
+    }
 
     public free (dict:_Dictionary<ValueSchema>) {
         const valueSchema = this.muData;

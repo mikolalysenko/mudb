@@ -14,14 +14,19 @@ export class MuASCII implements MuSchema<string> {
         };
     }
 
-    public alloc () : string { return this.identity; }
+    public alloc () : string {
+        return this.identity;
+    }
+
     public free (str:string) : void { }
 
     public equal (a:string, b:string) {
         return a === b;
     }
 
-    public clone (str:string) { return str; }
+    public clone (str:string) {
+        return str;
+    }
 
     public copy (source:string, target:string) { }
 
@@ -38,6 +43,11 @@ export class MuASCII implements MuSchema<string> {
         return inp.readASCII();
     }
 
-    public toJSON (str:string) : string { return str; }
-    public fromJSON (json:string) : string { return json; }
+    public toJSON (str:string) : string {
+        return str;
+    }
+
+    public fromJSON (json:string) : string {
+        return json;
+    }
 }

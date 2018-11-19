@@ -15,14 +15,19 @@ export class MuBoolean implements MuSchema<boolean> {
         };
     }
 
-    public alloc () { return this.identity; }
+    public alloc () {
+        return this.identity;
+    }
+
     public free (bool:boolean) : void { }
 
     public equal (a:boolean, b:boolean) {
         return a === b;
     }
 
-    public clone (bool:boolean) { return bool; }
+    public clone (bool:boolean) {
+        return bool;
+    }
 
     public copy (source:boolean, target:boolean) { }
 
@@ -39,6 +44,11 @@ export class MuBoolean implements MuSchema<boolean> {
         return !!inp.readUint8();
     }
 
-    public toJSON (bool:boolean) : boolean { return bool; }
-    public fromJSON (json:boolean) : boolean { return json; }
+    public toJSON (bool:boolean) : boolean {
+        return bool;
+    }
+
+    public fromJSON (json:boolean) : boolean {
+        return json;
+    }
 }
