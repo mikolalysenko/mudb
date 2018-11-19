@@ -20,11 +20,10 @@ function isUnion (x) {
         return false;
     }
 
-    const hasOwnProperty = Object.prototype.hasOwnProperty;
-    if (!hasOwnProperty.call(x, 'type')) {
+    if (!('type' in x)) {
         return false;
     }
-    if (!hasOwnProperty.call(x, 'data')) {
+    if (!('data' in x)) {
         return false;
     }
 

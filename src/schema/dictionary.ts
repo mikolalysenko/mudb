@@ -41,36 +41,37 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             return false;
         }
 
-        const aProps = Object.keys(a);
-        if (aProps.length !== Object.keys(b).length) {
+        const aKeys = Object.keys(a);
+        const bKeys = Object.keys(b);
+
+        if (aKeys.length !== bKeys.length) {
             return false;
         }
-
-        const hasOwnProperty = Object.prototype.hasOwnProperty;
-        for (let i = aProps.length - 1; i >= 0; --i) {
-            if (!hasOwnProperty.call(b, aProps[i])) {
+        for (let i = bKeys.length - 1; i >= 0; --i) {
+            if (!(bKeys[i] in a)) {
                 return false;
             }
         }
 
-        for (let i = aProps.length - 1; i >= 0; --i) {
-            const prop = aProps[i];
-            if (!this.muData.equal(a[prop], b[prop])) {
+        const valueSchema = this.muData;
+        for (let i = 0; i < bKeys.length; ++i) {
+            const k = bKeys[i];
+            if (!valueSchema.equal(a[k], b[k])) {
                 return false;
             }
         }
-
         return true;
     }
 
     public clone (dict:_Dictionary<ValueSchema>) : _Dictionary<ValueSchema> {
-        const result = {};
-        const props = Object.keys(dict);
-        const schema = this.muData;
-        for (let i = 0; i < props.length; ++i) {
-            result[props[i]] = schema.clone(dict[props[i]]);
+        const copy = {};
+        const keys = Object.keys(dict);
+        const valueSchema = this.muData;
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            copy[k] = valueSchema.clone(dict[k]);
         }
-        return result;
+        return copy;
     }
 
     public copy (source:_Dictionary<ValueSchema>, target:_Dictionary<ValueSchema>) {
@@ -78,33 +79,32 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             return;
         }
 
-        const sourceProps = Object.keys(source);
-        const targetProps = Object.keys(target);
+        const sKeys = Object.keys(source);
+        const tKeys = Object.keys(target);
+        const valueSchema = this.muData;
 
-        const hasOwnProperty = Object.prototype.hasOwnProperty;
-
-        for (let i = 0; i < targetProps.length; ++i) {
-            const prop = targetProps[i];
-            if (!hasOwnProperty.call(source, prop)) {
-                this.muData.free(target[prop]);
-                delete target[prop];
+        for (let i = 0; i < tKeys.length; ++i) {
+            const k = tKeys[i];
+            if (!(k in source)) {
+                valueSchema.free(target[k]);
+                delete target[k];
             }
         }
 
-        if (isMuPrimitive(this.muData.muType)) {
-            for (let i = 0; i < sourceProps.length; ++i) {
-                const prop = sourceProps[i];
-                target[prop] = source[prop];
+        if (isMuPrimitive(valueSchema.muType)) {
+            for (let i = 0; i < sKeys.length; ++i) {
+                const k = sKeys[i];
+                target[k] = source[k];
             }
             return;
         }
 
-        for (let i = 0; i < sourceProps.length; ++i) {
-            const prop = sourceProps[i];
-            if (!hasOwnProperty.call(target, prop)) {
-                target[prop] = this.muData.clone(source[prop]);
+        for (let i = 0; i < sKeys.length; ++i) {
+            const k = sKeys[i];
+            if (k in target) {
+                valueSchema.copy(source[k], target[k]);
             } else {
-                this.muData.copy(source[prop], target[prop]);
+                target[k] = valueSchema.clone(source[k]);
             }
         }
     }
