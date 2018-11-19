@@ -4,7 +4,7 @@ import equal = require('fast-deep-equal');
 import {
     MuArray,
     MuFloat64,
-    MuString,
+    MuUTF8,
     MuUint32,
 } from '../';
 
@@ -20,11 +20,11 @@ import {
 } from './helper';
 
 test('array - identity', (t) => {
-    let arraySchema = new MuArray(new MuString());
+    let arraySchema = new MuArray(new MuUTF8());
     t.same(arraySchema.identity, []);
 
     const id = ['foo', 'bar'];
-    arraySchema = new MuArray(new MuString(), id);
+    arraySchema = new MuArray(new MuUTF8(), id);
     t.equals(arraySchema.identity, id);
 
     t.end();

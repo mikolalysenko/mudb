@@ -1,64 +1,28 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from '../stream';
+import { MuString } from './_string';
 
-let identityStr = ' ';
-
-export class MuFixedASCII implements MuSchema<string> {
-    public readonly identity:string;
-    public readonly muType = 'fixed-ascii';
-    public readonly json:object;
-
+export class MuFixedASCII extends MuString {
     public readonly length:number;
 
     constructor (lengthOrIdentity:number|string) {
-        if (typeof lengthOrIdentity === 'number') {
-            if (lengthOrIdentity < 0) {
-                throw new RangeError('length cannot be negative');
-            }
-            const length = lengthOrIdentity | 0;
-            if (length > 1 << 27) {
-                throw new RangeError('invalid length');
-            }
-            this.length = length;
-
-            while (length > identityStr.length) {
-                identityStr += identityStr;
-            }
-            this.identity = identityStr.substr(0, length);
-        } else {
-            this.identity = lengthOrIdentity;
-            this.length = lengthOrIdentity.length;
-        }
-
-        this.json = {
-            type: 'fixed-ascii',
-            identity: this.identity,
-        };
+        super(
+            typeof lengthOrIdentity === 'number' ?
+                Array(lengthOrIdentity + 1).join(' ') :
+                lengthOrIdentity,
+            'fixed-ascii',
+        );
+        this.length = typeof lengthOrIdentity === 'number' ?
+            lengthOrIdentity :
+            this.identity.length;
     }
-
-    public alloc () : string {
-        return this.identity;
-    }
-
-    public free (str:string) : void { }
-
-    public equal (a:string, b:string) {
-        return a === b;
-    }
-
-    public clone (str:string) {
-        return str;
-    }
-
-    public copy (source:string, target:string) { }
 
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         const length = this.length;
         if (base.length !== length) {
-            throw new Error('base of invalid length');
+            throw new Error(`base is ${base}, should have ${length} characters`);
         }
         if (target.length !== length) {
-            throw new Error('target of invalid length');
+            throw new Error(`target is ${target}, should have ${length} characters`);
         }
 
         if (base !== target) {
@@ -71,13 +35,5 @@ export class MuFixedASCII implements MuSchema<string> {
 
     public patch (base:string, inp:MuReadStream) : string {
         return inp.readASCIIOf(this.length);
-    }
-
-    public toJSON (str:string) : string {
-        return str;
-    }
-
-    public fromJSON (json:string) : string {
-        return json;
     }
 }

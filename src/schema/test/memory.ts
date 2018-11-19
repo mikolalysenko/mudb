@@ -7,10 +7,8 @@ import {
     MuDictionary,
     MuSortedArray,
     MuStruct,
-    MuUnion,
-    MuVector,
     MuFloat32,
-    MuString,
+    MuUTF8,
     MuUint8,
 } from '../';
 import { MuWriteStream, MuReadStream } from '../../stream';
@@ -90,7 +88,7 @@ test('array - alloc & free', (t) => {
 test('dictionary - alloc & free', (t) => {
     const contactSchema = new MuSchemaTrace(
         new MuStruct({
-            email: new MuString(),
+            email: new MuUTF8(),
         }),
     );
     const contactsSchema = new MuDictionary(contactSchema);

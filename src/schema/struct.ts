@@ -140,7 +140,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     prelude.append(`this[${propRef}]=${type.identity};`);
                     break;
                 case 'ascii':
-                case 'string':
+                case 'utf8':
                     prelude.append(`this[${propRef}]=${inject(type.identity)};`);
                     break;
                 default:
@@ -160,10 +160,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     prelude.append(`${identityRef}[${propRef}]=${typeRefs[i]}.clone(${inject(type.identity)});`);
@@ -183,10 +183,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     methods.alloc.append(`result[${propRef}]=${typeRefs[i]}.alloc();`);
@@ -207,10 +207,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     methods.free.append(`${typeRefs[i]}.free(x[${propRef}]);`);
@@ -229,10 +229,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.equal.append(`if(a[${propRef}]!==b[${propRef}]){return false}`);
                     break;
                 default:
@@ -253,10 +253,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.clone.append(`result[${propRef}]=x[${propRef}];`);
                     break;
                 default:
@@ -278,10 +278,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.copy.append(`t[${propRef}]=s[${propRef}];`);
                     break;
                 default:
@@ -361,10 +361,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${propRef}];`);
                     break;
                 default:

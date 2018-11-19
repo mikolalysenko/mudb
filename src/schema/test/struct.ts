@@ -14,7 +14,7 @@ import {
     MuInt8,
     MuInt16,
     MuInt32,
-    MuString,
+    MuUTF8,
     MuStruct,
     MuUint8,
     MuUint16,
@@ -45,7 +45,7 @@ test('struct - identity', (t) => {
     const structSchema = new MuStruct({
         v: new MuFloat64(0.233),
         vs: new MuVector(new MuFloat64(0.233), 2),
-        s: new MuString('foo'),
+        s: new MuUTF8('foo'),
         b: new MuBoolean(),
     });
 
@@ -90,10 +90,10 @@ test('struct - copy()', (t) => {
                 i8: new MuInt8(),
                 i16: new MuInt16(),
                 i32: new MuInt32(),
-                str: new MuString(),
                 u8: new MuUint8(),
                 u16: new MuUint16(),
                 u32: new MuUint32(),
+                utf8: new MuUTF8(),
             }),
         }),
     });
@@ -109,10 +109,10 @@ test('struct - copy()', (t) => {
     source.s.s.i8 = randomValue('int8');
     source.s.s.i16 = randomValue('int16');
     source.s.s.i32 = randomValue('int32');
-    source.s.s.str = randomValue('string');
     source.s.s.u8 = randomValue('uint8');
     source.s.s.u16 = randomValue('uint16');
     source.s.s.u32 = randomValue('uint32');
+    source.s.s.utf8 = randomValue('utf8');
 
     structSchema.copy(source, target);
     t.deepEqual(target, source);
@@ -160,15 +160,15 @@ test('struct (nested)', (t) => {
     function structSchemaOf (depth:number) : MuStruct<any> {
         if (depth <= 2) {
             return new MuStruct({
-                type: new MuString('nested'),
+                type: new MuUTF8('nested'),
                 struct: new MuStruct({
-                    type: new MuString('flat'),
+                    type: new MuUTF8('flat'),
                 }),
             });
         }
 
         return new MuStruct({
-            type: new MuString('nested'),
+            type: new MuUTF8('nested'),
             struct: structSchemaOf(depth - 1),
         });
     }
@@ -213,7 +213,7 @@ test('random test', (t) => {
         a: new MuFloat32(1),
         b: new MuUint8(),
         c: new MuVector(new MuFloat32(), 3),
-        foo: new MuString('0'),
+        foo: new MuUTF8('0'),
     });
 
     type structT = typeof testSchema['identity'];
@@ -221,11 +221,11 @@ test('random test', (t) => {
     function randomStruct () {
         const result = testSchema.alloc();
         result.a = ((Math.random() * 2) | 0) / 2;
-        result.b = (Math.random() * 2) | 0
+        result.b = (Math.random() * 2) | 0;
         result.c = new Float32Array([
             ((Math.random() * 2) | 0) / 2,
             ((Math.random() * 2) | 0) / 2,
-            ((Math.random() * 2) | 0) / 2
+            ((Math.random() * 2) | 0) / 2,
         ]);
         result.foo = Math.round(Math.random() * 8).toString();
         return result;
