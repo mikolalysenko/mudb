@@ -1,6 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
+import { isMuPrimitive } from './util/type';
 
 export type _Union<SubTypes extends { [type:string]:MuSchema<any> }> = {
     type:keyof SubTypes;
@@ -96,10 +97,10 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public clone (union:_Union<SubTypes>) : _Union<SubTypes> {
-        const schema = this.muData[union.type];
+        const type = union.type;
         return {
-            type: union.type,
-            data: schema.clone(union.data),
+            type,
+            data: this.muData[type].clone(union.data),
         };
     }
 
@@ -108,13 +109,24 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             return;
         }
 
-        if (source.type === target.type) {
-            this.muData[source.type].copy(source.data, target.data);
-        }
+        const sType = source.type;
+        const tType = target.type;
+        const valueSchema = this.muData;
 
         target.type = source.type;
-        this.muData[target.type].free(target.data);
-        target.data = this.muData[source.type].clone(source.data);
+
+        if (sType !== tType) {
+            valueSchema[tType].free(target.data);
+            target.data = valueSchema[sType].clone(source.data);
+            return;
+        }
+
+        // same type
+        if (isMuPrimitive(valueSchema[sType].muType)) {
+            target.data = source.data;
+            return;
+        }
+        valueSchema[sType].copy(source.data, target.data);
     }
 
     public diff (
