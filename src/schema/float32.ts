@@ -1,21 +1,21 @@
-import { MuNumber, MuNumberType } from './_number';
 import { MuWriteStream, MuReadStream } from '../stream';
+import { MuNumber } from './_number';
 
 export class MuFloat32 extends MuNumber {
-    constructor(value?:number) {
-        super(+(value || 0), 'float32');
+    constructor(identity?:number) {
+        super(+(identity || 0), 'float32');
     }
 
-    public diff (base:number, target:number, stream:MuWriteStream) {
+    public diff (base:number, target:number, out:MuWriteStream) {
         if (base !== target) {
-            stream.grow(4);
-            stream.writeFloat32(target);
+            out.grow(4);
+            out.writeFloat32(target);
             return true;
         }
         return false;
     }
 
-    public patch (base:number, stream:MuReadStream) {
-        return stream.readFloat32();
+    public patch (base:number, inp:MuReadStream) {
+        return inp.readFloat32();
     }
 }

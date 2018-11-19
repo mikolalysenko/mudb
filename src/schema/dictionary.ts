@@ -3,19 +3,19 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitive } from './util/type';
 
-export type Dictionary<V extends MuSchema<any>> = {
+export type _Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
 };
 
 export class MuDictionary<ValueSchema extends MuSchema<any>>
-        implements MuSchema<Dictionary<ValueSchema>> {
-    public readonly identity:Dictionary<ValueSchema>;
+        implements MuSchema<_Dictionary<ValueSchema>> {
+    public readonly identity:_Dictionary<ValueSchema>;
     public readonly muType = 'dictionary';
     public readonly muData:ValueSchema;
     public readonly json:object;
 
-    constructor (valueSchema:ValueSchema, id?:Dictionary<ValueSchema>) {
-        this.identity = id || {};
+    constructor (valueSchema:ValueSchema, identity?:_Dictionary<ValueSchema>) {
+        this.identity = identity || {};
         this.muData = valueSchema;
         this.json = {
             type: 'dictionary',
@@ -24,110 +24,112 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : Dictionary<ValueSchema> { return {}; }
+    public alloc () : _Dictionary<ValueSchema> {
+        return {};
+    }
 
-    public free (x:Dictionary<ValueSchema>) {
+    public free (dict:_Dictionary<ValueSchema>) {
         const valueSchema = this.muData;
-        const props = Object.keys(x);
+        const props = Object.keys(dict);
         for (let i = 0; i < props.length; ++i) {
-            valueSchema.free(x[props[i]]);
+            valueSchema.free(dict[props[i]]);
         }
     }
 
-    public equal (x:Dictionary<ValueSchema>, y:Dictionary<ValueSchema>) {
-        if (x !== Object(x) || y !== Object(y)) {
+    public equal (a:_Dictionary<ValueSchema>, b:_Dictionary<ValueSchema>) {
+        if (a !== Object(a) || b !== Object(b)) {
             return false;
         }
 
-        const xProps = Object.keys(x);
-        if (xProps.length !== Object.keys(y).length) {
+        const aKeys = Object.keys(a);
+        const bKeys = Object.keys(b);
+
+        if (aKeys.length !== bKeys.length) {
             return false;
         }
-
-        const hasOwnProperty = Object.prototype.hasOwnProperty;
-        for (let i = xProps.length - 1; i >= 0; --i) {
-            if (!hasOwnProperty.call(y, xProps[i])) {
+        for (let i = bKeys.length - 1; i >= 0; --i) {
+            if (!(bKeys[i] in a)) {
                 return false;
             }
         }
 
-        for (let i = xProps.length - 1; i >= 0; --i) {
-            const prop = xProps[i];
-            if (!this.muData.equal(x[prop], y[prop])) {
+        const valueSchema = this.muData;
+        for (let i = 0; i < bKeys.length; ++i) {
+            const k = bKeys[i];
+            if (!valueSchema.equal(a[k], b[k])) {
                 return false;
             }
         }
-
         return true;
     }
 
-    public clone (x:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
-        const result:Dictionary<ValueSchema> = {};
-        const props = Object.keys(x);
-        const schema = this.muData;
-        for (let i = 0; i < props.length; ++i) {
-            result[props[i]] = schema.clone(x[props[i]]);
+    public clone (dict:_Dictionary<ValueSchema>) : _Dictionary<ValueSchema> {
+        const copy = {};
+        const keys = Object.keys(dict);
+        const valueSchema = this.muData;
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            copy[k] = valueSchema.clone(dict[k]);
         }
-        return result;
+        return copy;
     }
 
-    public copy (source:Dictionary<ValueSchema>, target:Dictionary<ValueSchema>) {
+    public copy (source:_Dictionary<ValueSchema>, target:_Dictionary<ValueSchema>) {
         if (source === target) {
             return;
         }
 
-        const sourceProps = Object.keys(source);
-        const targetProps = Object.keys(target);
+        const sKeys = Object.keys(source);
+        const tKeys = Object.keys(target);
+        const valueSchema = this.muData;
 
-        const hasOwnProperty = Object.prototype.hasOwnProperty;
-
-        for (let i = 0; i < targetProps.length; ++i) {
-            const prop = targetProps[i];
-            if (!hasOwnProperty.call(source, prop)) {
-                this.muData.free(target[prop]);
-                delete target[prop];
+        for (let i = 0; i < tKeys.length; ++i) {
+            const k = tKeys[i];
+            if (!(k in source)) {
+                valueSchema.free(target[k]);
+                delete target[k];
             }
         }
 
-        if (isMuPrimitive(this.muData.muType)) {
-            for (let i = 0; i < sourceProps.length; ++i) {
-                const prop = sourceProps[i];
-                target[prop] = source[prop];
+        if (isMuPrimitive(valueSchema.muType)) {
+            for (let i = 0; i < sKeys.length; ++i) {
+                const k = sKeys[i];
+                target[k] = source[k];
             }
             return;
         }
 
-        for (let i = 0; i < sourceProps.length; ++i) {
-            const prop = sourceProps[i];
-            if (!hasOwnProperty.call(target, prop)) {
-                target[prop] = this.muData.clone(source[prop]);
+        for (let i = 0; i < sKeys.length; ++i) {
+            const k = sKeys[i];
+            if (k in target) {
+                valueSchema.copy(source[k], target[k]);
             } else {
-                this.muData.copy(source[prop], target[prop]);
+                target[k] = valueSchema.clone(source[k]);
             }
         }
     }
 
     public diff (
-        base:Dictionary<ValueSchema>,
-        target:Dictionary<ValueSchema>,
-        stream:MuWriteStream,
+        base:_Dictionary<ValueSchema>,
+        target:_Dictionary<ValueSchema>,
+        out:MuWriteStream,
     ) : boolean {
-        stream.grow(32);
+        out.grow(32);
 
         let numRemove = 0;
         let numPatch = 0;
 
         // mark the initial offset
-        const removeCounterOffset = stream.offset;
+        const removeCounterOffset = out.offset;
         const patchCounterOffset = removeCounterOffset + 4;
-        stream.offset = removeCounterOffset + 8;
+        out.offset = removeCounterOffset + 8;
 
         const baseProps = Object.keys(base);
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
-                stream.grow(4 + 4 * prop.length);
-                stream.writeString(prop);
+                out.grow(4 + 4 * prop.length);
+                out.writeString(prop);
                 ++numRemove;
             }
         }
@@ -135,49 +137,49 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const valueSchema = this.muData;
         const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
-            const prefixOffset = stream.offset;
+            const prefixOffset = out.offset;
 
             const prop = targetProps[i];
-            stream.grow(4 + 4 * prop.length);
-            stream.writeString(prop);
+            out.grow(4 + 4 * prop.length);
+            out.writeString(prop);
 
             if (prop in base) {
-                if (valueSchema.diff(base[prop], target[prop], stream)) {
+                if (valueSchema.diff(base[prop], target[prop], out)) {
                     ++numPatch;
                 } else {
-                    stream.offset = prefixOffset;
+                    out.offset = prefixOffset;
                 }
             } else {
-                if (!valueSchema.diff(valueSchema.identity, target[prop], stream)) {
-                    stream.buffer.uint8[prefixOffset + 3] |= 0x80;
+                if (!valueSchema.diff(valueSchema.identity, target[prop], out)) {
+                    out.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
                 ++numPatch;
             }
         }
 
         if (numPatch > 0 || numRemove > 0) {
-            stream.writeUint32At(removeCounterOffset, numRemove);
-            stream.writeUint32At(patchCounterOffset, numPatch);
+            out.writeUint32At(removeCounterOffset, numRemove);
+            out.writeUint32At(patchCounterOffset, numPatch);
             return true;
         } else {
-            stream.offset = removeCounterOffset;
+            out.offset = removeCounterOffset;
             return false;
         }
     }
 
     public patch (
-        base:Dictionary<ValueSchema>,
-        stream:MuReadStream,
-    ) : Dictionary<ValueSchema> {
-        const result:Dictionary<ValueSchema> = {};
+        base:_Dictionary<ValueSchema>,
+        inp:MuReadStream,
+    ) : _Dictionary<ValueSchema> {
+        const result:_Dictionary<ValueSchema> = {};
         const valueSchema = this.muData;
 
-        const numRemove = stream.readUint32();
-        const numPatch = stream.readUint32();
+        const numRemove = inp.readUint32();
+        const numPatch = inp.readUint32();
 
         const propsToRemove = {};
         for (let i = 0; i < numRemove; ++i) {
-            propsToRemove[stream.readString()] = true;
+            propsToRemove[inp.readString()] = true;
         }
 
         const props = Object.keys(base);
@@ -190,22 +192,22 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
 
         for (let i = 0; i < numPatch; ++i) {
-            const isIdentity = stream.buffer.uint8[stream.offset + 3] & 0x80;
-            stream.buffer.uint8[stream.offset + 3] &= ~0x80;
-            const prop = stream.readString();
+            const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
+            inp.buffer.uint8[inp.offset + 3] &= ~0x80;
+            const prop = inp.readString();
             if (prop in base) {
-                result[prop] = valueSchema.patch(base[prop], stream);
+                result[prop] = valueSchema.patch(base[prop], inp);
             } else if (isIdentity) {
                 result[prop] = valueSchema.clone(valueSchema.identity);
             } else {
-                result[prop] = valueSchema.patch(valueSchema.identity, stream);
+                result[prop] = valueSchema.patch(valueSchema.identity, inp);
             }
         }
 
         return result;
     }
 
-    public toJSON (dict:Dictionary<ValueSchema>) : Dictionary<any> {
+    public toJSON (dict:_Dictionary<ValueSchema>) : _Dictionary<any> {
         const json = {};
         const keys = Object.keys(dict);
 
@@ -217,7 +219,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return json;
     }
 
-    public fromJSON (json:Dictionary<any>) : Dictionary<ValueSchema> {
+    public fromJSON (json:_Dictionary<any>) : _Dictionary<ValueSchema> {
         const dict = {};
         const keys = Object.keys(json);
 

@@ -3,19 +3,17 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitive } from './util/type';
 
-export type _MuArrayType<ValueSchema extends MuSchema<any>> = ValueSchema['identity'][];
-
 export class MuArray<ValueSchema extends MuSchema<any>>
-        implements MuSchema<_MuArrayType<ValueSchema>> {
-    public readonly identity:_MuArrayType<ValueSchema> = [];
+        implements MuSchema<ValueSchema['identity'][]> {
+    public readonly identity:ValueSchema['identity'][] = [];
     public readonly muType = 'array';
     public readonly muData:ValueSchema;
     public readonly json:object;
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor(valueSchema:ValueSchema, id?:_MuArrayType<ValueSchema>) {
-        this.identity = id || [];
+    constructor(valueSchema:ValueSchema, identity?:ValueSchema['identity'][]) {
+        this.identity = identity || [];
         this.muData = valueSchema;
         this.json = {
             type: 'array',
@@ -24,11 +22,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         };
     }
 
-    public alloc () : _MuArrayType<ValueSchema> {
+    public alloc () : ValueSchema['identity'][] {
         return this.pool.pop() || [];
     }
 
-    public free (arr:_MuArrayType<ValueSchema>) : void {
+    public free (arr:ValueSchema['identity'][]) : void {
         const valueSchema = this.muData;
         for (let i = 0; i < arr.length; ++i) {
             valueSchema.free(arr[i]);
@@ -37,77 +35,82 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.pool.push(arr);
     }
 
-    public equal (x:_MuArrayType<ValueSchema>, y:_MuArrayType<ValueSchema>) {
-        if (!Array.isArray(x) || !Array.isArray(y)) {
+    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
+        if (!Array.isArray(a) || !Array.isArray(b)) {
             return false;
         }
-        if (x.length !== y.length) {
+        if (a.length !== b.length) {
             return false;
         }
-        for (let i = x.length - 1; i >= 0 ; --i) {
-            if (!this.muData.equal(x[i], y[i])) {
+
+        const valueSchema = this.muData;
+        for (let i = a.length - 1; i >= 0 ; --i) {
+            if (!valueSchema.equal(a[i], b[i])) {
                 return false;
             }
         }
-
         return true;
     }
 
-    public clone (arr:_MuArrayType<ValueSchema>) : _MuArrayType<ValueSchema> {
-        const result = this.alloc();
-        result.length = arr.length;
+    public clone (arr:ValueSchema['identity'][]) : ValueSchema['identity'][] {
+        const copy = this.alloc();
+        copy.length = arr.length;
 
         const valueSchema = this.muData;
         for (let i = 0; i < arr.length; ++i) {
-            result[i] = valueSchema.clone(arr[i]);
+            copy[i] = valueSchema.clone(arr[i]);
         }
-
-        return result;
+        return copy;
     }
 
-    public copy (source:_MuArrayType<ValueSchema>, target:_MuArrayType<ValueSchema>) {
+    public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
         if (source === target) {
             return;
         }
 
-        const sourceLength = source.length;
-        const targetLength = target.length;
+        const sLeng = source.length;
+        const tLeng = target.length;
+        const valueSchema = this.muData;
 
-        for (let i = sourceLength; i < targetLength; ++i) {
-            this.muData.free(target[i]);
+        // pool extra elements in target
+        for (let i = sLeng; i < tLeng; ++i) {
+            valueSchema.free(target[i]);
         }
-        target.length = sourceLength;
 
-        if (isMuPrimitive(this.muData.muType)) {
-            for (let i = 0; i < sourceLength; ++i) {
+        target.length = sLeng;
+
+        if (isMuPrimitive(valueSchema.muType)) {
+            for (let i = 0; i < sLeng; ++i) {
                 target[i] = source[i];
             }
             return;
         }
 
-        for (let i = targetLength; i < target.length; ++i) {
-            target[i] = this.muData.clone(source[i]);
+        // done if source has less or same number of elements
+        for (let i = 0; i < Math.min(sLeng, tLeng); ++i) {
+            valueSchema.copy(source[i], target[i]);
         }
-        for (let i = 0; i < Math.min(sourceLength, targetLength); ++i) {
-            this.muData.copy(source[i], target[i]);
+        // only if source has more elements
+        for (let i = tLeng; i < sLeng; ++i) {
+            target[i] = valueSchema.clone(source[i]);
         }
     }
 
     public diff (
-        base:_MuArrayType<ValueSchema>,
-        target:_MuArrayType<ValueSchema>,
-        stream:MuWriteStream,
+        base:ValueSchema['identity'][],
+        target:ValueSchema['identity'][],
+        out:MuWriteStream,
     ) : boolean {
-        const prefixOffset = stream.offset;
+        const prefixOffset = out.offset;
         const targetLength = target.length;
 
         const numTrackers = Math.ceil(targetLength / 8);
-        stream.grow(4 + numTrackers);
+        out.grow(4 + numTrackers);
 
-        stream.writeUint32(targetLength);
+        out.writeUint32(targetLength);
 
-        let trackerOffset = stream.offset;
-        stream.offset = trackerOffset + numTrackers;
+        let trackerOffset = out.offset;
+        out.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
         let numPatch = 0;
@@ -115,52 +118,52 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const baseLength = base.length;
         const valueSchema = this.muData;
         for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
-            if (valueSchema.diff(base[i], target[i], stream)) {
+            if (valueSchema.diff(base[i], target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
 
             if ((i & 7) === 7) {
-                stream.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
         for (let i = baseLength; i < targetLength; ++i) {
-            if (valueSchema.diff(valueSchema.identity, target[i], stream)) {
+            if (valueSchema.diff(valueSchema.identity, target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatch;
             }
 
             if ((i & 7) === 7) {
-                stream.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
         if (targetLength & 7) {
-            stream.writeUint8At(trackerOffset, tracker);
+            out.writeUint8At(trackerOffset, tracker);
         }
 
         if (numPatch > 0 || baseLength !== targetLength) {
             return true;
         }
-        stream.offset = prefixOffset;
+        out.offset = prefixOffset;
         return false;
     }
 
     public patch (
-        base:_MuArrayType<ValueSchema>,
-        stream:MuReadStream,
-    ) : _MuArrayType<ValueSchema> {
+        base:ValueSchema['identity'][],
+        inp:MuReadStream,
+    ) : ValueSchema['identity'][] {
         const result = this.clone(base);
 
-        const targetLength = stream.readUint32();
+        const targetLength = inp.readUint32();
         result.length = targetLength;
 
-        let trackerOffset = stream.offset;
+        let trackerOffset = inp.offset;
         const numTrackers = Math.ceil(targetLength / 8);
-        stream.offset = trackerOffset + numTrackers;
+        inp.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
 
@@ -170,11 +173,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             const mod8 = i & 7;
 
             if (!mod8) {
-                tracker = stream.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(base[i], stream);
+                result[i] = valueSchema.patch(base[i], inp);
             }
         }
 
@@ -182,11 +185,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             const mod8 = i & 7;
 
             if (!mod8) {
-                tracker = stream.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
 
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(valueSchema.identity, stream);
+                result[i] = valueSchema.patch(valueSchema.identity, inp);
             } else {
                 result[i] = valueSchema.clone(valueSchema.identity);
             }
@@ -195,12 +198,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public toJSON (arr:_MuArrayType<ValueSchema>) : any[] {
+    public toJSON (arr:ValueSchema['identity'][]) : any[] {
         const valueSchema = this.muData;
         return arr.map((v) => valueSchema.toJSON(v));
     }
 
-    public fromJSON (json:any[]) : _MuArrayType<ValueSchema> {
+    public fromJSON (json:any[]) : ValueSchema['identity'][] {
         const arr = this.alloc();
         arr.length = json.length;
 

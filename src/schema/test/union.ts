@@ -7,7 +7,7 @@ import {
     MuInt8,
     MuInt16,
     MuInt32,
-    MuString,
+    MuUTF8,
     MuUint8,
     MuUint16,
     MuUint32,
@@ -55,8 +55,8 @@ test('union - alloc()', (t) => {
     t.same(
         unionSchema.alloc(),
         {
-            type: '',
-            data: void 0,
+            type: 'number',
+            data: 123,
         },
     );
 
@@ -115,10 +115,10 @@ test('union (flat type-data pair) - clone()', (t) => {
         int8: new MuInt8(),
         int16: new MuInt16(),
         int32: new MuInt32(),
-        string: new MuString(),
         uint8: new MuUint8(),
         uint16: new MuUint16(),
         uint32: new MuUint32(),
+        utf8: new MuUTF8(),
     };
     const unionSchema = new MuUnion(schemaSpec);
 
@@ -138,7 +138,7 @@ test('union (nested type-data pair) - clone()', (t) => {
         subType: new MuUnion(
             {
                 number: new MuUint8(123),
-                text: new MuString('foo'),
+                text: new MuUTF8('foo'),
             },
             'number',
         ),
@@ -171,10 +171,10 @@ test('union (flat type-data pair) - diff() & patch()', (t) => {
         int8: new MuInt8(),
         int16: new MuInt16(),
         int32: new MuInt32(),
-        string: new MuString(),
         uint8: new MuUint8(),
         uint16: new MuUint16(),
         uint32: new MuUint32(),
+        utf8: new MuUTF8(),
     };
     const unionSchema = new MuUnion(schemaSpec);
 
@@ -205,16 +205,16 @@ test('union (nested type-data pair) - diff() & patch()', (t) => {
             int8: new MuInt8(),
             int16: new MuInt16(),
             int32: new MuInt32(),
-            string: new MuString(),
             uint8: new MuUint8(),
             uint16: new MuUint16(),
             uint32: new MuUint32(),
+            utf8: new MuUTF8(),
         }),
     };
     const unionSchema = new MuUnion(schemaSpec);
 
     type TypeName = 'subType';
-    type InnerTypeName = 'boolean'|'float32'|'float64'|'int8'|'int16'|'int32'|'string'|'uint8'|'uint16'|'uint32';
+    type InnerTypeName = 'boolean'|'float32'|'float64'|'int8'|'int16'|'int32'|'utf8'|'uint8'|'uint16'|'uint32';
 
     const testPatchingPair = testPatchingPairFactory(t, unionSchema);
 

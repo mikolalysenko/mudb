@@ -12,14 +12,14 @@ export const muPrimitiveSize = {
 
 export const muPrimitiveTypes = [
     'ascii',
+    'fascii',
     'boolean',
-    'fixed-ascii',
     'float32',
     'float64',
     'int8',
     'int16',
     'int32',
-    'string',
+    'utf8',
     'uint8',
     'uint16',
     'uint32',
@@ -61,10 +61,10 @@ export const muType2WriteMethod = {
     int8: 'writeInt8',
     int16: 'writeInt16',
     int32: 'writeInt32',
-    string: 'writeString',
     uint8: 'writeUint8',
     uint16: 'writeUint16',
     uint32: 'writeUint32',
+    utf8: 'writeString',
 };
 
 export const muType2ReadMethod = {
@@ -74,10 +74,10 @@ export const muType2ReadMethod = {
     int8: 'readInt8',
     int16: 'readInt16',
     int32: 'readInt32',
-    string: 'readString',
     uint8: 'readUint8',
     uint16: 'readUint16',
     uint32: 'readUint32',
+    utf8: 'readString',
 };
 
 export const muType2TypedArray = {

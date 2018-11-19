@@ -85,8 +85,8 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         return this.schema.free(x);
     }
 
-    public equal(x:BaseSchema['identity'], y:BaseSchema['identity']) {
-        return this.schema.equal(x, y);
+    public equal(a:BaseSchema['identity'], b:BaseSchema['identity']) {
+        return this.schema.equal(a, b);
     }
 
     public clone (x:BaseSchema['identity']) {

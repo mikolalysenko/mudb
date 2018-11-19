@@ -1,12 +1,13 @@
 import test = require('tape');
 
-import { MuString } from '../string';
+import { MuUTF8 } from '../utf8';
 import { MuReadStream, MuWriteStream } from '../../stream';
 
-test('string', (t) => {
+test('utf8', (t) => {
     const defaultValue = '';
-    let s = new MuString();
+    let s = new MuUTF8();
 
+    t.equals(s.muType, 'utf8', `type should be utf8`);
     t.equals(s.identity, defaultValue);
     t.equals(s.alloc(), defaultValue);
     t.equals(s.clone(''), '');
@@ -17,7 +18,7 @@ test('string', (t) => {
     const fourBytes = '👩👨❤️👨👩';
     const varBytes = fourBytes + twoBytes + ascii + threeBytes;
 
-    s = new MuString(varBytes);
+    s = new MuUTF8(varBytes);
 
     t.equals(s.identity, varBytes);
     t.equals(s.alloc(), varBytes);
@@ -28,7 +29,7 @@ test('string', (t) => {
         longStr += varBytes;
     }
 
-    s = new MuString(longStr);
+    s = new MuUTF8(longStr);
 
     t.equals(s.identity, longStr);
     t.equals(s.alloc(), longStr);

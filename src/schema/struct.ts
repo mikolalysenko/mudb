@@ -9,30 +9,30 @@ import {
 
 const muPrimitiveTypes = Object.keys(muPrimitiveSize);
 
-export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
-    [P in keyof Spec]:Spec[P]['identity'];
+export type _Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
+    [K in keyof Spec]:Spec[K]['identity'];
 };
 
 export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
-        implements MuSchema<Struct<Spec>> {
+        implements MuSchema<_Struct<Spec>> {
     public readonly muType = 'struct';
     public readonly muData:Spec;
-    public readonly identity:Struct<Spec>;
+    public readonly identity:_Struct<Spec>;
     public readonly json:object;
 
-    public readonly alloc:() => Struct<Spec>;
-    public readonly free:(value:Struct<Spec>) => void;
+    public readonly alloc:() => _Struct<Spec>;
+    public readonly free:(struct:_Struct<Spec>) => void;
 
-    public readonly equal:(x:Struct<Spec>, y:Struct<Spec>) => boolean;
+    public readonly equal:(a:_Struct<Spec>, b:_Struct<Spec>) => boolean;
 
-    public readonly clone:(value:Struct<Spec>) => Struct<Spec>;
-    public readonly copy:(source:Struct<Spec>, target:Struct<Spec>) => void = (source, target) => {};
+    public readonly clone:(value:_Struct<Spec>) => _Struct<Spec>;
+    public readonly copy:(source:_Struct<Spec>, target:_Struct<Spec>) => void = (source, target) => {};
 
-    public readonly diff:(base:Struct<Spec>, target:Struct<Spec>, stream:MuWriteStream) => boolean;
-    public readonly patch:(base:Struct<Spec>, stream:MuReadStream) => Struct<Spec>;
+    public readonly diff:(base:_Struct<Spec>, target:_Struct<Spec>, out:MuWriteStream) => boolean;
+    public readonly patch:(base:_Struct<Spec>, inp:MuReadStream) => _Struct<Spec>;
 
-    public readonly toJSON:(struct:Struct<Spec>) => Struct<any>;
-    public readonly fromJSON:(json:Struct<any>) => Struct<Spec>;
+    public readonly toJSON:(struct:_Struct<Spec>) => _Struct<any>;
+    public readonly fromJSON:(json:_Struct<any>) => _Struct<Spec>;
 
     constructor (spec:Spec) {
         // sort struct properties so primitives come first
@@ -140,7 +140,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     prelude.append(`this[${propRef}]=${type.identity};`);
                     break;
                 case 'ascii':
-                case 'string':
+                case 'utf8':
                     prelude.append(`this[${propRef}]=${inject(type.identity)};`);
                     break;
                 default:
@@ -160,10 +160,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     prelude.append(`${identityRef}[${propRef}]=${typeRefs[i]}.clone(${inject(type.identity)});`);
@@ -183,10 +183,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     methods.alloc.append(`result[${propRef}]=${typeRefs[i]}.alloc();`);
@@ -207,10 +207,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     break;
                 default:
                     methods.free.append(`${typeRefs[i]}.free(x[${propRef}]);`);
@@ -229,10 +229,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.equal.append(`if(a[${propRef}]!==b[${propRef}]){return false}`);
                     break;
                 default:
@@ -253,10 +253,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.clone.append(`result[${propRef}]=x[${propRef}];`);
                     break;
                 default:
@@ -271,17 +271,17 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fascii':
                 case 'boolean':
-                case 'fixed-ascii':
                 case 'float32':
                 case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.copy.append(`t[${propRef}]=s[${propRef}];`);
                     break;
                 default:
@@ -361,10 +361,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'int8':
                 case 'int16':
                 case 'int32':
-                case 'string':
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'utf8':
                     methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${propRef}];`);
                     break;
                 default:

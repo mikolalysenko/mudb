@@ -12,7 +12,7 @@ import {
     MuInt8,
     MuInt16,
     MuInt32,
-    MuString,
+    MuUTF8,
     MuUint8,
     MuUint16,
     MuUint32,
@@ -44,10 +44,10 @@ export function muPrimitiveSchema (muType) {
         int8: () => new MuInt8(),
         int16: () => new MuInt16(),
         int32: () => new MuInt32(),
-        string: () => new MuString(),
         uint8: () => new MuUint8(),
         uint16: () => new MuUint16(),
         uint32: () => new MuUint32(),
+        utf8: () => new MuUTF8(),
     };
     if (muType in map) {
         return map[muType]();
@@ -128,12 +128,12 @@ export function randomValue (muType:string) {
         case 'int16':
         case 'int32':
             return randomSign() * Math.round(Math.random() * Constants[muType].MAX);
-        case 'string':
-            return randomString();
         case 'uint8':
         case 'uint16':
         case 'uint32':
             return Math.round(Math.random() * Constants[muType].MAX);
+        case 'utf8':
+            return randomString();
         default:
             return;
     }

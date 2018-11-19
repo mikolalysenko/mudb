@@ -1,8 +1,6 @@
 import {
     MuArray,
     MuUint32,
-    MuFloat64,
-    MuString,
 } from '../';
 
 import {

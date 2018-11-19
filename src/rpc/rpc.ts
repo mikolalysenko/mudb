@@ -1,7 +1,7 @@
 import { MuSchema } from '../schema/schema';
 import { MuStruct } from '../schema/struct';
 import { MuUint32 } from '../schema/uint32';
-import { MuString } from '../schema/string';
+import { MuUTF8 } from '../schema/utf8';
 import { MuRemoteRPCClient } from './server';
 
 export type MuAnySchema = MuSchema<any>;
@@ -96,7 +96,7 @@ export function MuRPC<
 }
 
 export const MuRPCErrorSchema = new MuStruct({
-    message: new MuString(),
+    message: new MuUTF8(),
     id: new MuUint32(),
 });
 

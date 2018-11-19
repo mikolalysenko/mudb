@@ -68,30 +68,32 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.pool.push(set);
     }
 
-    public equal (x:ValueSchema['identity'][], y:ValueSchema['identity'][]) {
-        if (!Array.isArray(x) || !Array.isArray(y)) {
+    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
+        if (!Array.isArray(a) || !Array.isArray(b)) {
             return false;
         }
-        if (x.length !== y.length) {
+        if (a.length !== b.length) {
             return false;
         }
-        for (let i = x.length - 1; i >= 0 ; --i) {
-            if (!this.muData.equal(x[i], y[i])) {
+
+        const valueSchema = this.muData;
+        for (let i = a.length - 1; i >= 0 ; --i) {
+            if (!valueSchema.equal(a[i], b[i])) {
                 return false;
             }
         }
-
         return true;
     }
 
     public clone (set:ValueSchema['identity'][]) : ValueSchema['identity'][] {
-        const schema = this.muData;
-        const result = this.alloc();
-        result.length = set.length;
+        const copy = this.alloc();
+        copy.length = set.length;
+
+        const valueSchema = this.muData;
         for (let i = 0; i < set.length; ++i) {
-            result[i] = schema.clone(set[i]);
+            copy[i] = valueSchema.clone(set[i]);
         }
-        return result;
+        return copy;
     }
 
     public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
@@ -99,26 +101,31 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             return;
         }
 
-        const sourceLength = source.length;
-        const targetLength = target.length;
+        const sLeng = source.length;
+        const tLeng = target.length;
+        const valueSchema = this.muData;
 
-        for (let i = sourceLength; i < targetLength; ++i) {
-            this.muData.free(target[i]);
+        // pool extra elements in target
+        for (let i = sLeng; i < tLeng; ++i) {
+            valueSchema.free(target[i]);
         }
-        target.length = sourceLength;
 
-        if (isMuPrimitive(this.muData.muType)) {
-            for (let i = 0; i < sourceLength; ++i) {
+        target.length = sLeng;
+
+        if (isMuPrimitive(valueSchema.muType)) {
+            for (let i = 0; i < sLeng; ++i) {
                 target[i] = source[i];
             }
             return;
         }
 
-        for (let i = targetLength; i < target.length; ++i) {
-            target[i] = this.muData.clone(source[i]);
+        // done if source has less or same number of elements
+        for (let i = 0; i < Math.min(sLeng, tLeng); ++i) {
+            valueSchema.copy(source[i], target[i]);
         }
-        for (let i = 0; i < Math.min(sourceLength, targetLength); ++i) {
-            this.muData.copy(source[i], target[i]);
+        // only if source has more elements
+        for (let i = tLeng; i < sLeng; ++i) {
+            target[i] = valueSchema.clone(source[i]);
         }
     }
 
