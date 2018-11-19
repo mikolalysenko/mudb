@@ -271,8 +271,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fascii':
                 case 'boolean':
-                case 'fixed-ascii':
                 case 'float32':
                 case 'float64':
                 case 'int8':

@@ -9,7 +9,7 @@ export class MuFixedASCII extends MuString {
             typeof lengthOrIdentity === 'number' ?
                 Array(lengthOrIdentity + 1).join(' ') :
                 lengthOrIdentity,
-            'fixed-ascii',
+            'fascii',
         );
         this.length = typeof lengthOrIdentity === 'number' ?
             lengthOrIdentity :

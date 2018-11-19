@@ -2,8 +2,8 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
 export type MuStringType =
-    'ascii'         |
-    'fixed-ascii'   |
+    'ascii' |
+    'fascii'|
     'utf8';
 
 /** Internal string type schema */
