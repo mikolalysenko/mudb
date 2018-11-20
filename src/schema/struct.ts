@@ -26,7 +26,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly equal:(a:_Struct<Spec>, b:_Struct<Spec>) => boolean;
 
     public readonly clone:(value:_Struct<Spec>) => _Struct<Spec>;
-    public readonly copy:(source:_Struct<Spec>, target:_Struct<Spec>) => void = (source, target) => {};
+    public readonly assign:(dst:_Struct<Spec>, src:_Struct<Spec>) => void;
 
     public readonly diff:(base:_Struct<Spec>, target:_Struct<Spec>, out:MuWriteStream) => boolean;
     public readonly patch:(base:_Struct<Spec>, inp:MuReadStream) => _Struct<Spec>;
@@ -116,7 +116,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             free: func('free', ['x']),
             equal: func('equal', ['a', 'b']),
             clone: func('clone', ['x']),
-            copy: func('copy', ['s', 't']),
+            assign: func('assign', ['d', 's']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
             toJSON: func('toJSON', ['s']),
@@ -266,13 +266,13 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         });
         methods.clone.append('return result');
 
-        // copy subroutine
+        // assign subroutine
         propRefs.forEach((propRef, i) => {
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
-                case 'fascii':
                 case 'boolean':
+                case 'fascii':
                 case 'float32':
                 case 'float64':
                 case 'int8':
@@ -282,10 +282,10 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
-                    methods.copy.append(`t[${propRef}]=s[${propRef}];`);
+                    methods.assign.append(`d[${propRef}]=s[${propRef}];`);
                     break;
                 default:
-                    methods.copy.append(`${typeRefs[i]}.copy(s[${propRef}],t[${propRef}]);`);
+                    methods.assign.append(`${typeRefs[i]}.assign(d[${propRef}],s[${propRef}]);`);
             }
         });
 
@@ -412,7 +412,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.free = compiled.free;
         this.equal = compiled.equal;
         this.clone = compiled.clone;
-        this.copy = compiled.copy;
+        this.assign = compiled.assign;
         this.diff = compiled.diff;
         this.patch = compiled.patch;
         this.toJSON = compiled.toJSON;

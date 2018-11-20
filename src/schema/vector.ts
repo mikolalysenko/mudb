@@ -77,11 +77,11 @@ export class MuVector<ValueSchema extends MuNumber>
         return copy;
     }
 
-    public copy (source:_Vector<ValueSchema>, target:_Vector<ValueSchema>) {
-        if (source === target) {
+    public assign (dst:_Vector<ValueSchema>, src:_Vector<ValueSchema>) {
+        if (dst === src) {
             return;
         }
-        target.set(source);
+        dst.set(src);
     }
 
     public diff (

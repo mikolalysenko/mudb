@@ -127,21 +127,21 @@ test('array (nested) - clone()', (t) => {
     t.end();
 });
 
-test('array - copy()', (t) => {
+test('array - assign()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         if (valueSchema) {
-            let source:any[];
-            let target:any[];
+            let dst:any[];
+            let src:any[];
 
             let arraySchema = new MuArray(valueSchema);
 
             for (let i = 0; i < 10; ++i) {
-                source = randomArray(1, muType);
-                target = randomArray(1, muType);
+                dst = randomArray(1, muType);
+                src = randomArray(1, muType);
 
-                arraySchema.copy(source, target);
-                t.deepEqual(target, source);
+                arraySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
 
             arraySchema = new MuArray(
@@ -149,11 +149,11 @@ test('array - copy()', (t) => {
             );
 
             for (let i = 0; i < 10; ++i) {
-                source = randomArray(2, muType);
-                target = randomArray(2, muType);
+                dst = randomArray(2, muType);
+                src = randomArray(2, muType);
 
-                arraySchema.copy(source, target);
-                t.deepEqual(target, source);
+                arraySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
 
             arraySchema = new MuArray(
@@ -163,11 +163,11 @@ test('array - copy()', (t) => {
             );
 
             for (let i = 0; i < 10; ++i) {
-                source = randomArray(3, muType);
-                target = randomArray(3, muType);
+                dst = randomArray(3, muType);
+                src = randomArray(3, muType);
 
-                arraySchema.copy(source, target);
-                t.deepEqual(target, source);
+                arraySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
         }
     }

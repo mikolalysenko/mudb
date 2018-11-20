@@ -96,36 +96,36 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public copy (source:ValueSchema['identity'][], target:ValueSchema['identity'][]) {
-        if (source === target) {
+    public assign (dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) {
+        if (dst === src) {
             return;
         }
 
-        const sLeng = source.length;
-        const tLeng = target.length;
+        const dLeng = dst.length;
+        const sLeng = src.length;
         const valueSchema = this.muData;
 
-        // pool extra elements in target
-        for (let i = sLeng; i < tLeng; ++i) {
-            valueSchema.free(target[i]);
+        // pool extra elements in dst
+        for (let i = sLeng; i < dLeng; ++i) {
+            valueSchema.free(dst[i]);
         }
 
-        target.length = sLeng;
+        dst.length = sLeng;
 
         if (isMuPrimitive(valueSchema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
-                target[i] = source[i];
+                dst[i] = src[i];
             }
             return;
         }
 
-        // done if source has less or same number of elements
-        for (let i = 0; i < Math.min(sLeng, tLeng); ++i) {
-            valueSchema.copy(source[i], target[i]);
+        // done if src has less or same number of elements
+        for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
+            valueSchema.assign(dst[i], src[i]);
         }
-        // only if source has more elements
-        for (let i = tLeng; i < sLeng; ++i) {
-            target[i] = valueSchema.clone(source[i]);
+        // only if src has more elements
+        for (let i = dLeng; i < sLeng; ++i) {
+            dst[i] = valueSchema.clone(src[i]);
         }
     }
 

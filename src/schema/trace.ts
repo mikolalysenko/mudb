@@ -94,8 +94,8 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         return this.schema.clone(x);
     }
 
-    public copy (source:BaseSchema['identity'], target:BaseSchema['identity']) {
-        this.schema.copy(source, target);
+    public assign (dst:BaseSchema['identity'], src:BaseSchema['identity']) {
+        this.schema.assign(dst, src);
     }
 
     public diff (base:BaseSchema['identity'], target:BaseSchema['identity'], out:MuWriteStream) : boolean {
