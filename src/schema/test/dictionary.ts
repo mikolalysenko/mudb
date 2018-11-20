@@ -208,21 +208,21 @@ test('dictionary (nested) - clone()', (t) => {
     t.end();
 });
 
-test('dictionary - copy()', (t) => {
+test('dictionary - assign()', (t) => {
     for (const muType of muPrimitiveTypes) {
         const valueSchema = muPrimitiveSchema(muType);
         if (valueSchema) {
-            let source;
-            let target;
+            let dst;
+            let src;
 
             let dictionarySchema = new MuDictionary(valueSchema);
 
             for (let i = 0; i < 10; ++i) {
-                source = randomDictionary(1, muType, randomString);
-                target = randomDictionary(1, muType, randomString);
+                dst = randomDictionary(1, muType, randomString);
+                src = randomDictionary(1, muType, randomString);
 
-                dictionarySchema.copy(source, target);
-                t.deepEqual(target, source);
+                dictionarySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
 
             dictionarySchema = new MuDictionary(
@@ -230,11 +230,11 @@ test('dictionary - copy()', (t) => {
             );
 
             for (let i = 0; i < 10; ++i) {
-                source = randomDictionary(2, muType, randomString);
-                target = randomDictionary(2, muType, randomString);
+                dst = randomDictionary(2, muType, randomString);
+                src = randomDictionary(2, muType, randomString);
 
-                dictionarySchema.copy(source, target);
-                t.deepEqual(target, source);
+                dictionarySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
 
             dictionarySchema = new MuDictionary(
@@ -244,11 +244,11 @@ test('dictionary - copy()', (t) => {
             );
 
             for (let i = 0; i < 10; ++i) {
-                source = randomDictionary(3, muType, randomString);
-                target = randomDictionary(3, muType, randomString);
+                dst = randomDictionary(3, muType, randomString);
+                src = randomDictionary(3, muType, randomString);
 
-                dictionarySchema.copy(source, target);
-                t.deepEqual(target, source);
+                dictionarySchema.assign(dst, src);
+                t.deepEqual(dst, src);
             }
         }
     }

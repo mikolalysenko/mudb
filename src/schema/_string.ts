@@ -35,7 +35,7 @@ export abstract class MuString implements MuSchema<string> {
         return str;
     }
 
-    public copy (source:string, target:string) { }
+    public assign (dst:string, src:string) { }
 
     public toJSON (str:string) : string {
         return str;

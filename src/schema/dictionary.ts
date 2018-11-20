@@ -74,37 +74,37 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public copy (source:_Dictionary<ValueSchema>, target:_Dictionary<ValueSchema>) {
-        if (source === target) {
+    public assign (dst:_Dictionary<ValueSchema>, src:_Dictionary<ValueSchema>) {
+        if (dst === src) {
             return;
         }
 
-        const sKeys = Object.keys(source);
-        const tKeys = Object.keys(target);
+        const dKeys = Object.keys(dst);
+        const sKeys = Object.keys(src);
         const valueSchema = this.muData;
 
-        for (let i = 0; i < tKeys.length; ++i) {
-            const k = tKeys[i];
-            if (!(k in source)) {
-                valueSchema.free(target[k]);
-                delete target[k];
+        for (let i = 0; i < dKeys.length; ++i) {
+            const k = dKeys[i];
+            if (!(k in src)) {
+                valueSchema.free(dst[k]);
+                delete dst[k];
             }
         }
 
         if (isMuPrimitive(valueSchema.muType)) {
             for (let i = 0; i < sKeys.length; ++i) {
                 const k = sKeys[i];
-                target[k] = source[k];
+                dst[k] = src[k];
             }
             return;
         }
 
         for (let i = 0; i < sKeys.length; ++i) {
             const k = sKeys[i];
-            if (k in target) {
-                valueSchema.copy(source[k], target[k]);
+            if (k in dst) {
+                valueSchema.assign(dst[k], src[k]);
             } else {
-                target[k] = valueSchema.clone(source[k]);
+                dst[k] = valueSchema.clone(src[k]);
             }
         }
     }

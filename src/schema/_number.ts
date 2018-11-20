@@ -40,7 +40,7 @@ export abstract class MuNumber implements MuSchema<number> {
         return num;
     }
 
-    public copy (source:number, target:number) { }
+    public assign (dst:number, src:number) { }
 
     public toJSON (num:number) : number {
         return num;

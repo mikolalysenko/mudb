@@ -25,8 +25,8 @@ export interface MuSchema<Value> {
     /** Makes a copy of `value` */
     clone (value:Value) : Value;
 
-    /** Copies content of `source` to `target` */
-    copy (source:Value, target:Value) : void;
+    /** Assigns `dst` the content of `src` */
+    assign (dst:Value, src:Value) : void;
 
     /** Computes a binary patch from `base` to `target` */
     diff (base:Value, target:Value, out:MuWriteStream) : boolean;

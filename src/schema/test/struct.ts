@@ -78,7 +78,7 @@ test('struct - equal()', (t) => {
     t.end();
 });
 
-test('struct - copy()', (t) => {
+test('struct - assign()', (t) => {
     const structSchema = new MuStruct({
         s: new MuStruct({
             s: new MuStruct({
@@ -98,24 +98,24 @@ test('struct - copy()', (t) => {
         }),
     });
 
-    const source = structSchema.alloc();
-    const target = structSchema.alloc();
+    const dst = structSchema.alloc();
+    const src = structSchema.alloc();
 
-    source.s.s.a = randomValue('ascii');
-    source.s.s.b = true;
-    source.s.s.fa = 'abcde';
-    source.s.s.f32 = randomValue('float32');
-    source.s.s.f64 = randomValue('float64');
-    source.s.s.i8 = randomValue('int8');
-    source.s.s.i16 = randomValue('int16');
-    source.s.s.i32 = randomValue('int32');
-    source.s.s.u8 = randomValue('uint8');
-    source.s.s.u16 = randomValue('uint16');
-    source.s.s.u32 = randomValue('uint32');
-    source.s.s.utf8 = randomValue('utf8');
+    src.s.s.a = randomValue('ascii');
+    src.s.s.b = true;
+    src.s.s.fa = 'abcde';
+    src.s.s.f32 = randomValue('float32');
+    src.s.s.f64 = randomValue('float64');
+    src.s.s.i8 = randomValue('int8');
+    src.s.s.i16 = randomValue('int16');
+    src.s.s.i32 = randomValue('int32');
+    src.s.s.u8 = randomValue('uint8');
+    src.s.s.u16 = randomValue('uint16');
+    src.s.s.u32 = randomValue('uint32');
+    src.s.s.utf8 = randomValue('utf8');
 
-    structSchema.copy(source, target);
-    t.deepEqual(target, source);
+    structSchema.assign(dst, src);
+    t.deepEqual(dst, src);
 
     t.end();
 });

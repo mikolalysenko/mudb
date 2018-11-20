@@ -29,7 +29,7 @@ export class MuBoolean implements MuSchema<boolean> {
         return bool;
     }
 
-    public copy (source:boolean, target:boolean) { }
+    public assign (dst:boolean, src:boolean) { }
 
     public diff (base:boolean, target:boolean, out:MuWriteStream) {
         if (base !== target) {
