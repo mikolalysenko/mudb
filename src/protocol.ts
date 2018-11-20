@@ -26,6 +26,7 @@ export interface MuMessageInterface<MessageTable extends MuAnyMessageTable> {
     };
 }
 export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, ServerMessage extends MuAnyMessageTable> {
+    name?:string;
     client:ClientMessage;
     server:ServerMessage;
 }
