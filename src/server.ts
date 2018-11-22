@@ -238,6 +238,10 @@ export class MuServer {
         if (this._started || this._closed) {
             throw new Error('mudb/core: cannot add a protocol until the server has been initialized');
         }
+        if (schema.name) {
+            console.log(`mudb: register ${schema.name} protocol`);
+        }
+
         const spec = new MuServerProtocolSpec();
         const p = new MuServerProtocol(schema, this, spec);
         this.protocols.push(p);
