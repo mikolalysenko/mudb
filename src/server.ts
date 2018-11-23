@@ -1,5 +1,6 @@
 import { MuSocket, MuSocketServer } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
+import { MuMessageTrace } from './tracing';
 
 export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
@@ -87,14 +88,16 @@ export class MuServer {
     private _protocolSpecs:MuServerProtocolSpec[] = [];
 
     public running:boolean = false;
-
     private _started:boolean = false;
     private _closed:boolean = false;
 
     private _socketServer:MuSocketServer;
 
-    constructor (socketServer:MuSocketServer) {
+    public trace:MuMessageTrace | null;
+
+    constructor (socketServer:MuSocketServer, trace?:MuMessageTrace) {
         this._socketServer = socketServer;
+        this.trace = trace || null;
     }
 
     public start (spec?:{
@@ -165,9 +168,6 @@ export class MuServer {
                     };
                 });
 
-                const parser = serverFactory.createParser(protocolHandlers);
-                let firstPacket = true;
-
                 function checkHashConsistency (packet) {
                     try {
                         const info = JSON.parse(packet);
@@ -180,6 +180,14 @@ export class MuServer {
                         socket.close();
                     }
                 }
+
+                if (this.trace) {
+                    const protocolNames = this.protocols.map((protocol) => protocol.schema.name);
+                    this.trace.getIds(protocolNames);
+                }
+
+                const parser = serverFactory.createParser(protocolHandlers, this.trace);
+                let firstPacket = true;
 
                 socket.open({
                     ready: () => {
