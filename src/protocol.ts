@@ -151,7 +151,7 @@ export class MuProtocolFactory {
                 if (object.s) {
                     raw[protocolId](object.s, unreliable);
                     if (trace) {
-                        trace.log(protocolId, object.s);
+                        trace.logMessage(protocolId, object.s);
                     }
                 }
             } else {
@@ -189,7 +189,7 @@ export class MuProtocolFactory {
                 messageSchema.free(m);
 
                 if (trace) {
-                    trace.log(protocolId, m, messageSchema);
+                    trace.logMessage(protocolId, m, messageSchema);
                 }
             }
         };

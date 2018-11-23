@@ -215,7 +215,7 @@ export class MuServer {
                         checkHashConsistency(data);
                         firstPacket = false;
                     },
-                    close: () => {
+                    close: (error?:any) => {
                         this._protocolSpecs.forEach((protocolSpec, id) => {
                             const client = clientObjects[id];
                             protocolSpec.disconnectHandler(client);
@@ -226,6 +226,12 @@ export class MuServer {
                         });
 
                         sockets.splice(sockets.indexOf(socket), 1);
+
+                        if (error) {
+                            if (this.trace) {
+                                this.trace.logError(`socket ${socket.sessionId} was closed due to ${error}`);
+                            }
+                        }
                     },
                 });
             },

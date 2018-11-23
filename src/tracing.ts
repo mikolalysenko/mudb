@@ -3,15 +3,15 @@ import { MuSchema } from './schema/schema';
 export class MuMessageTrace {
     public names:string[];
     public ids:number[];
-    public logger:(msg:string) => void;
+    public logger:(log:string) => void;
 
     constructor (spec:{
         protocols:string[],
-        logger?:(msg:string) => void,
+        logger?:(log:string) => void,
     }) {
         this.names = spec.protocols;
         this.ids = new Array(this.names.length);
-        this.logger = spec.logger || ((msg) => console.log(msg));
+        this.logger = spec.logger || ((log) => console.log(log));
     }
 
     public getIds (protocols:(string|undefined)[]) {
@@ -28,15 +28,19 @@ export class MuMessageTrace {
         }
     }
 
-    public log (id:number, data:any, schema?:MuSchema<any>) {
+    public logError (errorMsg:string) {
+        this.logger(`error: ${errorMsg}`);
+    }
+
+    public logMessage (id:number, msg:any, schema?:MuSchema<any>) {
         const idx = this.ids.indexOf(id);
         if (idx === -1) {
             return;
         }
 
-        const json = schema ?
-            JSON.stringify(schema.toJSON(data)) :
-            JSON.stringify(data);
-        this.logger(`${this.names[idx]}: ${json}`);
+        const json = JSON.stringify(
+            schema ? schema.toJSON(msg) : msg,
+        );
+        this.logger(`message: ${this.names[idx]}: ${json}`);
     }
 }
