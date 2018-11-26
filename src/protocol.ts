@@ -1,6 +1,7 @@
 import { MuSocket, MuData } from './socket';
 import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
+import { MuTrace } from './trace';
 
 import stableStringify = require('json-stable-stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
@@ -26,6 +27,7 @@ export interface MuMessageInterface<MessageTable extends MuAnyMessageTable> {
     };
 }
 export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, ServerMessage extends MuAnyMessageTable> {
+    name?:string;
     client:ClientMessage;
     server:ServerMessage;
 }
@@ -122,10 +124,13 @@ export class MuProtocolFactory {
         this.hash = sha512().update(hashList).digest('hex');
     }
 
-    public createParser(spec:{
-        messageHandlers:{ [name:string]:(data, unreliable) => void },
-        rawHandler:(data, unreliable) => void,
-    }[]) {
+    public createParser(
+        spec:{
+            messageHandlers:{ [name:string]:(data, unreliable) => void },
+            rawHandler:(data, unreliable) => void,
+        }[],
+        trace:MuTrace | null,
+    ) {
         const raw = spec.map((h) => h.rawHandler);
         const message = spec.map(({messageHandlers}, id) =>
             this.protocolFactories[id].messageNames.map(
@@ -145,6 +150,9 @@ export class MuProtocolFactory {
 
                 if (object.s) {
                     raw[protocolId](object.s, unreliable);
+                    if (trace) {
+                        trace.logMessage(protocolId, object.s);
+                    }
                 }
             } else {
                 const stream = new MuReadStream(data);
@@ -179,6 +187,10 @@ export class MuProtocolFactory {
                 }
                 message[protocolId][messageId](m, unreliable);
                 messageSchema.free(m);
+
+                if (trace) {
+                    trace.logMessage(protocolId, m, messageSchema);
+                }
             }
         };
     }

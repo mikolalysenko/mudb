@@ -1,5 +1,6 @@
 import { MuSocket, MuSocketServer } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
+import { MuTrace } from './trace';
 
 export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
@@ -68,7 +69,7 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
         close?:() => void;
     }) {
         if (this.configured) {
-            throw new Error('mudb/core: protocol has been configured');
+            throw new Error('mudb: protocol has been configured');
         }
         this.configured = true;
         this._protocolSpec.messageHandlers = spec.message;
@@ -87,14 +88,16 @@ export class MuServer {
     private _protocolSpecs:MuServerProtocolSpec[] = [];
 
     public running:boolean = false;
-
     private _started:boolean = false;
     private _closed:boolean = false;
 
     private _socketServer:MuSocketServer;
 
-    constructor (socketServer:MuSocketServer) {
+    public trace:MuTrace | null;
+
+    constructor (socketServer:MuSocketServer, trace?:MuTrace) {
         this._socketServer = socketServer;
+        this.trace = trace || null;
     }
 
     public start (spec?:{
@@ -102,7 +105,7 @@ export class MuServer {
         close?:(error?:any) => void,
     }) {
         if (this._started || this._closed) {
-            throw new Error('mudb/core: server already started');
+            throw new Error('mudb: server has been started');
         }
 
         this._started = true;
@@ -165,9 +168,6 @@ export class MuServer {
                     };
                 });
 
-                const parser = serverFactory.createParser(protocolHandlers);
-                let firstPacket = true;
-
                 function checkHashConsistency (packet) {
                     try {
                         const info = JSON.parse(packet);
@@ -176,10 +176,18 @@ export class MuServer {
                             throw new Error('incompatible protocols');
                         }
                     } catch (e) {
-                        console.error(`mudb/core: closing socket ${socket.sessionId} due to ${e}`);
+                        console.error(`mudb: closing socket ${socket.sessionId} due to ${e}`);
                         socket.close();
                     }
                 }
+
+                if (this.trace) {
+                    const protocolNames = this.protocols.map((protocol) => protocol.schema.name);
+                    this.trace.getIds(protocolNames);
+                }
+
+                const parser = serverFactory.createParser(protocolHandlers, this.trace);
+                let firstPacket = true;
 
                 socket.open({
                     ready: () => {
@@ -207,7 +215,7 @@ export class MuServer {
                         checkHashConsistency(data);
                         firstPacket = false;
                     },
-                    close: () => {
+                    close: (error?:any) => {
                         this._protocolSpecs.forEach((protocolSpec, id) => {
                             const client = clientObjects[id];
                             protocolSpec.disconnectHandler(client);
@@ -218,6 +226,12 @@ export class MuServer {
                         });
 
                         sockets.splice(sockets.indexOf(socket), 1);
+
+                        if (error) {
+                            if (this.trace) {
+                                this.trace.logError(`socket ${socket.sessionId} was closed due to ${error}`);
+                            }
+                        }
                     },
                 });
             },
@@ -226,7 +240,7 @@ export class MuServer {
 
     public destroy () {
         if (!this.running) {
-            throw new Error('mudb/core: server not running');
+            throw new Error('mudb: server is not running');
         }
         this._closed = true;
         this.running = false;
@@ -236,8 +250,12 @@ export class MuServer {
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuServerProtocol<Schema> {
         if (this._started || this._closed) {
-            throw new Error('mudb/core: cannot add a protocol until the server has been initialized');
+            throw new Error('mudb: attempt to register protocol after server has been started');
         }
+        if (schema.name) {
+            console.log(`mudb: register ${schema.name} protocol`);
+        }
+
         const spec = new MuServerProtocolSpec();
         const p = new MuServerProtocol(schema, this, spec);
         this.protocols.push(p);

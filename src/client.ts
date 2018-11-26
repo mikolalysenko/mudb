@@ -1,5 +1,6 @@
 import { MuSocket } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
+import { MuTrace } from './trace';
 
 const noop = function () {};
 
@@ -38,7 +39,7 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         close?:() => void;
     }) {
         if (this.configured) {
-            throw new Error('mudb/core: protocol already configured');
+            throw new Error('mudb: protocol has been configured');
         }
         this.configured = true;
         this._protocolSpec.messageHandlers = spec.message;
@@ -61,9 +62,12 @@ export class MuClient {
     private _closed:boolean = false;
     private _socket:MuSocket;
 
-    constructor (socket:MuSocket) {
+    public trace:MuTrace | null;
+
+    constructor (socket:MuSocket, trace?:MuTrace) {
         this._socket = socket;
         this.sessionId = socket.sessionId;
+        this.trace = trace || null;
     }
 
     public start (spec_?:{
@@ -71,7 +75,7 @@ export class MuClient {
         close?:(error?:string) => void,
     }) {
         if (this._started || this._closed) {
-            throw new Error('mudb/core: client already started');
+            throw new Error('mudb: client has been started');
         }
 
         this._started = true;
@@ -84,8 +88,6 @@ export class MuClient {
 
         const spec = spec_ || {};
 
-        let firstPacket = true;
-
         const checkHashConsistency = (packet) => {
             try {
                 const data = JSON.parse(packet);
@@ -97,7 +99,14 @@ export class MuClient {
                 this._socket.close();
             }
         };
-        const parser = clientFactory.createParser(this._protocolSpecs);
+
+        if (this.trace) {
+            const protocolNames = this.protocols.map((protocol) => protocol.schema.name);
+            this.trace.getIds(protocolNames);
+        }
+
+        const parser = clientFactory.createParser(this._protocolSpecs, this.trace);
+        let firstPacket = true;
 
         this._socket.open({
             ready: () => {
@@ -147,15 +156,19 @@ export class MuClient {
 
     public destroy () {
         if (!this.running) {
-            throw new Error('mudb/core: client not running');
+            throw new Error('mudb: client is not running');
         }
         this._socket.close();
     }
 
     public protocol<Schema extends MuAnyProtocolSchema> (schema:Schema) : MuClientProtocol<Schema> {
         if (this._started || this._closed) {
-            throw new Error('mudb/core: cannot add a protocol until the client has been initialized');
+            throw new Error('mudb: attempt to register protocol after client has been started');
         }
+        if (schema.name) {
+            console.log(`mudb: register ${schema.name} protocol`);
+        }
+
         const spec = new MuClientProtocolSpec();
         const p = new MuClientProtocol(schema, this, spec);
         this.protocols.push(p);
