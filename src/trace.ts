@@ -23,7 +23,7 @@ export class MuTrace {
                 }
             }
             if (!this.ids[i]) {
-                console.error(`mudb/tracing: '${this.names[i]}' doesn't match any protocols`);
+                console.error(`mudb/trace: '${this.names[i]}' doesn't match any protocols`);
             }
         }
     }

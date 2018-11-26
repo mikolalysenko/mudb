@@ -1,6 +1,6 @@
 import { MuSocket } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
-import { MuTrace } from './tracing';
+import { MuTrace } from './trace';
 
 const noop = function () {};
 
