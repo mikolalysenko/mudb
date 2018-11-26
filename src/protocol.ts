@@ -1,7 +1,7 @@
 import { MuSocket, MuData } from './socket';
 import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
-import { MuMessageTrace } from './tracing';
+import { MuTrace } from './tracing';
 
 import stableStringify = require('json-stable-stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
@@ -129,7 +129,7 @@ export class MuProtocolFactory {
             messageHandlers:{ [name:string]:(data, unreliable) => void },
             rawHandler:(data, unreliable) => void,
         }[],
-        trace:MuMessageTrace | null,
+        trace:MuTrace | null,
     ) {
         const raw = spec.map((h) => h.rawHandler);
         const message = spec.map(({messageHandlers}, id) =>

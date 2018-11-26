@@ -1,6 +1,6 @@
 import { MuSchema } from './schema/schema';
 
-export class MuMessageTrace {
+export class MuTrace {
     public names:string[];
     public ids:number[];
     public logger:(log:string) => void;

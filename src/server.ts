@@ -1,6 +1,6 @@
 import { MuSocket, MuSocketServer } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
-import { MuMessageTrace } from './tracing';
+import { MuTrace } from './tracing';
 
 export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
@@ -93,9 +93,9 @@ export class MuServer {
 
     private _socketServer:MuSocketServer;
 
-    public trace:MuMessageTrace | null;
+    public trace:MuTrace | null;
 
-    constructor (socketServer:MuSocketServer, trace?:MuMessageTrace) {
+    constructor (socketServer:MuSocketServer, trace?:MuTrace) {
         this._socketServer = socketServer;
         this.trace = trace || null;
     }

@@ -1,6 +1,6 @@
 import { MuSocket } from './socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
-import { MuMessageTrace } from './tracing';
+import { MuTrace } from './tracing';
 
 const noop = function () {};
 
@@ -62,9 +62,9 @@ export class MuClient {
     private _closed:boolean = false;
     private _socket:MuSocket;
 
-    public trace:MuMessageTrace | null;
+    public trace:MuTrace | null;
 
-    constructor (socket:MuSocket, trace?:MuMessageTrace) {
+    constructor (socket:MuSocket, trace?:MuTrace) {
         this._socket = socket;
         this.sessionId = socket.sessionId;
         this.trace = trace || null;
