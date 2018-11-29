@@ -8,7 +8,7 @@ import {
     unfoldRPCProtocolSchema,
 } from './rpc';
 
-export class MuRemoteRPCClient<RPCTable extends MuRPCTable> {
+export class MuRPCRemoteClient<RPCTable extends MuRPCTable> {
     public readonly sessionId:string;
     public readonly rpc:MuRPCInterface<RPCTable>['callerAPI'];
 
@@ -19,7 +19,7 @@ export class MuRemoteRPCClient<RPCTable extends MuRPCTable> {
 }
 
 function findClient<RPCTable extends MuRPCTable> (
-    clients:MuRemoteRPCClient<RPCTable>[],
+    clients:MuRPCRemoteClient<RPCTable>[],
     id:string,
 ) : number {
     for (let i = 0; i < clients.length; ++i) {
@@ -43,7 +43,7 @@ const uniqueNumber = (() => {
 export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
     public readonly server:MuServer;
     public readonly schema:ProtocolSchema;
-    public readonly clients:MuRemoteRPCClient<ProtocolSchema['client']>[] = [];
+    public readonly clients:MuRPCRemoteClient<ProtocolSchema['client']>[] = [];
 
     private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[0]>;
     private _responseProtocol:MuServerProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[1]>;
@@ -79,8 +79,8 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
     public configure (spec:{
         rpc:MuRPCInterface<ProtocolSchema['server']>['serverHandlerAPI'],
         ready?:() => void;
-        connect?:(client:MuRemoteRPCClient<ProtocolSchema['client']>) => void;
-        disconnect?:(client:MuRemoteRPCClient<ProtocolSchema['client']>) => void;
+        connect?:(client:MuRPCRemoteClient<ProtocolSchema['client']>) => void;
+        disconnect?:(client:MuRPCRemoteClient<ProtocolSchema['client']>) => void;
         close?:() => void;
     }) {
         this._callProtocol.configure({
@@ -116,7 +116,7 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                 }
             },
             connect: (client_) => {
-                const client = new MuRemoteRPCClient(client_, this._createRPCToClient(client_.sessionId));
+                const client = new MuRPCRemoteClient(client_, this._createRPCToClient(client_.sessionId));
                 this.clients.push(client);
 
                 this._callbacks[client_.sessionId] = {};

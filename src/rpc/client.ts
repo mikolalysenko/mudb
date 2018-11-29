@@ -8,7 +8,7 @@ import {
     unfoldRPCProtocolSchema,
 } from './rpc';
 
-export class MuRemoteRPCServer<Schema extends MuRPCTable> {
+export class MuRPCRemoteServer<Schema extends MuRPCTable> {
     public readonly rpc:MuRPCInterface<Schema>['callerAPI'];
 
     constructor (rpc:MuRPCInterface<Schema>['callerAPI']) {
@@ -25,7 +25,7 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
     public readonly schema:ProtocolSchema;
     public readonly sessionId:string;
     public readonly client:MuClient;
-    public readonly server:MuRemoteRPCServer<ProtocolSchema['server']>;
+    public readonly server:MuRPCRemoteServer<ProtocolSchema['server']>;
 
     private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[0]>;
     private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[1]>;
@@ -58,7 +58,7 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
         this._responseProtocol = client.protocol(schemaUnfolded[1]);
         this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
 
-        this.server = new MuRemoteRPCServer(this._createPRCToServer());
+        this.server = new MuRPCRemoteServer(this._createPRCToServer());
     }
 
     public configure (spec:{
