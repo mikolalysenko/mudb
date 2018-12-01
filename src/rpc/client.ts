@@ -1,5 +1,5 @@
 import { MuClient, MuClientProtocol } from '../client';
-import { RPC } from './rpc';
+import { RPC } from './protocol';
 
 export class MuRPCRemoteServer<T extends RPC.SchemaTable> {
     public readonly rpc:RPC.API<T>['caller'];

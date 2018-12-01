@@ -1,5 +1,5 @@
 import { MuServer, MuServerProtocol } from '../server';
-import { RPC } from './rpc';
+import { RPC } from './protocol';
 
 export class MuRPCRemoteClient<T extends RPC.SchemaTable> {
     public readonly sessionId:string;
