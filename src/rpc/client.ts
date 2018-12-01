@@ -1,47 +1,41 @@
 import { MuClient, MuClientProtocol } from '../client';
-import {
-    MuRPCProtocolSchema,
-    MuRPCErrorProtocolSchema,
-    MuRPCTable,
-    MuRPCInterface,
-    MuRPCProtocolSchemaUnfolded,
-    unfoldRPCProtocolSchema,
-} from './rpc';
+import { RPC } from './rpc';
 
-export class MuRPCRemoteServer<Schema extends MuRPCTable> {
-    public readonly rpc:MuRPCInterface<Schema>['callerAPI'];
+export class MuRPCRemoteServer<T extends RPC.SchemaTable> {
+    public readonly rpc:RPC.API<T>['caller'];
 
-    constructor (rpc:MuRPCInterface<Schema>['callerAPI']) {
+    constructor (rpc:RPC.API<T>['caller']) {
         this.rpc = rpc;
     }
 }
 
-const uniqueNumber = (() => {
-    let next = 0;
-    return () => next++;
-})();
+const uniqueId:() => number =
+    (() => {
+        let next = 0;
+        return () => next++;
+    })();
 
-export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
-    public readonly schema:ProtocolSchema;
-    public readonly sessionId:string;
+export class MuRPCClient<ProtocolSchema extends RPC.ProtocolSchema> {
     public readonly client:MuClient;
+    public readonly sessionId:string;
+    public readonly schema:ProtocolSchema;
     public readonly server:MuRPCRemoteServer<ProtocolSchema['server']>;
 
-    private _callProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[0]>;
-    private _responseProtocol:MuClientProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[1]>;
-    private _errorProtocol:MuClientProtocol<typeof MuRPCErrorProtocolSchema>;
+    private _requestProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<ProtocolSchema>[0]>;
+    private _responseProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<ProtocolSchema>[1]>;
+    private _errorProtocol:MuClientProtocol<typeof RPC.errorProtocolSchema>;
 
     private _callbacks:{ [id:string]:(err, base) => void } = {};
 
-    private _createPRCToServer () {
-        const rpc = {} as { [method in keyof ProtocolSchema['server']]:(arg, next) => void };
-        Object.keys(this.schema.server).forEach((method) => {
-            rpc[method] = (arg, next) => {
-                const id = uniqueNumber();
-                this._callbacks[id] = next;
-                this._callProtocol.server.message[method]({
-                    base: this.schema.server[method][0].clone(arg),
+    private _createRPC () {
+        const rpc = {} as { [proc in keyof ProtocolSchema['server']]:(arg, cb) => void };
+        Object.keys(this.schema.server).forEach((proc) => {
+            rpc[proc] = (arg, cb) => {
+                const id = uniqueId();
+                this._callbacks[id] = cb;
+                this._requestProtocol.server.message[proc]({
                     id,
+                    base: this.schema.server[proc][0].clone(arg),
                 });
             };
         });
@@ -49,24 +43,24 @@ export class MuRPCClient<ProtocolSchema extends MuRPCProtocolSchema> {
     }
 
     constructor (client:MuClient, schema:ProtocolSchema) {
-        this.sessionId = client.sessionId;
         this.client = client;
+        this.sessionId = client.sessionId;
         this.schema = schema;
 
-        const schemaUnfolded = unfoldRPCProtocolSchema(schema);
-        this._callProtocol = client.protocol(schemaUnfolded[0]);
-        this._responseProtocol = client.protocol(schemaUnfolded[1]);
-        this._errorProtocol = client.protocol(MuRPCErrorProtocolSchema);
+        const transposedSchema = RPC.transpose(schema);
+        this._requestProtocol = client.protocol(transposedSchema[0]);
+        this._responseProtocol = client.protocol(transposedSchema[1]);
+        this._errorProtocol = client.protocol(RPC.errorProtocolSchema);
 
-        this.server = new MuRPCRemoteServer(this._createPRCToServer());
+        this.server = new MuRPCRemoteServer(this._createRPC());
     }
 
     public configure (spec:{
-        rpc:MuRPCInterface<ProtocolSchema['client']>['clientHandlerAPI'];
+        rpc:RPC.API<ProtocolSchema['client']>['clientProcedure'];
         ready?:() => void;
         close?:() => void;
     }) {
-        this._callProtocol.configure({
+        this._requestProtocol.configure({
             message: (() => {
                 const handlers = {} as { [method in keyof ProtocolSchema['client']]:({base, id}) => void };
                 Object.keys(this.schema.client).forEach((method) => {
