@@ -23,7 +23,7 @@ export namespace RPC {
         caller:{
             [proc in keyof Table]:(
                 arg:Table[proc][Req]['identity'],
-                callback?:(ret:Table[proc][Res]['identity']) => void,
+                callback:(ret:Table[proc][Res]['identity']) => void,
             ) => void
         };
         clientProcedure:{
