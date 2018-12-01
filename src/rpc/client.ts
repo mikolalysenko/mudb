@@ -106,8 +106,9 @@ export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
 
         this._errorProtocol.configure({
             message: {
-                error: ({ message, id }) => {
+                error: ({ id, message }) => {
                     delete this._callbacks[id];
+                    console.error(`mudb/rpc: ${message}`);
                 },
             },
         });

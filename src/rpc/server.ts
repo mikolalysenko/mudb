@@ -154,11 +154,12 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
 
         this._errorProtocol.configure({
             message: {
-                error: (client, { message, id }) => {
+                error: (client, { id, message }) => {
                     const clientId = client.sessionId;
                     if (this._callbacks[clientId]) {
                         delete this._callbacks[clientId][id];
                     }
+                    console.error(`mudb/rpc: ${message}`);
                 },
             },
         });
