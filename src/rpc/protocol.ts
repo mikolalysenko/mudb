@@ -198,11 +198,14 @@ export function unfoldRPCProtocolSchema<ProtocolSchema extends MuRPCProtocolSche
 }
 
 // user-friendly tuple type assertion
-export function MuRPC<
-    ArgumentSchema extends MuAnySchema,
-    ResponseSchema extends MuAnySchema
-> (arg:ArgumentSchema, response:ResponseSchema) : [ArgumentSchema, ResponseSchema] {
-    return [arg, response];
+export function tuple<
+    ArgumentSchema extends MuSchema<any>,
+    ReturnSchema extends MuSchema<any>,
+> (
+    arg:ArgumentSchema,
+    ret:ReturnSchema,
+) : [ArgumentSchema, ReturnSchema] {
+    return [arg, ret];
 }
 
 export const MuRPCErrorSchema = new MuStruct({
