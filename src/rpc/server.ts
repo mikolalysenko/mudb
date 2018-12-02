@@ -46,14 +46,14 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
     private _callbacks:{ [sessionId:string]:{ [id:string]:(ret) => void } } = {};
 
     private _createRPC (clientId) {
-        const rpc = {} as { [method in keyof Schema]:(arg, cb) => void };
-        Object.keys(this.schema.client).forEach((method) => {
-            rpc[method] = (arg, cb) => {
+        const rpc = {} as { [proc in keyof Schema['client']]:(arg, cb) => void };
+        Object.keys(this.schema.client).forEach((proc) => {
+            rpc[proc] = (arg, cb) => {
                 const id = uniqueId();
                 this._callbacks[clientId][id] = cb;
-                this._requestProtocol.clients[clientId].message[method]({
+                this._requestProtocol.clients[clientId].message[proc]({
                     id,
-                    base: this.schema.client[method][0].clone(arg),
+                    base: this.schema.client[proc][0].clone(arg),
                 });
             };
         });
