@@ -79,21 +79,27 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
     }) {
         this._requestProtocol.configure({
             message: (() => {
-                const handlers = {} as { [method in keyof Schema['server']]:(client, { base, id }) => void };
-                Object.keys(this.schema.server).forEach((method) => {
-                    handlers[method] = (client_, { base, id }) => {
-                        const clientIdx = findClient(this.clients, client_.sessionId);
-                        const client = this.clients[clientIdx];
+                const handlers = {} as { [proc in keyof Schema['server']]:(client, { id, base }) => void };
+                Object.keys(this.schema.server).forEach((proc) => {
+                    handlers[proc] = (client_, { id, base }) => {
+                        const idx = findClient(this.clients, client_.sessionId);
+                        if (idx < 0) {
+                            return;
+                        }
 
-                        spec.rpc[method](
+                        const client = this.clients[idx];
+                        spec.rpc[proc](
                             base,
-                            (err, response) => {
+                            (err, ret) => {
                                 if (err) {
-                                    this._errorProtocol.clients[client.sessionId].message.error({ message: err, id });
-                                } else {
-                                    this._responseProtocol.clients[client.sessionId].message[method]({
-                                        base: this.schema.server[method][1].clone(response),
+                                    this._errorProtocol.clients[client.sessionId].message.error({
                                         id,
+                                        message: err,
+                                    });
+                                } else {
+                                    this._responseProtocol.clients[client.sessionId].message[proc]({
+                                        id,
+                                        base: this.schema.server[proc][1].clone(ret),
                                     });
                                 }
                             },
@@ -101,7 +107,6 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
                         );
                     };
                 });
-
                 return handlers;
             })(),
             ready: () => {
@@ -120,12 +125,17 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
                 }
             },
             disconnect: (client) => {
-                const clientIdx = findClient(this.clients, client.sessionId);
-                if (spec && spec.disconnect) {
-                    spec.disconnect(this.clients[clientIdx]);
+                const idx = findClient(this.clients, client.sessionId);
+                if (idx < 0) {
+                    console.error(`mudb/rpc: cannot find disconnecting client ${client.sessionId}`);
+                    return;
                 }
 
-                removeItem(this.clients, clientIdx);
+                if (spec && spec.disconnect) {
+                    spec.disconnect(this.clients[idx]);
+                }
+
+                removeItem(this.clients, idx);
                 delete this._callbacks[client.sessionId];
             },
             close: () => {
@@ -137,12 +147,12 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
 
         this._responseProtocol.configure({
             message: (() => {
-                const handlers = {} as { [method in keyof Schema['client']]:(client, { base, id }) => void };
-                Object.keys(this.schema.client).forEach((method) => {
-                    handlers[method] = (client, { base, id }) => {
+                const handlers = {} as { [proc in keyof Schema['client']]:(client, { base, id }) => void };
+                Object.keys(this.schema.client).forEach((proc) => {
+                    handlers[proc] = (client, { base, id }) => {
                         const clientId = client.sessionId;
                         if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
-                            this._callbacks[clientId][id](this.schema.client[method][1].clone(base));
+                            this._callbacks[clientId][id](this.schema.client[proc][1].clone(base));
                             delete this._callbacks[clientId][id];
                         }
                     };
