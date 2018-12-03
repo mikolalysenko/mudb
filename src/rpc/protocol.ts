@@ -9,6 +9,7 @@ export namespace RPC {
     export type Schema = [MuSchema<any>, MuSchema<any>];
     export type SchemaTable = { [proc:string]:Schema };
     export type ProtocolSchema = {
+        name?:string,
         client:SchemaTable;
         server:SchemaTable;
     };
@@ -50,16 +51,18 @@ export namespace RPC {
 
     export type TransposedProtocolSchema<S extends ProtocolSchema> = [
         {
+            name?:string;
             client:CallbackSchemaTable<S['client'], Req>;
             server:CallbackSchemaTable<S['server'], Req>;
         },
         {
+            name?:string;
             client:CallbackSchemaTable<S['client'], Res>;
             server:CallbackSchemaTable<S['server'], Res>;
         }
     ];
 
-    export function transpose<S extends ProtocolSchema> (
+    export function transpose <S extends ProtocolSchema> (
         protocolSchema:S,
     ) : TransposedProtocolSchema<S> {
         // tuple type is not inferred
@@ -95,6 +98,12 @@ export namespace RPC {
             });
         });
 
+        if (protocolSchema.name) {
+            const name = protocolSchema.name;
+            transposed[req].name = `${name}Request`;
+            transposed[res].name = `${name}Response`;
+        }
+
         return transposed;
     }
 
@@ -103,14 +112,23 @@ export namespace RPC {
         message: new MuUTF8(),
     });
 
-    export const errorProtocolSchema = {
-        client: {
-            error: errorSchema,
-        },
-        server: {
-            error: errorSchema,
-        },
+    export type ErrorProtocolSchema = {
+        name?:string;
+        client:{ error:typeof errorSchema };
+        server:{ error:typeof errorSchema };
     };
+
+    export function createErrorProtocolSchema (protocolSchema) {
+        const schema = {
+            client: { error: errorSchema },
+            server: { error: errorSchema },
+        } as ErrorProtocolSchema;
+
+        if (protocolSchema.name) {
+            schema.name = `${protocolSchema.name}Error`;
+        }
+        return schema;
+    }
 }
 
 // user-friendly tuple type assertion

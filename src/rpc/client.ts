@@ -23,7 +23,7 @@ export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
 
     private _requestProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<Schema>[0]>;
     private _responseProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<Schema>[1]>;
-    private _errorProtocol:MuClientProtocol<typeof RPC.errorProtocolSchema>;
+    private _errorProtocol:MuClientProtocol<RPC.ErrorProtocolSchema>;
 
     private _callbacks:{ [id:string]:(ret) => void } = {};
 
@@ -50,7 +50,7 @@ export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
         const transposedSchema = RPC.transpose(schema);
         this._requestProtocol = client.protocol(transposedSchema[0]);
         this._responseProtocol = client.protocol(transposedSchema[1]);
-        this._errorProtocol = client.protocol(RPC.errorProtocolSchema);
+        this._errorProtocol = client.protocol(RPC.createErrorProtocolSchema(schema));
 
         this.server = new MuRPCRemoteServer(this._createRPC());
     }
