@@ -1,9 +1,9 @@
-import { MuRPC } from './rpc';
 import { MuRPCServer } from './server';
 import { MuRPCClient } from './client';
+import { tuple } from './protocol';
 
 export = {
-    MuRPC,
     MuRPCServer,
     MuRPCClient,
+    tuple,
 };

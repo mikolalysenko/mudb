@@ -1,29 +1,18 @@
 import { MuServer, MuServerProtocol } from '../server';
-import {
-    MuRPCTable,
-    MuRPCProtocolSchema,
-    MuRPCProtocolSchemaUnfolded,
-    MuRPCInterface,
-    MuRPCErrorProtocolSchema,
-    unfoldRPCProtocolSchema,
-} from './rpc';
+import { MuSessionId } from '../socket';
+import { MuRPC } from './protocol';
 
-export class MuRemoteRPCClient<RPCTable extends MuRPCTable> {
-    public readonly sessionId:string;
-    public readonly rpc:MuRPCInterface<RPCTable>['callerAPI'];
+const uniqueId = (() => {
+    let next = 0;
+    return () => next++;
+})();
 
-    constructor (client, rpc) {
-        this.sessionId = client.sessionId;
-        this.rpc = rpc;
-    }
-}
-
-function findClient<RPCTable extends MuRPCTable> (
-    clients:MuRemoteRPCClient<RPCTable>[],
-    id:string,
+function findClient<T extends MuRPC.SchemaTable> (
+    clients:MuRPCRemoteClient<T>[],
+    sessionId:MuSessionId,
 ) : number {
     for (let i = 0; i < clients.length; ++i) {
-        if (clients[i].sessionId === id) {
+        if (clients[i].sessionId === sessionId) {
             return i;
         }
     }
@@ -35,71 +24,83 @@ function removeItem (array:any[], index:number) {
     array.pop();
 }
 
-const uniqueNumber = (() => {
-    let next = 0;
-    return () => next++;
-})();
+export class MuRPCRemoteClient<Table extends MuRPC.SchemaTable> {
+    public readonly sessionId:MuSessionId;
+    public readonly rpc:MuRPC.API<Table>['caller'];
 
-export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
+    constructor (sessionId:MuSessionId, rpc:MuRPC.API<Table>['caller']) {
+        this.sessionId = sessionId;
+        this.rpc = rpc;
+    }
+}
+
+export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
     public readonly server:MuServer;
-    public readonly schema:ProtocolSchema;
-    public readonly clients:MuRemoteRPCClient<ProtocolSchema['client']>[] = [];
+    public readonly schema:Schema;
 
-    private _callProtocol:MuServerProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[0]>;
-    private _responseProtocol:MuServerProtocol<MuRPCProtocolSchemaUnfolded<ProtocolSchema>[1]>;
-    private _errorProtocol:MuServerProtocol<typeof MuRPCErrorProtocolSchema>;
+    public readonly clients:MuRPCRemoteClient<Schema['client']>[] = [];
 
-    private _callbacks:{ [sessionId:string]:{ [id:string]:(base) => void } } = {};
+    private _requestProtocol:MuServerProtocol<MuRPC.TransposedProtocolSchema<Schema>[0]>;
+    private _responseProtocol:MuServerProtocol<MuRPC.TransposedProtocolSchema<Schema>[1]>;
+    private _errorProtocol:MuServerProtocol<MuRPC.ErrorProtocolSchema>;
 
-    private _createRPCToClient (clientId) {
-        const rpc = {} as { [method in keyof ProtocolSchema]:(arg, next) => void };
-        Object.keys(this.schema.client).forEach((method) => {
-            rpc[method] = (arg, next) => {
-                const id = uniqueNumber();
-                this._callbacks[clientId][id] = next;
-                this._callProtocol.clients[clientId].message[method]({
-                    base: this.schema.client[method][0].clone(arg),
+    private _callbacks:{ [sessionId:string]:{ [id:string]:(ret) => void } } = {};
+
+    constructor (server:MuServer, schema:Schema) {
+        this.server = server;
+        this.schema = schema;
+
+        const transposedSchema = MuRPC.transpose(schema);
+        this._requestProtocol = server.protocol(transposedSchema[0]);
+        this._responseProtocol = server.protocol(transposedSchema[1]);
+        this._errorProtocol = server.protocol(MuRPC.createErrorProtocolSchema(schema));
+    }
+
+    private _createRPC (sessionId:MuSessionId) {
+        const rpc = {} as { [proc in keyof Schema['client']]:(arg, cb) => void };
+        Object.keys(this.schema.client).forEach((proc) => {
+            rpc[proc] = (arg, cb) => {
+                const id = uniqueId();
+                this._callbacks[sessionId][id] = cb;
+                this._requestProtocol.clients[sessionId].message[proc]({
                     id,
+                    base: this.schema.client[proc][0].clone(arg),
                 });
             };
         });
         return rpc;
     }
 
-    constructor (server:MuServer, schema:ProtocolSchema) {
-        this.server = server;
-        this.schema = schema;
-
-        const schemaUnfolded = unfoldRPCProtocolSchema(schema);
-        this._callProtocol = server.protocol(schemaUnfolded[0]);
-        this._responseProtocol = server.protocol(schemaUnfolded[1]);
-        this._errorProtocol = server.protocol(MuRPCErrorProtocolSchema);
-    }
-
     public configure (spec:{
-        rpc:MuRPCInterface<ProtocolSchema['server']>['serverHandlerAPI'],
+        rpc:MuRPC.API<Schema['server']>['serverProcedure'],
         ready?:() => void;
-        connect?:(client:MuRemoteRPCClient<ProtocolSchema['client']>) => void;
-        disconnect?:(client:MuRemoteRPCClient<ProtocolSchema['client']>) => void;
+        connect?:(client:MuRPCRemoteClient<Schema['client']>) => void;
+        disconnect?:(client:MuRPCRemoteClient<Schema['client']>) => void;
         close?:() => void;
     }) {
-        this._callProtocol.configure({
+        this._requestProtocol.configure({
             message: (() => {
-                const handlers = {} as { [method in keyof ProtocolSchema['server']]:(client, { base, id }) => void };
-                Object.keys(this.schema.server).forEach((method) => {
-                    handlers[method] = (client_, { base, id }) => {
-                        const clientIdx = findClient(this.clients, client_.sessionId);
-                        const client = this.clients[clientIdx];
+                const handlers = {} as { [proc in keyof Schema['server']]:(client, { id, base }) => void };
+                Object.keys(this.schema.server).forEach((proc) => {
+                    handlers[proc] = (client_, { id, base }) => {
+                        const idx = findClient(this.clients, client_.sessionId);
+                        if (idx < 0) {
+                            return;
+                        }
 
-                        spec.rpc[method](
+                        const client = this.clients[idx];
+                        spec.rpc[proc](
                             base,
-                            (err, response) => {
+                            (err, ret) => {
                                 if (err) {
-                                    this._errorProtocol.clients[client.sessionId].message.error({ message: err, id });
-                                } else {
-                                    this._responseProtocol.clients[client.sessionId].message[method]({
-                                        base: this.schema.server[method][1].clone(response),
+                                    this._errorProtocol.clients[client.sessionId].message.error({
                                         id,
+                                        message: err,
+                                    });
+                                } else {
+                                    this._responseProtocol.clients[client.sessionId].message[proc]({
+                                        id,
+                                        base: this.schema.server[proc][1].clone(ret),
                                     });
                                 }
                             },
@@ -107,7 +108,6 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                         );
                     };
                 });
-
                 return handlers;
             })(),
             ready: () => {
@@ -116,22 +116,28 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
                 }
             },
             connect: (client_) => {
-                const client = new MuRemoteRPCClient(client_, this._createRPCToClient(client_.sessionId));
-                this.clients.push(client);
-
-                this._callbacks[client_.sessionId] = {};
+                const sessionId = client_.sessionId;
+                const client = new MuRPCRemoteClient(sessionId, this._createRPC(sessionId));
 
                 if (spec && spec.connect) {
                     spec.connect(client);
                 }
+
+                this.clients.push(client);
+                this._callbacks[sessionId] = {};
             },
             disconnect: (client) => {
-                const clientIdx = findClient(this.clients, client.sessionId);
-                if (spec && spec.disconnect) {
-                    spec.disconnect(this.clients[clientIdx]);
+                const idx = findClient(this.clients, client.sessionId);
+                if (idx < 0) {
+                    console.error(`mudb/rpc: cannot find disconnecting client ${client.sessionId}`);
+                    return;
                 }
 
-                removeItem(this.clients, clientIdx);
+                if (spec && spec.disconnect) {
+                    spec.disconnect(this.clients[idx]);
+                }
+
+                removeItem(this.clients, idx);
                 delete this._callbacks[client.sessionId];
             },
             close: () => {
@@ -143,13 +149,13 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
 
         this._responseProtocol.configure({
             message: (() => {
-                const handlers = {} as { [method in keyof ProtocolSchema['client']]:(client, { base, id }) => void };
-                Object.keys(this.schema.client).forEach((method) => {
-                    handlers[method] = (client, { base, id }) => {
-                        const clientId = client.sessionId;
-                        if (this._callbacks[clientId] && this._callbacks[clientId][id]) {
-                            this._callbacks[clientId][id](this.schema.client[method][1].clone(base));
-                            delete this._callbacks[clientId][id];
+                const handlers = {} as { [proc in keyof Schema['client']]:(client, { base, id }) => void };
+                Object.keys(this.schema.client).forEach((proc) => {
+                    handlers[proc] = (client, { base, id }) => {
+                        const clientCallbacks = this._callbacks[client.sessionId];
+                        if (clientCallbacks && clientCallbacks[id]) {
+                            clientCallbacks[id](this.schema.client[proc][1].clone(base));
+                            delete clientCallbacks[id];
                         }
                     };
                 });
@@ -160,11 +166,12 @@ export class MuRPCServer<ProtocolSchema extends MuRPCProtocolSchema> {
 
         this._errorProtocol.configure({
             message: {
-                error: (client, { message, id }) => {
-                    const clientId = client.sessionId;
-                    if (this._callbacks[clientId]) {
-                        delete this._callbacks[clientId][id];
+                error: (client, { id, message }) => {
+                    const clientCallbacks = this._callbacks[client.sessionId];
+                    if (clientCallbacks) {
+                        delete clientCallbacks[id];
                     }
+                    console.error(`mudb/rpc: ${message}`);
                 },
             },
         });
