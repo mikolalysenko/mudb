@@ -1,30 +1,30 @@
 import { MuClient, MuClientProtocol } from '../client';
 import { MuSessionId } from '../socket';
-import { RPC } from './protocol';
+import { MuRPC } from './protocol';
 
 const uniqueId = (() => {
     let next = 0;
     return () => next++;
 })();
 
-export class MuRPCRemoteServer<Table extends RPC.SchemaTable> {
-    public readonly rpc:RPC.API<Table>['caller'];
+export class MuRPCRemoteServer<Table extends MuRPC.SchemaTable> {
+    public readonly rpc:MuRPC.API<Table>['caller'];
 
-    constructor (rpc:RPC.API<Table>['caller']) {
+    constructor (rpc:MuRPC.API<Table>['caller']) {
         this.rpc = rpc;
     }
 }
 
-export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
+export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
     public readonly sessionId:MuSessionId;
     public readonly client:MuClient;
     public readonly schema:Schema;
 
     public readonly server:MuRPCRemoteServer<Schema['server']>;
 
-    private _requestProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<Schema>[0]>;
-    private _responseProtocol:MuClientProtocol<RPC.TransposedProtocolSchema<Schema>[1]>;
-    private _errorProtocol:MuClientProtocol<RPC.ErrorProtocolSchema>;
+    private _requestProtocol:MuClientProtocol<MuRPC.TransposedProtocolSchema<Schema>[0]>;
+    private _responseProtocol:MuClientProtocol<MuRPC.TransposedProtocolSchema<Schema>[1]>;
+    private _errorProtocol:MuClientProtocol<MuRPC.ErrorProtocolSchema>;
 
     private _callbacks:{ [id:string]:(ret) => void } = {};
 
@@ -33,10 +33,10 @@ export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
         this.client = client;
         this.schema = schema;
 
-        const transposedSchema = RPC.transpose(schema);
+        const transposedSchema = MuRPC.transpose(schema);
         this._requestProtocol = client.protocol(transposedSchema[0]);
         this._responseProtocol = client.protocol(transposedSchema[1]);
-        this._errorProtocol = client.protocol(RPC.createErrorProtocolSchema(schema));
+        this._errorProtocol = client.protocol(MuRPC.createErrorProtocolSchema(schema));
 
         this.server = new MuRPCRemoteServer(this._createRPC());
     }
@@ -57,7 +57,7 @@ export class MuRPCClient<Schema extends RPC.ProtocolSchema> {
     }
 
     public configure (spec:{
-        rpc:RPC.API<Schema['client']>['clientProcedure'];
+        rpc:MuRPC.API<Schema['client']>['clientProcedure'];
         ready?:() => void;
         close?:() => void;
     }) {

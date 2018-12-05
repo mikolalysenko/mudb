@@ -5,7 +5,7 @@ import { MuUTF8 } from '../schema/utf8';
 import { MuRPCRemoteClient } from './server';
 
 // Remote Procedure Call, a response-request protocol
-export namespace RPC {
+export namespace MuRPC {
     export type Schema = [MuSchema<any>, MuSchema<any>];
     export type SchemaTable = { [proc:string]:Schema };
     export type ProtocolSchema = {

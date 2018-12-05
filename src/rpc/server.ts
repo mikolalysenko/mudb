@@ -1,13 +1,13 @@
 import { MuServer, MuServerProtocol } from '../server';
 import { MuSessionId } from '../socket';
-import { RPC } from './protocol';
+import { MuRPC } from './protocol';
 
 const uniqueId = (() => {
     let next = 0;
     return () => next++;
 })();
 
-function findClient<T extends RPC.SchemaTable> (
+function findClient<T extends MuRPC.SchemaTable> (
     clients:MuRPCRemoteClient<T>[],
     sessionId:MuSessionId,
 ) : number {
@@ -24,25 +24,25 @@ function removeItem (array:any[], index:number) {
     array.pop();
 }
 
-export class MuRPCRemoteClient<Table extends RPC.SchemaTable> {
+export class MuRPCRemoteClient<Table extends MuRPC.SchemaTable> {
     public readonly sessionId:MuSessionId;
-    public readonly rpc:RPC.API<Table>['caller'];
+    public readonly rpc:MuRPC.API<Table>['caller'];
 
-    constructor (sessionId:MuSessionId, rpc:RPC.API<Table>['caller']) {
+    constructor (sessionId:MuSessionId, rpc:MuRPC.API<Table>['caller']) {
         this.sessionId = sessionId;
         this.rpc = rpc;
     }
 }
 
-export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
+export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
     public readonly server:MuServer;
     public readonly schema:Schema;
 
     public readonly clients:MuRPCRemoteClient<Schema['client']>[] = [];
 
-    private _requestProtocol:MuServerProtocol<RPC.TransposedProtocolSchema<Schema>[0]>;
-    private _responseProtocol:MuServerProtocol<RPC.TransposedProtocolSchema<Schema>[1]>;
-    private _errorProtocol:MuServerProtocol<RPC.ErrorProtocolSchema>;
+    private _requestProtocol:MuServerProtocol<MuRPC.TransposedProtocolSchema<Schema>[0]>;
+    private _responseProtocol:MuServerProtocol<MuRPC.TransposedProtocolSchema<Schema>[1]>;
+    private _errorProtocol:MuServerProtocol<MuRPC.ErrorProtocolSchema>;
 
     private _callbacks:{ [sessionId:string]:{ [id:string]:(ret) => void } } = {};
 
@@ -50,10 +50,10 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
         this.server = server;
         this.schema = schema;
 
-        const transposedSchema = RPC.transpose(schema);
+        const transposedSchema = MuRPC.transpose(schema);
         this._requestProtocol = server.protocol(transposedSchema[0]);
         this._responseProtocol = server.protocol(transposedSchema[1]);
-        this._errorProtocol = server.protocol(RPC.createErrorProtocolSchema(schema));
+        this._errorProtocol = server.protocol(MuRPC.createErrorProtocolSchema(schema));
     }
 
     private _createRPC (sessionId:MuSessionId) {
@@ -72,7 +72,7 @@ export class MuRPCServer<Schema extends RPC.ProtocolSchema> {
     }
 
     public configure (spec:{
-        rpc:RPC.API<Schema['server']>['serverProcedure'],
+        rpc:MuRPC.API<Schema['server']>['serverProcedure'],
         ready?:() => void;
         connect?:(client:MuRPCRemoteClient<Schema['client']>) => void;
         disconnect?:(client:MuRPCRemoteClient<Schema['client']>) => void;
