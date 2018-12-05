@@ -118,7 +118,9 @@ export namespace RPC {
         server:{ error:typeof errorSchema };
     };
 
-    export function createErrorProtocolSchema (protocolSchema) {
+    export function createErrorProtocolSchema (
+        protocolSchema:ProtocolSchema,
+    ) : ErrorProtocolSchema {
         const schema = {
             client: { error: errorSchema },
             server: { error: errorSchema },
