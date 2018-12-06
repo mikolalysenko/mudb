@@ -3,7 +3,7 @@ import { MuNumber } from './_number';
 
 export class MuInt32 extends MuNumber {
     constructor(identity?:number) {
-        super((identity || 0) << 0, 'int32');
+        super(identity || 0, 'int32');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) {
