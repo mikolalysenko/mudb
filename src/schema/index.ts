@@ -2,7 +2,7 @@ import { MuArray } from './array';
 import { MuASCII } from './ascii';
 import { MuBoolean } from './boolean';
 import { MuDictionary } from './dictionary';
-import { MuFixedASCII } from './fascii';
+import { MuFixedASCII } from './fixed-ascii';
 import { MuFloat32 } from './float32';
 import { MuFloat64 } from './float64';
 import { MuInt8 } from './int8';
