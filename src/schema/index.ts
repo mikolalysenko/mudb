@@ -9,6 +9,7 @@ import { MuInt8 } from './int8';
 import { MuInt16 } from './int16';
 import { MuInt32 } from './int32';
 import { MuSchema } from './schema';
+import { MuSortedArray } from './sorted-array';
 import { MuStruct } from './struct';
 import { MuUint8 } from './uint8';
 import { MuUint16 } from './uint16';
@@ -17,7 +18,6 @@ import { MuUnion } from './union';
 import { MuUTF8 } from './utf8';
 import { MuVector } from './vector';
 import { MuVoid } from './void';
-import { MuSortedArray } from './sorted';
 
 export {
     MuArray,
@@ -31,6 +31,7 @@ export {
     MuInt16,
     MuInt32,
     MuSchema,
+    MuSortedArray,
     MuStruct,
     MuUint8,
     MuUint16,
@@ -39,5 +40,4 @@ export {
     MuUTF8,
     MuVector,
     MuVoid,
-    MuSortedArray,
 };
