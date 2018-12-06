@@ -36,7 +36,7 @@ test('schema.muType', (t) => {
     t.equal(new MuUint16().muType,      'uint16');
     t.equal(new MuUint32().muType,      'uint32');
     t.equal(new MuArray(new MuFloat32()).muType,            'array');
-    t.equal(new MuSortedArray(new MuFloat32()).muType,      'sorted-set');
+    t.equal(new MuSortedArray(new MuFloat32()).muType,      'sorted-array');
     t.equal(new MuDictionary(new MuFloat32()).muType,       'dictionary');
     t.equal(new MuStruct({ f: new MuFloat32() }).muType,    'struct');
     t.equal(new MuUnion({ f: new MuFloat32() }).muType,     'union');

@@ -29,7 +29,7 @@ export const muPrimitiveTypes = [
 export const muNonPrimitiveTypes = [
     'array',
     'dictionary',
-    'sorted',
+    'sorted-array',
     'struct',
     'union',
     'vector',

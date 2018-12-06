@@ -25,7 +25,7 @@ enum SortedOp {
 export class MuSortedArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
     public readonly identity:ValueSchema['identity'][];
-    public readonly muType = 'sorted-set';
+    public readonly muType = 'sorted-array';
     public readonly muData:ValueSchema;
     public readonly json:object;
     public readonly compare:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number;
@@ -48,7 +48,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         }
 
         this.json = {
-            type: 'sorted-set',
+            type: 'sorted-array',
             valueType: schema.json,
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
