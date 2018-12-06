@@ -12,8 +12,8 @@ export const muPrimitiveSize = {
 
 export const muPrimitiveTypes = [
     'ascii',
-    'fascii',
     'boolean',
+    'fixed-ascii',
     'float32',
     'float64',
     'int8',

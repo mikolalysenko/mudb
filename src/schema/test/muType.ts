@@ -25,7 +25,7 @@ test('schema.muType', (t) => {
     t.equal(new MuVoid().muType,        'void');
     t.equal(new MuBoolean().muType,     'boolean');
     t.equal(new MuASCII().muType,       'ascii');
-    t.equal(new MuFixedASCII(1).muType, 'fascii');
+    t.equal(new MuFixedASCII(1).muType, 'fixed-ascii');
     t.equal(new MuUTF8().muType,        'utf8');
     t.equal(new MuFloat32().muType,     'float32');
     t.equal(new MuFloat64().muType,     'float64');
