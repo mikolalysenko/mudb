@@ -1,5 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
+import { inRange } from './util/numeric';
 
 export type MuNumberType =
     'float32' |
@@ -18,6 +19,10 @@ export abstract class MuNumber implements MuSchema<number> {
     public readonly json:object;
 
     constructor (identity:number, type:MuNumberType) {
+        if (!inRange(identity, type)) {
+            throw new RangeError(`cannot set ${identity} as identity of ${type}`);
+        }
+
         this.identity = identity;
         this.muType = type;
         this.json = {

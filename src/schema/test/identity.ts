@@ -85,3 +85,40 @@ test('schema.identity', (t) => {
     );
     t.end();
 });
+
+test('set number identity', (t) => {
+    t.doesNotThrow(() => new MuFloat32(-3.4e+38));
+    t.doesNotThrow(() => new MuFloat32(3.4e+38));
+    t.doesNotThrow(() => new MuFloat64(-1.7e+308));
+    t.doesNotThrow(() => new MuFloat64(1.7e308));
+    t.doesNotThrow(() => new MuInt8(-0x80));
+    t.doesNotThrow(() => new MuInt8(0x7F));
+    t.doesNotThrow(() => new MuInt16(-0x8000));
+    t.doesNotThrow(() => new MuInt16(0x7FFF));
+    t.doesNotThrow(() => new MuInt32(-0x80000000));
+    t.doesNotThrow(() => new MuInt32(0x7FFFFFFF));
+    t.doesNotThrow(() => new MuUint8(0));
+    t.doesNotThrow(() => new MuUint8(0xFF));
+    t.doesNotThrow(() => new MuUint16(0));
+    t.doesNotThrow(() => new MuUint16(0xFFFF));
+    t.doesNotThrow(() => new MuUint32(0));
+    t.doesNotThrow(() => new MuUint32(0xFFFFFFFF));
+
+    t.throws(() => new MuFloat32(-3.41e+38),    RangeError);
+    t.throws(() => new MuFloat32(3.41e+38),     RangeError);
+    t.throws(() => new MuFloat64(-1.8e+308),    RangeError);
+    t.throws(() => new MuFloat64(1.8e+308),     RangeError);
+    t.throws(() => new MuInt8(-0x81),           RangeError);
+    t.throws(() => new MuInt8(0x80),            RangeError);
+    t.throws(() => new MuInt16(-0x8001),        RangeError);
+    t.throws(() => new MuInt16(0x8000),         RangeError);
+    t.throws(() => new MuInt32(-0x80000001),    RangeError);
+    t.throws(() => new MuInt32(0x80000000),     RangeError);
+    t.throws(() => new MuUint8(-1),             RangeError);
+    t.throws(() => new MuUint8(0x100),          RangeError);
+    t.throws(() => new MuUint16(-1),            RangeError);
+    t.throws(() => new MuUint16(0x10000),       RangeError);
+    t.throws(() => new MuUint32(-1),            RangeError);
+    t.throws(() => new MuUint32(0x100000000),   RangeError);
+    t.end();
+});
