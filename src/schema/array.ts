@@ -12,7 +12,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor(valueSchema:ValueSchema, identity?:ValueSchema['identity'][]) {
+    constructor (valueSchema:ValueSchema, identity?:ValueSchema['identity'][]) {
         this.identity = identity || [];
         this.muData = valueSchema;
         this.json = {

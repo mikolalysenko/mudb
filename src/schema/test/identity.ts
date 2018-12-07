@@ -86,7 +86,7 @@ test('schema.identity', (t) => {
     t.end();
 });
 
-test('set number identity', (t) => {
+test('setting number type identity', (t) => {
     t.doesNotThrow(() => new MuFloat32(-3.4e+38));
     t.doesNotThrow(() => new MuFloat32(3.4e+38));
     t.doesNotThrow(() => new MuFloat64(-1.7e+308));
