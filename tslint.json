@@ -56,7 +56,7 @@
         "check-operator",
         "check-separator"
     ],
-    "align": [true, "arguments", "parameters", "statements"],
+    "align": [true, "parameters", "statements"],
     "class-name": true,
     "member-access": true,
     "new-parens": true,
