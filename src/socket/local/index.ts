@@ -48,7 +48,6 @@ export class MuLocalSocket implements MuSocket {
     public _duplex:MuLocalSocket;
 
     private _onMessage:MuMessageHandler = noop;
-    private _onUnreliableMessage:MuMessageHandler = noop;
     private _onClose:MuCloseHandler = noop;
 
     public state = MuSocketState.INIT;
