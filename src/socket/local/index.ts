@@ -48,14 +48,15 @@ export class MuLocalSocket implements MuSocket {
     public _duplex:MuLocalSocket;
 
     private _onMessage:MuMessageHandler = noop;
-    private _onUnreliableMessage:MuMessageHandler = noop;
     private _onClose:MuCloseHandler = noop;
 
+    private _isClientSocket:boolean;
     public state = MuSocketState.INIT;
 
-    constructor (sessionId:string, server:MuLocalSocketServer) {
+    constructor (sessionId:string, server:MuLocalSocketServer, isClientSocket?:boolean) {
         this.sessionId = sessionId;
         this._server = server;
+        this._isClientSocket = !!isClientSocket;
     }
 
     public open (spec:MuSocketSpec) {
@@ -74,6 +75,10 @@ export class MuLocalSocket implements MuSocket {
 
                 this._onMessage = spec.message;
                 this._onClose = spec.close;
+
+                if (this._isClientSocket) {
+                    this._server._handleConnection(this._duplex);
+                }
 
                 this._drain();
                 while (this._pendingUnreliableMessages.length) {
@@ -252,11 +257,10 @@ export function createLocalSocket (spec:{
     const server = spec.server;
 
     // manually spawn and relate sockets on both sides
-    const clientSocket = new MuLocalSocket(spec.sessionId, server);
+    const clientSocket = new MuLocalSocket(spec.sessionId, server, true);
     const serverSocket = new MuLocalSocket(spec.sessionId, server);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
 
-    server._handleConnection(serverSocket);
     return clientSocket;
 }
