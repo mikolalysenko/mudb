@@ -132,14 +132,3 @@ export namespace MuRPC {
         return schema;
     }
 }
-
-// user-friendly tuple type assertion
-export function tuple<
-    ArgumentSchema extends MuSchema<any>,
-    ReturnSchema extends MuSchema<any>,
-> (
-    arg:ArgumentSchema,
-    ret:ReturnSchema,
-) : [ArgumentSchema, ReturnSchema] {
-    return [arg, ret];
-}
