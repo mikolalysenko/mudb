@@ -100,7 +100,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const type = union.type;
         return {
             type,
-            data: this.muData[type].clone(union.data),
+            data: type ? this.muData[type].clone(union.data) : void 0,
         };
     }
 
