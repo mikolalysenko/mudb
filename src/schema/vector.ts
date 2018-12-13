@@ -22,7 +22,6 @@ export class MuVector<ValueSchema extends MuNumber>
         implements MuSchema<_Vector<ValueSchema>> {
     public readonly identity:_Vector<ValueSchema>;
     public readonly muType = 'vector';
-    public readonly muData:ValueSchema;
     public readonly json:object;
 
     private _constructor:typeof muType2TypedArray[ValueSchema['muType']];
@@ -38,11 +37,10 @@ export class MuVector<ValueSchema extends MuNumber>
             this.identity[i] = valueSchema.identity;
         }
 
-        this.muData = valueSchema;
         this.dimension = dimension;
         this.json = {
             type: 'vector',
-            valueType: this.muData.json,
+            valueType: valueSchema.json,
             dimension,
         };
     }
