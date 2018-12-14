@@ -1,5 +1,7 @@
 import test = require('tape');
 import {
+    MuBoolean,
+    MuUTF8,
     MuFloat32,
     MuArray,
     MuSortedArray,
@@ -9,7 +11,18 @@ import {
     MuUnion,
 } from '../index';
 
-test('schema.alloc()', (t) => {
+test('primitive.alloc()', (t) => {
+    t.comment('equals primitive.identity');
+    const bool = new MuBoolean(true);
+    t.equal(bool.alloc(), true);
+    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.alloc(), 'Iñtërnâtiônàlizætiøn☃💩');
+    const float32 = new MuFloat32(0.5);
+    t.equal(float32.alloc(), 0.5);
+    t.end();
+});
+
+test('nonPrimitive.alloc()', (t) => {
     const array = new MuArray(new MuFloat32());
     const sortedArray = new MuSortedArray(new MuFloat32());
     const vector = new MuVector(new MuFloat32(), 5);
@@ -42,9 +55,9 @@ test('alloc, free, alloc', (t) => {
     vector.free(v);
     struct.free(s);
 
-    t.ok(array.alloc() === a, `should get the pooled array`);
-    t.ok(sortedArray.alloc() === sa, `should get the pooled sorted array`);
-    t.ok(vector.alloc() === v, `should get the pooled vector`);
-    t.ok(struct.alloc() === s, `should get the pooled struct`);
+    t.equal(array.alloc(), a, `should get the pooled array`);
+    t.equal(sortedArray.alloc(), sa, `should get the pooled sorted array`);
+    t.equal(vector.alloc(), v, `should get the pooled vector`);
+    t.equal(struct.alloc(), s, `should get the pooled struct`);
     t.end();
 });
