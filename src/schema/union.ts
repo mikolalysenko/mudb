@@ -115,16 +115,22 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         dst.type = src.type;
 
-        if (dType !== sType) {
-            valueSchema[dType].free(dst.data);
-            dst.data = valueSchema[sType].clone(src.data);
+        if (dst.type !== dType) {
+            valueSchema[dType] && valueSchema[dType].free(dst.data);
+            if (sType) {
+                valueSchema[sType] && (dst.data = valueSchema[sType].clone(src.data));
+            } else {
+                dst.data = void 0;
+            }
             return;
         }
 
         // same type
-        valueSchema[dType].assign(dst.data, src.data);
-        if (isMuPrimitive(valueSchema[dType].muType)) {
-            dst.data = src.data;
+        if (valueSchema[dType]) {
+            valueSchema[dType].assign(dst.data, src.data);
+            if (isMuPrimitive(valueSchema[dType].muType)) {
+                dst.data = src.data;
+            }
         }
     }
 
