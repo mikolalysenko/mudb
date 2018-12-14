@@ -27,13 +27,13 @@ test('nonPrimitive.alloc()', (t) => {
     const sortedArray = new MuSortedArray(new MuFloat32());
     const vector = new MuVector(new MuFloat32(), 5);
     const dictionary = new MuDictionary(new MuFloat32());
-    const union = new MuUnion({ f: new MuFloat32() });
+    const union = new MuUnion({ f: new MuFloat32() }, 'f');
 
     t.deepEqual(array.alloc(), []);
     t.deepEqual(sortedArray.alloc(), []);
     t.deepEqual(vector.alloc(), new Float32Array(vector.dimension));
     t.deepEqual(dictionary.alloc(), {});
-    t.deepEqual(union.alloc(), {type: '', data: undefined});
+    t.deepEqual(union.alloc(), {type: 'f', data: 0});
     t.end();
 });
 
