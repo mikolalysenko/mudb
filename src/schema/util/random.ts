@@ -40,24 +40,19 @@ export function randFloat (min:number, max:number) : number {
     return Math.random() * (max - min) + min;
 }
 
-export function randFloat32 () {
-    const u32a = new Uint32Array([randUint32()]);
-    const f32a = new Float32Array(u32a.buffer);
+const dv = new DataView(new ArrayBuffer(8));
 
-    // in case of NaN
-    while (f32a[0] !== f32a[0]) {
-        u32a[0] = randUint32();
-    }
-    return f32a[0];
+export function randFloat32 () {
+    let f;
+    do {
+        dv.setUint32(0, randUint32(), true);
+        f = dv.getFloat32(0, true);
+    } while (isNaN(f));
+    return f;
 }
 
 export function randFloat64 () {
-    const u32a = new Uint32Array([randUint32(), randUint32()]);
-    const f64a = new Float64Array(u32a.buffer);
-
-    // in case of NaN
-    while (f64a[0] !== f64a[0]) {
-        u32a[1] = randUint32();
-    }
-    return f64a[0];
+    dv.setUint32(0, randUint32(), true);
+    dv.setUint32(4, randUint32(), true);
+    return dv.getFloat64(0, true);
 }
