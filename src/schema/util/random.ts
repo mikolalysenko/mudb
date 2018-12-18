@@ -7,7 +7,7 @@ export function randBool () {
 // random integer
 
 export function randInt (min:number, max:number) : number {
-    return Math.floor(Math.random() * (max - min + 1) + min);
+    return Math.random() * (max - min + 1) + min | 0;
 }
 
 export function randInt8 () {
@@ -55,4 +55,22 @@ export function randFloat64 () {
     dv.setUint32(0, randUint32(), true);
     dv.setUint32(4, randUint32(), true);
     return dv.getFloat64(0, true);
+}
+
+// random array
+
+export function randArray () {
+    const a = new Array(Math.random() * 10 | 0);
+    for (let i = 0; i < a.length; ++i) {
+        a[i] = randFloat32();
+    }
+    return a;
+}
+
+export function randVec (dimension:number) {
+    const v = new Float32Array(dimension);
+    for (let i = 0; i < v.length; ++i) {
+        v[i] = randFloat32();
+    }
+    return v;
 }
