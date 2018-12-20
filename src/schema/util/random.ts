@@ -74,3 +74,14 @@ export function randVec (dimension:number) {
     }
     return v;
 }
+
+// random dictionary
+
+export function randDict () {
+    const d = {};
+    let code = 97 + Math.random() * 6 | 0;
+    for (let i = Math.random() * 6 | 0; i > 0; --i) {
+        d[String.fromCharCode(code++)] = randFloat32();
+    }
+    return d;
+}
