@@ -27,22 +27,26 @@ function createTest<S extends MuSchema<any>, T extends S['identity']> (
     t:tape.Test,
     schema:S,
 ) : (base:T, target:T) => void {
-    return function (a, b) {
+    return function (base, target) {
         const out = new MuWriteStream(1);
-        if (schema.diff(a, b, out)) {
-            t.notDeepEqual(a, b, 'diff() implied values are not identical');
+        if (schema.diff(base, target, out)) {
+            t.notDeepEqual(base, target, 'diff() implied values are not identical');
             t.true(out.offset > 0, 'at least one byte should be written to stream');
             const inp = new MuReadStream(out.bytes());
-            t.deepEqual(schema.patch(a, inp), b, 'patched value should be identical to target');
+            t.deepEqual(schema.patch(base, inp), target, 'patched value should be identical to target');
             t.equal(inp.offset, inp.length, 'patch() should consume all bytes on stream');
         } else {
-            t.deepEqual(a, b, 'diff() implied values are identical');
+            t.deepEqual(base, target, 'diff() implied values are identical');
             t.equal(out.offset, 0, 'no bytes should be written to stream');
         }
     };
 }
 
 const compare = (a, b) => a - b;
+
+(<any>tape).onFailure(() => {
+    process.exit(1);
+});
 
 tape('de/serializing array', (t) => {
     function createTestPair (
