@@ -177,14 +177,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const tracker = inp.readUint8();
         if (tracker & 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
-        } else if (tracker & 2) {
-            result.type = this._types[inp.readUint8()];
-            const schema = this.muData[result.type];
-            result.data = schema.patch(result.data, inp);
         } else {
             result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            result.data = schema.clone(schema.identity);
+            if (tracker & 2) {
+                result.data = schema.patch(schema.identity, inp);
+            } else if (tracker & 4) {
+                result.data = schema.clone(schema.identity);
+            }
         }
 
         return result;
