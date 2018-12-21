@@ -6,6 +6,8 @@ import {
 import {
     MuSchema,
     MuBoolean,
+    MuASCII,
+    MuFixedASCII,
     MuUTF8,
     MuFloat32,
     MuArray,
@@ -15,6 +17,7 @@ import {
     MuStruct,
     MuUnion,
 } from '../index';
+import { MuString } from '../_string';
 import {
     randBool,
     randFloat32,
@@ -46,6 +49,60 @@ const compare = (a, b) => a - b;
 
 (<any>tape).onFailure(() => {
     process.exit(1);
+});
+
+tape.only('de/serializing string', (t) => {
+    function createTestPair (
+        _t:tape.Test,
+        schema:MuString,
+    ) : (a:string, b:string) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+            test('', a);
+            test('', b);
+        };
+    }
+
+    t.test('ascii', (st) => {
+        const ascii = new MuASCII();
+        const testPair = createTestPair(st, ascii);
+        testPair('', ' ');
+        testPair('a', 'b');
+        testPair('a', '<a href="https://github.com/mikolalysenko/mudb/">mudb</a>');
+
+        const codePoints = new Array(0x80);
+        for (let i = 0; i < codePoints.length; ++i) {
+            codePoints[i] = i;
+        }
+        testPair(
+            String.fromCharCode.apply(null, codePoints),
+            String.fromCharCode.apply(null, codePoints.reverse()),
+        );
+        st.end();
+    });
+
+    t.test('fixed-ascii', (st) => {
+        const fixedAscii = new MuFixedASCII(32);
+        const test = createTest(st, fixedAscii);
+        test('https://github.com/mikolalysenko', 'https://github.com/mikolalysenko');
+        test('e42dfecf821ebdfce692c7692b18d2b1', 'https://github.com/mikolalysenko');
+        test('https://github.com/mikolalysenko', 'e42dfecf821ebdfce692c7692b18d2b1');
+        st.throws(() => test('', 'https://github.com/mikolalysenko'));
+        st.throws(() => test('https://github.com/mikolalysenko', ''));
+        st.end();
+    });
+
+    t.test('utf8', (st) => {
+        const utf8 = new MuUTF8();
+        const testPair = createTestPair(st, utf8);
+        testPair('', ' ');
+        testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', 'Iñtërnâtiônàlizætiøn☃💩');
+        st.end();
+    });
 });
 
 tape('de/serializing array', (t) => {
