@@ -51,7 +51,17 @@ const compare = (a, b) => a - b;
     process.exit(1);
 });
 
-tape.only('de/serializing string', (t) => {
+tape('de/serializing boolean', (t) => {
+    const bool = new MuBoolean();
+    const test = createTest(t, bool);
+    test(true, true);
+    test(false, false);
+    test(true, false);
+    test(false, true);
+    t.end();
+});
+
+tape('de/serializing string', (t) => {
     function createTestPair (
         _t:tape.Test,
         schema:MuString,
