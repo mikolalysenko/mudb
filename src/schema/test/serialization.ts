@@ -27,7 +27,7 @@ function createTest<S extends MuSchema<any>, T extends S['identity']> (
     t:tape.Test,
     schema:S,
 ) : (base:T, target:T) => void {
-    return function (base, target) {
+    return (base, target) => {
         const out = new MuWriteStream(1);
         if (schema.diff(base, target, out)) {
             t.notDeepEqual(base, target, 'diff() implied values are not identical');
@@ -54,7 +54,7 @@ tape('de/serializing array', (t) => {
         schema:MuArray<any>,
     ) : (a:any[], b:any[]) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             test(a, a);
             test(b, b);
             test(a, b);
@@ -106,7 +106,7 @@ tape('de/serializing sorted array', (t) => {
         schema:MuSortedArray<any>,
     ) : (a:any[], b:any[]) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             a.sort(compare);
             b.sort(compare);
             test(a, a);
@@ -138,7 +138,7 @@ tape('de/serializing vector', (t) => {
         schema:MuVector<any>,
     ) : (a:Float32Array, b:Float32Array) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             test(a, a);
             test(b, b);
             test(a, b);
@@ -195,13 +195,12 @@ tape('de/serializing vector', (t) => {
 });
 
 tape('de/serializing dictionary', (t) => {
-    type Dict<T> = { [key:string]:T };
     function createTestPair<S extends MuDictionary<any>, T extends S['identity']> (
         _t:tape.Test,
         schema:S,
     ) : (a:T, b:T) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             test(a, a);
             test(b, b);
             test(a, b);
@@ -267,7 +266,7 @@ tape('de/serializing struct', (t) => {
         schema:S,
     ) : (a:T, b:T) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             test(a, a);
             test(b, b);
             test(a, b);
@@ -326,7 +325,7 @@ tape('de/serializing union', (t) => {
         schema:S,
     ) : (a:T, b:T) => void {
         const test = createTest(_t, schema);
-        return function (a, b) {
+        return (a, b) => {
             test(a, a);
             test(b, b);
             test(a, b);
