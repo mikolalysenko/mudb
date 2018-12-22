@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util/type';
+import { isMuPrimitive } from './type';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {

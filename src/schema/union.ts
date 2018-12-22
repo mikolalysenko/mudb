@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './util/type';
+import { isMuPrimitive } from './type';
 
 export type _Union<SubTypes extends { [type:string]:MuSchema<any> }> = {
     type:keyof SubTypes;
