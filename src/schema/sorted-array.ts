@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './type';
+import { isMuPrimitiveType } from './type';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -112,7 +112,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
 
         dst.length = sLeng;
 
-        if (isMuPrimitive(valueSchema.muType)) {
+        if (isMuPrimitiveType(valueSchema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }

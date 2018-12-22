@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './type';
+import { isMuPrimitiveType } from './type';
 
 export type _Dictionary<V extends MuSchema<any>> = {
     [key:string]:V['identity'];
@@ -91,7 +91,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
         }
 
-        if (isMuPrimitive(valueSchema.muType)) {
+        if (isMuPrimitiveType(valueSchema.muType)) {
             for (let i = 0; i < sKeys.length; ++i) {
                 const k = sKeys[i];
                 dst[k] = src[k];

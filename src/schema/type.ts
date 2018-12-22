@@ -24,6 +24,6 @@ const muPrimitiveTypes = [
     'void',
 ];
 
-export function isMuPrimitive (muType:string) {
+export function isMuPrimitiveType (muType:string) {
     return muPrimitiveTypes.indexOf(muType) > -1;
 }

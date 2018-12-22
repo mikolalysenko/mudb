@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './type';
+import { isMuPrimitiveType } from './type';
 
 export type _Union<SubTypes extends { [type:string]:MuSchema<any> }> = {
     type:keyof SubTypes;
@@ -128,7 +128,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         // same type
         if (valueSchema[dType]) {
             valueSchema[dType].assign(dst.data, src.data);
-            if (isMuPrimitive(valueSchema[dType].muType)) {
+            if (isMuPrimitiveType(valueSchema[dType].muType)) {
                 dst.data = src.data;
             }
         }

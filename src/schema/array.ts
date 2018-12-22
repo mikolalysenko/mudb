@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 
 import { MuSchema } from './schema';
-import { isMuPrimitive } from './type';
+import { isMuPrimitiveType } from './type';
 
 export class MuArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
@@ -79,7 +79,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         dst.length = sLeng;
 
-        if (isMuPrimitive(valueSchema.muType)) {
+        if (isMuPrimitiveType(valueSchema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }
