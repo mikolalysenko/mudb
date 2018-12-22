@@ -10,6 +10,13 @@ import {
     MuFixedASCII,
     MuUTF8,
     MuFloat32,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -18,6 +25,7 @@ import {
     MuUnion,
 } from '../index';
 import { MuString } from '../_string';
+import { MuNumber } from '../_number';
 import {
     randBool,
     randFloat32,
@@ -113,6 +121,39 @@ tape('de/serializing string', (t) => {
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', 'Iñtërnâtiônàlizætiøn☃💩');
         st.end();
     });
+});
+
+tape('de/serializing number', (t) => {
+    function createTestPair (
+        _t:tape.Test,
+        schema:MuNumber,
+    ) : (a:number, b:number) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+        };
+    }
+
+    const testFloat32 = createTestPair(t, new MuFloat32());
+    testFloat32(-3.4028234663852886e+38, 3.4028234663852886e+38);
+    const testFloat64 = createTestPair(t, new MuFloat64());
+    testFloat64(-1.7976931348623157e+308, 1.7976931348623157e+308);
+    const testInt8 = createTestPair(t, new MuInt8());
+    testInt8(-0x80, 0x7F);
+    const testInt16 = createTestPair(t, new MuInt16());
+    testInt16(-0x8000, 0x7FFF);
+    const testInt32 = createTestPair(t, new MuInt32());
+    testInt32(-0x80000000, 0x7FFFFFFF);
+    const testUint8 = createTestPair(t, new MuUint8());
+    testUint8(0, 0xFF);
+    const testUint16 = createTestPair(t, new MuUint16());
+    testUint16(0, 0xFFFF);
+    const testUint32 = createTestPair(t, new MuUint32());
+    testUint32(0, 0xFFFFFFFF);
+    t.end();
 });
 
 tape('de/serializing array', (t) => {
