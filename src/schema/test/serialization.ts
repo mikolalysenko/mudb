@@ -34,10 +34,10 @@ import {
     randDict,
 } from '../util/random';
 
-function createTest<S extends MuSchema<any>, T extends S['identity']> (
+function createTest<T> (
     t:tape.Test,
-    schema:S,
-) : (base:T, target:T) => void {
+    schema:MuSchema<T>,
+) : (base:MuSchema<T>['identity'], target:MuSchema<T>['identity']) => void {
     return (base, target) => {
         const out = new MuWriteStream(1);
         if (schema.diff(base, target, out)) {
@@ -303,10 +303,10 @@ tape('de/serializing vector', (t) => {
 });
 
 tape('de/serializing dictionary', (t) => {
-    function createTestPair<S extends MuDictionary<any>, T extends S['identity']> (
+    function createTestPair<T extends MuSchema<any>> (
         _t:tape.Test,
-        schema:S,
-    ) : (a:T, b:T) => void {
+        schema:MuDictionary<T>,
+    ) : (a:MuDictionary<T>['identity'], b:MuDictionary<T>['identity']) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
             test(a, a);
@@ -369,10 +369,10 @@ tape('de/serializing dictionary', (t) => {
 });
 
 tape('de/serializing struct', (t) => {
-    function createTestPair<S extends MuStruct<any>, T extends S['identity']> (
+    function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
         _t:tape.Test,
-        schema:S,
-    ) : (a:T, b:T) => void {
+        schema:MuStruct<T>,
+    ) : (a:MuStruct<T>['identity'], b:MuStruct<T>['identity']) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
             test(a, a);
@@ -428,10 +428,10 @@ tape('de/serializing struct', (t) => {
 });
 
 tape('de/serializing union', (t) => {
-    function createTestPair<S extends MuUnion<any>, T extends S['identity']> (
+    function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
         _t:tape.Test,
-        schema:S,
-    ) : (a:T, b:T) => void {
+        schema:MuUnion<T>,
+    ) : (a:MuUnion<T>['identity'], b:MuUnion<T>['identity']) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
             test(a, a);
