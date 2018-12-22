@@ -5,9 +5,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "shx rm -rf clock rpc schema socket state stream *.d.ts *.js *.js.map",
-    "docs": "node bin/docs.js",
     "link": "npm link && npm run clean && npm run build",
-    "release": "npm run clean && npm run build && npm run docs && npm publish",
+    "release": "npm run clean && npm run build && npm publish",
     "watch": "tsc -w"
   },
   "main": "index.js",
