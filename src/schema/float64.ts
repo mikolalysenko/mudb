@@ -3,7 +3,7 @@ import { MuNumber } from './_number';
 
 export class MuFloat64 extends MuNumber {
     constructor(identity?:number) {
-        super(+(identity || 0), 'float64');
+        super(identity || 0, 'float64');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) {

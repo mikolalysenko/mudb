@@ -5,7 +5,16 @@ import {
     MuWriteStream,
 } from '../stream';
 
-import { muType2TypedArray } from './constants';
+const muType2TypedArray = {
+    float32: Float32Array,
+    float64: Float64Array,
+    int8: Int8Array,
+    int16: Int16Array,
+    int32: Int32Array,
+    uint8: Uint8Array,
+    uint16: Uint16Array,
+    uint32: Uint32Array,
+};
 
 export type _Vector<ValueSchema extends MuNumber> = {
     float32:Float32Array;
@@ -20,15 +29,14 @@ export type _Vector<ValueSchema extends MuNumber> = {
 
 export class MuVector<ValueSchema extends MuNumber>
         implements MuSchema<_Vector<ValueSchema>> {
-    private _constructor:typeof muType2TypedArray[ValueSchema['muType']];
-    private _pool:_Vector<ValueSchema>[] = [];
-
     public readonly identity:_Vector<ValueSchema>;
     public readonly muType = 'vector';
-    public readonly muData:ValueSchema;
     public readonly json:object;
 
+    private _constructor:typeof muType2TypedArray[ValueSchema['muType']];
     public readonly dimension:number;
+
+    public pool:_Vector<ValueSchema>[] = [];
 
     constructor (valueSchema:ValueSchema, dimension:number) {
         this._constructor = muType2TypedArray[valueSchema.muType];
@@ -38,21 +46,20 @@ export class MuVector<ValueSchema extends MuNumber>
             this.identity[i] = valueSchema.identity;
         }
 
-        this.muData = valueSchema;
         this.dimension = dimension;
         this.json = {
             type: 'vector',
-            valueType: this.muData.json,
+            valueType: valueSchema.json,
             dimension,
         };
     }
 
     public alloc () : _Vector<ValueSchema> {
-        return this._pool.pop() || new this._constructor(this.dimension);
+        return this.pool.pop() || new this._constructor(this.dimension);
     }
 
     public free (vec:_Vector<ValueSchema>) {
-        this._pool.push(vec);
+        this.pool.push(vec);
     }
 
     public equal (a:_Vector<ValueSchema>, b:_Vector<ValueSchema>) {

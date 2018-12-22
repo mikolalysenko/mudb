@@ -100,7 +100,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const type = union.type;
         return {
             type,
-            data: this.muData[type].clone(union.data),
+            data: type ? this.muData[type].clone(union.data) : void 0,
         };
     }
 
@@ -115,16 +115,22 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         dst.type = src.type;
 
-        if (dType !== sType) {
-            valueSchema[dType].free(dst.data);
-            dst.data = valueSchema[sType].clone(src.data);
+        if (dst.type !== dType) {
+            valueSchema[dType] && valueSchema[dType].free(dst.data);
+            if (sType) {
+                valueSchema[sType] && (dst.data = valueSchema[sType].clone(src.data));
+            } else {
+                dst.data = void 0;
+            }
             return;
         }
 
         // same type
-        valueSchema[dType].assign(dst.data, src.data);
-        if (isMuPrimitive(valueSchema[dType].muType)) {
-            dst.data = src.data;
+        if (valueSchema[dType]) {
+            valueSchema[dType].assign(dst.data, src.data);
+            if (isMuPrimitive(valueSchema[dType].muType)) {
+                dst.data = src.data;
+            }
         }
     }
 
@@ -171,14 +177,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const tracker = inp.readUint8();
         if (tracker & 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
-        } else if (tracker & 2) {
-            result.type = this._types[inp.readUint8()];
-            const schema = this.muData[result.type];
-            result.data = schema.patch(result.data, inp);
         } else {
             result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            result.data = schema.clone(schema.identity);
+            if (tracker & 2) {
+                result.data = schema.patch(schema.identity, inp);
+            } else if (tracker & 4) {
+                result.data = schema.clone(schema.identity);
+            }
         }
 
         return result;

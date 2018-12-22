@@ -7,7 +7,7 @@ export function randBool () {
 // random integer
 
 export function randInt (min:number, max:number) : number {
-    return Math.floor(Math.random() * (max - min + 1) + min);
+    return Math.random() * (max - min + 1) + min | 0;
 }
 
 export function randInt8 () {
@@ -40,24 +40,48 @@ export function randFloat (min:number, max:number) : number {
     return Math.random() * (max - min) + min;
 }
 
-export function randFloat32 () {
-    const u32a = new Uint32Array([randUint32()]);
-    const f32a = new Float32Array(u32a.buffer);
+const dv = new DataView(new ArrayBuffer(8));
 
-    // in case of NaN
-    while (f32a[0] !== f32a[0]) {
-        u32a[0] = randUint32();
-    }
-    return f32a[0];
+export function randFloat32 () {
+    let f;
+    do {
+        dv.setUint32(0, randUint32(), true);
+        f = dv.getFloat32(0, true);
+    } while (isNaN(f));
+    return f;
 }
 
 export function randFloat64 () {
-    const u32a = new Uint32Array([randUint32(), randUint32()]);
-    const f64a = new Float64Array(u32a.buffer);
+    dv.setUint32(0, randUint32(), true);
+    dv.setUint32(4, randUint32(), true);
+    return dv.getFloat64(0, true);
+}
 
-    // in case of NaN
-    while (f64a[0] !== f64a[0]) {
-        u32a[1] = randUint32();
+// random array
+
+export function randArray () {
+    const a = new Array(Math.random() * 10 | 0);
+    for (let i = 0; i < a.length; ++i) {
+        a[i] = randFloat32();
     }
-    return f64a[0];
+    return a;
+}
+
+export function randVec (dimension:number) {
+    const v = new Float32Array(dimension);
+    for (let i = 0; i < v.length; ++i) {
+        v[i] = randFloat32();
+    }
+    return v;
+}
+
+// random dictionary
+
+export function randDict () {
+    const d = {};
+    let code = 97 + Math.random() * 6 | 0;
+    for (let i = Math.random() * 6 | 0; i > 0; --i) {
+        d[String.fromCharCode(code++)] = randFloat32();
+    }
+    return d;
 }
