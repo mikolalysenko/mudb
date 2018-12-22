@@ -1,15 +1,3 @@
-export const muPrimitiveSize = {
-    'boolean': 1,
-    'uint8': 1,
-    'uint16': 2,
-    'uint32': 4,
-    'int8': 1,
-    'int16': 2,
-    'int32': 4,
-    'float32': 4,
-    'float64': 8,
-};
-
 export const muPrimitiveTypes = [
     'ascii',
     'boolean',
@@ -24,15 +12,6 @@ export const muPrimitiveTypes = [
     'uint16',
     'uint32',
     'void',
-];
-
-export const muNonPrimitiveTypes = [
-    'array',
-    'dictionary',
-    'sorted-array',
-    'struct',
-    'union',
-    'vector',
 ];
 
 export const Constants = {
@@ -52,32 +31,6 @@ export const Constants = {
     uint8: { MIN: 0, MAX: 0xFF },
     uint16: { MIN: 0, MAX: 0xFFFF },
     uint32: { MIN: 0, MAX: 0xFFFFFFFF },
-};
-
-export const muType2WriteMethod = {
-    boolean: 'writeUint8',
-    float32: 'writeFloat32',
-    float64: 'writeFloat64',
-    int8: 'writeInt8',
-    int16: 'writeInt16',
-    int32: 'writeInt32',
-    uint8: 'writeUint8',
-    uint16: 'writeUint16',
-    uint32: 'writeUint32',
-    utf8: 'writeString',
-};
-
-export const muType2ReadMethod = {
-    boolean: 'readUint8',
-    float32: 'readFloat32',
-    float64: 'readFloat64',
-    int8: 'readInt8',
-    int16: 'readInt16',
-    int32: 'readInt32',
-    uint8: 'readUint8',
-    uint16: 'readUint16',
-    uint32: 'readUint32',
-    utf8: 'readString',
 };
 
 export const muType2TypedArray = {
