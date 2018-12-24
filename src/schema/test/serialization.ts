@@ -119,6 +119,7 @@ tape('de/serializing string', (t) => {
         const testPair = createTestPair(st, utf8);
         testPair('', ' ');
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', 'Iñtërnâtiônàlizætiøn☃💩');
+        testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', '💩💩💩💩💩💩💩💩💩💩💩💩💩💩💩');
         st.end();
     });
 });
