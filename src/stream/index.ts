@@ -285,7 +285,7 @@ export class MuReadStream {
             (x4 * (1 << 28));
     }
 
-    public readASCIIOf (length:number) : string {
+    public readASCII (length:number) : string {
         const head = this.offset;
         this.offset += length;
 

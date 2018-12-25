@@ -383,7 +383,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             methods.patch.append(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?`);
             switch (muType) {
                 case 'ascii':
-                    methods.patch.append(`s.readASCIIOf(s.readUint32()):b[${propRef}];`);
+                    methods.patch.append(`s.readASCII(s.readUint32()):b[${propRef}];`);
                     break;
                 case 'boolean':
                     methods.patch.append(`!!s.readUint8():b[${propRef}];`);

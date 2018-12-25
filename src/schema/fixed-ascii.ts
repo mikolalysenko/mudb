@@ -34,6 +34,6 @@ export class MuFixedASCII extends MuString {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCIIOf(this.length);
+        return inp.readASCII(this.length);
     }
 }
