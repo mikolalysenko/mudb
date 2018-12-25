@@ -176,11 +176,6 @@ export class MuWriteStream {
         }
     }
 
-    public writeASCII (str:string) {
-        this.writeUint32(str.length);
-        this.writeASCIINoLength(str);
-    }
-
     public writeString (str:string) {
         const bytes = encodeString(str);
         this.writeUint32(bytes.length);

@@ -9,7 +9,8 @@ export class MuASCII extends MuString {
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4 + target.length);
-            out.writeASCII(target);
+            out.writeUint32(target.length);
+            out.writeASCIINoLength(target);
             return true;
         }
         return false;
