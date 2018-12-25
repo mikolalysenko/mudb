@@ -17,6 +17,6 @@ export class MuASCII extends MuString {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII();
+        return inp.readASCIIOf(inp.readUint32());
     }
 }

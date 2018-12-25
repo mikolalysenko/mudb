@@ -296,11 +296,6 @@ export class MuReadStream {
         return str;
     }
 
-    public readASCII () : string {
-        const length = this.readUint32();
-        return this.readASCIIOf(length);
-    }
-
     public readString () : string {
         const byteLength = this.readUint32();
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
