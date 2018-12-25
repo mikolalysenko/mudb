@@ -10,7 +10,7 @@ export class MuASCII extends MuString {
         if (base !== target) {
             out.grow(4 + target.length);
             out.writeUint32(target.length);
-            out.writeASCIINoLength(target);
+            out.writeASCII(target);
             return true;
         }
         return false;

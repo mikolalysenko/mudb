@@ -27,7 +27,7 @@ export class MuFixedASCII extends MuString {
 
         if (base !== target) {
             out.grow(length);
-            out.writeASCIINoLength(target);
+            out.writeASCII(target);
             return true;
         }
         return false;
