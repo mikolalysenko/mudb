@@ -33,20 +33,19 @@ function isUnion (x) {
 
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         implements MuSchema<_Union<SubTypes>> {
-    private _types:string[];
+    public readonly muType = 'union';
 
     public readonly identity:_Union<SubTypes>;
-
-    public readonly muType = 'union';
     public readonly muData:SubTypes;
     public readonly json:object;
+    private _types:(keyof SubTypes)[];
 
     constructor (
         schemaSpec:SubTypes,
         identityType?:keyof SubTypes,
     ) {
-        this._types = Object.keys(schemaSpec);
         this.muData = schemaSpec;
+        this._types = Object.keys(schemaSpec);
 
         if (identityType) {
             this.identity = {
