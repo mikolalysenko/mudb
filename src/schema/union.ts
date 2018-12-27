@@ -13,24 +13,6 @@ export type _UnionJSON<SubTypes extends { [type:string]:MuSchema<any> }> = {
     data:any;
 };
 
-function isUnion (x) {
-    if (x !== Object(x)) {
-        return false;
-    }
-    if (Object.keys(x).length !== 2) {
-        return false;
-    }
-
-    if (!('type' in x)) {
-        return false;
-    }
-    if (!('data' in x)) {
-        return false;
-    }
-
-    return true;
-}
-
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         implements MuSchema<_Union<SubTypes>> {
     public readonly muType = 'union';
@@ -83,9 +65,6 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public equal (a:_Union<SubTypes>, b:_Union<SubTypes>) {
-        if (!isUnion(a) || !isUnion(b)) {
-            return false;
-        }
         if (a.type !== b.type) {
             return false;
         }
