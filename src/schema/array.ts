@@ -5,21 +5,30 @@ import { isMuPrimitiveType } from './type';
 
 export class MuArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
-    public readonly identity:ValueSchema['identity'][] = [];
     public readonly muType = 'array';
+
+    public readonly identity:ValueSchema['identity'][];
     public readonly muData:ValueSchema;
     public readonly json:object;
+    public readonly capacity:number;
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor (valueSchema:ValueSchema, identity?:ValueSchema['identity'][]) {
-        this.identity = identity || [];
+    constructor (
+        valueSchema:ValueSchema,
+        identityOrCapacity?:ValueSchema['identity'][] | number,
+        capacity?:number,
+    ) {
         this.muData = valueSchema;
+        this.identity = Array.isArray(identityOrCapacity) ? identityOrCapacity : [];
         this.json = {
             type: 'array',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
+        this.capacity = typeof identityOrCapacity === 'number' ?
+                            identityOrCapacity :
+                            capacity || Infinity;
     }
 
     public alloc () : ValueSchema['identity'][] {
@@ -101,6 +110,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         target:ValueSchema['identity'][],
         out:MuWriteStream,
     ) : boolean {
+        if (target.length > this.capacity) {
+            throw new RangeError(`mudb/schema: array capacity exceeded`);
+        }
         const prefixOffset = out.offset;
         const targetLength = target.length;
 

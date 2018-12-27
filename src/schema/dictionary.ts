@@ -9,19 +9,31 @@ export type _Dictionary<V extends MuSchema<any>> = {
 
 export class MuDictionary<ValueSchema extends MuSchema<any>>
         implements MuSchema<_Dictionary<ValueSchema>> {
-    public readonly identity:_Dictionary<ValueSchema>;
     public readonly muType = 'dictionary';
+
+    public readonly identity:_Dictionary<ValueSchema>;
     public readonly muData:ValueSchema;
     public readonly json:object;
+    public readonly capacity:number;
 
-    constructor (valueSchema:ValueSchema, identity?:_Dictionary<ValueSchema>) {
-        this.identity = identity || {};
+    constructor (
+        valueSchema:ValueSchema,
+        identityOrCapacity?:_Dictionary<ValueSchema> | number,
+        capacity?:number,
+    ) {
         this.muData = valueSchema;
+        // TS only respects `typeof` for type checking
+        this.identity = identityOrCapacity && typeof identityOrCapacity === 'object' ?
+                            identityOrCapacity :
+                            {};
         this.json = {
             type: 'dictionary',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
+        this.capacity = typeof identityOrCapacity === 'number' ?
+                            identityOrCapacity :
+                            capacity || Infinity;
     }
 
     public alloc () : _Dictionary<ValueSchema> {
@@ -114,6 +126,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:_Dictionary<ValueSchema>,
         out:MuWriteStream,
     ) : boolean {
+        const targetProps = Object.keys(target);
+        if (targetProps.length > this.capacity) {
+            throw new RangeError('mudb/schema: dictionary capacity exceeded');
+        }
+
         out.grow(32);
 
         let numRemove = 0;
@@ -135,7 +152,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
 
         const valueSchema = this.muData;
-        const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
             const prefixOffset = out.offset;
 
