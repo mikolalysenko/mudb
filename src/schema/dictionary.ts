@@ -145,7 +145,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
-                out.grow(4 + 4 * prop.length);
+                out.grow(4 + 2 * prop.length);
                 out.writeString(prop);
                 ++numRemove;
             }
@@ -156,7 +156,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             const prefixOffset = out.offset;
 
             const prop = targetProps[i];
-            out.grow(4 + 4 * prop.length);
+            out.grow(4 + 2 * prop.length);
             out.writeString(prop);
 
             if (prop in base) {
