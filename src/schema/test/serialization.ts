@@ -30,7 +30,6 @@ import {
     randBool,
     randFloat32,
     randArray,
-    randVec,
     randDict,
 } from '../util/random';
 
@@ -119,6 +118,7 @@ tape('de/serializing string', (t) => {
         const testPair = createTestPair(st, utf8);
         testPair('', ' ');
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', 'Iñtërnâtiônàlizætiøn☃💩');
+        testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', '💩💩💩💩💩💩💩💩💩💩💩💩💩💩💩');
         st.end();
     });
 });
@@ -240,11 +240,19 @@ tape('de/serializing sorted array', (t) => {
     t.end();
 });
 
+function randVec<D extends number> (dimension:D) : MuVector<MuNumber, D>['identity'] {
+    const v = new MuVector(new MuFloat32(), dimension).alloc();
+    for (let i = 0; i < v.length; ++i) {
+        v[i] = randFloat32();
+    }
+    return v;
+}
+
 tape('de/serializing vector', (t) => {
-    function createTestPair (
+    function createTestPair<Schema extends MuVector<any, number>> (
         _t:tape.Test,
-        schema:MuVector<any>,
-    ) : (a:Float32Array, b:Float32Array) => void {
+        schema:Schema,
+    ) : (a:Schema['identity'], b:Schema['identity']) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
             test(a, a);

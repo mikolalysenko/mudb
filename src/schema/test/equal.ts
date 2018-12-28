@@ -109,9 +109,12 @@ test('sortedArray.equal()', (t) => {
 });
 
 test('vector.equal()', (t) => {
-    const vector = new MuVector(new MuFloat32(), 3);
-    t.true(vector.equal(new Float32Array([0.5, 0.5, 0.5]), new Float32Array([0.5, 0.5, 0.5])));
-    t.false(vector.equal(new Float32Array([0.5, 0.5, 0.5]), new Float32Array([0.5, 0.5, 1.5])));
+    const mat3 = new MuVector(new MuFloat32(), 9);
+    const m1 = mat3.alloc();
+    const m2 = mat3.alloc();
+    t.true(mat3.equal(m1, m2));
+    m2[8] += 0.5;
+    t.false(mat3.equal(m1, m2));
     t.end();
 });
 

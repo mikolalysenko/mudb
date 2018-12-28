@@ -170,15 +170,10 @@ export class MuWriteStream {
         }
     }
 
-    public writeASCIINoLength (str:string) {
+    public writeASCII (str:string) {
         for (let i = 0; i < str.length; ++i) {
             this.writeUint8(str.charCodeAt(i));
         }
-    }
-
-    public writeASCII (str:string) {
-        this.writeUint32(str.length);
-        this.writeASCIINoLength(str);
     }
 
     public writeString (str:string) {
@@ -290,7 +285,7 @@ export class MuReadStream {
             (x4 * (1 << 28));
     }
 
-    public readASCIIOf (length:number) : string {
+    public readASCII (length:number) : string {
         const head = this.offset;
         this.offset += length;
 
@@ -299,11 +294,6 @@ export class MuReadStream {
             str += String.fromCharCode(this.buffer.uint8[i]);
         }
         return str;
-    }
-
-    public readASCII () : string {
-        const length = this.readUint32();
-        return this.readASCIIOf(length);
     }
 
     public readString () : string {

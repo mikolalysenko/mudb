@@ -11,7 +11,7 @@ export abstract class MuNumber implements MuSchema<number> {
 
     constructor (identity:number, type:MuNumericType) {
         if (!inRange(identity, type)) {
-            throw new RangeError(`cannot set ${identity} as identity of ${type}`);
+            throw new RangeError(`mudb/schema: given identity ${identity} is out of range of ${type}`);
         }
 
         this.identity = identity;

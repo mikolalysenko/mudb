@@ -24,20 +24,27 @@ enum SortedOp {
 
 export class MuSortedArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
-    public readonly identity:ValueSchema['identity'][];
     public readonly muType = 'sorted-array';
+
+    public readonly identity:ValueSchema['identity'][];
     public readonly muData:ValueSchema;
     public readonly json:object;
     public readonly compare:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number;
+    public readonly capacity:number;
 
     public pool:ValueSchema['identity'][][] = [];
 
-    constructor (schema:ValueSchema, compare?:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number, identity?:ValueSchema['identity'][]) {
+    constructor (
+        schema:ValueSchema,
+        compare?:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number,
+        identityOrCapacity?:ValueSchema['identity'][] | number,
+        capacity?:number,
+    ) {
         this.muData = schema;
         this.compare = compare || defaultCompare;
 
-        if (identity) {
-            const x = identity.slice();
+        if (Array.isArray(identityOrCapacity)) {
+            const x = identityOrCapacity.slice();
             x.sort(compare);
             for (let i = 0; i < x.length; ++i) {
                 x[i] = schema.clone(x[i]);
@@ -53,6 +60,10 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
         };
+
+        this.capacity = typeof identityOrCapacity === 'number' ?
+                            identityOrCapacity :
+                            capacity || Infinity;
     }
 
     public alloc() : ValueSchema['identity'][] {
@@ -130,6 +141,9 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     }
 
     public diff (base:ValueSchema['identity'][], target:ValueSchema['identity'][], out:MuWriteStream) : boolean {
+        if (target.length > this.capacity) {
+            throw new RangeError('mudb/schema: sorted array capacity exceeded');
+        }
         if (base.length === 0 && target.length === 0) {
             return false;
         }

@@ -27,13 +27,13 @@ export class MuFixedASCII extends MuString {
 
         if (base !== target) {
             out.grow(length);
-            out.writeASCIINoLength(target);
+            out.writeASCII(target);
             return true;
         }
         return false;
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCIIOf(this.length);
+        return inp.readASCII(this.length);
     }
 }

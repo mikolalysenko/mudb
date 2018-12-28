@@ -41,30 +41,30 @@ const muType2WriteMethod = {
 
 const muPrimitiveTypes = Object.keys(muPrimitiveSize);
 
-export type _Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
+export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
     [K in keyof Spec]:Spec[K]['identity'];
 };
 
 export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
-        implements MuSchema<_Struct<Spec>> {
+        implements MuSchema<Struct<Spec>> {
     public readonly muType = 'struct';
     public readonly muData:Spec;
-    public readonly identity:_Struct<Spec>;
+    public readonly identity:Struct<Spec>;
     public readonly json:object;
 
-    public readonly alloc:() => _Struct<Spec>;
-    public readonly free:(struct:_Struct<Spec>) => void;
+    public readonly alloc:() => Struct<Spec>;
+    public readonly free:(struct:Struct<Spec>) => void;
 
-    public readonly equal:(a:_Struct<Spec>, b:_Struct<Spec>) => boolean;
+    public readonly equal:(a:Struct<Spec>, b:Struct<Spec>) => boolean;
 
-    public readonly clone:(value:_Struct<Spec>) => _Struct<Spec>;
-    public readonly assign:(dst:_Struct<Spec>, src:_Struct<Spec>) => void;
+    public readonly clone:(value:Struct<Spec>) => Struct<Spec>;
+    public readonly assign:(dst:Struct<Spec>, src:Struct<Spec>) => void;
 
-    public readonly diff:(base:_Struct<Spec>, target:_Struct<Spec>, out:MuWriteStream) => boolean;
-    public readonly patch:(base:_Struct<Spec>, inp:MuReadStream) => _Struct<Spec>;
+    public readonly diff:(base:Struct<Spec>, target:Struct<Spec>, out:MuWriteStream) => boolean;
+    public readonly patch:(base:Struct<Spec>, inp:MuReadStream) => Struct<Spec>;
 
-    public readonly toJSON:(struct:_Struct<Spec>) => _Struct<any>;
-    public readonly fromJSON:(json:_Struct<any>) => _Struct<Spec>;
+    public readonly toJSON:(struct:Struct<Spec>) => Struct<any>;
+    public readonly fromJSON:(json:Struct<any>) => Struct<Spec>;
 
     constructor (spec:Spec) {
         // sort struct properties so primitives come first
@@ -383,7 +383,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             methods.patch.append(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?`);
             switch (muType) {
                 case 'ascii':
-                    methods.patch.append(`s.readASCII():b[${propRef}];`);
+                    methods.patch.append(`s.readASCII(s.readUint32()):b[${propRef}];`);
                     break;
                 case 'boolean':
                     methods.patch.append(`!!s.readUint8():b[${propRef}];`);

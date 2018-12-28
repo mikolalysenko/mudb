@@ -9,6 +9,7 @@ export class MuASCII extends MuString {
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4 + target.length);
+            out.writeUint32(target.length);
             out.writeASCII(target);
             return true;
         }
@@ -16,6 +17,6 @@ export class MuASCII extends MuString {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII();
+        return inp.readASCII(inp.readUint32());
     }
 }

@@ -10,7 +10,9 @@ const RAW_MESSAGE = 0xffffffff;
 
 export type MuAnySchema = MuSchema<any>;
 export type MuMessageType = MuAnySchema;
-export type MuAnyMessageTable = { [message:string]:MuMessageType };
+export interface MuAnyMessageTable {
+    [message:string]:MuMessageType;
+}
 export interface MuMessageInterface<MessageTable extends MuAnyMessageTable> {
     abstractAPI:{
         [message in keyof MessageTable]:(event:MessageTable[message]['identity'], unreliable:boolean) => void;

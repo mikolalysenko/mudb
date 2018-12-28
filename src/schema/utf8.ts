@@ -8,7 +8,7 @@ export class MuUTF8 extends MuString {
 
     public diff (base:string, target:string, stream:MuWriteStream) {
         if (base !== target) {
-            stream.grow(4 + 4 * target.length);
+            stream.grow(4 + 2 * target.length);
             stream.writeString(target);
             return true;
         }

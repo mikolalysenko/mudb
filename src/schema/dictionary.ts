@@ -3,32 +3,44 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitiveType } from './type';
 
-export type _Dictionary<V extends MuSchema<any>> = {
-    [key:string]:V['identity'];
-};
+export interface Dictionary<Schema extends MuSchema<any>> {
+    [key:string]:Schema['identity'];
+}
 
 export class MuDictionary<ValueSchema extends MuSchema<any>>
-        implements MuSchema<_Dictionary<ValueSchema>> {
-    public readonly identity:_Dictionary<ValueSchema>;
+        implements MuSchema<Dictionary<ValueSchema>> {
     public readonly muType = 'dictionary';
+
+    public readonly identity:Dictionary<ValueSchema>;
     public readonly muData:ValueSchema;
     public readonly json:object;
+    public readonly capacity:number;
 
-    constructor (valueSchema:ValueSchema, identity?:_Dictionary<ValueSchema>) {
-        this.identity = identity || {};
+    constructor (
+        valueSchema:ValueSchema,
+        identityOrCapacity?:Dictionary<ValueSchema> | number,
+        capacity?:number,
+    ) {
         this.muData = valueSchema;
+        // TS only respects `typeof` for type checking
+        this.identity = identityOrCapacity && typeof identityOrCapacity === 'object' ?
+                            identityOrCapacity :
+                            {};
         this.json = {
             type: 'dictionary',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
+        this.capacity = typeof identityOrCapacity === 'number' ?
+                            identityOrCapacity :
+                            capacity || Infinity;
     }
 
-    public alloc () : _Dictionary<ValueSchema> {
+    public alloc () : Dictionary<ValueSchema> {
         return {};
     }
 
-    public free (dict:_Dictionary<ValueSchema>) {
+    public free (dict:Dictionary<ValueSchema>) {
         const valueSchema = this.muData;
         const props = Object.keys(dict);
         for (let i = 0; i < props.length; ++i) {
@@ -36,7 +48,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
     }
 
-    public equal (a:_Dictionary<ValueSchema>, b:_Dictionary<ValueSchema>) {
+    public equal (a:Dictionary<ValueSchema>, b:Dictionary<ValueSchema>) {
         if (a !== Object(a) || b !== Object(b)) {
             return false;
         }
@@ -63,7 +75,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return true;
     }
 
-    public clone (dict:_Dictionary<ValueSchema>) : _Dictionary<ValueSchema> {
+    public clone (dict:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
         const copy = {};
         const keys = Object.keys(dict);
         const valueSchema = this.muData;
@@ -74,7 +86,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (dst:_Dictionary<ValueSchema>, src:_Dictionary<ValueSchema>) {
+    public assign (dst:Dictionary<ValueSchema>, src:Dictionary<ValueSchema>) {
         if (dst === src) {
             return;
         }
@@ -110,10 +122,15 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public diff (
-        base:_Dictionary<ValueSchema>,
-        target:_Dictionary<ValueSchema>,
+        base:Dictionary<ValueSchema>,
+        target:Dictionary<ValueSchema>,
         out:MuWriteStream,
     ) : boolean {
+        const targetProps = Object.keys(target);
+        if (targetProps.length > this.capacity) {
+            throw new RangeError('mudb/schema: dictionary capacity exceeded');
+        }
+
         out.grow(32);
 
         let numRemove = 0;
@@ -128,19 +145,18 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < baseProps.length; ++i) {
             const prop = baseProps[i];
             if (!(prop in target)) {
-                out.grow(4 + 4 * prop.length);
+                out.grow(4 + 2 * prop.length);
                 out.writeString(prop);
                 ++numRemove;
             }
         }
 
         const valueSchema = this.muData;
-        const targetProps = Object.keys(target);
         for (let i = 0; i < targetProps.length; ++i) {
             const prefixOffset = out.offset;
 
             const prop = targetProps[i];
-            out.grow(4 + 4 * prop.length);
+            out.grow(4 + 2 * prop.length);
             out.writeString(prop);
 
             if (prop in base) {
@@ -168,10 +184,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public patch (
-        base:_Dictionary<ValueSchema>,
+        base:Dictionary<ValueSchema>,
         inp:MuReadStream,
-    ) : _Dictionary<ValueSchema> {
-        const result:_Dictionary<ValueSchema> = {};
+    ) : Dictionary<ValueSchema> {
+        const result:Dictionary<ValueSchema> = {};
         const valueSchema = this.muData;
 
         const numRemove = inp.readUint32();
@@ -207,7 +223,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return result;
     }
 
-    public toJSON (dict:_Dictionary<ValueSchema>) : _Dictionary<any> {
+    public toJSON (dict:Dictionary<ValueSchema>) : Dictionary<any> {
         const json = {};
         const keys = Object.keys(dict);
 
@@ -219,7 +235,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return json;
     }
 
-    public fromJSON (json:_Dictionary<any>) : _Dictionary<ValueSchema> {
+    public fromJSON (json:Dictionary<any>) : Dictionary<ValueSchema> {
         const dict = {};
         const keys = Object.keys(json);
 
