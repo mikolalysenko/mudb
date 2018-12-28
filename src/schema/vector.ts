@@ -69,7 +69,7 @@ export interface MuUint32ArrayConstructor {
     new<D extends number> (length:D) : MuUint32Array<D>;
 }
 
-export type _Vector<ValueSchema extends MuNumber, D extends number> = {
+export type Vector<ValueSchema extends MuNumber, D extends number> = {
     float32:MuFloat32Array<D>;
     float64:MuFloat64Array<D>;
     int8:MuInt8Array<D>;
@@ -103,15 +103,15 @@ export const ConstructorTable:MuTypedArrayConstructorTable = {
 };
 
 export class MuVector<ValueSchema extends MuNumber, D extends number>
-        implements MuSchema<_Vector<ValueSchema, D>> {
-    public readonly identity:_Vector<ValueSchema, D>;
+        implements MuSchema<Vector<ValueSchema, D>> {
+    public readonly identity:Vector<ValueSchema, D>;
     public readonly muType = 'vector';
     public readonly json:object;
 
     private _constructor:typeof ConstructorTable[ValueSchema['muType']];
     public readonly dimension:D;
 
-    public pool:_Vector<ValueSchema, D>[] = [];
+    public pool:Vector<ValueSchema, D>[] = [];
 
     constructor (valueSchema:ValueSchema, dimension:D) {
         this._constructor = ConstructorTable[valueSchema.muType];
@@ -129,15 +129,15 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
         };
     }
 
-    public alloc () : _Vector<ValueSchema, D> {
+    public alloc () : Vector<ValueSchema, D> {
         return this.pool.pop() || new this._constructor(this.dimension);
     }
 
-    public free (vec:_Vector<ValueSchema, D>) {
+    public free (vec:Vector<ValueSchema, D>) {
         this.pool.push(vec);
     }
 
-    public equal (a:_Vector<ValueSchema, D>, b:_Vector<ValueSchema, D>) {
+    public equal (a:Vector<ValueSchema, D>, b:Vector<ValueSchema, D>) {
         if (!(a instanceof this._constructor) || !(b instanceof this._constructor)) {
             return false;
         }
@@ -153,13 +153,13 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
         return true;
     }
 
-    public clone (vec:_Vector<ValueSchema, D>) : _Vector<ValueSchema, D> {
+    public clone (vec:Vector<ValueSchema, D>) : Vector<ValueSchema, D> {
         const copy = this.alloc();
         copy.set(vec);
         return copy;
     }
 
-    public assign (dst:_Vector<ValueSchema, D>, src:_Vector<ValueSchema, D>) {
+    public assign (dst:Vector<ValueSchema, D>, src:Vector<ValueSchema, D>) {
         if (dst === src) {
             return;
         }
@@ -167,8 +167,8 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
     }
 
     public diff (
-        base_:_Vector<ValueSchema, D>,
-        target_:_Vector<ValueSchema, D>,
+        base_:Vector<ValueSchema, D>,
+        target_:Vector<ValueSchema, D>,
         out:MuWriteStream,
     ) : boolean {
         const base = new Uint8Array(base_.buffer);
@@ -210,9 +210,9 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
     }
 
     public patch (
-        base:_Vector<ValueSchema, D>,
+        base:Vector<ValueSchema, D>,
         inp:MuReadStream,
-    ) : _Vector<ValueSchema, D> {
+    ) : Vector<ValueSchema, D> {
         const resultArray = this.clone(base);
         const result = new Uint8Array(resultArray.buffer);
 
@@ -248,7 +248,7 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
         return resultArray;
     }
 
-    public toJSON (vec:_Vector<ValueSchema, D>) : number[] {
+    public toJSON (vec:Vector<ValueSchema, D>) : number[] {
         const arr = new Array(vec.length);
         for (let i = 0; i < arr.length; ++i) {
             arr[i] = vec[i];
@@ -256,7 +256,7 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
         return arr;
     }
 
-    public fromJSON (json:number[]) : _Vector<ValueSchema, D> {
+    public fromJSON (json:number[]) : Vector<ValueSchema, D> {
         const vec = this.alloc();
         for (let i = 0; i < vec.length; ++i) {
             vec[i] = json[i];

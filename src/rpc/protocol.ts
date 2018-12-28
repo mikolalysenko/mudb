@@ -7,20 +7,22 @@ import { MuRPCRemoteClient } from './server';
 // Remote Procedure Call, a response-request protocol
 export namespace MuRPC {
     export type Schema = [MuSchema<any>, MuSchema<any>];
-    export type SchemaTable = { [proc:string]:Schema };
-    export type ProtocolSchema = {
-        name?:string,
+    export interface SchemaTable {
+        [proc:string]:Schema;
+    }
+    export interface ProtocolSchema {
+        name?:string;
         client:SchemaTable;
         server:SchemaTable;
-    };
+    }
 
-    type Req = 0;
-    type Res = 1;
-    type Phase = Req | Res;
+    export type Req = 0;
+    export type Res = 1;
+    export type Phase = Req | Res;
 
-    type MaybeError = string | undefined;
+    export type MaybeError = string | undefined;
 
-    export type API<Table extends SchemaTable> = {
+    export interface API<Table extends SchemaTable> {
         caller:{
             [proc in keyof Table]:(
                 arg:Table[proc][Req]['identity'],
@@ -39,10 +41,10 @@ export namespace MuRPC {
                 next:(err:MaybeError, ret?:Table[proc][Res]['identity']) => void,
                 client?:MuRPCRemoteClient<Table>,
             ) => void
-        }
-    };
+        };
+    }
 
-    type CallbackSchemaTable<Table extends SchemaTable, P extends Phase> = {
+    export type CallbackSchemaTable<Table extends SchemaTable, P extends Phase> = {
         [proc in keyof Table]:MuStruct<{
             id:MuUint32;
             base:Table[proc][P];
@@ -107,16 +109,16 @@ export namespace MuRPC {
         return transposed;
     }
 
-    const errorSchema = new MuStruct({
+    export const errorSchema = new MuStruct({
         id: new MuUint32(),
         message: new MuUTF8(),
     });
 
-    export type ErrorProtocolSchema = {
+    export interface ErrorProtocolSchema {
         name?:string;
         client:{ error:typeof errorSchema };
         server:{ error:typeof errorSchema };
-    };
+    }
 
     export function createErrorProtocolSchema (
         protocolSchema:ProtocolSchema,

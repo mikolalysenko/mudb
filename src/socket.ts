@@ -2,10 +2,18 @@ export type MuSessionId = string;
 
 export type MuData = Uint8Array | string;
 
-export type MuReadyHandler = () => void;
-export type MuMessageHandler = (data:MuData, unreliable:boolean) => void;
-export type MuCloseHandler = (error?:any) => void;
-export type MuConnectionHandler = (socket:MuSocket) => void;
+export interface MuReadyHandler {
+    () : void;
+}
+export interface MuMessageHandler {
+    (data:MuData, unreliable:boolean) : void;
+}
+export interface MuCloseHandler {
+    (error?:any) : void;
+}
+export interface MuConnectionHandler {
+    (socket:MuSocket) : void;
+}
 
 export enum MuSocketState {
     INIT,
@@ -13,11 +21,11 @@ export enum MuSocketState {
     CLOSED,
 }
 
-export type MuSocketSpec = {
+export interface MuSocketSpec {
     ready:MuReadyHandler;
     message:MuMessageHandler;
     close:MuCloseHandler;
-};
+}
 
 export interface MuSocket {
     sessionId:MuSessionId;
@@ -34,11 +42,11 @@ export enum MuSocketServerState {
     SHUTDOWN,
 }
 
-export type MuSocketServerSpec = {
+export interface MuSocketServerSpec {
     ready:MuReadyHandler;
     connection:MuConnectionHandler;
     close:MuCloseHandler;
-};
+}
 
 export interface MuSocketServer {
     clients:MuSocket[];
