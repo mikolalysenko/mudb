@@ -38,35 +38,35 @@ export interface MuUint32Array<D extends number> extends Uint32Array {
 }
 
 export interface MuFloat32ArrayConstructor {
-    new<D extends number>(length:D) : MuFloat32Array<D>;
+    new<D extends number> (length:D) : MuFloat32Array<D>;
 }
 
 export interface MuFloat64ArrayConstructor {
-    new<D extends number>(length:D) : MuFloat64Array<D>;
+    new<D extends number> (length:D) : MuFloat64Array<D>;
 }
 
 export interface MuInt8ArrayConstructor {
-    new<D extends number>(length:D) : MuInt8Array<D>;
+    new<D extends number> (length:D) : MuInt8Array<D>;
 }
 
 export interface MuInt16ArrayConstructor {
-    new<D extends number>(length:D) : MuInt16Array<D>;
+    new<D extends number> (length:D) : MuInt16Array<D>;
 }
 
 export interface MuInt32ArrayConstructor {
-    new<D extends number>(length:D) : MuInt32Array<D>;
+    new<D extends number> (length:D) : MuInt32Array<D>;
 }
 
 export interface MuUint8ArrayConstructor {
-    new<D extends number>(length:D) : MuUint8Array<D>;
+    new<D extends number> (length:D) : MuUint8Array<D>;
 }
 
 export interface MuUint16ArrayConstructor {
-    new<D extends number>(length:D) : MuUint16Array<D>;
+    new<D extends number> (length:D) : MuUint16Array<D>;
 }
 
 export interface MuUint32ArrayConstructor {
-    new<D extends number>(length:D) : MuUint32Array<D>;
+    new<D extends number> (length:D) : MuUint32Array<D>;
 }
 
 export type _Vector<ValueSchema extends MuNumber, D extends number> = {
@@ -80,15 +80,26 @@ export type _Vector<ValueSchema extends MuNumber, D extends number> = {
     uint32:MuUint32Array<D>;
 }[ValueSchema['muType']];
 
-const muType2TypedArray = {
-    float32: <MuFloat32ArrayConstructor>Float32Array,
-    float64: <MuFloat64ArrayConstructor>Float64Array,
-    int8: <MuInt8ArrayConstructor>Int8Array,
-    int16: <MuInt16ArrayConstructor>Int16Array,
-    int32: <MuInt32ArrayConstructor>Int32Array,
-    uint8: <MuUint8ArrayConstructor>Uint8Array,
-    uint16: <MuUint16ArrayConstructor>Uint16Array,
-    uint32: <MuUint32ArrayConstructor>Uint32Array,
+export interface MuTypedArrayConstructorTable {
+    float32:MuFloat32ArrayConstructor;
+    float64:MuFloat64ArrayConstructor;
+    int8:MuInt8ArrayConstructor;
+    int16:MuInt16ArrayConstructor;
+    int32:MuInt32ArrayConstructor;
+    uint8:MuUint8ArrayConstructor;
+    uint16:MuUint16ArrayConstructor;
+    uint32:MuUint32ArrayConstructor;
+}
+
+export const ConstructorTable:MuTypedArrayConstructorTable = {
+    float32: Float32Array,
+    float64: Float64Array,
+    int8: Int8Array,
+    int16: Int16Array,
+    int32: Int32Array,
+    uint8: Uint8Array,
+    uint16: Uint16Array,
+    uint32: Uint32Array,
 };
 
 export class MuVector<ValueSchema extends MuNumber, D extends number>
@@ -97,13 +108,13 @@ export class MuVector<ValueSchema extends MuNumber, D extends number>
     public readonly muType = 'vector';
     public readonly json:object;
 
-    private _constructor:typeof muType2TypedArray[ValueSchema['muType']];
+    private _constructor:typeof ConstructorTable[ValueSchema['muType']];
     public readonly dimension:D;
 
     public pool:_Vector<ValueSchema, D>[] = [];
 
     constructor (valueSchema:ValueSchema, dimension:D) {
-        this._constructor = muType2TypedArray[valueSchema.muType];
+        this._constructor = ConstructorTable[valueSchema.muType];
 
         this.identity = new this._constructor(dimension);
         for (let i = 0; i < dimension; ++i) {
