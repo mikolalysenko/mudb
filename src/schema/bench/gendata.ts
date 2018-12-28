@@ -1,4 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../../stream';
+import { MuNumber } from '../_number';
+import { MuVector } from '../vector';
 import {
     randBool,
     randFloat32,
@@ -108,21 +110,13 @@ export function genStruct (spec) : any {
     return result;
 }
 
-export const muType2ArrayType = {
-    float32: Float32Array,
-    float64: Float64Array,
-    int8: Int8Array,
-    int16: Int16Array,
-    int32: Int32Array,
-    uint8: Uint8Array,
-    uint16: Uint16Array,
-    uint32: Uint32Array,
-};
-
-export function genVector (muType:keyof typeof muType2ArrayType, dimension:number) {
-    const result = new muType2ArrayType[muType](dimension);
+export function genVector<S extends MuNumber, D extends number> (
+    valueSchema:S,
+    dimension:D,
+) : MuVector<S, D>['identity'] {
+    const result = new MuVector(valueSchema, dimension).alloc();
     for (let i = 0; i < dimension; ++i) {
-        result[i] = randValue(muType);
+        result[i] = randValue(valueSchema.muType);
     }
     return result;
 }

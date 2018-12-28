@@ -15,8 +15,8 @@ console.log('100Kx targets with 10 elements');
 
 const schema1 = new MuVector(new MuUint32(), 10);
 
-const ten1 = genVector('uint32', 10);
-const ten2 = genVector('uint32', 10);
+const ten1 = genVector(new MuUint32(), 10);
+const ten2 = genVector(new MuUint32(), 10);
 
 let outs = createWriteStreams(1e5);
 
@@ -42,8 +42,8 @@ console.log('1Kx targets with 1K elements');
 
 const schema2 = new MuVector(new MuUint32(), 1e3);
 
-const k1 = genVector('uint32', 1e3);
-const k2 = genVector('uint32', 1e3);
+const k1 = genVector(new MuUint32(), 1e3);
+const k2 = genVector(new MuUint32(), 1e3);
 
 outs = createWriteStreams(1e3);
 
@@ -69,8 +69,8 @@ console.log('10x targets with 100K elements');
 
 const schema3 = new MuVector(new MuUint32(), 1e5);
 
-const tenK1 = genVector('uint32', 1e5);
-const tenK2 = genVector('uint32', 1e5);
+const tenK1 = genVector(new MuUint32(), 1e5);
+const tenK2 = genVector(new MuUint32(), 1e5);
 
 outs = createWriteStreams(10);
 
