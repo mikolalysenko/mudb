@@ -176,7 +176,7 @@ export class MuServer {
                             throw new Error('incompatible protocols');
                         }
                     } catch (e) {
-                        console.error(`mudb: closing socket ${socket.sessionId} due to ${e}`);
+                        console.error(`mudb: kill connection ${socket.sessionId}: ${e}`);
                         socket.close();
                     }
                 }
@@ -210,7 +210,12 @@ export class MuServer {
                     },
                     message: (data, unreliable) => {
                         if (!firstPacket) {
-                            return parser(data, unreliable);
+                            try {
+                                return parser(data, unreliable);
+                            } catch (e) {
+                                console.error(`mudb: kill connection ${socket.sessionId}: ${e}`);
+                                socket.close();
+                            }
                         }
                         checkHashConsistency(data);
                         firstPacket = false;
