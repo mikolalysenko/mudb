@@ -16,19 +16,17 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
     constructor (
         valueSchema:ValueSchema,
-        identityOrCapacity?:ValueSchema['identity'][] | number,
-        capacity?:number,
+        capacity:number,
+        identity?:ValueSchema['identity'][],
     ) {
         this.muData = valueSchema;
-        this.identity = Array.isArray(identityOrCapacity) ? identityOrCapacity : [];
+        this.capacity = capacity;
+        this.identity = identity || [];
         this.json = {
             type: 'array',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
-        this.capacity = typeof identityOrCapacity === 'number' ?
-                            identityOrCapacity :
-                            capacity || Infinity;
     }
 
     public alloc () : ValueSchema['identity'][] {

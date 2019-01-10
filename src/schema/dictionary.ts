@@ -18,22 +18,17 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
     constructor (
         valueSchema:ValueSchema,
-        identityOrCapacity?:Dictionary<ValueSchema> | number,
-        capacity?:number,
+        capacity:number,
+        identity?:Dictionary<ValueSchema>,
     ) {
         this.muData = valueSchema;
-        // TS only respects `typeof` for type checking
-        this.identity = identityOrCapacity && typeof identityOrCapacity === 'object' ?
-                            identityOrCapacity :
-                            {};
+        this.capacity = capacity;
+        this.identity = identity || {};
         this.json = {
             type: 'dictionary',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
-        this.capacity = typeof identityOrCapacity === 'number' ?
-                            identityOrCapacity :
-                            capacity || Infinity;
     }
 
     public alloc () : Dictionary<ValueSchema> {

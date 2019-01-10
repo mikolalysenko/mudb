@@ -36,34 +36,28 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
 
     constructor (
         schema:ValueSchema,
+        capacity:number,
         compare?:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number,
-        identityOrCapacity?:ValueSchema['identity'][] | number,
-        capacity?:number,
+        identity?:ValueSchema['identity'][],
     ) {
         this.muData = schema;
+        this.capacity = capacity;
         this.compare = compare || defaultCompare;
-
-        if (Array.isArray(identityOrCapacity)) {
-            const x = identityOrCapacity.slice();
-            x.sort(compare);
-            for (let i = 0; i < x.length; ++i) {
-                x[i] = schema.clone(x[i]);
+        if (identity) {
+            const a = identity.slice().sort(this.compare);
+            for (let i = 0; i < a.length; ++i) {
+                a[i] = schema.clone(a[i]);
             }
-            this.identity = x;
+            this.identity = a;
         } else {
             this.identity = [];
         }
-
         this.json = {
             type: 'sorted-array',
             valueType: schema.json,
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
         };
-
-        this.capacity = typeof identityOrCapacity === 'number' ?
-                            identityOrCapacity :
-                            capacity || Infinity;
     }
 
     public alloc() : ValueSchema['identity'][] {
