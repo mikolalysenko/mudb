@@ -13,7 +13,7 @@ import {
 console.log('---------- array ----------');
 console.log('100Kx targets with 10 elements');
 
-const u32Schema = new MuArray(new MuUint32());
+const u32Schema = new MuArray(new MuUint32(), Infinity);
 
 const ten1 = genArray('uint32', 10);
 const ten2 = genArray('uint32', 10);

@@ -34,9 +34,9 @@ test('schema.identity default', (t) => {
     t.equal(new MuUint8().identity,     0);
     t.equal(new MuUint16().identity,    0);
     t.equal(new MuUint32().identity,    0);
-    t.deepEqual(new MuArray(new MuFloat32()).identity,          []);
-    t.deepEqual(new MuSortedArray(new MuFloat32()).identity,    []);
-    t.deepEqual(new MuDictionary(new MuFloat32()).identity,     {});
+    t.deepEqual(new MuArray(new MuFloat32(), 0).identity,       []);
+    t.deepEqual(new MuSortedArray(new MuFloat32(), 0).identity, []);
+    t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
     t.deepEqual(
         new MuStruct({ f: new MuFloat32() }).identity,
         { f: 0 },
@@ -68,15 +68,15 @@ test('schema.identity', (t) => {
     t.equal(new MuUint16(0xFFFF).identity,      0xFFFF);
     t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
     t.deepEqual(
-        new MuArray(new MuFloat32(), [0.5, 0.5, 0.5]).identity,
+        new MuArray(new MuFloat32(), Infinity, [0.5, 0.5, 0.5]).identity,
         [0.5, 0.5, 0.5],
     );
     t.deepEqual(
-        new MuSortedArray(new MuFloat32(), undefined, [1, 3, 2]).identity,
+        new MuSortedArray(new MuFloat32(), Infinity, undefined, [1, 3, 2]).identity,
         [1, 2, 3],
     );
     t.deepEqual(
-        new MuDictionary(new MuFloat32(), { x: 0.5, y: 0.5, z: 0.5 }).identity,
+        new MuDictionary(new MuFloat32(), Infinity, { x: 0.5, y: 0.5, z: 0.5 }).identity,
         { x: 0.5, y: 0.5, z: 0.5 },
     );
     t.deepEqual(

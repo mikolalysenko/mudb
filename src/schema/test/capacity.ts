@@ -8,15 +8,10 @@ import {
 } from '../index';
 
 test('array.capacity', (t) => {
-    let array = new MuArray(new MuFloat32());
-    t.equal(array.capacity, Infinity, 'capacity defaults to Infinity');
-
-    // @ts-ignore
-    array = new MuArray(new MuFloat32(), null, 1000);
-    t.equal(array.capacity, 1000);
-    array = new MuArray(new MuFloat32(), [], 100);
-    t.equal(array.capacity, 100);
-
+    let array = new MuArray(new MuFloat32(), Infinity);
+    t.equal(array.capacity, Infinity);
+    array = new MuArray(new MuFloat32(), 0);
+    t.equal(array.capacity, 0);
     array = new MuArray(new MuFloat32(), 3);
     t.equal(array.capacity, 3);
 
@@ -31,16 +26,11 @@ test('array.capacity', (t) => {
 });
 
 test('sortedArray.capacity', (t) => {
-    let sortedArray = new MuSortedArray(new MuFloat32());
-    t.equal(sortedArray.capacity, Infinity, 'capacity defaults to Infinity');
-
-    // @ts-ignore
-    sortedArray = new MuSortedArray(new MuFloat32(), (a, b) => a - b, null, 1000);
-    t.equal(sortedArray.capacity, 1000);
-    sortedArray = new MuSortedArray(new MuFloat32(), (a, b) => a - b, 100);
-    t.equal(sortedArray.capacity, 100);
-
-    sortedArray = new MuSortedArray(new MuFloat32(), (a, b) => a - b, 3);
+    let sortedArray = new MuSortedArray(new MuFloat32(), Infinity, (a, b) => a - b);
+    t.equal(sortedArray.capacity, Infinity);
+    sortedArray = new MuSortedArray(new MuFloat32(), 0, (a, b) => a - b);
+    t.equal(sortedArray.capacity, 0);
+    sortedArray = new MuSortedArray(new MuFloat32(), 3, (a, b) => a - b);
     t.equal(sortedArray.capacity, 3);
 
     const out = new MuWriteStream(1);
@@ -54,15 +44,10 @@ test('sortedArray.capacity', (t) => {
 });
 
 test('dictionary.capacity', (t) => {
-    let dictionary = new MuDictionary(new MuFloat32());
-    t.equal(dictionary.capacity, Infinity, 'capacity defaults to Infinity');
-
-    // @ts-ignore
-    dictionary = new MuDictionary(new MuFloat32(), null, 1000);
-    t.equal(dictionary.capacity, 1000);
-    dictionary = new MuDictionary(new MuFloat32(), {}, 100);
-    t.equal(dictionary.capacity, 100);
-
+    let dictionary = new MuDictionary(new MuFloat32(), Infinity);
+    t.equal(dictionary.capacity, Infinity);
+    dictionary = new MuDictionary(new MuFloat32(), 0);
+    t.equal(dictionary.capacity, 0);
     dictionary = new MuDictionary(new MuFloat32(), 3);
     t.equal(dictionary.capacity, 3);
 

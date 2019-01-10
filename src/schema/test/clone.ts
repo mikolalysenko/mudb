@@ -32,7 +32,7 @@ test('primitive.clone()', (t) => {
 });
 
 test('array.clone()', (t) => {
-    const array = new MuArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
     let a = array.alloc();
     t.notEqual(array.clone(a), a);
     t.deepEqual(array.clone(a), a);
@@ -42,7 +42,8 @@ test('array.clone()', (t) => {
     t.deepEqual(array.clone(a), a);
 
     const nestedArray = new MuArray(
-        new MuArray(new MuFloat32()),
+        new MuArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     let na = nestedArray.alloc();
     t.deepEqual(nestedArray.clone(na), na);
@@ -59,7 +60,7 @@ test('array.clone()', (t) => {
 });
 
 test('sortedArray.clone()', (t) => {
-    const array = new MuSortedArray(new MuFloat32());
+    const array = new MuSortedArray(new MuFloat32(), Infinity);
     let a = array.alloc();
     t.notEqual(array.clone(a), a);
     t.deepEqual(array.clone(a), a);
@@ -69,7 +70,8 @@ test('sortedArray.clone()', (t) => {
     t.deepEqual(array.clone(a), a);
 
     const nestedArray = new MuSortedArray(
-        new MuSortedArray(new MuFloat32()),
+        new MuSortedArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     let na = nestedArray.alloc();
     t.deepEqual(nestedArray.clone(na), na);
@@ -97,7 +99,7 @@ test('vector.clone()', (t) => {
 });
 
 test('dictionary.clone()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const d = dictionary.alloc();
     t.notEqual(dictionary.clone(d), d);
     t.deepEqual(dictionary.clone(d), d);
@@ -107,7 +109,8 @@ test('dictionary.clone()', (t) => {
     t.deepEqual(dictionary.clone(d), d);
 
     const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32()),
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
     );
     const nd = nestedDictionary.alloc();
     t.deepEqual(nestedDictionary.clone(nd), nd);

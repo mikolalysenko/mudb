@@ -12,9 +12,9 @@ import { MuSchemaTrace } from '../trace';
 
 test('schema.free()', (t) => {
     const arrayTrace = new MuSchemaTrace(
-        new MuArray(new MuFloat32()),
+        new MuArray(new MuFloat32(), Infinity),
     );
-    const array = new MuArray(arrayTrace);
+    const array = new MuArray(arrayTrace, Infinity);
 
     const a = array.alloc();
     a.push(arrayTrace.alloc());
@@ -22,9 +22,9 @@ test('schema.free()', (t) => {
     t.equal(arrayTrace.freeCount, 1, `array schema should call free() on subtype`);
 
     const sortedArrayTrace = new MuSchemaTrace(
-        new MuSortedArray(new MuFloat32()),
+        new MuSortedArray(new MuFloat32(), Infinity),
     );
-    const sortedArray = new MuSortedArray(sortedArrayTrace);
+    const sortedArray = new MuSortedArray(sortedArrayTrace, Infinity);
 
     const sa = sortedArray.alloc();
     sa.push(sortedArrayTrace.alloc());
@@ -32,9 +32,9 @@ test('schema.free()', (t) => {
     t.equal(sortedArrayTrace.freeCount, 1, `sorted array schema should call free() on subtype`);
 
     const dictionaryTrace = new MuSchemaTrace(
-        new MuDictionary(new MuFloat32()),
+        new MuDictionary(new MuFloat32(), Infinity),
     );
-    const dictionary = new MuDictionary(dictionaryTrace);
+    const dictionary = new MuDictionary(dictionaryTrace, Infinity);
 
     const d = dictionary.alloc();
     d.d = dictionaryTrace.alloc();

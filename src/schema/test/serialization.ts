@@ -181,7 +181,7 @@ tape('de/serializing array', (t) => {
     }
 
     t.test('simple array', (st) => {
-        const array = new MuArray(new MuFloat32());
+        const array = new MuArray(new MuFloat32(), Infinity);
         const testPair = createTestPair(st, array);
         testPair([0], [1]);
         testPair([0, 1], [1, 1]);
@@ -197,7 +197,8 @@ tape('de/serializing array', (t) => {
 
     t.test('nested array', (st) => {
         const array = new MuArray(
-            new MuArray(new MuFloat32()),
+            new MuArray(new MuFloat32(), Infinity),
+            Infinity,
         );
         const testPair = createTestPair(st, array);
         testPair([[]], [[], []]);
@@ -226,7 +227,7 @@ tape('de/serializing sorted array', (t) => {
         };
     }
 
-    const sortedArray = new MuSortedArray(new MuFloat32());
+    const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const testPair = createTestPair(t, sortedArray);
     testPair([0], [1]);
     testPair([0, 1], [1, 1]);
@@ -336,7 +337,7 @@ tape('de/serializing dictionary', (t) => {
     }
 
     t.test('simple dictionary', (st) => {
-        const dictionary = new MuDictionary(new MuFloat32());
+        const dictionary = new MuDictionary(new MuFloat32(), Infinity);
         const testPair = createTestPair(st, dictionary);
         testPair({f: 0}, {f: 0.5});
         testPair({f: 0, g: 0.5}, {f: 0, g: 1});
@@ -356,7 +357,8 @@ tape('de/serializing dictionary', (t) => {
 
     t.test('nested dictionary', (st) => {
         const dictionary = new MuDictionary(
-            new MuDictionary(new MuFloat32()),
+            new MuDictionary(new MuFloat32(), Infinity),
+            Infinity,
         );
         const testPair = createTestPair(st, dictionary);
         testPair({a: {a: 0}}, {a: {b: 0.5}});
@@ -396,10 +398,10 @@ tape('de/serializing struct', (t) => {
         b: new MuBoolean(),
         u: new MuUTF8(),
         f: new MuFloat32(),
-        a: new MuArray(new MuFloat32()),
-        sa: new MuSortedArray(new MuFloat32()),
+        a: new MuArray(new MuFloat32(), Infinity),
+        sa: new MuSortedArray(new MuFloat32(), Infinity),
         v: new MuVector(new MuFloat32(), 9),
-        d: new MuDictionary(new MuFloat32()),
+        d: new MuDictionary(new MuFloat32(), Infinity),
         s: new MuStruct({
             b: new MuBoolean(),
             u: new MuUTF8(),
@@ -453,10 +455,10 @@ tape('de/serializing union', (t) => {
         b: new MuBoolean(),
         u: new MuUTF8(),
         f: new MuFloat32(),
-        a: new MuArray(new MuFloat32()),
-        sa: new MuSortedArray(new MuFloat32()),
+        a: new MuArray(new MuFloat32(), Infinity),
+        sa: new MuSortedArray(new MuFloat32(), Infinity),
         v: new MuVector(new MuFloat32(), 16),
-        d: new MuDictionary(new MuFloat32()),
+        d: new MuDictionary(new MuFloat32(), Infinity),
     };
     const tags = Object.keys(spec) as (keyof typeof spec)[];
     const numTags = tags.length;
