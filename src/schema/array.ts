@@ -108,56 +108,53 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         target:ValueSchema['identity'][],
         out:MuWriteStream,
     ) : boolean {
-        if (target.length > this.capacity) {
-            throw new RangeError(`mudb/schema: array capacity exceeded`);
+        const tLength = target.length;
+        if (tLength > this.capacity) {
+            throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
+
         const prefixOffset = out.offset;
-        const targetLength = target.length;
-
-        const numTrackers = Math.ceil(targetLength / 8);
+        const numTrackers = Math.ceil(tLength / 8);
         out.grow(4 + numTrackers);
-
-        out.writeUint32(targetLength);
+        out.writeUint32(tLength);
 
         let trackerOffset = out.offset;
         out.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
-        let numPatch = 0;
+        let numPatches = 0;
 
-        const baseLength = base.length;
-        const valueSchema = this.muData;
-        for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
-            if (valueSchema.diff(base[i], target[i], out)) {
+        const bLength = base.length;
+        const schema = this.muData;
+        for (let i = 0; i < Math.min(bLength, tLength); ++i) {
+            if (schema.diff(base[i], target[i], out)) {
                 tracker |= 1 << (i & 7);
-                ++numPatch;
+                ++numPatches;
             }
-
+            if ((i & 7) === 7) {
+                out.writeUint8At(trackerOffset++, tracker);
+                tracker = 0;
+            }
+        }
+        for (let i = bLength; i < tLength; ++i) {
+            if (schema.diff(schema.identity, target[i], out)) {
+                tracker |= 1 << (i & 7);
+                ++numPatches;
+            }
             if ((i & 7) === 7) {
                 out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
 
-        for (let i = baseLength; i < targetLength; ++i) {
-            if (valueSchema.diff(valueSchema.identity, target[i], out)) {
-                tracker |= 1 << (i & 7);
-                ++numPatch;
-            }
-
-            if ((i & 7) === 7) {
-                out.writeUint8At(trackerOffset++, tracker);
-                tracker = 0;
-            }
-        }
-
-        if (targetLength & 7) {
+        if (tLength & 7) {
             out.writeUint8At(trackerOffset, tracker);
         }
 
-        if (numPatch > 0 || baseLength !== targetLength) {
+        if (numPatches > 0 || bLength !== tLength) {
             return true;
         }
+
         out.offset = prefixOffset;
         return false;
     }
@@ -166,45 +163,42 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         base:ValueSchema['identity'][],
         inp:MuReadStream,
     ) : ValueSchema['identity'][] {
-        const result = this.clone(base);
+        const tLength = inp.readUint32();
+        if (tLength > this.capacity) {
+            throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
+        }
 
-        const targetLength = inp.readUint32();
-        result.length = targetLength;
+        const result = this.clone(base);
+        result.length = tLength;
 
         let trackerOffset = inp.offset;
-        const numTrackers = Math.ceil(targetLength / 8);
+        const numTrackers = Math.ceil(tLength / 8);
         inp.offset = trackerOffset + numTrackers;
 
         let tracker = 0;
 
-        const baseLength = base.length;
-        const valueSchema = this.muData;
-        for (let i = 0; i < Math.min(baseLength, targetLength); ++i) {
+        const bLength = base.length;
+        const schema = this.muData;
+        for (let i = 0; i < Math.min(bLength, tLength); ++i) {
             const mod8 = i & 7;
-
             if (!mod8) {
                 tracker = inp.readUint8At(trackerOffset++);
             }
-
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(base[i], inp);
+                result[i] = schema.patch(base[i], inp);
             }
         }
-
-        for (let i = baseLength; i < targetLength; ++i) {
+        for (let i = bLength; i < tLength; ++i) {
             const mod8 = i & 7;
-
             if (!mod8) {
                 tracker = inp.readUint8At(trackerOffset++);
             }
-
             if ((1 << mod8) & tracker) {
-                result[i] = valueSchema.patch(valueSchema.identity, inp);
+                result[i] = schema.patch(schema.identity, inp);
             } else {
-                result[i] = valueSchema.clone(valueSchema.identity);
+                result[i] = schema.clone(schema.identity);
             }
         }
-
         return result;
     }
 
