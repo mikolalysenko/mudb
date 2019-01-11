@@ -321,11 +321,18 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public patch (base:ValueSchema['identity'][], inp:MuReadStream) : ValueSchema['identity'][] {
         const schema = this.muData;
         const result = this.alloc();
-        const opCount = inp.readUint32();
+        const numOps = inp.readUint32();
         let ptr = 0;
-        for (let i = 0; i < opCount; ++i) {
+        let tLength = 0;
+        for (let i = 0; i < numOps; ++i) {
             const code = inp.readUint32();
             const count = code >> 3;
+
+            tLength += count;
+            if (tLength > this.capacity) {
+                throw new RangeError(`target length exceeds capacity ${this.capacity}`);
+            }
+
             const op = code & 0x7;
             // console.log(`patch: ${SortedOp[op]} x ${count} @ ${inp.offset - 4}, ptr=${ptr}`);
             switch (op) {
