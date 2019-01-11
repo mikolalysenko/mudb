@@ -36,34 +36,28 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
 
     constructor (
         schema:ValueSchema,
+        capacity:number,
         compare?:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number,
-        identityOrCapacity?:ValueSchema['identity'][] | number,
-        capacity?:number,
+        identity?:ValueSchema['identity'][],
     ) {
         this.muData = schema;
+        this.capacity = capacity;
         this.compare = compare || defaultCompare;
-
-        if (Array.isArray(identityOrCapacity)) {
-            const x = identityOrCapacity.slice();
-            x.sort(compare);
-            for (let i = 0; i < x.length; ++i) {
-                x[i] = schema.clone(x[i]);
+        if (identity) {
+            const a = identity.slice().sort(this.compare);
+            for (let i = 0; i < a.length; ++i) {
+                a[i] = schema.clone(a[i]);
             }
-            this.identity = x;
+            this.identity = a;
         } else {
             this.identity = [];
         }
-
         this.json = {
             type: 'sorted-array',
             valueType: schema.json,
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
         };
-
-        this.capacity = typeof identityOrCapacity === 'number' ?
-                            identityOrCapacity :
-                            capacity || Infinity;
     }
 
     public alloc() : ValueSchema['identity'][] {
@@ -327,11 +321,18 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public patch (base:ValueSchema['identity'][], inp:MuReadStream) : ValueSchema['identity'][] {
         const schema = this.muData;
         const result = this.alloc();
-        const opCount = inp.readUint32();
+        const numOps = inp.readUint32();
         let ptr = 0;
-        for (let i = 0; i < opCount; ++i) {
+        let tLength = 0;
+        for (let i = 0; i < numOps; ++i) {
             const code = inp.readUint32();
             const count = code >> 3;
+
+            tLength += count;
+            if (tLength > this.capacity) {
+                throw new RangeError(`target length exceeds capacity ${this.capacity}`);
+            }
+
             const op = code & 0x7;
             // console.log(`patch: ${SortedOp[op]} x ${count} @ ${inp.offset - 4}, ptr=${ptr}`);
             switch (op) {

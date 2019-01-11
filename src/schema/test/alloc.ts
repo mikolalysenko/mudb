@@ -23,10 +23,10 @@ test('primitive.alloc()', (t) => {
 });
 
 test('nonPrimitive.alloc()', (t) => {
-    const array = new MuArray(new MuFloat32());
-    const sortedArray = new MuSortedArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
+    const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const vector = new MuVector(new MuFloat32(), 5);
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const union = new MuUnion({ f: new MuFloat32() }, 'f');
 
     t.deepEqual(array.alloc(), []);
@@ -51,8 +51,8 @@ test('struct.alloc()', (t) => {
 });
 
 test('alloc, free, alloc', (t) => {
-    const array = new MuArray(new MuFloat32());
-    const sortedArray = new MuSortedArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
+    const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const vector = new MuVector(new MuFloat32(), 5);
     const struct = new MuStruct({ f: new MuFloat32() });
 

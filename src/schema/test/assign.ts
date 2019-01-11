@@ -16,7 +16,7 @@ test('primitive.assign()', (t) => {
 });
 
 test('array.assign()', (t) => {
-    const array = new MuArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
     const aDst = array.alloc();
     const aSrc = array.alloc();
     array.assign(aDst, aSrc);
@@ -30,7 +30,8 @@ test('array.assign()', (t) => {
     t.deepEqual(aDst, aSrc);
 
     const nestedArray = new MuArray(
-        new MuArray(new MuFloat32()),
+        new MuArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     const naDst = nestedArray.alloc();
     const naSrc = nestedArray.alloc();
@@ -46,7 +47,7 @@ test('array.assign()', (t) => {
 });
 
 test('sortedArray.assign()', (t) => {
-    const array = new MuSortedArray(new MuFloat32());
+    const array = new MuSortedArray(new MuFloat32(), Infinity);
     const aDst = array.alloc();
     const aSrc = array.alloc();
     array.assign(aDst, aSrc);
@@ -60,7 +61,8 @@ test('sortedArray.assign()', (t) => {
     t.deepEqual(aDst, aSrc);
 
     const nestedArray = new MuSortedArray(
-        new MuSortedArray(new MuFloat32()),
+        new MuSortedArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     const naDst = nestedArray.alloc();
     const naSrc = nestedArray.alloc();
@@ -113,7 +115,7 @@ test('vector.assign()', (t) => {
 });
 
 test('dictionary.assign()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const dDst = dictionary.alloc();
     const dSrc = dictionary.alloc();
     dictionary.assign(dDst, dSrc);
@@ -127,7 +129,8 @@ test('dictionary.assign()', (t) => {
     t.deepEqual(dDst, dSrc);
 
     const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32()),
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
     );
     const ndDst = nestedDictionary.alloc();
     const ndSrc = nestedDictionary.alloc();

@@ -32,7 +32,7 @@ test('array - alloc & free', (t) => {
             hp: new MuUint8(100),
         }),
     );
-    const groupSchema = new MuArray(characterSchema);
+    const groupSchema = new MuArray(characterSchema, Infinity);
 
     function createCharacter () {
         const result = characterSchema.alloc();
@@ -91,7 +91,7 @@ test('dictionary - alloc & free', (t) => {
             email: new MuUTF8(),
         }),
     );
-    const contactsSchema = new MuDictionary(contactSchema);
+    const contactsSchema = new MuDictionary(contactSchema, Infinity);
 
     function randomName () : string {
         const result = new Array(10);
@@ -163,7 +163,7 @@ test('sorted array - alloc & free', (t) => {
             return 0;
         }
     }
-    const groupSchema = new MuSortedArray(characterSchema, compare);
+    const groupSchema = new MuSortedArray(characterSchema, Infinity, compare);
 
     function createCharacter () {
         const result = characterSchema.alloc();

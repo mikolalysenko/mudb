@@ -35,7 +35,7 @@ test('primitive.equal()', (t) => {
 });
 
 test('array.equal()', (t) => {
-    const array = new MuArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
     t.true(array.equal([], []));
     t.true(array.equal([0.5], [0.5]));
     t.true(array.equal([0, 0.5, 1], [0, 0.5, 1]));
@@ -45,7 +45,8 @@ test('array.equal()', (t) => {
     t.false(array.equal([0, 0.5, 1], [0, 1, 0.5]));
 
     const nestedArray = new MuArray(
-        new MuArray(new MuFloat32()),
+        new MuArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     t.true(nestedArray.equal([], []));
     t.true(nestedArray.equal([[]], [[]]));
@@ -72,7 +73,7 @@ test('array.equal()', (t) => {
 });
 
 test('sortedArray.equal()', (t) => {
-    const array = new MuSortedArray(new MuFloat32());
+    const array = new MuSortedArray(new MuFloat32(), Infinity);
     t.true(array.equal([], []));
     t.true(array.equal([0.5], [0.5]));
     t.true(array.equal([0, 0.5, 1], [0, 0.5, 1]));
@@ -82,7 +83,8 @@ test('sortedArray.equal()', (t) => {
     t.false(array.equal([0, 0.5, 1], [0, 0.5, 1.5]));
 
     const nestedArray = new MuSortedArray(
-        new MuSortedArray(new MuFloat32()),
+        new MuSortedArray(new MuFloat32(), Infinity),
+        Infinity,
     );
     t.true(nestedArray.equal([], []));
     t.true(nestedArray.equal([[]], [[]]));
@@ -119,7 +121,7 @@ test('vector.equal()', (t) => {
 });
 
 test('dictionary.equal()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     t.true(dictionary.equal({}, {}));
     t.true(dictionary.equal({a: 0}, {a: 0}));
     t.true(dictionary.equal({a: 0, b: 1}, {a: 0, b: 1}));
@@ -129,7 +131,8 @@ test('dictionary.equal()', (t) => {
     t.false(dictionary.equal({a: 0}, {a: 1}));
 
     const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32()),
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
     );
     t.true(nestedDictionary.equal({}, {}));
     t.true(nestedDictionary.equal({a: {}}, {a: {}}));

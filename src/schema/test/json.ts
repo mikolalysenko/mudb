@@ -40,7 +40,7 @@ test('vector.fromJSON(float32[])', (t) => {
 // array
 
 test('array.toJSON(float32[])', (t) => {
-    const array = new MuArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
 
     const a = array.alloc();
     t.notEqual(array.toJSON(a), a);
@@ -55,7 +55,7 @@ test('array.toJSON(float32[])', (t) => {
 });
 
 test('array.fromJSON(float32[])', (t) => {
-    const array = new MuArray(new MuFloat32());
+    const array = new MuArray(new MuFloat32(), Infinity);
 
     const a = array.alloc();
     const j1 = array.toJSON(a);
@@ -73,7 +73,7 @@ test('array.fromJSON(float32[])', (t) => {
 
 test('array.toJSON(vector[])', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
-    const array = new MuArray(vector);
+    const array = new MuArray(vector, Infinity);
 
     const a1 = new Array(10);
     const a2 = new Array(a1.length);
@@ -91,7 +91,7 @@ test('array.toJSON(vector[])', (t) => {
 
 test('array.fromJSON(float32[][])', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
-    const array = new MuArray(vector);
+    const array = new MuArray(vector, Infinity);
 
     const a1 = new Array(10);
     for (let i = 0; i < a1.length; ++i) {
@@ -111,7 +111,7 @@ test('array.fromJSON(float32[][])', (t) => {
 // sorted
 
 test('sorted.toJSON(float32[])', (t) => {
-    const sorted = new MuSortedArray(new MuFloat32());
+    const sorted = new MuSortedArray(new MuFloat32(), Infinity);
 
     const s = sorted.alloc();
     t.notEqual(sorted.toJSON(s), s);
@@ -126,7 +126,7 @@ test('sorted.toJSON(float32[])', (t) => {
 });
 
 test('sorted.fromJSON(float32[])', (t) => {
-    const sorted = new MuSortedArray(new MuFloat32());
+    const sorted = new MuSortedArray(new MuFloat32(), Infinity);
 
     const s = sorted.alloc();
     const j1 = sorted.toJSON(s);
@@ -145,7 +145,7 @@ test('sorted.fromJSON(float32[])', (t) => {
 // dictionary
 
 test('dictionary.toJSON(float32{})', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
 
     const d = dictionary.alloc();
     t.notEqual(dictionary.toJSON(d), d);
@@ -161,7 +161,7 @@ test('dictionary.toJSON(float32{})', (t) => {
 });
 
 test('dictionary.fromJSON(float32{})', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32());
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
 
     const d = dictionary.alloc();
     const j1 = dictionary.toJSON(d);

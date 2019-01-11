@@ -18,22 +18,17 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
     constructor (
         valueSchema:ValueSchema,
-        identityOrCapacity?:Dictionary<ValueSchema> | number,
-        capacity?:number,
+        capacity:number,
+        identity?:Dictionary<ValueSchema>,
     ) {
         this.muData = valueSchema;
-        // TS only respects `typeof` for type checking
-        this.identity = identityOrCapacity && typeof identityOrCapacity === 'object' ?
-                            identityOrCapacity :
-                            {};
+        this.capacity = capacity;
+        this.identity = identity || {};
         this.json = {
             type: 'dictionary',
             valueType: this.muData.json,
             identity: JSON.stringify(this.identity),
         };
-        this.capacity = typeof identityOrCapacity === 'number' ?
-                            identityOrCapacity :
-                            capacity || Infinity;
     }
 
     public alloc () : Dictionary<ValueSchema> {
@@ -126,59 +121,61 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:Dictionary<ValueSchema>,
         out:MuWriteStream,
     ) : boolean {
-        const targetProps = Object.keys(target);
-        if (targetProps.length > this.capacity) {
-            throw new RangeError('mudb/schema: dictionary capacity exceeded');
+        const tProps = Object.keys(target);
+        if (tProps.length > this.capacity) {
+            throw new RangeError(`number of target properties ${tProps.length} exceeds capacity ${this.capacity}`);
         }
 
-        out.grow(32);
+        out.grow(64);
 
-        let numRemove = 0;
+        let numDelete = 0;
         let numPatch = 0;
+        let numAdd = 0;
 
         // mark the initial offset
-        const removeCounterOffset = out.offset;
-        const patchCounterOffset = removeCounterOffset + 4;
-        out.offset = removeCounterOffset + 8;
+        const countersOffset = out.offset;
+        out.offset += 12;
 
-        const baseProps = Object.keys(base);
-        for (let i = 0; i < baseProps.length; ++i) {
-            const prop = baseProps[i];
+        const bProps = Object.keys(base);
+        for (let i = 0; i < bProps.length; ++i) {
+            const prop = bProps[i];
             if (!(prop in target)) {
                 out.grow(4 + 2 * prop.length);
                 out.writeString(prop);
-                ++numRemove;
+                ++numDelete;
             }
         }
 
-        const valueSchema = this.muData;
-        for (let i = 0; i < targetProps.length; ++i) {
+        const schema = this.muData;
+        for (let i = 0; i < tProps.length; ++i) {
             const prefixOffset = out.offset;
 
-            const prop = targetProps[i];
+            const prop = tProps[i];
             out.grow(4 + 2 * prop.length);
             out.writeString(prop);
 
             if (prop in base) {
-                if (valueSchema.diff(base[prop], target[prop], out)) {
+                if (schema.diff(base[prop], target[prop], out)) {
                     ++numPatch;
                 } else {
                     out.offset = prefixOffset;
                 }
             } else {
-                if (!valueSchema.diff(valueSchema.identity, target[prop], out)) {
+                if (!schema.diff(schema.identity, target[prop], out)) {
                     out.buffer.uint8[prefixOffset + 3] |= 0x80;
                 }
                 ++numPatch;
+                ++numAdd;
             }
         }
 
-        if (numPatch > 0 || numRemove > 0) {
-            out.writeUint32At(removeCounterOffset, numRemove);
-            out.writeUint32At(patchCounterOffset, numPatch);
+        if (numPatch > 0 || numDelete > 0) {
+            out.writeUint32At(countersOffset, numDelete);
+            out.writeUint32At(countersOffset + 4, numPatch);
+            out.writeUint32At(countersOffset + 8, numAdd);
             return true;
         } else {
-            out.offset = removeCounterOffset;
+            out.offset = countersOffset;
             return false;
         }
     }
@@ -187,36 +184,40 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         base:Dictionary<ValueSchema>,
         inp:MuReadStream,
     ) : Dictionary<ValueSchema> {
-        const result:Dictionary<ValueSchema> = {};
-        const valueSchema = this.muData;
-
-        const numRemove = inp.readUint32();
+        const numDelete = inp.readUint32();
         const numPatch = inp.readUint32();
-
-        const propsToRemove = {};
-        for (let i = 0; i < numRemove; ++i) {
-            propsToRemove[inp.readString()] = true;
+        const numAdd = inp.readUint32();
+        const bProps = Object.keys(base);
+        const numTargetProps = bProps.length - numDelete + numAdd;
+        if (numTargetProps > this.capacity) {
+            throw new RangeError(`number of target properties ${numTargetProps} exceeds capacity ${this.capacity}`);
         }
 
-        const props = Object.keys(base);
-        for (let i = 0; i < props.length; ++i) {
-            const prop = props[i];
-            if (propsToRemove[prop]) {
+        const propsToDelete = {};
+        for (let i = 0; i < numDelete; ++i) {
+            propsToDelete[inp.readString()] = true;
+        }
+
+        const result = {};
+        const schema = this.muData;
+        for (let i = 0; i < bProps.length; ++i) {
+            const p = bProps[i];
+            if (propsToDelete[p]) {
                 continue;
             }
-            result[prop] = valueSchema.clone(base[prop]);
+            result[p] = schema.clone(base[p]);
         }
 
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
             inp.buffer.uint8[inp.offset + 3] &= ~0x80;
-            const prop = inp.readString();
-            if (prop in base) {
-                result[prop] = valueSchema.patch(base[prop], inp);
+            const p = inp.readString();
+            if (p in base) {
+                result[p] = schema.patch(base[p], inp);
             } else if (isIdentity) {
-                result[prop] = valueSchema.clone(valueSchema.identity);
+                result[p] = schema.clone(schema.identity);
             } else {
-                result[prop] = valueSchema.patch(valueSchema.identity, inp);
+                result[p] = schema.patch(schema.identity, inp);
             }
         }
 
