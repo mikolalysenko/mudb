@@ -12,7 +12,7 @@ import {
 console.log('---------- sorted array ----------');
 console.log('100Kx targets with 10 elements');
 
-const schema = new MuSortedArray(new MuUint32());
+const schema = new MuSortedArray(new MuUint32(), Infinity);
 
 let evens = new Array(10);
 for (let i = 0; i < evens.length; ++i) {

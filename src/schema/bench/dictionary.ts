@@ -16,7 +16,7 @@ import {
 console.log('---------- dictionary ----------');
 console.log('1Kx targets with 1K props');
 
-const schema = new MuDictionary(new MuUint32());
+const schema = new MuDictionary(new MuUint32(), Infinity);
 
 const emptyDict = {};
 const dict1 = genDictionary('uint32', 1e3);
