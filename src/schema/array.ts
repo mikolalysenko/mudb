@@ -118,7 +118,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         const head = out.offset;
         out.writeUint32(tLength);
-        let trackersOffset = out.offset;
+        let trackerOffset = out.offset;
         out.offset += numTrackers;
 
         let tracker = 0;
@@ -132,7 +132,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 ++numPatches;
             }
             if ((i & 7) === 7) {
-                out.writeUint8At(trackersOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
@@ -142,12 +142,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 ++numPatches;
             }
             if ((i & 7) === 7) {
-                out.writeUint8At(trackersOffset++, tracker);
+                out.writeUint8At(trackerOffset++, tracker);
                 tracker = 0;
             }
         }
         if (tLength & 7) {
-            out.writeUint8At(trackersOffset, tracker);
+            out.writeUint8At(trackerOffset, tracker);
         }
 
         if (numPatches > 0 || bLength !== tLength) {
@@ -166,9 +166,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
 
-        let trackersOffset = inp.offset;
         const numTrackers = Math.ceil(tLength / 8);
-        inp.offset = trackersOffset + numTrackers;
+        let trackerOffset = inp.offset;
+        inp.offset += numTrackers;
 
         const result = this.clone(base);
         result.length = tLength;
@@ -179,7 +179,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < Math.min(bLength, tLength); ++i) {
             const mod8 = i & 7;
             if (!mod8) {
-                tracker = inp.readUint8At(trackersOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
             if ((1 << mod8) & tracker) {
                 result[i] = schema.patch(base[i], inp);
@@ -188,7 +188,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         for (let i = bLength; i < tLength; ++i) {
             const mod8 = i & 7;
             if (!mod8) {
-                tracker = inp.readUint8At(trackersOffset++);
+                tracker = inp.readUint8At(trackerOffset++);
             }
             if ((1 << mod8) & tracker) {
                 result[i] = schema.patch(schema.identity, inp);

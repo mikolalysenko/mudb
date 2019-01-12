@@ -162,7 +162,7 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
 
         const head = out.offset;
         let trackerOffset = head;
-        out.offset = trackerOffset + Math.ceil(byteLength / 8);
+        out.offset += Math.ceil(byteLength / 8);
 
         let tracker = 0;
         let numPatches = 0;
