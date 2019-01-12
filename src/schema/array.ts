@@ -113,13 +113,13 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
 
-        const prefixOffset = out.offset;
         const numTrackers = Math.ceil(tLength / 8);
         out.grow(4 + numTrackers);
-        out.writeUint32(tLength);
 
-        let trackerOffset = out.offset;
-        out.offset = trackerOffset + numTrackers;
+        const head = out.offset;
+        out.writeUint32(tLength);
+        let trackersOffset = out.offset;
+        out.offset += numTrackers;
 
         let tracker = 0;
         let numPatches = 0;
@@ -132,7 +132,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 ++numPatches;
             }
             if ((i & 7) === 7) {
-                out.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackersOffset++, tracker);
                 tracker = 0;
             }
         }
@@ -142,20 +142,18 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 ++numPatches;
             }
             if ((i & 7) === 7) {
-                out.writeUint8At(trackerOffset++, tracker);
+                out.writeUint8At(trackersOffset++, tracker);
                 tracker = 0;
             }
         }
-
         if (tLength & 7) {
-            out.writeUint8At(trackerOffset, tracker);
+            out.writeUint8At(trackersOffset, tracker);
         }
 
         if (numPatches > 0 || bLength !== tLength) {
             return true;
         }
-
-        out.offset = prefixOffset;
+        out.offset = head;
         return false;
     }
 
@@ -168,21 +166,20 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
 
+        let trackersOffset = inp.offset;
+        const numTrackers = Math.ceil(tLength / 8);
+        inp.offset = trackersOffset + numTrackers;
+
         const result = this.clone(base);
         result.length = tLength;
 
-        let trackerOffset = inp.offset;
-        const numTrackers = Math.ceil(tLength / 8);
-        inp.offset = trackerOffset + numTrackers;
-
-        let tracker = 0;
-
         const bLength = base.length;
         const schema = this.muData;
+        let tracker = 0;
         for (let i = 0; i < Math.min(bLength, tLength); ++i) {
             const mod8 = i & 7;
             if (!mod8) {
-                tracker = inp.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackersOffset++);
             }
             if ((1 << mod8) & tracker) {
                 result[i] = schema.patch(base[i], inp);
@@ -191,7 +188,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         for (let i = bLength; i < tLength; ++i) {
             const mod8 = i & 7;
             if (!mod8) {
-                tracker = inp.readUint8At(trackerOffset++);
+                tracker = inp.readUint8At(trackersOffset++);
             }
             if ((1 << mod8) & tracker) {
                 result[i] = schema.patch(schema.identity, inp);
@@ -199,6 +196,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 result[i] = schema.clone(schema.identity);
             }
         }
+
         return result;
     }
 

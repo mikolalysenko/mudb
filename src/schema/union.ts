@@ -119,30 +119,29 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     ) : boolean {
         out.grow(8);
 
-        const trackerOffset = out.offset;
+        const head = out.offset;
         ++out.offset;
 
-        let tracker = 0;
-
+        let opCode = 0;
         const dataSchema = this.muData[target.type];
         if (base.type === target.type) {
             if (dataSchema.diff(base.data, target.data, out)) {
-                tracker = 1;
+                opCode = 1;
             }
         } else {
             out.writeUint8(this._types.indexOf(target.type as string));
             if (dataSchema.diff(dataSchema.identity, target.data, out)) {
-                tracker = 2;
+                opCode = 2;
             } else {
-                tracker = 4;
+                opCode = 4;
             }
         }
 
-        if (tracker) {
-            out.writeUint8At(trackerOffset, tracker);
+        if (opCode) {
+            out.writeUint8At(head, opCode);
             return true;
         }
-        out.offset = trackerOffset;
+        out.offset = head;
         return false;
     }
 
@@ -152,15 +151,15 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     ) : Union<SubTypes> {
         const result = this.clone(base);
 
-        const tracker = inp.readUint8();
-        if (tracker & 1) {
+        const opCode = inp.readUint8();
+        if (opCode & 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
         } else {
             result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            if (tracker & 2) {
+            if (opCode & 2) {
                 result.data = schema.patch(schema.identity, inp);
-            } else if (tracker & 4) {
+            } else if (opCode & 4) {
                 result.data = schema.clone(schema.identity);
             }
         }

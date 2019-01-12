@@ -128,13 +128,12 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         out.grow(64);
 
+        const head = out.offset;
+        out.offset += 12;
+
         let numDelete = 0;
         let numPatch = 0;
         let numAdd = 0;
-
-        // mark the initial offset
-        const countersOffset = out.offset;
-        out.offset += 12;
 
         const bProps = Object.keys(base);
         for (let i = 0; i < bProps.length; ++i) {
@@ -148,7 +147,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         const schema = this.muData;
         for (let i = 0; i < tProps.length; ++i) {
-            const prefixOffset = out.offset;
+            const start = out.offset;
 
             const prop = tProps[i];
             out.grow(4 + 2 * prop.length);
@@ -158,26 +157,25 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 if (schema.diff(base[prop], target[prop], out)) {
                     ++numPatch;
                 } else {
-                    out.offset = prefixOffset;
+                    out.offset = start;
                 }
             } else {
                 if (!schema.diff(schema.identity, target[prop], out)) {
-                    out.buffer.uint8[prefixOffset + 3] |= 0x80;
+                    out.buffer.uint8[start + 3] |= 0x80;
                 }
                 ++numPatch;
                 ++numAdd;
             }
         }
 
-        if (numPatch > 0 || numDelete > 0) {
-            out.writeUint32At(countersOffset, numDelete);
-            out.writeUint32At(countersOffset + 4, numPatch);
-            out.writeUint32At(countersOffset + 8, numAdd);
+        if (numDelete > 0 || numPatch > 0) {
+            out.writeUint32At(head, numDelete);
+            out.writeUint32At(head + 4, numPatch);
+            out.writeUint32At(head + 8, numAdd);
             return true;
-        } else {
-            out.offset = countersOffset;
-            return false;
         }
+        out.offset = head;
+        return false;
     }
 
     public patch (
@@ -187,6 +185,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const numDelete = inp.readUint32();
         const numPatch = inp.readUint32();
         const numAdd = inp.readUint32();
+
         const bProps = Object.keys(base);
         const numTargetProps = bProps.length - numDelete + numAdd;
         if (numTargetProps > this.capacity) {
@@ -200,6 +199,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         const result = {};
         const schema = this.muData;
+
         for (let i = 0; i < bProps.length; ++i) {
             const p = bProps[i];
             if (propsToDelete[p]) {
@@ -207,7 +207,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
             result[p] = schema.clone(base[p]);
         }
-
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
             inp.buffer.uint8[inp.offset + 3] &= ~0x80;
