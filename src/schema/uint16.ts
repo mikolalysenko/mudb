@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuNumber } from './_number';
 
-export class MuUint16 extends MuNumber {
+export class MuUint16 extends MuNumber<'uint16'> {
     constructor(identity?:number) {
         super(identity || 0, 'uint16');
     }

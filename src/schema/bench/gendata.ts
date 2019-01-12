@@ -110,7 +110,7 @@ export function genStruct (spec) : any {
     return result;
 }
 
-export function genVector<S extends MuNumber, D extends number> (
+export function genVector<S extends MuNumber<any>, D extends number> (
     valueSchema:S,
     dimension:D,
 ) : MuVector<S, D>['identity'] {

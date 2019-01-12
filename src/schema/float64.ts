@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuNumber } from './_number';
 
-export class MuFloat64 extends MuNumber {
+export class MuFloat64 extends MuNumber<'float64'> {
     constructor(identity?:number) {
         super(identity || 0, 'float64');
     }
