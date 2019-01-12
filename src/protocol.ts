@@ -148,7 +148,7 @@ export class MuProtocolFactory {
                 const protocolId = object.p;
                 const protocol = this.protocolFactories[protocolId];
                 if (!protocol) {
-                    throw new Error(`malformed packet: bad protocol id ${protocolId}`);
+                    throw new Error(`invalid protocol id ${protocolId}`);
                 }
 
                 if (object.s) {
@@ -163,7 +163,7 @@ export class MuProtocolFactory {
                 const protocolId = stream.readUint32();
                 const protocol = this.protocolFactories[protocolId];
                 if (!protocol) {
-                    throw new Error(`malformed packet: bad protocol id ${protocolId}`);
+                    throw new Error(`invalid protocol id ${protocolId}`);
                 }
 
                 const messageId = stream.readUint32();
@@ -174,7 +174,7 @@ export class MuProtocolFactory {
 
                 const messageSchema = protocol.schemas[messageId];
                 if (!messageSchema) {
-                    throw new Error(`malformed packet: bad message id ${messageId}`);
+                    throw new Error(`invalid message id ${messageId}`);
                 }
 
                 const handlers = message[protocolId];

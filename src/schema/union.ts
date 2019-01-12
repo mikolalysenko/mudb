@@ -162,7 +162,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             } else if (opcode === 4) {
                 result.data = schema.clone(schema.identity);
             } else {
-                throw new Error(`malformed packet: bad opcode ${opcode}`);
+                throw new Error(`invalid opcode ${opcode}`);
             }
         }
 
