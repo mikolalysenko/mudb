@@ -41,7 +41,11 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public patch (base:boolean, inp:MuReadStream) {
-        return !!inp.readUint8();
+        const result = inp.readUint8();
+        if (result > 1) {
+            throw new Error(`invalid value for boolean`);
+        }
+        return !!result;
     }
 
     public toJSON (bool:boolean) : boolean {
