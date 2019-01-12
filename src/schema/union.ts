@@ -27,7 +27,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         identityType?:keyof SubTypes,
     ) {
         this.muData = schemaSpec;
-        this._types = Object.keys(schemaSpec);
+        this._types = Object.keys(schemaSpec).sort();
 
         if (identityType) {
             this.identity = {
