@@ -122,23 +122,23 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         const head = out.offset;
         ++out.offset;
 
-        let opCode = 0;
+        let opcode = 0;
         const dataSchema = this.muData[target.type];
         if (base.type === target.type) {
             if (dataSchema.diff(base.data, target.data, out)) {
-                opCode = 1;
+                opcode = 1;
             }
         } else {
             out.writeUint8(this._types.indexOf(target.type as string));
             if (dataSchema.diff(dataSchema.identity, target.data, out)) {
-                opCode = 2;
+                opcode = 2;
             } else {
-                opCode = 4;
+                opcode = 4;
             }
         }
 
-        if (opCode) {
-            out.writeUint8At(head, opCode);
+        if (opcode) {
+            out.writeUint8At(head, opcode);
             return true;
         }
         out.offset = head;
@@ -151,16 +151,18 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     ) : Union<SubTypes> {
         const result = this.clone(base);
 
-        const opCode = inp.readUint8();
-        if (opCode & 1) {
+        const opcode = inp.readUint8();
+        if (opcode === 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
         } else {
             result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            if (opCode & 2) {
+            if (opcode === 2) {
                 result.data = schema.patch(schema.identity, inp);
-            } else if (opCode & 4) {
+            } else if (opcode === 4) {
                 result.data = schema.clone(schema.identity);
+            } else {
+                throw new Error(`malformed packet: bad opcode ${opcode}`);
             }
         }
 
