@@ -186,22 +186,30 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const numPatch = inp.readUint32();
         const numAdd = inp.readUint32();
 
-        const bProps = Object.keys(base);
-        const numTargetProps = bProps.length - numDelete + numAdd;
+        const bKeys = Object.keys(base);
+        const numBaseProps = bKeys.length;
+        if (numDelete > numBaseProps) {
+            throw new Error(`invalid number of deletions ${numDelete}`);
+        }
+        const numTargetProps = numBaseProps - numDelete + numAdd;
         if (numTargetProps > this.capacity) {
             throw new RangeError(`number of target properties ${numTargetProps} exceeds capacity ${this.capacity}`);
         }
 
         const propsToDelete = {};
         for (let i = 0; i < numDelete; ++i) {
-            propsToDelete[inp.readString()] = true;
+            const k = inp.readString();
+            if (!(k in base)) {
+                throw new Error(`invalid key ${k}`);
+            }
+            propsToDelete[k] = true;
         }
 
         const result = {};
         const schema = this.muData;
 
-        for (let i = 0; i < bProps.length; ++i) {
-            const p = bProps[i];
+        for (let i = 0; i < numBaseProps; ++i) {
+            const p = bKeys[i];
             if (propsToDelete[p]) {
                 continue;
             }
@@ -210,13 +218,13 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
             inp.buffer.uint8[inp.offset + 3] &= ~0x80;
-            const p = inp.readString();
-            if (p in base) {
-                result[p] = schema.patch(base[p], inp);
+            const k = inp.readString();
+            if (k in base) {
+                result[k] = schema.patch(base[k], inp);
             } else if (isIdentity) {
-                result[p] = schema.clone(schema.identity);
+                result[k] = schema.clone(schema.identity);
             } else {
-                result[p] = schema.patch(schema.identity, inp);
+                result[k] = schema.patch(schema.identity, inp);
             }
         }
 
