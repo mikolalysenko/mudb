@@ -4,9 +4,12 @@
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
-    "clean": "shx rm -rf clock rpc schema socket state stream *.d.ts *.js *.js.map",
+    "clean": "shx rm -rf clock coverage rpc schema socket state stream *.d.ts *.js *.js.map",
+    "coverage": "nyc npm run test",
     "link": "npm link && npm run clean && npm run build",
     "release": "npm run clean && npm run build && npm publish",
+    "report": "nyc report --reporter=text",
+    "test": "tape -r ts-node/register src/schema/test/*.ts",
     "watch": "tsc -w"
   },
   "main": "index.js",
@@ -55,5 +58,18 @@
     "typescript": "^3.0.3",
     "typescript-tslint-plugin": "^0.1.0",
     "webworkify": "^1.5.0"
+  },
+  "nyc": {
+    "cache": true,
+    "report-dir": "./coverage",
+    "temp-dir": "./coverage/.nyc_output",
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "html",
+      "text",
+      "text-summary"
+    ]
   }
 }
