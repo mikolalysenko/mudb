@@ -126,7 +126,7 @@ tape('de/serializing string', (t) => {
 tape('de/serializing number', (t) => {
     function createTestPair (
         _t:tape.Test,
-        schema:MuNumber,
+        schema:MuNumber<any>,
     ) : (a:number, b:number) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
@@ -241,7 +241,7 @@ tape('de/serializing sorted array', (t) => {
     t.end();
 });
 
-function randVec<D extends number> (dimension:D) : MuVector<MuNumber, D>['identity'] {
+function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['identity'] {
     const v = new MuVector(new MuFloat32(), dimension).alloc();
     for (let i = 0; i < v.length; ++i) {
         v[i] = randFloat32();

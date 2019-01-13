@@ -1,6 +1,7 @@
-import { MuSocket, MuData } from './socket';
 import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
+
+import { MuSocket, MuData } from './socket';
 import { MuTrace } from './trace';
 
 import stableStringify = require('json-stable-stringify');
@@ -147,7 +148,7 @@ export class MuProtocolFactory {
                 const protocolId = object.p;
                 const protocol = this.protocolFactories[protocolId];
                 if (!protocol) {
-                    return;
+                    throw new Error(`invalid protocol id ${protocolId}`);
                 }
 
                 if (object.s) {
@@ -162,7 +163,7 @@ export class MuProtocolFactory {
                 const protocolId = stream.readUint32();
                 const protocol = this.protocolFactories[protocolId];
                 if (!protocol) {
-                    return;
+                    throw new Error(`invalid protocol id ${protocolId}`);
                 }
 
                 const messageId = stream.readUint32();
@@ -173,12 +174,12 @@ export class MuProtocolFactory {
 
                 const messageSchema = protocol.schemas[messageId];
                 if (!messageSchema) {
-                    return;
+                    throw new Error(`invalid message id ${messageId}`);
                 }
 
                 const handlers = message[protocolId];
                 if (!handlers || !handlers[messageId]) {
-                    return;
+                    throw new Error(`cannot find handler`);
                 }
 
                 let m;

@@ -113,13 +113,13 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
 
-        const prefixOffset = out.offset;
         const numTrackers = Math.ceil(tLength / 8);
         out.grow(4 + numTrackers);
-        out.writeUint32(tLength);
 
+        const head = out.offset;
+        out.writeUint32(tLength);
         let trackerOffset = out.offset;
-        out.offset = trackerOffset + numTrackers;
+        out.offset += numTrackers;
 
         let tracker = 0;
         let numPatches = 0;
@@ -146,7 +146,6 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 tracker = 0;
             }
         }
-
         if (tLength & 7) {
             out.writeUint8At(trackerOffset, tracker);
         }
@@ -154,8 +153,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         if (numPatches > 0 || bLength !== tLength) {
             return true;
         }
-
-        out.offset = prefixOffset;
+        out.offset = head;
         return false;
     }
 
@@ -168,17 +166,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
         }
 
+        const numTrackers = Math.ceil(tLength / 8);
+        let trackerOffset = inp.offset;
+        inp.offset += numTrackers;
+
         const result = this.clone(base);
         result.length = tLength;
 
-        let trackerOffset = inp.offset;
-        const numTrackers = Math.ceil(tLength / 8);
-        inp.offset = trackerOffset + numTrackers;
-
-        let tracker = 0;
-
         const bLength = base.length;
         const schema = this.muData;
+        let tracker = 0;
         for (let i = 0; i < Math.min(bLength, tLength); ++i) {
             const mod8 = i & 7;
             if (!mod8) {
@@ -199,6 +196,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 result[i] = schema.clone(schema.identity);
             }
         }
+
         return result;
     }
 

@@ -27,7 +27,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         identityType?:keyof SubTypes,
     ) {
         this.muData = schemaSpec;
-        this._types = Object.keys(schemaSpec);
+        this._types = Object.keys(schemaSpec).sort();
 
         if (identityType) {
             this.identity = {
@@ -119,30 +119,29 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     ) : boolean {
         out.grow(8);
 
-        const trackerOffset = out.offset;
+        const head = out.offset;
         ++out.offset;
 
-        let tracker = 0;
-
-        const dataSchema = this.muData[target.type];
+        let opcode = 0;
+        const schema = this.muData[target.type];
         if (base.type === target.type) {
-            if (dataSchema.diff(base.data, target.data, out)) {
-                tracker = 1;
+            if (schema.diff(base.data, target.data, out)) {
+                opcode = 1;
             }
         } else {
             out.writeUint8(this._types.indexOf(target.type as string));
-            if (dataSchema.diff(dataSchema.identity, target.data, out)) {
-                tracker = 2;
+            if (schema.diff(schema.identity, target.data, out)) {
+                opcode = 2;
             } else {
-                tracker = 4;
+                opcode = 4;
             }
         }
 
-        if (tracker) {
-            out.writeUint8At(trackerOffset, tracker);
+        if (opcode) {
+            out.writeUint8At(head, opcode);
             return true;
         }
-        out.offset = trackerOffset;
+        out.offset = head;
         return false;
     }
 
@@ -151,20 +150,20 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         inp:MuReadStream,
     ) : Union<SubTypes> {
         const result = this.clone(base);
-
-        const tracker = inp.readUint8();
-        if (tracker & 1) {
+        const opcode = inp.readUint8();
+        if (opcode === 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
         } else {
             result.type = this._types[inp.readUint8()];
             const schema = this.muData[result.type];
-            if (tracker & 2) {
+            if (opcode === 2) {
                 result.data = schema.patch(schema.identity, inp);
-            } else if (tracker & 4) {
+            } else if (opcode === 4) {
                 result.data = schema.clone(schema.identity);
+            } else {
+                throw new Error(`invalid opcode ${opcode}`);
             }
         }
-
         return result;
     }
 

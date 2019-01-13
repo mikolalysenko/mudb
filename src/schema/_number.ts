@@ -1,15 +1,15 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-import { range } from './constant/range';
 import { MuNumericType } from './type';
+import { range } from './constant/range';
 
 /** Number type schema */
-export abstract class MuNumber implements MuSchema<number> {
+export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
     public readonly identity:number;
-    public readonly muType:MuNumericType;
+    public readonly muType:T;
     public readonly json:object;
 
-    constructor (identity:number, type:MuNumericType) {
+    constructor (identity:number, type:T) {
         const r = range[type];
         if (!(identity >= r[0] && identity <= r[1])) {
             throw new RangeError(`${identity} is out of range of ${type}`);

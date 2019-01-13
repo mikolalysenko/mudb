@@ -160,8 +160,8 @@ export class MuServerState<Schema extends MuStateSchema<MuAnySchema, MuAnySchema
         for (let i = 0; i < observedStates.length; ++i) {
             const ticks = observedStates[i];
 
-            // kick client if the latest acked state is stale
             if (this.tick - ticks[ticks.length - 1] >= this.maxHistorySize) {
+                console.log(`kick client ${this.clients[i].sessionId} with stale state`);
                 this.clients[i].close();
                 continue;
             }
