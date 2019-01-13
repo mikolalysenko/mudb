@@ -43,7 +43,7 @@
   "devDependencies": {
     "@types/node": "^8.10.38",
     "@types/tape": "^4.2.32",
-    "browserify": "^16.2.2",
+    "browserify": "^16.2.3",
     "envify": "^4.1.0",
     "ip": "^1.1.5",
     "nyc": "^13.1.0",
