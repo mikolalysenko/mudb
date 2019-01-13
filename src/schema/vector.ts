@@ -202,7 +202,6 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
 
         const result = this.clone(base);
         const uint8View = new Uint8Array(result.buffer);
-
         for (let i = 0; i < numTrackerFullBytes; ++i) {
             const start = i * 8;
             const tracker = inp.readUint8At(head + i);
@@ -222,7 +221,6 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
                 }
             }
         }
-
         return result;
     }
 

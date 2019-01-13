@@ -198,36 +198,34 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         const propsToDelete = {};
         for (let i = 0; i < numDelete; ++i) {
-            const k = inp.readString();
-            if (!(k in base)) {
-                throw new Error(`invalid key ${k}`);
+            const key = inp.readString();
+            if (!(key in base)) {
+                throw new Error(`invalid key ${key}`);
             }
-            propsToDelete[k] = true;
+            propsToDelete[key] = true;
         }
 
         const result = {};
         const schema = this.muData;
-
         for (let i = 0; i < numBaseProps; ++i) {
-            const p = bKeys[i];
-            if (propsToDelete[p]) {
+            const key = bKeys[i];
+            if (propsToDelete[key]) {
                 continue;
             }
-            result[p] = schema.clone(base[p]);
+            result[key] = schema.clone(base[key]);
         }
         for (let i = 0; i < numPatch; ++i) {
             const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
             inp.buffer.uint8[inp.offset + 3] &= ~0x80;
-            const k = inp.readString();
-            if (k in base) {
-                result[k] = schema.patch(base[k], inp);
+            const key = inp.readString();
+            if (key in base) {
+                result[key] = schema.patch(base[key], inp);
             } else if (isIdentity) {
-                result[k] = schema.clone(schema.identity);
+                result[key] = schema.clone(schema.identity);
             } else {
-                result[k] = schema.patch(schema.identity, inp);
+                result[key] = schema.patch(schema.identity, inp);
             }
         }
-
         return result;
     }
 

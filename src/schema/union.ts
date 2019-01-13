@@ -123,14 +123,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         ++out.offset;
 
         let opcode = 0;
-        const dataSchema = this.muData[target.type];
+        const schema = this.muData[target.type];
         if (base.type === target.type) {
-            if (dataSchema.diff(base.data, target.data, out)) {
+            if (schema.diff(base.data, target.data, out)) {
                 opcode = 1;
             }
         } else {
             out.writeUint8(this._types.indexOf(target.type as string));
-            if (dataSchema.diff(dataSchema.identity, target.data, out)) {
+            if (schema.diff(schema.identity, target.data, out)) {
                 opcode = 2;
             } else {
                 opcode = 4;
@@ -150,7 +150,6 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         inp:MuReadStream,
     ) : Union<SubTypes> {
         const result = this.clone(base);
-
         const opcode = inp.readUint8();
         if (opcode === 1) {
             result.data = this.muData[result.type].patch(result.data, inp);
@@ -165,7 +164,6 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
                 throw new Error(`invalid opcode ${opcode}`);
             }
         }
-
         return result;
     }
 
