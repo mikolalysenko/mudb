@@ -22,6 +22,9 @@ import { MuUint8 } from './uint8';
 import { MuUint16 } from './uint16';
 import { MuUint32 } from './uint32';
 
+// date type
+import { MuDate } from './date';
+
 // array types
 import { MuArray } from './array';
 import { MuSortedArray } from './sorted-array';
@@ -50,6 +53,7 @@ export {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuDate,
 
     MuArray,
     MuSortedArray,
