@@ -28,12 +28,17 @@ export class MuTrace {
         }
     }
 
-    public logError (errorMsg:string) {
-        this.logger(`error: ${errorMsg}`);
+    public log (msg:string) {
+        this.logger(`mudb: ${msg}`);
     }
 
-    public logMessage (id:number, msg:any, schema?:MuSchema<any>) {
-        const idx = this.ids.indexOf(id);
+    public logError (errorMsg:string) {
+        this.logger(`mudb error: ${errorMsg}`);
+    }
+
+    // "message" as in "message passing"
+    public logMessage (protocolId:number, msg:any, schema?:MuSchema<any>) {
+        const idx = this.ids.indexOf(protocolId);
         if (idx === -1) {
             return;
         }
@@ -41,6 +46,6 @@ export class MuTrace {
         const json = JSON.stringify(
             schema ? schema.toJSON(msg) : msg,
         );
-        this.logger(`message: ${this.names[idx]}: ${json}`);
+        this.logger(`mudb message: ${this.protocols[idx]}: ${json}`);
     }
 }
