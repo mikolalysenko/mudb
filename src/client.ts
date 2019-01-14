@@ -165,8 +165,8 @@ export class MuClient {
         if (this._started || this._closed) {
             throw new Error('mudb: attempt to register protocol after client has been started');
         }
-        if (schema.name) {
-            console.log(`mudb: register ${schema.name} protocol`);
+        if (this.trace && schema.name) {
+            this.trace.log(`register ${schema.name} protocol`);
         }
 
         const spec = new MuClientProtocolSpec();
