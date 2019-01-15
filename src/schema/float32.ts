@@ -1,14 +1,9 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuNumber } from './_number';
-import { fround } from './util/numeric';
-
-// @ts-ignore: Property 'fround' does not exist
-Math.fround = Math.fround || fround;
 
 export class MuFloat32 extends MuNumber<'float32'> {
     constructor(identity?:number) {
-        // @ts-ignore: Property 'fround' does not exist
-        super(Math.fround(identity || 0), 'float32');
+        super(identity || 0, 'float32');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) {

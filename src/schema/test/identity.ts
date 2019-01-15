@@ -61,7 +61,6 @@ test('schema.identity', (t) => {
     t.equal(new MuFixedASCII(1).identity,       ' ');
     t.equal(new MuFixedASCII('000').identity,   '000');
     t.equal(new MuFloat32(3).identity,          3);
-    t.equal(new MuFloat32(3.14).identity,       new Float32Array([3.14])[0]);
     t.equal(new MuFloat64(Math.E).identity,     Math.E);
     t.equal(new MuInt8(-0x80).identity,         -0x80);
     t.equal(new MuInt16(-0x8000).identity,      -0x8000);
