@@ -70,8 +70,9 @@ test('schema.identity', (t) => {
     t.equal(new MuUint16(0xFFFF).identity,      0xFFFF);
     t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
 
-    const date = new Date();
-    t.deepEqual(new MuDate(date).identity, date);
+    const d = new Date();
+    t.deepEqual(new MuDate(d).identity, d);
+    t.notEqual(new MuDate(d).identity, d);
 
     t.deepEqual(
         new MuArray(new MuFloat32(), Infinity, [0.5, 0.5, 0.5]).identity,
