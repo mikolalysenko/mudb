@@ -1,16 +1,13 @@
 let encodeString:(str:string) => Uint8Array;
 let decodeString:(bytes:Uint8Array) => string;
 
-// @ts-ignore: No implicit this
-if (this.TextEncoder) {
-    // @ts-ignore: No implicit this
-    const encoder = new this.TextEncoder();
+if (typeof window === 'object' && 'TextEncoder' in window) {
+    const encoder = new TextEncoder();
     encodeString = function (str) {
         return encoder.encode(str);
     };
 
-    // @ts-ignore: No implicit this
-    const decoder = new this.TextDecoder();
+    const decoder = new TextDecoder();
     decodeString = function (bytes) {
         return decoder.decode(bytes);
     };
