@@ -428,7 +428,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         epilog.append(`return {identity:${identityRef},muData:${muDataRef},`);
         Object.keys(methods).forEach((name) => {
             prelude.append(methods[name].toString());
-            epilog.append(`${name},`);
+            epilog.append(`${name}:${name},`);
         });
         epilog.append('}');
         prelude.append(epilog.toString());
