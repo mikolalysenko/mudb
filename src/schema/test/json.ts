@@ -1,6 +1,7 @@
 import test = require('tape');
 import {
     MuFloat32,
+    MuDate,
     MuArray,
     MuDictionary,
     MuSortedArray,
@@ -9,6 +10,23 @@ import {
     MuVector,
 } from '../index';
 import { randFloat32 } from '../util/random';
+
+// date
+
+test('date.toJSON(Date)', (t) => {
+    const date = new MuDate();
+    const d = date.alloc();
+    t.equal(date.toJSON(d), d.toISOString());
+    t.end();
+});
+
+test('date.fromJSON(string)', (t) => {
+    const date = new MuDate();
+    const d = date.alloc();
+    t.deepEqual(date.fromJSON(date.toJSON(d)), d);
+    t.notEqual(date.fromJSON(date.toJSON(d)), d);
+    t.end();
+});
 
 // vector
 

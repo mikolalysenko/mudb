@@ -2,6 +2,7 @@ import test = require('tape');
 import {
     MuUTF8,
     MuFloat32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -12,6 +13,20 @@ import {
 
 test('primitive.assign()', (t) => {
     t.comment('should be no-op');
+    t.end();
+});
+
+test('date.assign()', (t) => {
+    const date = new MuDate();
+    const dst = date.alloc();
+    const src = date.alloc();
+    date.assign(dst, src);
+    t.deepEqual(dst, src);
+    t.notEqual(dst, src);
+    dst.setTime(0);
+    t.notDeepEqual(dst, src);
+    date.assign(dst, src);
+    t.deepEqual(dst, src);
     t.end();
 });
 

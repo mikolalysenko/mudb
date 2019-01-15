@@ -13,6 +13,7 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuDictionary,
@@ -34,6 +35,7 @@ test('schema.identity default', (t) => {
     t.equal(new MuUint8().identity,     0);
     t.equal(new MuUint16().identity,    0);
     t.equal(new MuUint32().identity,    0);
+    t.true(new MuDate().identity instanceof Date);
     t.deepEqual(new MuArray(new MuFloat32(), 0).identity,       []);
     t.deepEqual(new MuSortedArray(new MuFloat32(), 0).identity, []);
     t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
@@ -67,6 +69,10 @@ test('schema.identity', (t) => {
     t.equal(new MuUint8(0xFF).identity,         0xFF);
     t.equal(new MuUint16(0xFFFF).identity,      0xFFFF);
     t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
+
+    const date = new Date();
+    t.deepEqual(new MuDate(date).identity, date);
+
     t.deepEqual(
         new MuArray(new MuFloat32(), Infinity, [0.5, 0.5, 0.5]).identity,
         [0.5, 0.5, 0.5],

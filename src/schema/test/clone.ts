@@ -3,6 +3,7 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -28,6 +29,15 @@ test('primitive.clone()', (t) => {
     t.equal(float32.clone(0), 0);
     t.equal(float32.clone(-0.5), -0.5);
     t.equal(float32.clone(3.1415927410125732), 3.1415927410125732);
+    t.end();
+});
+
+test('data.clone()', (t) => {
+    const date = new MuDate();
+    const moment = date.alloc();
+    const instant = date.clone(moment);
+    t.deepEqual(moment, instant);
+    t.notEqual(moment, instant);
     t.end();
 });
 

@@ -17,6 +17,7 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -153,6 +154,19 @@ tape('de/serializing number', (t) => {
     testUint16(0, 0xFFFF);
     const testUint32 = createTestPair(t, new MuUint32());
     testUint32(0, 0xFFFFFFFF);
+    t.end();
+});
+
+tape('de/serializing date', (t) => {
+    const date = new MuDate();
+    const test = createTest(t, date);
+    const d1 = date.alloc();
+    const d2 = date.alloc();
+    d2.setTime(0);
+    test(d1, d1);
+    test(d2, d2);
+    test(d1, d2);
+    test(d2, d1);
     t.end();
 });
 

@@ -3,6 +3,7 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -31,6 +32,17 @@ test('primitive.equal()', (t) => {
     t.true(float32.equal(0.5, 0.5));
     t.false(float32.equal(0, 1));
 
+    t.end();
+});
+
+test('date.equal()', (t) => {
+    const date = new MuDate();
+    const d1 = date.alloc();
+    const d2 = date.alloc();
+    d2.setTime(0);
+    t.false(date.equal(d1, d2));
+    d2.setTime(d1.getTime());
+    t.true(date.equal(d1, d2));
     t.end();
 });
 

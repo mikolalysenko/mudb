@@ -3,6 +3,7 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuVector,
@@ -23,12 +24,14 @@ test('primitive.alloc()', (t) => {
 });
 
 test('nonPrimitive.alloc()', (t) => {
+    const date = new MuDate();
     const array = new MuArray(new MuFloat32(), Infinity);
     const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const vector = new MuVector(new MuFloat32(), 5);
     const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const union = new MuUnion({ f: new MuFloat32() }, 'f');
 
+    t.true(date.alloc() instanceof Date);
     t.deepEqual(array.alloc(), []);
     t.deepEqual(sortedArray.alloc(), []);
     t.deepEqual(vector.alloc(), new Float32Array(vector.dimension));
@@ -51,21 +54,25 @@ test('struct.alloc()', (t) => {
 });
 
 test('alloc, free, alloc', (t) => {
+    const date = new MuDate();
     const array = new MuArray(new MuFloat32(), Infinity);
     const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const vector = new MuVector(new MuFloat32(), 5);
     const struct = new MuStruct({ f: new MuFloat32() });
 
+    const d = date.alloc();
     const a = array.alloc();
     const sa = sortedArray.alloc();
     const v = vector.alloc();
     const s = struct.alloc();
 
+    date.free(d);
     array.free(a);
     sortedArray.free(sa);
     vector.free(v);
     struct.free(s);
 
+    t.equal(date.alloc(), d, 'should return the pool Date object');
     t.equal(array.alloc(), a, `should get the pooled array`);
     t.equal(sortedArray.alloc(), sa, `should get the pooled sorted array`);
     t.equal(vector.alloc(), v, `should get the pooled vector`);

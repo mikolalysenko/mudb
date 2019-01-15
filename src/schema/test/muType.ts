@@ -13,6 +13,7 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuDate,
     MuArray,
     MuSortedArray,
     MuDictionary,
@@ -25,7 +26,7 @@ test('schema.muType', (t) => {
     t.equal(new MuVoid().muType,        'void');
     t.equal(new MuBoolean().muType,     'boolean');
     t.equal(new MuASCII().muType,       'ascii');
-    t.equal(new MuFixedASCII(1).muType, 'fixed-ascii');
+    t.equal(new MuFixedASCII(0).muType, 'fixed-ascii');
     t.equal(new MuUTF8().muType,        'utf8');
     t.equal(new MuFloat32().muType,     'float32');
     t.equal(new MuFloat64().muType,     'float64');
@@ -35,6 +36,7 @@ test('schema.muType', (t) => {
     t.equal(new MuUint8().muType,       'uint8');
     t.equal(new MuUint16().muType,      'uint16');
     t.equal(new MuUint32().muType,      'uint32');
+    t.equal(new MuDate().muType,        'date');
     t.equal(new MuArray(new MuFloat32(), 0).muType,         'array');
     t.equal(new MuSortedArray(new MuFloat32(), 0).muType,   'sorted-array');
     t.equal(new MuDictionary(new MuFloat32(), 0).muType,    'dictionary');
