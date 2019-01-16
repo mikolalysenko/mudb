@@ -139,7 +139,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < bProps.length; ++i) {
             const prop = bProps[i];
             if (!(prop in target)) {
-                out.grow(4 + 2 * prop.length);
+                out.grow(4 + 4 * prop.length);
                 out.writeString(prop);
                 ++numDelete;
             }
