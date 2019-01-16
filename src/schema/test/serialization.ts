@@ -120,6 +120,12 @@ tape('de/serializing string', (t) => {
         testPair('', ' ');
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', 'Iñtërnâtiônàlizætiøn☃💩');
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', '💩💩💩💩💩💩💩💩💩💩💩💩💩💩💩');
+
+        let bigText = '啊啊啊';
+        for (let i = 0; i <= 0xF; ++i) {
+            bigText += bigText;
+        }
+        testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', bigText);
         st.end();
     });
 });
