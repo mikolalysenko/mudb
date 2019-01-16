@@ -129,11 +129,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         out.grow(64);
 
         const head = out.offset;
-        out.offset += 12;
+        out.offset += 8;
 
         let numDelete = 0;
         let numPatch = 0;
-        let numAdd = 0;
 
         const bProps = Object.keys(base);
         for (let i = 0; i < bProps.length; ++i) {
@@ -164,14 +163,12 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                     out.buffer.uint8[start + 3] |= 0x80;
                 }
                 ++numPatch;
-                ++numAdd;
             }
         }
 
         if (numDelete > 0 || numPatch > 0) {
             out.writeUint32At(head, numDelete);
             out.writeUint32At(head + 4, numPatch);
-            out.writeUint32At(head + 8, numAdd);
             return true;
         }
         out.offset = head;
@@ -184,16 +181,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     ) : Dictionary<ValueSchema> {
         const numDelete = inp.readUint32();
         const numPatch = inp.readUint32();
-        const numAdd = inp.readUint32();
 
         const bKeys = Object.keys(base);
         const numBaseProps = bKeys.length;
         if (numDelete > numBaseProps) {
             throw new Error(`invalid number of deletions ${numDelete}`);
-        }
-        const numTargetProps = numBaseProps - numDelete + numAdd;
-        if (numTargetProps > this.capacity) {
-            throw new RangeError(`number of target properties ${numTargetProps} exceeds capacity ${this.capacity}`);
         }
 
         const propsToDelete = {};

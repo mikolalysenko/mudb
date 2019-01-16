@@ -95,14 +95,10 @@ test('guarding dictionary.diff()', (t) => {
 test('guarding dictionary.patch()', (t) => {
     const infiniteDictionary = new MuDictionary(new MuFloat32(), Infinity);
     const out = new MuWriteStream(1);
-    infiniteDictionary.diff({}, {a: 0}, out);
-    infiniteDictionary.diff({}, {a: 0, b: 0, c: 0}, out);
-    infiniteDictionary.diff({}, {a: 0, b: 0, c: 0, d: 0}, out);
+    infiniteDictionary.diff({a: 0, b: 0, c: 0, d: 0}, {}, out);
 
-    const finiteDictionary = new MuDictionary(new MuFloat32(), 3);
+    const finiteDictionary = new MuDictionary(new MuFloat32(), Infinity);
     const inp = new MuReadStream(out.buffer.uint8);
-    t.doesNotThrow(() => finiteDictionary.patch({}, inp));
-    t.doesNotThrow(() => finiteDictionary.patch({}, inp));
-    t.throws(() => finiteDictionary.patch({}, inp), RangeError);
+    t.throws(() => finiteDictionary.patch({a: 0, b: 0, c: 0}, inp), Error);
     t.end();
 });
