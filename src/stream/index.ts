@@ -1,19 +1,15 @@
+const root = (typeof self == 'object' && self['Object'] == Object && self) ||
+            (typeof global == 'object' && global['Object'] == Object && global);
+
 let encodeString:(str:string) => Uint8Array;
 let decodeString:(bytes:Uint8Array) => string;
 
-// @ts-ignore: No implicit this
-if (this.TextEncoder) {
-    // @ts-ignore: No implicit this
-    const encoder = new this.TextEncoder();
-    encodeString = function (str) {
-        return encoder.encode(str);
-    };
-
-    // @ts-ignore: No implicit this
-    const decoder = new this.TextDecoder();
-    decodeString = function (bytes) {
-        return decoder.decode(bytes);
-    };
+// `TextEncoder` and `TextDecoder` have become globals since Node.js v11
+if (typeof root === 'object' && 'TextEncoder' in root) {
+    const encoder = new TextEncoder();
+    encodeString = (str) => encoder.encode(str);
+    const decoder = new TextDecoder();
+    decodeString = (bytes) => decoder.decode(bytes);
 } else {
     const StringCodec = require('./codec');
     encodeString = StringCodec.encodeString;

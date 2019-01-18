@@ -121,11 +121,12 @@ test('float', (t) => {
     ws.writeFloat64(FLOAT64_MAX);
     ws.writeFloat64(floatNum);
 
-    function fround (num) {
-        const arr = new Float32Array(1);
-        arr[0] = num;
-        return arr[0];
-    }
+    const fround = (function (a) {
+        return function (n:number) : number {
+            a[0] = n;
+            return a[0];
+        };
+    })(new Float32Array(1));
 
     const rs = new MuReadStream(ws.buffer.uint8);
 
