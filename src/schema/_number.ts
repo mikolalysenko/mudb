@@ -3,7 +3,6 @@ import { MuSchema } from './schema';
 import { MuNumericType } from './type';
 import { range } from './constant/range';
 
-/** Number type schema */
 export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
     public readonly muType:T;
     public readonly identity:number;

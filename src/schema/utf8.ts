@@ -1,7 +1,7 @@
 import { MuReadStream, MuWriteStream } from '../stream';
 import { MuString } from './_string';
 
-export class MuUTF8 extends MuString {
+export class MuUTF8 extends MuString<'utf8'> {
     constructor (identity?:string) {
         super(identity || '', 'utf8');
     }

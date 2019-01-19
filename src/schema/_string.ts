@@ -2,13 +2,12 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { MuStringType } from './type';
 
-/** Internal string type schema */
-export abstract class MuString implements MuSchema<string> {
+export abstract class MuString<T extends MuStringType> implements MuSchema<string> {
+    public readonly muType:T;
     public readonly identity:string;
-    public readonly muType:string;
     public readonly json:object;
 
-    constructor (identity:string, type:MuStringType) {
+    constructor (identity:string, type:T) {
         this.identity = identity;
         this.muType = type;
         this.json = {

@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuString } from './_string';
 
-export class MuASCII extends MuString {
+export class MuASCII extends MuString<'ascii'> {
     constructor (identity?:string) {
         super(identity || '', 'ascii');
     }
