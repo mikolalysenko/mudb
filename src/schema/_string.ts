@@ -1,10 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-
-export type MuStringType =
-    'ascii'         |
-    'fixed-ascii'   |
-    'utf8';
+import { MuStringType } from './type';
 
 /** Internal string type schema */
 export abstract class MuString implements MuSchema<string> {
@@ -25,7 +21,7 @@ export abstract class MuString implements MuSchema<string> {
         return this.identity;
     }
 
-    public free (str:string) { }
+    public free (str:string) : void { }
 
     public equal (a:string, b:string) : boolean {
         return a === b;
@@ -35,7 +31,7 @@ export abstract class MuString implements MuSchema<string> {
         return str;
     }
 
-    public assign (dst:string, src:string) { }
+    public assign (dst:string, src:string) : void { }
 
     public toJSON (str:string) : string {
         return str;

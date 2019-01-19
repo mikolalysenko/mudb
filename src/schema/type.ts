@@ -8,6 +8,11 @@ export type MuNumericType =
     'uint16'    |
     'uint32';
 
+export type MuStringType =
+    'ascii'         |
+    'fixed-ascii'   |
+    'utf8';
+
 const muPrimitiveTypes = [
     'ascii',
     'boolean',
@@ -24,6 +29,6 @@ const muPrimitiveTypes = [
     'void',
 ];
 
-export function isMuPrimitiveType (muType:string) {
+export function isMuPrimitiveType (muType:string) : boolean {
     return muPrimitiveTypes.indexOf(muType) > -1;
 }
