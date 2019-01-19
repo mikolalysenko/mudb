@@ -6,8 +6,8 @@ export class MuUint32 extends MuNumber<'uint32'> {
         super(identity || 0, 'uint32');
     }
 
-    public diff (base:number, target:number, out:MuWriteStream) {
-        if ((base >>> 0) !== (target >>> 0)) {
+    public diff (base:number, target:number, out:MuWriteStream) : boolean {
+        if (target !== base) {
             out.grow(4);
             out.writeUint32(target);
             return true;
@@ -15,7 +15,7 @@ export class MuUint32 extends MuNumber<'uint32'> {
         return false;
     }
 
-    public patch (base:number, inp:MuReadStream) {
+    public patch (base:number, inp:MuReadStream) : number {
         return inp.readUint32();
     }
 }
