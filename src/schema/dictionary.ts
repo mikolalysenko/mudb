@@ -17,16 +17,16 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     public readonly capacity:number;
 
     constructor (
-        valueSchema:ValueSchema,
+        schema:ValueSchema,
         capacity:number,
         identity?:Dictionary<ValueSchema>,
     ) {
-        this.muData = valueSchema;
+        this.muData = schema;
         this.capacity = capacity;
         this.identity = identity || {};
         this.json = {
             type: 'dictionary',
-            valueType: this.muData.json,
+            valueType: schema.json,
             identity: JSON.stringify(this.identity),
         };
     }
@@ -36,10 +36,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public free (dict:Dictionary<ValueSchema>) {
-        const valueSchema = this.muData;
+        const schema = this.muData;
         const props = Object.keys(dict);
         for (let i = 0; i < props.length; ++i) {
-            valueSchema.free(dict[props[i]]);
+            schema.free(dict[props[i]]);
         }
     }
 
@@ -60,10 +60,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
         }
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < bKeys.length; ++i) {
             const k = bKeys[i];
-            if (!valueSchema.equal(a[k], b[k])) {
+            if (!schema.equal(a[k], b[k])) {
                 return false;
             }
         }
@@ -73,10 +73,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     public clone (dict:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
         const copy = {};
         const keys = Object.keys(dict);
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < keys.length; ++i) {
             const k = keys[i];
-            copy[k] = valueSchema.clone(dict[k]);
+            copy[k] = schema.clone(dict[k]);
         }
         return copy;
     }
@@ -88,17 +88,17 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         const dKeys = Object.keys(dst);
         const sKeys = Object.keys(src);
-        const valueSchema = this.muData;
+        const schema = this.muData;
 
         for (let i = 0; i < dKeys.length; ++i) {
             const k = dKeys[i];
             if (!(k in src)) {
-                valueSchema.free(dst[k]);
+                schema.free(dst[k]);
                 delete dst[k];
             }
         }
 
-        if (isMuPrimitiveType(valueSchema.muType)) {
+        if (isMuPrimitiveType(schema.muType)) {
             for (let i = 0; i < sKeys.length; ++i) {
                 const k = sKeys[i];
                 dst[k] = src[k];
@@ -109,9 +109,9 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         for (let i = 0; i < sKeys.length; ++i) {
             const k = sKeys[i];
             if (k in dst) {
-                valueSchema.assign(dst[k], src[k]);
+                schema.assign(dst[k], src[k]);
             } else {
-                dst[k] = valueSchema.clone(src[k]);
+                dst[k] = schema.clone(src[k]);
             }
         }
     }
@@ -225,10 +225,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const json = {};
         const keys = Object.keys(dict);
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < keys.length; ++i) {
             const k = keys[i];
-            json[k] = valueSchema.toJSON(dict[k]);
+            json[k] = schema.toJSON(dict[k]);
         }
         return json;
     }
@@ -237,10 +237,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         const dict = {};
         const keys = Object.keys(json);
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < keys.length; ++i) {
             const k = keys[i];
-            dict[k] = valueSchema.fromJSON(json[k]);
+            dict[k] = schema.fromJSON(json[k]);
         }
         return dict;
     }

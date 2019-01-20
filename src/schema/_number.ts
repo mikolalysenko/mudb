@@ -17,8 +17,8 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
         this.identity = identity;
         this.muType = type;
         this.json = {
-            type: this.muType,
-            identity: this.identity,
+            type,
+            identity,
         };
     }
 

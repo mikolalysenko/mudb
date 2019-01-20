@@ -97,17 +97,16 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
 
     public pool:Vector<ValueSchema, D>[] = [];
 
-    constructor (valueSchema:ValueSchema, dimension:D) {
-        this._constructor = ConstructorTable[valueSchema.muType];
+    constructor (schema:ValueSchema, dimension:D) {
+        this._constructor = ConstructorTable[schema.muType];
         this.dimension = dimension;
-
         this.identity = new this._constructor(dimension);
         for (let i = 0; i < dimension; ++i) {
-            this.identity[i] = valueSchema.identity;
+            this.identity[i] = schema.identity;
         }
         this.json = {
             type: 'vector',
-            valueType: valueSchema.json,
+            valueType: schema.json,
             dimension,
         };
     }

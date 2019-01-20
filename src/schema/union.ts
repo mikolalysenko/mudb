@@ -43,7 +43,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         const result = {};
         Object.keys(schemaSpec).forEach((subtype) => {
-            result[subtype] = this.muData[subtype].json;
+            result[subtype] = schemaSpec[subtype].json;
         });
         this.json = {
             type: 'union',

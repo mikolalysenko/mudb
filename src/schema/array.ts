@@ -15,16 +15,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     public pool:ValueSchema['identity'][][] = [];
 
     constructor (
-        valueSchema:ValueSchema,
+        schema:ValueSchema,
         capacity:number,
         identity?:ValueSchema['identity'][],
     ) {
-        this.muData = valueSchema;
+        this.muData = schema;
         this.capacity = capacity;
         this.identity = identity || [];
         this.json = {
             type: 'array',
-            valueType: this.muData.json,
+            valueType: schema.json,
             identity: JSON.stringify(this.identity),
         };
     }
@@ -34,9 +34,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public free (arr:ValueSchema['identity'][]) : void {
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < arr.length; ++i) {
-            valueSchema.free(arr[i]);
+            schema.free(arr[i]);
         }
         arr.length = 0;
         this.pool.push(arr);
@@ -50,9 +50,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             return false;
         }
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = a.length - 1; i >= 0 ; --i) {
-            if (!valueSchema.equal(a[i], b[i])) {
+            if (!schema.equal(a[i], b[i])) {
                 return false;
             }
         }
@@ -63,9 +63,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         const copy = this.alloc();
         copy.length = arr.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < arr.length; ++i) {
-            copy[i] = valueSchema.clone(arr[i]);
+            copy[i] = schema.clone(arr[i]);
         }
         return copy;
     }
@@ -77,16 +77,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         const dLeng = dst.length;
         const sLeng = src.length;
-        const valueSchema = this.muData;
+        const schema = this.muData;
 
         // pool extra elements in dst
         for (let i = sLeng; i < dLeng; ++i) {
-            valueSchema.free(dst[i]);
+            schema.free(dst[i]);
         }
 
         dst.length = sLeng;
 
-        if (isMuPrimitiveType(valueSchema.muType)) {
+        if (isMuPrimitiveType(schema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }
@@ -95,11 +95,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
 
         // done if src has less or same number of elements
         for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
-            valueSchema.assign(dst[i], src[i]);
+            schema.assign(dst[i], src[i]);
         }
         // only if src has more elements
         for (let i = dLeng; i < sLeng; ++i) {
-            dst[i] = valueSchema.clone(src[i]);
+            dst[i] = schema.clone(src[i]);
         }
     }
 
@@ -201,17 +201,17 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public toJSON (arr:ValueSchema['identity'][]) : any[] {
-        const valueSchema = this.muData;
-        return arr.map((v) => valueSchema.toJSON(v));
+        const schema = this.muData;
+        return arr.map((v) => schema.toJSON(v));
     }
 
     public fromJSON (json:any[]) : ValueSchema['identity'][] {
         const arr = this.alloc();
         arr.length = json.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < json.length; ++i) {
-            arr[i] = valueSchema.fromJSON(json[i]);
+            arr[i] = schema.fromJSON(json[i]);
         }
         return arr;
     }
