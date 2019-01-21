@@ -1,10 +1,9 @@
-import { MuSchema } from './schema';
 import { MuReadStream, MuWriteStream } from '../stream';
+import { MuSchema } from './schema';
 
-/** Boolean type schema */
 export class MuBoolean implements MuSchema<boolean> {
-    public readonly identity:boolean;
     public readonly muType = 'boolean';
+    public readonly identity:boolean;
     public readonly json:object;
 
     constructor (identity?:boolean) {
@@ -15,23 +14,23 @@ export class MuBoolean implements MuSchema<boolean> {
         };
     }
 
-    public alloc () {
+    public alloc () : boolean {
         return this.identity;
     }
 
     public free (bool:boolean) : void { }
 
-    public equal (a:boolean, b:boolean) {
+    public equal (a:boolean, b:boolean) : boolean {
         return a === b;
     }
 
-    public clone (bool:boolean) {
+    public clone (bool:boolean) : boolean {
         return bool;
     }
 
-    public assign (dst:boolean, src:boolean) { }
+    public assign (dst:boolean, src:boolean) : void { }
 
-    public diff (base:boolean, target:boolean, out:MuWriteStream) {
+    public diff (base:boolean, target:boolean, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(1);
             out.writeUint8(target ? 1 : 0);
@@ -40,7 +39,7 @@ export class MuBoolean implements MuSchema<boolean> {
         return false;
     }
 
-    public patch (base:boolean, inp:MuReadStream) {
+    public patch (base:boolean, inp:MuReadStream) : boolean {
         const result = inp.readUint8();
         if (result > 1) {
             throw new Error(`invalid value for boolean`);
