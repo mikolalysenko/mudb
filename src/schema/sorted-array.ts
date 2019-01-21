@@ -73,17 +73,17 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.pool.push(set);
     }
 
-    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
-        if (!Array.isArray(a) || !Array.isArray(b)) {
-            return false;
-        }
+    public equal (
+        a:ValueSchema['identity'][],
+        b:ValueSchema['identity'][],
+    ) : boolean {
         if (a.length !== b.length) {
             return false;
         }
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = a.length - 1; i >= 0 ; --i) {
-            if (!valueSchema.equal(a[i], b[i])) {
+            if (!schema.equal(a[i], b[i])) {
                 return false;
             }
         }

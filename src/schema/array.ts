@@ -1,12 +1,10 @@
 import { MuWriteStream, MuReadStream } from '../stream';
-
 import { MuSchema } from './schema';
 import { isMuPrimitiveType } from './type';
 
 export class MuArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
     public readonly muType = 'array';
-
     public readonly identity:ValueSchema['identity'][];
     public readonly muData:ValueSchema;
     public readonly json:object;
@@ -42,10 +40,10 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         this.pool.push(arr);
     }
 
-    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
-        if (!Array.isArray(a) || !Array.isArray(b)) {
-            return false;
-        }
+    public equal (
+        a:ValueSchema['identity'][],
+        b:ValueSchema['identity'][],
+    ) : boolean {
         if (a.length !== b.length) {
             return false;
         }
@@ -70,7 +68,10 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) {
+    public assign (
+        dst:ValueSchema['identity'][],
+        src:ValueSchema['identity'][],
+    ) : void {
         if (dst === src) {
             return;
         }
