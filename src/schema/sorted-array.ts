@@ -101,36 +101,30 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) {
-        if (dst === src) {
-            return;
-        }
-
+    public assign (
+        dst:ValueSchema['identity'][],
+        src:ValueSchema['identity'][],
+    ) : void {
         const dLeng = dst.length;
         const sLeng = src.length;
-        const valueSchema = this.muData;
-
-        // pool extra elements in dst
+        const schema = this.muData;
         for (let i = sLeng; i < dLeng; ++i) {
-            valueSchema.free(dst[i]);
+            schema.free(dst[i]);
         }
 
         dst.length = sLeng;
-
-        if (isMuPrimitiveType(valueSchema.muType)) {
+        if (isMuPrimitiveType(schema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }
             return;
         }
 
-        // done if src has less or same number of elements
         for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
-            valueSchema.assign(dst[i], src[i]);
+            schema.assign(dst[i], src[i]);
         }
-        // only if src has more elements
         for (let i = dLeng; i < sLeng; ++i) {
-            dst[i] = valueSchema.clone(src[i]);
+            dst[i] = schema.clone(src[i]);
         }
     }
 

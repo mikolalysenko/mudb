@@ -72,21 +72,14 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         dst:ValueSchema['identity'][],
         src:ValueSchema['identity'][],
     ) : void {
-        if (dst === src) {
-            return;
-        }
-
         const dLeng = dst.length;
         const sLeng = src.length;
         const schema = this.muData;
-
-        // pool extra elements in dst
         for (let i = sLeng; i < dLeng; ++i) {
             schema.free(dst[i]);
         }
 
         dst.length = sLeng;
-
         if (isMuPrimitiveType(schema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
@@ -94,11 +87,9 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             return;
         }
 
-        // done if src has less or same number of elements
         for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
             schema.assign(dst[i], src[i]);
         }
-        // only if src has more elements
         for (let i = dLeng; i < sLeng; ++i) {
             dst[i] = schema.clone(src[i]);
         }
@@ -109,25 +100,25 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         target:ValueSchema['identity'][],
         out:MuWriteStream,
     ) : boolean {
-        const tLength = target.length;
-        if (tLength > this.capacity) {
-            throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
+        const tLeng = target.length;
+        if (tLeng > this.capacity) {
+            throw new RangeError(`target length ${tLeng} exceeds capacity ${this.capacity}`);
         }
 
-        const numTrackers = Math.ceil(tLength / 8);
+        const numTrackers = Math.ceil(tLeng / 8);
         out.grow(4 + numTrackers);
 
         const head = out.offset;
-        out.writeUint32(tLength);
+        out.writeUint32(tLeng);
         let trackerOffset = out.offset;
         out.offset += numTrackers;
 
         let tracker = 0;
         let numPatches = 0;
 
-        const bLength = base.length;
+        const bLeng = base.length;
         const schema = this.muData;
-        for (let i = 0; i < Math.min(bLength, tLength); ++i) {
+        for (let i = 0; i < Math.min(bLeng, tLeng); ++i) {
             if (schema.diff(base[i], target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatches;
@@ -137,7 +128,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 tracker = 0;
             }
         }
-        for (let i = bLength; i < tLength; ++i) {
+        for (let i = bLeng; i < tLeng; ++i) {
             if (schema.diff(schema.identity, target[i], out)) {
                 tracker |= 1 << (i & 7);
                 ++numPatches;
@@ -147,11 +138,11 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 tracker = 0;
             }
         }
-        if (tLength & 7) {
+        if (tLeng & 7) {
             out.writeUint8At(trackerOffset, tracker);
         }
 
-        if (numPatches > 0 || bLength !== tLength) {
+        if (numPatches > 0 || bLeng !== tLeng) {
             return true;
         }
         out.offset = head;
@@ -162,22 +153,22 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         base:ValueSchema['identity'][],
         inp:MuReadStream,
     ) : ValueSchema['identity'][] {
-        const tLength = inp.readUint32();
-        if (tLength > this.capacity) {
-            throw new RangeError(`target length ${tLength} exceeds capacity ${this.capacity}`);
+        const tLeng = inp.readUint32();
+        if (tLeng > this.capacity) {
+            throw new RangeError(`target length ${tLeng} exceeds capacity ${this.capacity}`);
         }
 
-        const numTrackers = Math.ceil(tLength / 8);
+        const numTrackers = Math.ceil(tLeng / 8);
         let trackerOffset = inp.offset;
         inp.offset += numTrackers;
 
         const result = this.clone(base);
-        result.length = tLength;
+        result.length = tLeng;
 
-        const bLength = base.length;
+        const bLeng = base.length;
         const schema = this.muData;
         let tracker = 0;
-        for (let i = 0; i < Math.min(bLength, tLength); ++i) {
+        for (let i = 0; i < Math.min(bLeng, tLeng); ++i) {
             const mod8 = i & 7;
             if (!mod8) {
                 tracker = inp.readUint8At(trackerOffset++);
@@ -186,7 +177,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
                 result[i] = schema.patch(base[i], inp);
             }
         }
-        for (let i = bLength; i < tLength; ++i) {
+        for (let i = bLeng; i < tLeng; ++i) {
             const mod8 = i & 7;
             if (!mod8) {
                 tracker = inp.readUint8At(trackerOffset++);
