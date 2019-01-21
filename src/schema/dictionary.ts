@@ -44,10 +44,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public equal (a:Dictionary<ValueSchema>, b:Dictionary<ValueSchema>) {
-        if (a !== Object(a) || b !== Object(b)) {
-            return false;
-        }
-
         const aKeys = Object.keys(a);
         const bKeys = Object.keys(b);
 
@@ -67,6 +63,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 return false;
             }
         }
+
         return true;
     }
 
