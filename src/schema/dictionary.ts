@@ -35,7 +35,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return {};
     }
 
-    public free (dict:Dictionary<ValueSchema>) {
+    public free (dict:Dictionary<ValueSchema>) : void {
         const schema = this.muData;
         const props = Object.keys(dict);
         for (let i = 0; i < props.length; ++i) {
@@ -43,7 +43,10 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
     }
 
-    public equal (a:Dictionary<ValueSchema>, b:Dictionary<ValueSchema>) {
+    public equal (
+        a:Dictionary<ValueSchema>,
+        b:Dictionary<ValueSchema>,
+    ) : boolean {
         const aKeys = Object.keys(a);
         const bKeys = Object.keys(b);
 
@@ -78,15 +81,13 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (dst:Dictionary<ValueSchema>, src:Dictionary<ValueSchema>) {
-        if (dst === src) {
-            return;
-        }
-
+    public assign (
+        dst:Dictionary<ValueSchema>,
+        src:Dictionary<ValueSchema>,
+    ) : void {
         const dKeys = Object.keys(dst);
         const sKeys = Object.keys(src);
         const schema = this.muData;
-
         for (let i = 0; i < dKeys.length; ++i) {
             const k = dKeys[i];
             if (!(k in src)) {
