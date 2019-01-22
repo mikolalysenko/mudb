@@ -6,8 +6,8 @@ export class MuUint16 extends MuNumber<'uint16'> {
         super(identity || 0, 'uint16');
     }
 
-    public diff (base:number, target:number, out:MuWriteStream) {
-        if ((base & 0xffff) !== (target & 0xffff)) {
+    public diff (base:number, target:number, out:MuWriteStream) : boolean {
+        if (base !== target) {
             out.grow(2);
             out.writeUint16(target);
             return true;
@@ -15,7 +15,7 @@ export class MuUint16 extends MuNumber<'uint16'> {
         return false;
     }
 
-    public patch (base:number, inp:MuReadStream) {
+    public patch (base:number, inp:MuReadStream) : number {
         return inp.readUint16();
     }
 }

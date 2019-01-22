@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuString } from './_string';
 
-export class MuFixedASCII extends MuString {
+export class MuFixedASCII extends MuString<'fixed-ascii'> {
     public readonly length:number;
 
     constructor (lengthOrIdentity:number|string) {

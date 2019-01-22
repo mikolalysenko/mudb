@@ -6,8 +6,8 @@ export class MuUint8 extends MuNumber<'uint8'> {
         super(identity || 0, 'uint8');
     }
 
-    public diff (base:number, target:number, out:MuWriteStream) {
-        if ((base & 0xff) !== (target & 0xff)) {
+    public diff (base:number, target:number, out:MuWriteStream) : boolean {
+        if (base !== target) {
             out.grow(1);
             out.writeUint8(target);
             return true;
@@ -15,7 +15,7 @@ export class MuUint8 extends MuNumber<'uint8'> {
         return false;
     }
 
-    public patch (base:number, inp:MuReadStream) {
+    public patch (base:number, inp:MuReadStream) : number {
         return inp.readUint8();
     }
 }

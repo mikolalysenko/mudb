@@ -64,7 +64,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return this.pool.pop() || [];
     }
 
-    public free (set:ValueSchema['identity'][]) {
+    public free (set:ValueSchema['identity'][]) : void {
         const schema = this.muData;
         for (let i = 0; i < set.length; ++i) {
             schema.free(set[i]);
@@ -73,17 +73,17 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.pool.push(set);
     }
 
-    public equal (a:ValueSchema['identity'][], b:ValueSchema['identity'][]) {
-        if (!Array.isArray(a) || !Array.isArray(b)) {
-            return false;
-        }
+    public equal (
+        a:ValueSchema['identity'][],
+        b:ValueSchema['identity'][],
+    ) : boolean {
         if (a.length !== b.length) {
             return false;
         }
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = a.length - 1; i >= 0 ; --i) {
-            if (!valueSchema.equal(a[i], b[i])) {
+            if (!schema.equal(a[i], b[i])) {
                 return false;
             }
         }
@@ -94,47 +94,45 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         const copy = this.alloc();
         copy.length = set.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < set.length; ++i) {
-            copy[i] = valueSchema.clone(set[i]);
+            copy[i] = schema.clone(set[i]);
         }
         return copy;
     }
 
-    public assign (dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) {
-        if (dst === src) {
-            return;
-        }
-
+    public assign (
+        dst:ValueSchema['identity'][],
+        src:ValueSchema['identity'][],
+    ) : void {
         const dLeng = dst.length;
         const sLeng = src.length;
-        const valueSchema = this.muData;
-
-        // pool extra elements in dst
+        const schema = this.muData;
         for (let i = sLeng; i < dLeng; ++i) {
-            valueSchema.free(dst[i]);
+            schema.free(dst[i]);
         }
 
         dst.length = sLeng;
-
-        if (isMuPrimitiveType(valueSchema.muType)) {
+        if (isMuPrimitiveType(schema.muType)) {
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }
             return;
         }
 
-        // done if src has less or same number of elements
         for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
-            valueSchema.assign(dst[i], src[i]);
+            schema.assign(dst[i], src[i]);
         }
-        // only if src has more elements
         for (let i = dLeng; i < sLeng; ++i) {
-            dst[i] = valueSchema.clone(src[i]);
+            dst[i] = schema.clone(src[i]);
         }
     }
 
-    public diff (base:ValueSchema['identity'][], target:ValueSchema['identity'][], out:MuWriteStream) : boolean {
+    public diff (
+        base:ValueSchema['identity'][],
+        target:ValueSchema['identity'][],
+        out:MuWriteStream,
+    ) : boolean {
         if (target.length > this.capacity) {
             throw new RangeError('mudb/schema: sorted array capacity exceeded');
         }
@@ -318,7 +316,10 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return true;
     }
 
-    public patch (base:ValueSchema['identity'][], inp:MuReadStream) : ValueSchema['identity'][] {
+    public patch (
+        base:ValueSchema['identity'][],
+        inp:MuReadStream,
+    ) : ValueSchema['identity'][] {
         const schema = this.muData;
         const result = this.alloc();
         const numOps = inp.readUint32();
@@ -365,17 +366,17 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     }
 
     public toJSON (set:ValueSchema['identity'][]) : any[] {
-        const valueSchema = this.muData;
-        return set.map((v) => valueSchema.toJSON(v));
+        const schema = this.muData;
+        return set.map((v) => schema.toJSON(v));
     }
 
     public fromJSON (json:any[]) : ValueSchema['identity'][] {
         const set = this.alloc();
         set.length = json.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < json.length; ++i) {
-            set[i] = valueSchema.fromJSON(json[i]);
+            set[i] = schema.fromJSON(json[i]);
         }
         return set;
     }

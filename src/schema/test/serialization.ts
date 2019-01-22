@@ -27,6 +27,7 @@ import {
 } from '../index';
 import { MuString } from '../_string';
 import { MuNumber } from '../_number';
+import { MuStringType } from '../type';
 import {
     randBool,
     randFloat32,
@@ -72,7 +73,7 @@ tape('de/serializing boolean', (t) => {
 tape('de/serializing string', (t) => {
     function createTestPair (
         _t:tape.Test,
-        schema:MuString,
+        schema:MuString<MuStringType>,
     ) : (a:string, b:string) => void {
         const test = createTest(_t, schema);
         return (a, b) => {

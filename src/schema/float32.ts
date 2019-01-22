@@ -6,7 +6,7 @@ export class MuFloat32 extends MuNumber<'float32'> {
         super(identity || 0, 'float32');
     }
 
-    public diff (base:number, target:number, out:MuWriteStream) {
+    public diff (base:number, target:number, out:MuWriteStream) : boolean {
         if (base !== target) {
             out.grow(4);
             out.writeFloat32(target);
@@ -15,7 +15,7 @@ export class MuFloat32 extends MuNumber<'float32'> {
         return false;
     }
 
-    public patch (base:number, inp:MuReadStream) {
+    public patch (base:number, inp:MuReadStream) : number {
         return inp.readFloat32();
     }
 }
