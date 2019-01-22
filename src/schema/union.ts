@@ -82,7 +82,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public assign (dst:Union<SubTypes>, src:Union<SubTypes>) : void {
+    public assign (dst:Union<SubTypes>, src:Union<SubTypes>) : Union<SubTypes> {
         const dType = dst.type;
         const sType = src.type;
         const schema = this.muData;
@@ -96,7 +96,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             } else {
                 dst.data = void 0;
             }
-            return;
+            return dst;
         }
 
         // same type
@@ -106,6 +106,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
                 dst.data = src.data;
             }
         }
+        return dst;
     }
 
     public diff (

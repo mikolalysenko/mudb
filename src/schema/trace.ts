@@ -75,34 +75,47 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         this.json = base.json;
     }
 
-    public alloc () {
+    public alloc () : BaseSchema['identity'] {
         this.allocCount++;
         return this.schema.alloc();
     }
 
-    public free (x:BaseSchema['identity']) {
+    public free (x:BaseSchema['identity']) : void {
         this.freeCount++;
         return this.schema.free(x);
     }
 
-    public equal(a:BaseSchema['identity'], b:BaseSchema['identity']) {
+    public equal(
+        a:BaseSchema['identity'],
+        b:BaseSchema['identity'],
+    ) : boolean {
         return this.schema.equal(a, b);
     }
 
-    public clone (x:BaseSchema['identity']) {
+    public clone (x:BaseSchema['identity']) : BaseSchema['identity'] {
         this.allocCount++;
         return this.schema.clone(x);
     }
 
-    public assign (dst:BaseSchema['identity'], src:BaseSchema['identity']) {
-        this.schema.assign(dst, src);
+    public assign (
+        dst:BaseSchema['identity'],
+        src:BaseSchema['identity'],
+    ) : BaseSchema['identity'] {
+        return this.schema.assign(dst, src);
     }
 
-    public diff (base:BaseSchema['identity'], target:BaseSchema['identity'], out:MuWriteStream) : boolean {
+    public diff (
+        base:BaseSchema['identity'],
+        target:BaseSchema['identity'],
+        out:MuWriteStream,
+    ) : boolean {
         return this.schema.diff(base, target, out);
     }
 
-    public patch (base:BaseSchema['identity'], inp:MuReadStream) : BaseSchema['identity'] {
+    public patch (
+        base:BaseSchema['identity'],
+        inp:MuReadStream,
+    ) : BaseSchema['identity'] {
         this.allocCount++;
         return this.schema.patch(base, inp);
     }

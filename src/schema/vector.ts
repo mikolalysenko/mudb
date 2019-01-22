@@ -146,8 +146,9 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
     public assign (
         dst:Vector<ValueSchema, D>,
         src:Vector<ValueSchema, D>,
-    ) : void {
+    ) : Vector<ValueSchema, D> {
         dst.set(src);
+        return dst;
     }
 
     public diff (

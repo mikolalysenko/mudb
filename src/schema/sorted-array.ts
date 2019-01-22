@@ -104,7 +104,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public assign (
         dst:ValueSchema['identity'][],
         src:ValueSchema['identity'][],
-    ) : void {
+    ) : ValueSchema['identity'][] {
         const dLeng = dst.length;
         const sLeng = src.length;
         const schema = this.muData;
@@ -117,7 +117,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             for (let i = 0; i < sLeng; ++i) {
                 dst[i] = src[i];
             }
-            return;
+            return dst;
         }
 
         for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
@@ -126,6 +126,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         for (let i = dLeng; i < sLeng; ++i) {
             dst[i] = schema.clone(src[i]);
         }
+        return dst;
     }
 
     public diff (

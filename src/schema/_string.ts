@@ -22,7 +22,7 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
     public equal (a:string, b:string) : boolean { return a === b; }
 
     public clone (str:string) : string { return str; }
-    public assign (dst:string, src:string) : void { }
+    public assign (dst:string, src:string) : string { return src; }
 
     public toJSON (str:string) : string { return str; }
     public fromJSON (json:string) : string { return json; }

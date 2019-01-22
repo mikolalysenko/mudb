@@ -22,7 +22,7 @@ export class MuDate implements MuSchema<Date> {
         return this.pool.pop() || new Date();
     }
 
-    public free (date:Date) {
+    public free (date:Date) : void {
         this.pool.push(date);
     }
 
@@ -36,8 +36,9 @@ export class MuDate implements MuSchema<Date> {
         return date;
     }
 
-    public assign (dst:Date, src:Date) {
+    public assign (dst:Date, src:Date) : Date {
         dst.setTime(src.getTime());
+        return dst;
     }
 
     public diff (base:Date, target:Date, out:MuWriteStream) : boolean {

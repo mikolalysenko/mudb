@@ -58,7 +58,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly equal:(a:Struct<Spec>, b:Struct<Spec>) => boolean;
 
     public readonly clone:(value:Struct<Spec>) => Struct<Spec>;
-    public readonly assign:(dst:Struct<Spec>, src:Struct<Spec>) => void;
+    public readonly assign:(dst:Struct<Spec>, src:Struct<Spec>) => Struct<Spec>;
 
     public readonly diff:(base:Struct<Spec>, target:Struct<Spec>, out:MuWriteStream) => boolean;
     public readonly patch:(base:Struct<Spec>, inp:MuReadStream) => Struct<Spec>;
@@ -320,6 +320,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     methods.assign.append(`${typeRefs[i]}.assign(d[${propRef}],s[${propRef}]);`);
             }
         });
+        methods.assign.append('return d');
 
         // common constants
         const numProps = structProps.length;
