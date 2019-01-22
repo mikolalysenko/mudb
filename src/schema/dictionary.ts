@@ -83,7 +83,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     public assign (
         dst:Dictionary<ValueSchema>,
         src:Dictionary<ValueSchema>,
-    ) : void {
+    ) : Dictionary<ValueSchema> {
         const dKeys = Object.keys(dst);
         const sKeys = Object.keys(src);
         const schema = this.muData;
@@ -100,7 +100,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 const k = sKeys[i];
                 dst[k] = src[k];
             }
-            return;
+            return dst;
         }
 
         for (let i = 0; i < sKeys.length; ++i) {
@@ -111,6 +111,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
                 dst[k] = schema.clone(src[k]);
             }
         }
+        return dst;
     }
 
     public diff (

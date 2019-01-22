@@ -20,7 +20,7 @@ export class MuBoolean implements MuSchema<boolean> {
     public equal (a:boolean, b:boolean) : boolean { return a === b; }
 
     public clone (bool:boolean) : boolean { return bool; }
-    public assign (dst:boolean, src:boolean) : void { }
+    public assign (dst:boolean, src:boolean) : boolean { return src; }
 
     public diff (base:boolean, target:boolean, out:MuWriteStream) : boolean {
         if (base !== target) {

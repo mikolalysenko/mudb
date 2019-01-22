@@ -28,7 +28,7 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
     public equal (a:number, b:number) : boolean { return a === b; }
 
     public clone (num:number) : number { return num; }
-    public assign (dst:number, src:number) : void { }
+    public assign (dst:number, src:number) : number { return src; }
 
     public toJSON (num:number) : number { return num; }
     public fromJSON (json:number) : number { return json; }
