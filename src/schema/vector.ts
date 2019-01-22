@@ -115,11 +115,14 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
         return this.pool.pop() || new this._constructor(this.dimension);
     }
 
-    public free (vec:Vector<ValueSchema, D>) {
+    public free (vec:Vector<ValueSchema, D>) : void {
         this.pool.push(vec);
     }
 
-    public equal (a:Vector<ValueSchema, D>, b:Vector<ValueSchema, D>) {
+    public equal (
+        a:Vector<ValueSchema, D>,
+        b:Vector<ValueSchema, D>,
+    ) : boolean {
         if (!(a instanceof this._constructor) || !(b instanceof this._constructor)) {
             return false;
         }
@@ -131,7 +134,6 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
                 return false;
             }
         }
-
         return true;
     }
 
@@ -141,10 +143,10 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
         return copy;
     }
 
-    public assign (dst:Vector<ValueSchema, D>, src:Vector<ValueSchema, D>) {
-        if (dst === src) {
-            return;
-        }
+    public assign (
+        dst:Vector<ValueSchema, D>,
+        src:Vector<ValueSchema, D>,
+    ) : void {
         dst.set(src);
     }
 
