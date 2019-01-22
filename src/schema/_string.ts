@@ -16,29 +16,16 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
         };
     }
 
-    public alloc () : string {
-        return this.identity;
-    }
-
+    public alloc () : string { return this.identity; }
     public free (str:string) : void { }
 
-    public equal (a:string, b:string) : boolean {
-        return a === b;
-    }
+    public equal (a:string, b:string) : boolean { return a === b; }
 
-    public clone (str:string) : string {
-        return str;
-    }
-
+    public clone (str:string) : string { return str; }
     public assign (dst:string, src:string) : void { }
 
-    public toJSON (str:string) : string {
-        return str;
-    }
-
-    public fromJSON (json:string) : string {
-        return json;
-    }
+    public toJSON (str:string) : string { return str; }
+    public fromJSON (json:string) : string { return json; }
 
     public abstract diff (base:string, target:string, out:MuWriteStream) : boolean;
     public abstract patch (base:string, inp:MuReadStream) : string;

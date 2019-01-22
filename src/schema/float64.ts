@@ -7,7 +7,7 @@ export class MuFloat64 extends MuNumber<'float64'> {
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {
-        if (target !== base) {
+        if (base !== target) {
             out.grow(8);
             out.writeFloat64(target);
             return true;

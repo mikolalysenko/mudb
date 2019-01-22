@@ -36,8 +36,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public free (dict:Dictionary<ValueSchema>) : void {
-        const schema = this.muData;
         const props = Object.keys(dict);
+        const schema = this.muData;
         for (let i = 0; i < props.length; ++i) {
             schema.free(dict[props[i]]);
         }
@@ -53,20 +53,19 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         if (aKeys.length !== bKeys.length) {
             return false;
         }
-        for (let i = bKeys.length - 1; i >= 0; --i) {
-            if (!(bKeys[i] in a)) {
+        for (let i = aKeys.length - 1; i >= 0; --i) {
+            if (!(aKeys[i] in b)) {
                 return false;
             }
         }
 
         const schema = this.muData;
-        for (let i = 0; i < bKeys.length; ++i) {
-            const k = bKeys[i];
+        for (let i = 0; i < aKeys.length; ++i) {
+            const k = aKeys[i];
             if (!schema.equal(a[k], b[k])) {
                 return false;
             }
         }
-
         return true;
     }
 

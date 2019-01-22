@@ -64,7 +64,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return this.pool.pop() || [];
     }
 
-    public free (set:ValueSchema['identity'][]) {
+    public free (set:ValueSchema['identity'][]) : void {
         const schema = this.muData;
         for (let i = 0; i < set.length; ++i) {
             schema.free(set[i]);
@@ -94,9 +94,9 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         const copy = this.alloc();
         copy.length = set.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < set.length; ++i) {
-            copy[i] = valueSchema.clone(set[i]);
+            copy[i] = schema.clone(set[i]);
         }
         return copy;
     }
@@ -128,7 +128,11 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         }
     }
 
-    public diff (base:ValueSchema['identity'][], target:ValueSchema['identity'][], out:MuWriteStream) : boolean {
+    public diff (
+        base:ValueSchema['identity'][],
+        target:ValueSchema['identity'][],
+        out:MuWriteStream,
+    ) : boolean {
         if (target.length > this.capacity) {
             throw new RangeError('mudb/schema: sorted array capacity exceeded');
         }
@@ -312,7 +316,10 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return true;
     }
 
-    public patch (base:ValueSchema['identity'][], inp:MuReadStream) : ValueSchema['identity'][] {
+    public patch (
+        base:ValueSchema['identity'][],
+        inp:MuReadStream,
+    ) : ValueSchema['identity'][] {
         const schema = this.muData;
         const result = this.alloc();
         const numOps = inp.readUint32();
@@ -359,17 +366,17 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     }
 
     public toJSON (set:ValueSchema['identity'][]) : any[] {
-        const valueSchema = this.muData;
-        return set.map((v) => valueSchema.toJSON(v));
+        const schema = this.muData;
+        return set.map((v) => schema.toJSON(v));
     }
 
     public fromJSON (json:any[]) : ValueSchema['identity'][] {
         const set = this.alloc();
         set.length = json.length;
 
-        const valueSchema = this.muData;
+        const schema = this.muData;
         for (let i = 0; i < json.length; ++i) {
-            set[i] = valueSchema.fromJSON(json[i]);
+            set[i] = schema.fromJSON(json[i]);
         }
         return set;
     }

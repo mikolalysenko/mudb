@@ -7,7 +7,7 @@ export class MuInt8 extends MuNumber<'int8'> {
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {
-        if (target !== base) {
+        if (base !== target) {
             out.grow(1);
             out.writeInt8(target);
             return true;
