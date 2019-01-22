@@ -60,11 +60,11 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public free (union:Union<SubTypes>) {
+    public free (union:Union<SubTypes>) : void {
         this.muData[union.type].free(union.data);
     }
 
-    public equal (a:Union<SubTypes>, b:Union<SubTypes>) {
+    public equal (a:Union<SubTypes>, b:Union<SubTypes>) : boolean {
         if (a.type !== b.type) {
             return false;
         }
@@ -82,21 +82,17 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public assign (dst:Union<SubTypes>, src:Union<SubTypes>) {
-        if (dst === src) {
-            return;
-        }
-
+    public assign (dst:Union<SubTypes>, src:Union<SubTypes>) : void {
         const dType = dst.type;
         const sType = src.type;
-        const valueSchema = this.muData;
+        const schema = this.muData;
 
         dst.type = src.type;
 
         if (dst.type !== dType) {
-            valueSchema[dType] && valueSchema[dType].free(dst.data);
+            schema[dType] && schema[dType].free(dst.data);
             if (sType) {
-                valueSchema[sType] && (dst.data = valueSchema[sType].clone(src.data));
+                schema[sType] && (dst.data = schema[sType].clone(src.data));
             } else {
                 dst.data = void 0;
             }
@@ -104,9 +100,9 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         }
 
         // same type
-        if (valueSchema[dType]) {
-            valueSchema[dType].assign(dst.data, src.data);
-            if (isMuPrimitiveType(valueSchema[dType].muType)) {
+        if (schema[dType]) {
+            schema[dType].assign(dst.data, src.data);
+            if (isMuPrimitiveType(schema[dType].muType)) {
                 dst.data = src.data;
             }
         }
