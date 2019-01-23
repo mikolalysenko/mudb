@@ -23,7 +23,14 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     ) {
         this.muData = schema;
         this.capacity = capacity;
-        this.identity = identity || {};
+        this.identity = {};
+        if (identity) {
+            const keys = Object.keys(identity);
+            for (let i = 0; i < keys.length; ++i) {
+                const k = keys[i];
+                this.identity[k] = schema.clone(identity[k]);
+            }
+        }
         this.json = {
             type: 'dictionary',
             valueType: schema.json,
