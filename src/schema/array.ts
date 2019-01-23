@@ -19,7 +19,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     ) {
         this.muData = schema;
         this.capacity = capacity;
-        this.identity = identity || [];
+        this.identity = [];
+        if (identity) {
+            for (let i = 0; i < identity.length; ++i) {
+                this.identity[i] = schema.clone(identity[i]);
+            }
+        }
         this.json = {
             type: 'array',
             valueType: schema.json,
