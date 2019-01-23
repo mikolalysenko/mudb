@@ -45,6 +45,12 @@ export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
     [K in keyof Spec]:Spec[K]['identity'];
 };
 
+export interface Stats {
+    allocCount:number;
+    freeCount:number;
+    poolSize:number;
+}
+
 export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         implements MuSchema<Struct<Spec>> {
     public readonly muType = 'struct';
@@ -66,6 +72,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
 
     public readonly toJSON:(struct:Struct<Spec>) => Struct<any>;
     public readonly fromJSON:(json:Struct<any>) => Struct<Spec>;
+
+    public readonly stats:() => Stats;
 
     constructor (spec:Spec) {
         // sort struct properties so primitives come first
@@ -154,8 +162,11 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             patch: func('patch', ['b', 's']),
             toJSON: func('toJSON', ['s']),
             fromJSON: func('fromJSON', ['j']),
+            stats: func('stats', []),
         };
 
+        const allocCountRef = prelude.def('-1');
+        const freeCountRef = prelude.def('0');
         const poolRef = prelude.def('[]');
         prelude.append('function MuStruct(){');
         propRefs.forEach((propRef, i) => {
@@ -180,7 +191,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     prelude.append(`this[${propRef}]=null;`);
             }
         });
-        prelude.append(`}function _alloc(){if(${poolRef}.length > 0){return ${poolRef}.pop()}return new MuStruct()}`);
+        prelude.append(`}function _alloc(){++${allocCountRef};if(${poolRef}.length > 0){return ${poolRef}.pop()}return new MuStruct()}`);
 
         const identityRef = prelude.def('_alloc()');
         propRefs.forEach((propRef, i) => {
@@ -250,6 +261,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     break;
             }
         });
+        methods.free.append(`++${freeCountRef}`);
 
         // equal subroutine
         propRefs.forEach((propRef, i) => {
@@ -421,6 +433,9 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         });
         methods.fromJSON.append(`return s`);
 
+        // stats subroutine
+        methods.stats.append(`return {allocCount:${allocCountRef},freeCount:${freeCountRef},poolSize:${poolRef}.length}`);
+
         const muDataRef = prelude.def('{}');
         propRefs.forEach((propRef, i) => {
             prelude.append(`${muDataRef}[${propRef}]=${typeRefs[i]};`);
@@ -453,5 +468,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.patch = compiled.patch;
         this.toJSON = compiled.toJSON;
         this.fromJSON = compiled.fromJSON;
+        this.stats = compiled.stats;
     }
 }
