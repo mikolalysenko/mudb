@@ -51,6 +51,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly muData:Spec;
     public readonly identity:Struct<Spec>;
     public readonly json:object;
+    public pool:Struct<Spec>[];
 
     public readonly alloc:() => Struct<Spec>;
     public readonly free:(struct:Struct<Spec>) => void;
@@ -426,7 +427,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         });
 
         // write result
-        epilog.append(`return {identity:${identityRef},muData:${muDataRef},`);
+        epilog.append(`return {identity:${identityRef},muData:${muDataRef},pool:${poolRef},`);
         Object.keys(methods).forEach((name) => {
             prelude.append(methods[name].toString());
             epilog.append(`${name}:${name},`);
@@ -441,6 +442,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         this.json = structJSON;
         this.muData = compiled.muData;
         this.identity = compiled.identity;
+        this.pool = compiled.pool;
+
         this.alloc = compiled.alloc;
         this.free = compiled.free;
         this.equal = compiled.equal;
