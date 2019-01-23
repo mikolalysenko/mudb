@@ -70,25 +70,34 @@ test('schema.identity', (t) => {
     t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
 
     const d = new Date();
-    t.deepEqual(new MuDate(d).identity, d);
-    t.notEqual(new MuDate(d).identity, d);
+    const date = new MuDate(d);
+    t.deepEqual(date.identity, d);
+    t.notEqual(date.identity, d);
 
-    t.deepEqual(
-        new MuArray(new MuFloat32(), Infinity, [0.5, 0.5, 0.5]).identity,
-        [0.5, 0.5, 0.5],
-    );
-    t.deepEqual(
-        new MuSortedArray(new MuFloat32(), Infinity, undefined, [1, 3, 2]).identity,
-        [1, 2, 3],
-    );
-    t.deepEqual(
-        new MuDictionary(new MuFloat32(), Infinity, { x: 0.5, y: 0.5, z: 0.5 }).identity,
-        { x: 0.5, y: 0.5, z: 0.5 },
-    );
+    const a = [{}, {}];
+    const array = new MuArray(new MuDictionary(new MuFloat32(), Infinity), Infinity, a);
+    t.deepEqual(array.identity, a);
+    t.notEqual(array.identity, a);
+    t.notEqual(array.identity[0], a[0]);
+
+    const sa = [1, 3, 2];
+    const sortedArray = new MuSortedArray(new MuFloat32(), Infinity, undefined, sa);
+    t.deepEqual(sortedArray.identity, [1, 2, 3]);
+    t.notEqual(sortedArray.identity, sa);
+
+    const dict = {x: [], y: []};
+    const dictionary = new MuDictionary(new MuArray(new MuFloat32(), Infinity), Infinity, dict);
+    t.deepEqual(dictionary.identity, dict);
+    t.notEqual(dictionary.identity, dict);
+    t.notEqual(dictionary.identity.x, dict.x);
+
     t.deepEqual(
         new MuUnion({ f: new MuFloat32() }, 'f').identity,
         { type: 'f', data: 0 },
     );
+
+    const vector = new MuVector(new MuFloat32(1), 3);
+    t.deepEqual(vector.identity, new Float32Array([1, 1, 1]));
     t.end();
 });
 
