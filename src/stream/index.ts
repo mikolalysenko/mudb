@@ -133,7 +133,7 @@ export class MuWriteStream {
         this.offset += 8;
     }
 
-    public writeVarInt (x_:number) {
+    public writeVarint (x_:number) {
         const x = x_ >>> 0;
         const bytes = this.buffer.uint8;
         const offset = this.offset;
@@ -243,7 +243,7 @@ export class MuReadStream {
         return this.buffer.dataView.getFloat64(offset, LITTLE_ENDIAN);
     }
 
-    public readVarInt () : number {
+    public readVarint () : number {
         const bytes = this.buffer.uint8;
         let offset = this.offset;
         const x0 = bytes[offset++];
