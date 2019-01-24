@@ -43,14 +43,12 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.muData = schema;
         this.capacity = capacity;
         this.compare = compare || defaultCompare;
+        this.identity = [];
         if (identity) {
-            const a = identity.slice().sort(this.compare);
-            for (let i = 0; i < a.length; ++i) {
-                a[i] = schema.clone(a[i]);
+            for (let i = 0; i < identity.length; ++i) {
+                this.identity[i] = schema.clone(identity[i]);
             }
-            this.identity = a;
-        } else {
-            this.identity = [];
+            this.identity.sort(this.compare);
         }
         this.json = {
             type: 'sorted-array',
