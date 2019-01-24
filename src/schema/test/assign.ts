@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuObject,
 } from '../index';
 
 test('primitive.assign()', (t) => {
@@ -241,5 +242,24 @@ test('union.assign()', (t) => {
     union.assign(uDst, uSrc);
     t.deepEqual(uDst, uSrc);
     t.notEqual(uDst.data, uSrc.data);
+    t.end();
+});
+
+test('object.assign', (t) => {
+    const object = new MuObject();
+    t.throws(() => object.assign({}, []), TypeError);
+    t.throws(() => object.assign([], {}), TypeError);
+
+    const o = {a: 0, b: 1};
+    const p = {a: {b: {c: [0]}}};
+    object.assign(o, p);
+    t.deepEqual(o, p);
+    t.notEqual(o, p);
+
+    const q = [0, 1, 2];
+    const r = [{}, {}];
+    object.assign(q, r);
+    t.deepEqual(q, r);
+    t.notEqual(q, r);
     t.end();
 });

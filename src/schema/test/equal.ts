@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuObject,
 } from '../index';
 
 test('primitive.equal()', (t) => {
@@ -239,6 +240,67 @@ test('union.equal()', (t) => {
     t.false(voxelOrTool.equal(
         {type: 'voxel', data: {name: 'soil', destructible: true}},
         {type: 'tool', data: {name: 'torch', durability: 1}},
+    ));
+    t.end();
+});
+
+test('object.equal()', (t) => {
+    const object = new MuObject();
+    t.true(object.equal({}, {}));
+    t.true(object.equal({a: 0}, {a: 0}));
+    t.true(object.equal({a: 0, b: 1}, {a: 0, b: 1}));
+    // t.true(object.equal({a: 0, b: 1}, {b: 1, a: 0}));
+    t.false(object.equal({}, {a: 0}));
+    t.false(object.equal({a: 0, b: 0}, {a: 0}));
+    t.false(object.equal({a: 0}, {b: 0}));
+    t.false(object.equal({a: 0}, {a: 1}));
+
+    t.true(object.equal({a: {}}, {a: {}}));
+    t.true(object.equal({a: {}, b: {}}, {a: {}, b: {}}));
+    t.true(object.equal({a: {b: 0}}, {a: {b: 0}}));
+    t.true(object.equal({a: {b: 0, c: 1}}, {a: {b: 0, c: 1}}));
+    t.true(object.equal(
+        {a: {c: 0}, b: {d: 1}},
+        {a: {c: 0}, b: {d: 1}},
+    ));
+    t.true(object.equal(
+        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
+        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
+    ));
+    t.false(object.equal({}, {a: {}}));
+    t.false(object.equal({a: {}, b: {}}, {a: {}}));
+    t.false(object.equal({a: {}}, {b: {}}));
+    t.false(object.equal({a: {b: 0}}, {a: {b: 1}}));
+
+    t.true(object.equal([], []));
+    t.false(object.equal([], {}));
+    t.true(object.equal([0.5], [0.5]));
+    t.true(object.equal([0.5, 1], [0.5, 1]));
+    t.false(object.equal([], [0]));
+    t.false(object.equal([0, 1], [0]));
+    t.false(object.equal([0], [1]));
+    t.false(object.equal([0, 0.5, 1], [0, 1, 0.5]));
+
+    t.true(object.equal([], []));
+    t.true(object.equal([[]], [[]]));
+    t.true(object.equal([[0.5]], [[0.5]]));
+    t.true(object.equal([[0.5, 0, 1]], [[0.5, 0, 1]]));
+    t.true(object.equal(
+        [[0.5, 0, 1], [0, 0.5, 1]],
+        [[0.5, 0, 1], [0, 0.5, 1]],
+    ));
+    t.false(object.equal([[]], []));
+    t.false(object.equal([[0]], [[]]));
+    t.false(object.equal([[0, 1]], [[0]]));
+    t.false(object.equal([[1]], [[0]]));
+    t.false(object.equal([[0, 1, 0.5]], [[0, 0.5, 1]]));
+    t.false(object.equal(
+        [[0.5, 0, 1], [0, 0.5, 1]],
+        [[0.5, 0, 1]],
+    ));
+    t.false(object.equal(
+        [[0.5, 0, 1], [0, 0.5, 1]],
+        [[0, 0.5, 1], [0.5, 0, 1]],
     ));
     t.end();
 });

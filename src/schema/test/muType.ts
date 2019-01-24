@@ -20,6 +20,7 @@ import {
     MuStruct,
     MuUnion,
     MuVector,
+    MuObject,
 } from '../index';
 
 test('schema.muType', (t) => {
@@ -40,8 +41,9 @@ test('schema.muType', (t) => {
     t.equal(new MuArray(new MuFloat32(), 0).muType,         'array');
     t.equal(new MuSortedArray(new MuFloat32(), 0).muType,   'sorted-array');
     t.equal(new MuDictionary(new MuFloat32(), 0).muType,    'dictionary');
-    t.equal(new MuStruct({ f: new MuFloat32() }).muType,    'struct');
+    t.equal(new MuStruct({}).muType,                        'struct');
     t.equal(new MuUnion({ f: new MuFloat32() }).muType,     'union');
     t.equal(new MuVector(new MuFloat32(), 5).muType,        'vector');
+    t.equal(new MuObject().muType,                          'object');
     t.end();
 });

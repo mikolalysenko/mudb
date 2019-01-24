@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuObject,
 } from '../index';
 
 test('primitive.clone()', (t) => {
@@ -198,5 +199,16 @@ test('union.clone()', (t) => {
     u.data.u = 'Iñtërnâtiônàlizætiøn☃💩';
     u.data.f = 0.5;
     t.deepEqual(union.clone(u), u);
+    t.end();
+});
+
+test('object.clone()', (t) => {
+    const object = new MuObject();
+    const o = {a: [{b: [{c: 0}]}]};
+    t.deepEqual(object.clone(o), o);
+    t.notEqual(object.clone(o), o);
+    const p = [{a: [{b: [{c: ''}]}]}];
+    t.deepEqual(object.clone(p), p);
+    t.notEqual(object.clone(p), p);
     t.end();
 });

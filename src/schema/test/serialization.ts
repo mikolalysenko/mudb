@@ -24,6 +24,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuObject,
 } from '../index';
 import { MuString } from '../_string';
 import { MuNumber } from '../_number';
@@ -527,5 +528,24 @@ tape('de/serializing union', (t) => {
     for (let i = 0; i < 1000; ++i) {
         testPair(randUnionCase(), randUnionCase());
     }
+    t.end();
+});
+
+tape('de/serializing object', (t) => {
+    function createTestPair (
+        _t:tape.Test,
+        schema:MuObject,
+    ) : (a:object, b:object) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, b);
+            test(b, a);
+        };
+    }
+
+    const object = new MuObject();
+    const testPair = createTestPair(t, object);
+    testPair({}, {a:0.5, b:false, c:'', d:[]});
+    testPair([], [1e9, true, 'Iñtërnâtiônàlizætiøn☃💩', {}]);
     t.end();
 });
