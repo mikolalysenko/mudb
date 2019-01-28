@@ -174,7 +174,7 @@ export class MuWriteStream {
 
     public writeString (str:string) {
         const bytes = encodeString(str);
-        this.writeUint32(bytes.length);
+        this.writeVarint(bytes.length);
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
     }
@@ -293,7 +293,7 @@ export class MuReadStream {
     }
 
     public readString () : string {
-        const byteLength = this.readUint32();
+        const byteLength = this.readVarint();
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
         this.offset += byteLength;
         return decodeString(bytes);
