@@ -126,54 +126,75 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:Dictionary<ValueSchema>,
         out:MuWriteStream,
     ) : boolean {
-        const tProps = Object.keys(target);
-        if (tProps.length > this.capacity) {
-            throw new RangeError(`number of target properties ${tProps.length} exceeds capacity ${this.capacity}`);
-        }
-
-        out.grow(64);
-
+        out.grow(12);
         const head = out.offset;
-        out.offset += 8;
+        out.offset += 12;
 
-        let numDelete = 0;
+        let numDel = 0;
         let numPatch = 0;
+        let numAdd = 0;
 
-        const bProps = Object.keys(base);
-        for (let i = 0; i < bProps.length; ++i) {
-            const prop = bProps[i];
-            if (!(prop in target)) {
-                out.grow(4 + 4 * prop.length);
-                out.writeString(prop);
-                ++numDelete;
+        // write indices of deleted props
+        const bKeys = Object.keys(base);
+        for (let i = 0; i < bKeys.length; ++i) {
+            const key = bKeys[i];
+            if (!(key in target)) {
+                ++numDel;
+                out.grow(5 + 4 * key.length);
+                out.writeString(key);
             }
         }
 
+        const tKeys = Object.keys(target);
         const schema = this.muData;
-        for (let i = 0; i < tProps.length; ++i) {
-            const start = out.offset;
+        const newKeys:string[] = [];
 
-            const prop = tProps[i];
-            out.grow(4 + 2 * prop.length);
-            out.writeString(prop);
-
-            if (prop in base) {
-                if (schema.diff(base[prop], target[prop], out)) {
+        // write index-patch pairs
+        for (let i = 0; i < tKeys.length; ++i) {
+            const key = tKeys[i];
+            if (key in base) {
+                const prefix = out.offset;
+                out.grow(5 + 4 * key.length);
+                out.writeString(key);
+                if (schema.diff(base[key], target[key], out)) {
                     ++numPatch;
                 } else {
-                    out.offset = start;
+                    out.offset = prefix;
                 }
             } else {
-                if (!schema.diff(schema.identity, target[prop], out)) {
-                    out.buffer.uint8[start + 3] |= 0x80;
-                }
-                ++numPatch;
+                newKeys.push(key);
             }
         }
 
-        if (numDelete > 0 || numPatch > 0) {
-            out.writeUint32At(head, numDelete);
+        numAdd = newKeys.length;
+
+        // write new key-value pairs
+        const numTrackers = Math.ceil(numAdd / 8);
+        out.grow(numTrackers);
+        let trackerOffset = out.offset;
+        out.offset += numTrackers;
+
+        let tracker = 0;
+        for (let i = 0; i < numAdd; ++i) {
+            const key = newKeys[i];
+            out.grow(5 + 4 * key.length);
+            out.writeString(key);
+            if (schema.diff(schema.identity, target[key], out)) {
+                tracker |= 1 << (i & 7);
+            }
+            if ((i & 7) === 7) {
+                out.writeUint8At(trackerOffset++, tracker);
+                tracker = 0;
+            }
+        }
+        if (numAdd & 7) {
+            out.writeUint8At(trackerOffset, tracker);
+        }
+
+        if (numDel > 0 || numPatch > 0 || numAdd > 0) {
+            out.writeUint32At(head, numDel);
             out.writeUint32At(head + 4, numPatch);
+            out.writeUint32At(head + 8, numAdd);
             return true;
         }
         out.offset = head;
@@ -184,45 +205,59 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         base:Dictionary<ValueSchema>,
         inp:MuReadStream,
     ) : Dictionary<ValueSchema> {
-        const numDelete = inp.readUint32();
+        let numDel = inp.readUint32();
         const numPatch = inp.readUint32();
+        const numAdd = inp.readUint32();
 
         const bKeys = Object.keys(base);
-        const numBaseProps = bKeys.length;
-        if (numDelete > numBaseProps) {
-            throw new Error(`invalid number of deletions ${numDelete}`);
-        }
-
-        const propsToDelete = {};
-        for (let i = 0; i < numDelete; ++i) {
-            const key = inp.readString();
-            if (!(key in base)) {
-                throw new Error(`invalid key ${key}`);
-            }
-            propsToDelete[key] = true;
+        const numTargetProps = bKeys.length - numDel + numAdd;
+        if (numTargetProps > this.capacity) {
+            throw new Error(`number of target props ${numTargetProps} exceeds capacity ${this.capacity}`);
         }
 
         const result = {};
+
+        // delete
+        const deletedKeys = {};
+        while (numDel--) {
+            deletedKeys[inp.readString()] = true;
+        }
         const schema = this.muData;
-        for (let i = 0; i < numBaseProps; ++i) {
+        for (let i = 0; i < bKeys.length; ++i) {
             const key = bKeys[i];
-            if (propsToDelete[key]) {
-                continue;
+            if (!deletedKeys[key]) {
+                result[key] = schema.clone(base[key]);
             }
-            result[key] = schema.clone(base[key]);
         }
+
+        // patch
         for (let i = 0; i < numPatch; ++i) {
-            const isIdentity = inp.buffer.uint8[inp.offset + 3] & 0x80;
-            inp.buffer.uint8[inp.offset + 3] &= ~0x80;
             const key = inp.readString();
-            if (key in base) {
-                result[key] = schema.patch(base[key], inp);
-            } else if (isIdentity) {
-                result[key] = schema.clone(schema.identity);
-            } else {
-                result[key] = schema.patch(schema.identity, inp);
+            result[key] = schema.patch(base[key], inp);
+        }
+
+        // add
+        const numTrackers = Math.ceil(numAdd / 8);
+        const numFullTrackers = numAdd / 8 | 0;
+        let trackerOffset = inp.offset;
+        inp.offset += numTrackers;
+        for (let i = 0; i < numFullTrackers; ++i) {
+            const tracker = inp.readUint8At(trackerOffset++);
+            for (let j = 0; j < 8; ++j) {
+                result[inp.readString()] = tracker & (1 << j) ?
+                    schema.patch(schema.identity, inp) :
+                    schema.clone(schema.identity);
             }
         }
+        if (numAdd & 7) {
+            const tracker = inp.readUint8At(trackerOffset);
+            for (let i = 0; i < (numAdd & 7); ++i) {
+                result[inp.readString()] = tracker & (1 << i) ?
+                    schema.patch(schema.identity, inp) :
+                    schema.clone(schema.identity);
+            }
+        }
+
         return result;
     }
 

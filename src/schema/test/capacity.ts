@@ -73,32 +73,13 @@ test('guarding sortedArray.patch()', (t) => {
     t.end();
 });
 
-test('guarding dictionary.diff()', (t) => {
-    let dictionary = new MuDictionary(new MuFloat32(), Infinity);
-    t.equal(dictionary.capacity, Infinity);
-    dictionary = new MuDictionary(new MuFloat32(), 0);
-    t.equal(dictionary.capacity, 0);
-    dictionary = new MuDictionary(new MuFloat32(), 3);
-    t.equal(dictionary.capacity, 3);
-
-    const out = new MuWriteStream(1);
-    t.doesNotThrow(() => dictionary.diff({}, {a: 0}, out));
-    t.doesNotThrow(() => dictionary.diff({}, {a: 0, b: 0}, out));
-    t.doesNotThrow(() => dictionary.diff({}, {a: 0, b: 0, c: 0}, out));
-    t.doesNotThrow(() => dictionary.diff({a: 0, b: 0, c: 0}, {a: 0, b: 1, c: 2}, out));
-    t.doesNotThrow(() => dictionary.diff({a: 0, b: 0, c: 0, d: 0}, {a: 0, b: 1, c: 2}, out));
-    t.throws(() => dictionary.diff({}, {a: 0, b: 0, c: 0, d: 0}, out), RangeError, 'should throw when target size exceeds capacity');
-    t.throws(() => dictionary.diff({}, {a: 0, b: 0, c: 0, d: 0, e: 0}, out), RangeError);
-    t.end();
-});
-
 test('guarding dictionary.patch()', (t) => {
     const infiniteDictionary = new MuDictionary(new MuFloat32(), Infinity);
     const out = new MuWriteStream(1);
-    infiniteDictionary.diff({a: 0, b: 0, c: 0, d: 0}, {}, out);
+    infiniteDictionary.diff({}, {a: 0, b: 0, c: 0, d: 0}, out);
 
-    const finiteDictionary = new MuDictionary(new MuFloat32(), Infinity);
+    const finiteDictionary = new MuDictionary(new MuFloat32(), 3);
     const inp = new MuReadStream(out.buffer.uint8);
-    t.throws(() => finiteDictionary.patch({a: 0, b: 0, c: 0}, inp), Error);
+    t.throws(() => finiteDictionary.patch({}, inp), Error);
     t.end();
 });
