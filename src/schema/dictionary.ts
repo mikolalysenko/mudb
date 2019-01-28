@@ -126,22 +126,21 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         target:Dictionary<ValueSchema>,
         out:MuWriteStream,
     ) : boolean {
-        out.grow(12);
-        const head = out.offset;
-        out.offset += 12;
-
         let numDel = 0;
         let numPatch = 0;
         let numAdd = 0;
 
-        // write indices of deleted props
-        const bKeys = Object.keys(base);
+        out.grow(12);
+        const head = out.offset;
+        out.offset += 12;
+
+        // write key indices to be deleted
+        const bKeys = Object.keys(base).sort();
+        out.grow(5 * bKeys.length);
         for (let i = 0; i < bKeys.length; ++i) {
-            const key = bKeys[i];
-            if (!(key in target)) {
+            if (!(bKeys[i] in target)) {
                 ++numDel;
-                out.grow(5 + 4 * key.length);
-                out.writeString(key);
+                out.writeVarint(i);
             }
         }
 
@@ -154,8 +153,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             const key = tKeys[i];
             if (key in base) {
                 const prefix = out.offset;
-                out.grow(5 + 4 * key.length);
-                out.writeString(key);
+                out.grow(5);
+                out.writeVarint(bKeys.indexOf(key));
                 if (schema.diff(base[key], target[key], out)) {
                     ++numPatch;
                 } else {
@@ -166,9 +165,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
         }
 
-        numAdd = newKeys.length;
-
         // write new key-value pairs
+        numAdd = newKeys.length;
         const numTrackers = Math.ceil(numAdd / 8);
         out.grow(numTrackers);
         let trackerOffset = out.offset;
@@ -205,40 +203,40 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         base:Dictionary<ValueSchema>,
         inp:MuReadStream,
     ) : Dictionary<ValueSchema> {
-        let numDel = inp.readUint32();
+        const numDel = inp.readUint32();
         const numPatch = inp.readUint32();
         const numAdd = inp.readUint32();
 
-        const bKeys = Object.keys(base);
+        const bKeys = Object.keys(base).sort();
         const numTargetProps = bKeys.length - numDel + numAdd;
         if (numTargetProps > this.capacity) {
             throw new Error(`number of target props ${numTargetProps} exceeds capacity ${this.capacity}`);
         }
 
         const result = {};
+        const schema = this.muData;
 
         // delete
-        const deletedKeys = {};
-        while (numDel--) {
-            deletedKeys[inp.readString()] = true;
+        const keysToDel = {};
+        for (let i = 0; i < numDel; ++i) {
+            keysToDel[bKeys[inp.readVarint()]] = true;
         }
-        const schema = this.muData;
         for (let i = 0; i < bKeys.length; ++i) {
             const key = bKeys[i];
-            if (!deletedKeys[key]) {
+            if (!keysToDel[key]) {
                 result[key] = schema.clone(base[key]);
             }
         }
 
         // patch
         for (let i = 0; i < numPatch; ++i) {
-            const key = inp.readString();
+            const key = bKeys[inp.readVarint()];
             result[key] = schema.patch(base[key], inp);
         }
 
         // add
-        const numTrackers = Math.ceil(numAdd / 8);
         const numFullTrackers = numAdd / 8 | 0;
+        const numTrackers = Math.ceil(numAdd / 8);
         let trackerOffset = inp.offset;
         inp.offset += numTrackers;
         for (let i = 0; i < numFullTrackers; ++i) {
