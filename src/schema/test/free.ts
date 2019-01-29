@@ -8,10 +8,15 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuBoolean,
 } from '../index';
 import { MuSchemaTrace } from '../trace';
 
 test('schema.free()', (t) => {
+    const booleanTrace = new MuSchemaTrace(new MuBoolean());
+    booleanTrace.free(booleanTrace.alloc());
+    t.equal(booleanTrace.freeCount,1)
+
     const dateTrace = new MuSchemaTrace(new MuDate());
     dateTrace.free(dateTrace.alloc());
     t.equal(dateTrace.freeCount, 1);
