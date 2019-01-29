@@ -230,7 +230,11 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
 
         // patch
         for (let i = 0; i < numPatch; ++i) {
-            const key = bKeys[inp.readVarint()];
+            const idx = inp.readVarint();
+            const key = bKeys[idx];
+            if (!key) {
+                throw new Error(`invalid index of key`);
+            }
             result[key] = schema.patch(base[key], inp);
         }
 
