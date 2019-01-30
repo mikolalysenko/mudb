@@ -8,6 +8,8 @@ import {
     MuStruct,
     MuUnion,
     MuVector,
+    MuBoolean,
+    MuUTF8,
 } from '../index';
 import { randFloat32 } from '../util/random';
 
@@ -292,3 +294,25 @@ test('union.fromJSON(j)', (t) => {
     t.deepEqual(u2, u1);
     t.end();
 });
+
+// primitive
+
+test('primitive.toJSON()', (t) => {
+    const bool = new MuBoolean(true);
+    const b = bool.alloc()
+    t.deepEqual(bool.toJSON(b),b);
+    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩')
+    const u = utf8.alloc()
+    t.deepEqual(utf8.toJSON(u),u)
+    t.end()
+})
+
+test('primitive.fromJSON()', (t) => {
+    const bool = new MuBoolean(true);
+    const b = bool.alloc()
+    t.deepEqual(bool.fromJSON(b),b);
+    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩')
+    const u = utf8.alloc()
+    t.deepEqual(utf8.fromJSON(u),u)
+    t.end()
+})
