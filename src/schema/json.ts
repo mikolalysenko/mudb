@@ -1,6 +1,27 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
+function clone (x) {
+    if (typeof x !== 'object' || x === null) {
+        return x;
+    }
+
+    const copy = Array.isArray(x) ? [] : {};
+    if (Array.isArray(copy)) {
+        copy.length = x.length;
+        for (let i = 0; i < x.length; ++i) {
+            copy[i] = clone(x[i]);
+        }
+    } else {
+        const keys = Object.keys(x);
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            copy[key] = clone(x[key]);
+        }
+    }
+    return copy;
+}
+
 export class MuJSON implements MuSchema<object> {
     public readonly muType = 'json';
     public readonly identity:object;
