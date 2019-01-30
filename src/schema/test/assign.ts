@@ -11,15 +11,14 @@ import {
     MuUnion,
     MuBoolean,
 } from '../index';
-import { MuNumber } from '../_number';
 
 test('primitive.assign()', (t) => {
     t.comment('should be no-op');
     const bool = new MuBoolean(true);
     t.equal(bool.assign(true,true),true)
-    t.equal(bool.assign(false,true),true)
+    t.equal(bool.assign(true,false),false)
     t.notEqual(bool.assign(true,false),true)
-    t.notEqual(bool.assign(false,false),true)
+    t.notEqual(bool.assign(false,true),false)
     const float32 = new MuFloat32(1)
     t.equal(float32.assign(1,2),2) 
     t.end();
@@ -217,9 +216,9 @@ test('union.assign()', (t) => {
     src.data = 'Iñtërnâtiônàlizætiøn☃💩';
     stringOrFloat.assign(dst, src);
     t.deepEqual(dst, src);
-    src.data = 'Internationalization';
+    dst.data = 'Internationalization';
     stringOrFloat.assign(dst,src);
-    t.deepEqual(dst,src);
+   t.deepEqual(dst,src);
     src.type = 'f';
     src.data = 0.5;
     stringOrFloat.assign(dst, src);
