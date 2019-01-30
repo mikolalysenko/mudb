@@ -28,7 +28,7 @@ export class MuJSON implements MuSchema<object> {
     public readonly json:object;
 
     constructor (identity?:object) {
-        this.identity = identity && JSON.parse(JSON.stringify(identity));
+        this.identity = identity && clone(identity);
         this.identity = this.identity || {};
         this.json = {
             type: 'json',
@@ -44,30 +44,30 @@ export class MuJSON implements MuSchema<object> {
         return JSON.stringify(a) === JSON.stringify(b);
     }
 
-    public clone (obj:object) : object {
-        return JSON.parse(JSON.stringify(obj));
+    public clone (json:object) : object {
+        return clone(json);
     }
 
     public assign (dst:object, src:object) : object {
         if (Array.isArray(dst) && Array.isArray(src)) {
             dst.length = src.length;
             for (let i = 0; i < dst.length; ++i) {
-                dst[i] = JSON.parse(JSON.stringify(src[i]));
+                dst[i] = clone(src[i]);
             }
             return dst;
         }
 
         const dKeys = Object.keys(dst);
         for (let i = 0; i < dKeys.length; ++i) {
-            const k = dKeys[i];
-            if (!(k in src)) {
-                delete dst[k];
+            const key = dKeys[i];
+            if (!(key in src)) {
+                delete dst[key];
             }
         }
         const sKeys = Object.keys(src);
         for (let i = 0; i < sKeys.length; ++i) {
-            const k = sKeys[i];
-            dst[k] = JSON.parse(JSON.stringify(src[k]));
+            const key = sKeys[i];
+            dst[key] = clone(src[key]);
         }
         return dst;
     }
