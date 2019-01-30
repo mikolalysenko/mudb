@@ -10,7 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuObject,
+    MuJSON,
 } from '../index';
 
 test('primitive.clone()', (t) => {
@@ -202,13 +202,13 @@ test('union.clone()', (t) => {
     t.end();
 });
 
-test('object.clone()', (t) => {
-    const object = new MuObject();
+test('json.clone()', (t) => {
+    const json = new MuJSON();
     const o = {a: [{b: [{c: 0}]}]};
-    t.deepEqual(object.clone(o), o);
-    t.notEqual(object.clone(o), o);
+    t.deepEqual(json.clone(o), o);
+    t.notEqual(json.clone(o), o);
     const p = [{a: [{b: [{c: ''}]}]}];
-    t.deepEqual(object.clone(p), p);
-    t.notEqual(object.clone(p), p);
+    t.deepEqual(json.clone(p), p);
+    t.notEqual(json.clone(p), p);
     t.end();
 });

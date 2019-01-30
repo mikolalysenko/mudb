@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuJSON,
 } from '../index';
 import { randFloat32 } from '../util/random';
 
@@ -327,18 +328,18 @@ test('union.fromJSON()', (t) => {
     t.end();
 });
 
-// object
+// json
 
-test('object.toJSON()', (t) => {
-    const object = new MuObject();
+test('json.toJSON()', (t) => {
+    const json = new MuJSON();
     const o = {};
-    t.equal(object.toJSON(o), o);
+    t.equal(json.toJSON(o), o);
     t.end();
 });
 
-test('object.fromJSON()', (t) => {
-    const object = new MuObject();
+test('json.fromJSON()', (t) => {
+    const json = new MuJSON();
     const o = {};
-    t.equal(object.fromJSON(object.toJSON(o)), o);
+    t.equal(json.fromJSON(json.toJSON(o)), o);
     t.end();
 });

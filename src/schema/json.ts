@@ -1,8 +1,8 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
-export class MuObject implements MuSchema<object> {
-    public readonly muType = 'object';
+export class MuJSON implements MuSchema<object> {
+    public readonly muType = 'json';
     public readonly identity:object;
     public readonly json:object;
 
@@ -10,7 +10,7 @@ export class MuObject implements MuSchema<object> {
         this.identity = identity && JSON.parse(JSON.stringify(identity));
         this.identity = this.identity || {};
         this.json = {
-            type: 'object',
+            type: 'json',
             identity: this.identity,
         };
     }

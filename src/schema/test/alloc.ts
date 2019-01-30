@@ -10,7 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuObject,
+    MuJSON,
 } from '../index';
 
 test('primitive.alloc()', (t) => {
@@ -33,13 +33,13 @@ test('nonPrimitive.alloc()', (t) => {
     const vector = new MuVector(new MuFloat32(), 5);
     const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const union = new MuUnion({ f: new MuFloat32() }, 'f');
-    const object = new MuObject();
+    const json = new MuJSON();
     t.deepEqual(array.alloc(),          []);
     t.deepEqual(sortedArray.alloc(),    []);
     t.deepEqual(dictionary.alloc(),     {});
     t.deepEqual(union.alloc(),          {type: 'f', data: 0});
     t.deepEqual(vector.alloc(),         new Float32Array(vector.dimension));
-    t.deepEqual(object.alloc(),         {});
+    t.deepEqual(json.alloc(),           {});
     t.end();
 });
 

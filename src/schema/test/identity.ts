@@ -20,7 +20,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuObject,
+    MuJSON,
 } from '../index';
 
 test('schema.identity default', (t) => {
@@ -91,10 +91,10 @@ test('schema.identity', (t) => {
     t.deepEqual(union.identity, { type: 'f', data: 0 });
 
     const o = {n: 0, b: false, a: []};
-    const object = new MuObject(o);
-    t.deepEqual(object.identity, o);
-    t.notEqual(object.identity, o);
-    t.notEqual(object.identity['a'], o['a']);
+    const json = new MuJSON(o);
+    t.deepEqual(json.identity, o);
+    t.notEqual(json.identity, o);
+    t.notEqual(json.identity['a'], o['a']);
 });
 
 test('setting number type identity', (t) => {

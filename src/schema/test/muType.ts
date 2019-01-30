@@ -20,7 +20,7 @@ import {
     MuStruct,
     MuUnion,
     MuVector,
-    MuObject,
+    MuJSON,
 } from '../index';
 
 test('schema.muType', (t) => {
@@ -44,6 +44,6 @@ test('schema.muType', (t) => {
     t.equal(new MuStruct({}).muType,                        'struct');
     t.equal(new MuUnion({ f: new MuFloat32() }).muType,     'union');
     t.equal(new MuVector(new MuFloat32(), 5).muType,        'vector');
-    t.equal(new MuObject().muType,                          'object');
+    t.equal(new MuJSON().muType,                            'json');
     t.end();
 });

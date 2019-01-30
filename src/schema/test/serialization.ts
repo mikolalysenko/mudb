@@ -24,7 +24,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuObject,
+    MuJSON,
 } from '../index';
 import { MuString } from '../_string';
 import { MuNumber } from '../_number';
@@ -531,10 +531,10 @@ tape('de/serializing union', (t) => {
     t.end();
 });
 
-tape('de/serializing object', (t) => {
+tape('de/serializing json', (t) => {
     function createTestPair (
         _t:tape.Test,
-        schema:MuObject,
+        schema:MuJSON,
     ) : (a:object, b:object) => void {
         const test = createTest(_t, schema);
         return (a, b) => {
@@ -543,8 +543,8 @@ tape('de/serializing object', (t) => {
         };
     }
 
-    const object = new MuObject();
-    const testPair = createTestPair(t, object);
+    const json = new MuJSON();
+    const testPair = createTestPair(t, json);
     testPair({}, {a:0.5, b:false, c:'', d:[]});
     testPair([], [1e9, true, 'Iñtërnâtiônàlizætiøn☃💩', {}]);
     t.end();
