@@ -1,5 +1,6 @@
 import test = require('tape');
 import {
+    MuBoolean,
     MuUTF8,
     MuFloat32,
     MuDate,
@@ -9,18 +10,17 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuBoolean,
 } from '../index';
 
 test('primitive.assign()', (t) => {
-    t.comment('should be no-op');
-    const bool = new MuBoolean(true);
-    t.equal(bool.assign(true,true),true)
-    t.equal(bool.assign(true,false),false)
-    t.notEqual(bool.assign(true,false),true)
-    t.notEqual(bool.assign(false,true),false)
-    const float32 = new MuFloat32(1)
-    t.equal(float32.assign(1,2),2) 
+    const bool = new MuBoolean();
+    t.equal(bool.assign(true, true), true);
+    t.equal(bool.assign(true, false), false);
+    t.equal(bool.assign(false, true), true);
+    t.equal(bool.assign(false, false), false);
+
+    const float32 = new MuFloat32();
+    t.equal(float32.assign(1, 2), 2);
     t.end();
 });
 
@@ -52,8 +52,8 @@ test('array.assign()', (t) => {
     array.assign(aDst, aSrc);
     t.deepEqual(aDst, aSrc);
     aDst.push(1);
-    array.assign(aDst,aSrc);
-    t.deepEqual(aDst,aSrc);
+    array.assign(aDst, aSrc);
+    t.deepEqual(aDst, aSrc);
 
     const nestedArray = new MuArray(
         new MuArray(new MuFloat32(), Infinity),
@@ -154,8 +154,8 @@ test('dictionary.assign()', (t) => {
     dictionary.assign(dDst, dSrc);
     t.deepEqual(dDst, dSrc);
     dDst.c = 1;
-    dictionary.assign(dDst,dSrc);
-    t.deepEqual(dDst,dSrc);
+    dictionary.assign(dDst, dSrc);
+    t.deepEqual(dDst, dSrc);
 
     const nestedDictionary = new MuDictionary(
         new MuDictionary(new MuFloat32(), Infinity),
@@ -217,8 +217,8 @@ test('union.assign()', (t) => {
     stringOrFloat.assign(dst, src);
     t.deepEqual(dst, src);
     dst.data = 'Internationalization';
-    stringOrFloat.assign(dst,src);
-   t.deepEqual(dst,src);
+    stringOrFloat.assign(dst, src);
+    t.deepEqual(dst, src);
     src.type = 'f';
     src.data = 0.5;
     stringOrFloat.assign(dst, src);

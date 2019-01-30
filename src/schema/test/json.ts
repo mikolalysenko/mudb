@@ -1,17 +1,49 @@
 import test = require('tape');
 import {
+    MuBoolean,
+    MuUTF8,
     MuFloat32,
     MuDate,
     MuArray,
-    MuDictionary,
     MuSortedArray,
+    MuVector,
+    MuDictionary,
     MuStruct,
     MuUnion,
-    MuVector,
-    MuBoolean,
-    MuUTF8,
 } from '../index';
 import { randFloat32 } from '../util/random';
+
+// primitive
+
+test('primitive.toJSON()', (t) => {
+    const bool = new MuBoolean();
+    t.equal(bool.toJSON(false), false);
+    t.equal(bool.toJSON(true), true);
+
+    const utf8 = new MuUTF8();
+    t.equal(utf8.toJSON(''), '');
+    t.equal(utf8.toJSON('Iñtërnâtiônàlizætiøn☃💩'), 'Iñtërnâtiônàlizætiøn☃💩');
+
+    const float32 = new MuFloat32();
+    t.equal(float32.toJSON(0), 0);
+    t.equal(float32.toJSON(0.5), 0.5);
+    t.end();
+});
+
+test('primitive.fromJSON()', (t) => {
+    const bool = new MuBoolean();
+    t.equal(bool.fromJSON(bool.toJSON(false)), false);
+    t.equal(bool.fromJSON(bool.toJSON(true)), true);
+
+    const utf8 = new MuUTF8();
+    t.equal(utf8.fromJSON(utf8.toJSON('')), '');
+    t.equal(utf8.fromJSON(utf8.toJSON('Iñtërnâtiônàlizætiøn☃💩')), 'Iñtërnâtiônàlizætiøn☃💩');
+
+    const float32 = new MuFloat32();
+    t.equal(float32.fromJSON(float32.toJSON(0)), 0);
+    t.equal(float32.fromJSON(float32.toJSON(0.5)), 0.5);
+    t.end();
+});
 
 // date
 
@@ -294,25 +326,3 @@ test('union.fromJSON(j)', (t) => {
     t.deepEqual(u2, u1);
     t.end();
 });
-
-// primitive
-
-test('primitive.toJSON()', (t) => {
-    const bool = new MuBoolean(true);
-    const b = bool.alloc()
-    t.deepEqual(bool.toJSON(b),b);
-    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩')
-    const u = utf8.alloc()
-    t.deepEqual(utf8.toJSON(u),u)
-    t.end()
-})
-
-test('primitive.fromJSON()', (t) => {
-    const bool = new MuBoolean(true);
-    const b = bool.alloc()
-    t.deepEqual(bool.fromJSON(b),b);
-    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩')
-    const u = utf8.alloc()
-    t.deepEqual(utf8.fromJSON(u),u)
-    t.end()
-})
