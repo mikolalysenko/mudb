@@ -247,9 +247,6 @@ test('union.assign()', (t) => {
 
 test('object.assign', (t) => {
     const object = new MuObject();
-    t.throws(() => object.assign({}, []), TypeError);
-    t.throws(() => object.assign([], {}), TypeError);
-
     const o = {a: 0, b: 1};
     const p = {a: {b: {c: [0]}}};
     object.assign(o, p);

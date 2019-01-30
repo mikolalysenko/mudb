@@ -1,18 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
-function isPlainObject (x) : boolean {
-    if (typeof x !== 'object' || x === null) {
-        return false;
-    }
-
-    let proto = x;
-    while (Object.getPrototypeOf(proto) !== null) {
-        proto = Object.getPrototypeOf(proto);
-    }
-    return Object.getPrototypeOf(x) === proto;
-}
-
 export class MuObject implements MuSchema<object> {
     public readonly muType = 'object';
     public readonly identity:object;
@@ -40,11 +28,6 @@ export class MuObject implements MuSchema<object> {
     }
 
     public assign (dst:object, src:object) : object {
-        if (isPlainObject(dst) && Array.isArray(src) ||
-            Array.isArray(dst) && isPlainObject(src)) {
-            throw new TypeError('type of dst is different from src');
-        }
-
         if (Array.isArray(dst) && Array.isArray(src)) {
             dst.length = src.length;
             for (let i = 0; i < dst.length; ++i) {
