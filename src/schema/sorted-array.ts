@@ -132,6 +132,9 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         target:ValueSchema['identity'][],
         out:MuWriteStream,
     ) : boolean {
+        if (target.length > this.capacity) {
+            throw new RangeError('mudb/schema: sorted array capacity exceeded');
+        }
         if (base.length === 0 && target.length === 0) {
             return false;
         }

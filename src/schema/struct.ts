@@ -45,6 +45,12 @@ export type Struct<Spec extends { [propName:string]:MuSchema<any> }> = {
     [K in keyof Spec]:Spec[K]['identity'];
 };
 
+export interface Stats {
+    allocCount:number;
+    freeCount:number;
+    poolSize:number;
+}
+
 export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
         implements MuSchema<Struct<Spec>> {
     public readonly muType = 'struct';
@@ -67,11 +73,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
     public readonly toJSON:(struct:Struct<Spec>) => Struct<any>;
     public readonly fromJSON:(json:Struct<any>) => Struct<Spec>;
 
-    public readonly stats:() => {
-        allocCount:number;
-        freeCount:number;
-        poolSize:number;
-    };
+    public readonly stats:() => Stats;
 
     constructor (spec:Spec) {
         // sort struct properties so primitives come first

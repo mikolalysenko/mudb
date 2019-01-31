@@ -107,6 +107,10 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         out:MuWriteStream,
     ) : boolean {
         const tLeng = target.length;
+        if (tLeng > this.capacity) {
+            throw new RangeError(`target length ${tLeng} exceeds capacity ${this.capacity}`);
+        }
+
         const numTrackers = Math.ceil(tLeng / 8);
         out.grow(4 + numTrackers);
 

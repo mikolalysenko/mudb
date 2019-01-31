@@ -136,7 +136,7 @@ export class MuWriteStream {
         this.offset += 8;
     }
 
-    public writeVarint (x_:number) {
+    public writeVarInt (x_:number) {
         const x = x_ >>> 0;
         const bytes = this.buffer.uint8;
         const offset = this.offset;
@@ -177,7 +177,7 @@ export class MuWriteStream {
 
     public writeString (str:string) {
         const bytes = encodeString(str);
-        this.writeVarint(bytes.length);
+        this.writeUint32(bytes.length);
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
     }
@@ -246,7 +246,7 @@ export class MuReadStream {
         return this.buffer.dataView.getFloat64(offset, LITTLE_ENDIAN);
     }
 
-    public readVarint () : number {
+    public readVarInt () : number {
         const bytes = this.buffer.uint8;
         let offset = this.offset;
         const x0 = bytes[offset++];
@@ -296,7 +296,7 @@ export class MuReadStream {
     }
 
     public readString () : string {
-        const byteLength = this.readVarint();
+        const byteLength = this.readUint32();
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
         this.offset += byteLength;
         return decodeString(bytes);

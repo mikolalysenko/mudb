@@ -59,7 +59,6 @@ test('schema.identity', (t) => {
     t.equal(new MuASCII('skr').identity,        'skr');
     t.equal(new MuUTF8('凉凉').identity,        '凉凉');
     t.equal(new MuFixedASCII(1).identity,       ' ');
-    t.equal(new MuFixedASCII(2).identity,       '  ');
     t.equal(new MuFixedASCII('000').identity,   '000');
     t.equal(new MuFloat32(3).identity,          3);
     t.equal(new MuFloat64(Math.E).identity,     Math.E);
