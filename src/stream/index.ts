@@ -16,6 +16,9 @@ if (typeof root === 'object' && 'TextEncoder' in root) {
     decodeString = StringCodec.decodeString;
 }
 
+export const encodeUTF8 = encodeString;
+export const decodeUTF8 = decodeString;
+
 // round to next highest power of 2
 function ceilLog2 (v_) {
     let v = v_ - 1;
