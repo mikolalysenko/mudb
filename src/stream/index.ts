@@ -1,8 +1,8 @@
 const root = (typeof self == 'object' && self['Object'] == Object && self) ||
             (typeof global == 'object' && global['Object'] == Object && global);
 
-let encodeString:(str:string) => Uint8Array;
-let decodeString:(bytes:Uint8Array) => string;
+export let encodeString:(str:string) => Uint8Array;
+export let decodeString:(bytes:Uint8Array) => string;
 
 // `TextEncoder` and `TextDecoder` have become globals since Node.js v11
 if (typeof root === 'object' && 'TextEncoder' in root) {
