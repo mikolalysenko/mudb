@@ -277,12 +277,12 @@ test('varints', (t) => {
 
     const ws = new MuWriteStream(5 * testVals.length);
     for (let i = 0; i < testVals.length; ++i) {
-        ws.writeVarint(testVals[i]);
+        ws.writeVarInt(testVals[i]);
     }
 
     const rs = new MuReadStream(ws.bytes());
     for (let i = 0; i < testVals.length; ++i) {
-        t.equals(rs.readVarint(), testVals[i] >>> 0, 'var int read ok: 0b' + (testVals[i] >>> 0).toString(2));
+        t.equals(rs.readVarInt(), testVals[i] >>> 0, 'var int read ok: 0b' + (testVals[i] >>> 0).toString(2));
     }
 
     t.end();

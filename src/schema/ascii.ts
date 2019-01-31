@@ -8,8 +8,8 @@ export class MuASCII extends MuString<'ascii'> {
 
     public diff (base:string, target:string, out:MuWriteStream) : boolean {
         if (base !== target) {
-            out.grow(5 + target.length);
-            out.writeVarint(target.length);
+            out.grow(4 + target.length);
+            out.writeUint32(target.length);
             out.writeASCII(target);
             return true;
         }
@@ -17,6 +17,6 @@ export class MuASCII extends MuString<'ascii'> {
     }
 
     public patch (base:string, inp:MuReadStream) : string {
-        return inp.readASCII(inp.readVarint());
+        return inp.readASCII(inp.readUint32());
     }
 }
