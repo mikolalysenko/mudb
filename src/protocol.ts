@@ -4,7 +4,7 @@ import { MuWriteStream, MuReadStream } from './stream';
 import { MuSocket, MuData } from './socket';
 import { MuTrace } from './trace';
 
-import stableStringify = require('json-stable-stringify');
+import stableStringify = require('./util/stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
 
 const RAW_MESSAGE = 0xffffffff;
