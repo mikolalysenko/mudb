@@ -35,7 +35,9 @@ export = function stringify (x_) {
                 str += `${JSON.stringify(key)}:${val}`;
             }
         }
-        seen.splice(idx, 1);
+
+        seen[idx] = seen[seen.length - 1];
+        seen.pop();
         return `{${str}}`;
     }
 };
