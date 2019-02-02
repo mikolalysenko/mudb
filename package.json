@@ -4,7 +4,7 @@
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
-    "clean": "shx rm -rf clock coverage rpc schema socket state stream *.d.ts *.js *.js.map",
+    "clean": "shx rm -rf clock coverage rpc schema socket state stream util *.d.ts *.js *.js.map",
     "coverage": "nyc npm run test",
     "link": "npm link && npm run clean && npm run build",
     "release": "npm run clean && npm run build && npm publish",
