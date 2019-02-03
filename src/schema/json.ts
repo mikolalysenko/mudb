@@ -1,6 +1,44 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
+function equal (a, b) : boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+        const aIsArr = Array.isArray(a);
+        const bIsArr = Array.isArray(b);
+        if (aIsArr !== bIsArr) { return false; }
+        if (aIsArr) {
+            const leng = a.length;
+            if (leng !== b.length) {
+                return false;
+            }
+            for (let i = leng - 1; i >= 0; --i) {
+                if (!equal(a[i], b[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        const keys = Object.keys(a);
+        if (keys.length !== Object.keys(b).length) {
+            return false;
+        }
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            if (!b.hasOwnProperty(key) || !equal(a[key], b[key])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    return a !== a && b !== b;
+}
+
 function clone (x) {
     if (typeof x !== 'object' || x === null) {
         return x;
@@ -39,9 +77,8 @@ export class MuJSON implements MuSchema<object> {
     public alloc () : object { return {}; }
     public free () : void { }
 
-    // TODO: make result deterministic
     public equal (a:object, b:object) : boolean {
-        return JSON.stringify(a) === JSON.stringify(b);
+        return equal(a, b);
     }
 
     public clone (json:object) : object {

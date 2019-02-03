@@ -248,8 +248,8 @@ test('json.equal()', (t) => {
     const json = new MuJSON();
     t.true(json.equal({}, {}));
     t.true(json.equal({a: 0}, {a: 0}));
-    t.true(json.equal({a: 0, b: 1}, {a: 0, b: 1}));
-    // t.true(json.equal({a: 0, b: 1}, {b: 1, a: 0}));
+    t.true(json.equal({a: 0, b: NaN}, {a: 0, b: NaN}));
+    t.true(json.equal({a: 0, b: 1}, {b: 1, a: 0}));
     t.false(json.equal({}, {a: 0}));
     t.false(json.equal({a: 0, b: 0}, {a: 0}));
     t.false(json.equal({a: 0}, {b: 0}));
@@ -275,7 +275,7 @@ test('json.equal()', (t) => {
     t.true(json.equal([], []));
     t.false(json.equal([], {}));
     t.true(json.equal([0.5], [0.5]));
-    t.true(json.equal([0.5, 1], [0.5, 1]));
+    t.true(json.equal([0.5, NaN], [0.5, NaN]));
     t.false(json.equal([], [0]));
     t.false(json.equal([0, 1], [0]));
     t.false(json.equal([0], [1]));
