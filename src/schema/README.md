@@ -1,11 +1,13 @@
-# muschema
-An extensible system for defining [schemas](https://en.wikipedia.org/wiki/Database_schema), which describe structures of the data.
+# Schema
+A `mudb` schema is a type declaration that can be used to define the message passing interface between client and server.  You can think of it as the parameter part of a function declaration.
 
-Schemas allow run-time type reflection, object pooling, and more importantly, [binary serialization](https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization).  And in `mudb`, all message interfaces are specified by schemas.
+In the `schema` module, we have defined several commonly used data types (`boolean`, `float32`, `struct`, etc.) which you can use to describe complex structures accurately.  They should be enough for you to handle the large majority of situations.
 
-Compared to protobuf, `muschema` is better in that it supports [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding) and is easier to customize (and worse in the sense that it only works in JavaScript).
+That being said, you are by no means limited to the predefined data types.  `mudb` is designed to work with any data types that implement the `MuSchema` interface and contract correctly.
 
-TypeScript and Node.js friendly!
+Each data type defined in `schema` performs serialization as [data differencing](https://en.wikipedia.org/wiki/Delta_encoding).  That means messages can be sent in the form of delta (difference relative to an observed state), which may help lowering the bandwidth requirement for your application substantially.  And for situations where JSON is required, `schema` provides APIs that can convert data into JSON-stringifiable objects, and back.
+
+Although most modern JavaScript engines are optimized to mitigate the problem of GC pauses, for example, V8 tries to split up the work of marking live objects into smaller chunks so that the main thread is paused for a short interval each time, for applications like fast-paced games where jank should be avoided at all costs, it is still essential to spend some effort in reducing the number of memory allocations and deallocations.  For this purpose, data types implementing `MuSchema` can have a pooling interface.  Note that pooling isn't always a good idea, a pooling implementation makes sense for a type of which similar objects are created and destroyed constantly, like a struct.
 
 ## example
 Here is a contrived example showing how all of the methods of the schemas work.
