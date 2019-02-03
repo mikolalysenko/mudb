@@ -60,6 +60,9 @@ function clone (x) {
     return copy;
 }
 
+export const deepEqual = equal;
+export const deepClone = clone;
+
 export class MuJSON implements MuSchema<object> {
     public readonly muType = 'json';
     public readonly identity:object;
@@ -78,18 +81,18 @@ export class MuJSON implements MuSchema<object> {
     public free () : void { }
 
     public equal (a:object, b:object) : boolean {
-        return equal(a, b);
+        return deepEqual(a, b);
     }
 
-    public clone (json:object) : object {
-        return clone(json);
+    public clone (obj:object) : object {
+        return deepClone(obj);
     }
 
     public assign (dst:object, src:object) : object {
         if (Array.isArray(dst) && Array.isArray(src)) {
             dst.length = src.length;
             for (let i = 0; i < dst.length; ++i) {
-                dst[i] = clone(src[i]);
+                dst[i] = deepClone(src[i]);
             }
             return dst;
         }
@@ -104,15 +107,15 @@ export class MuJSON implements MuSchema<object> {
         const sKeys = Object.keys(src);
         for (let i = 0; i < sKeys.length; ++i) {
             const key = sKeys[i];
-            dst[key] = clone(src[key]);
+            dst[key] = deepClone(src[key]);
         }
         return dst;
     }
 
     public diff (base:object, target:object, out:MuWriteStream) : boolean {
-        const ts = JSON.stringify(target);
-        out.grow(4 + 4 * ts.length);
-        out.writeString(ts);
+        const str = JSON.stringify(target);
+        out.grow(4 + 4 * str.length);
+        out.writeString(str);
         return true;
     }
 
