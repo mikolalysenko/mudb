@@ -37,6 +37,9 @@ import { MuStruct } from './struct';
 // union type
 import { MuUnion } from './union';
 
+// generic JSON type
+import { MuJSON } from './json';
+
 export {
     MuSchema,
 
@@ -61,4 +64,5 @@ export {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuJSON,
 };

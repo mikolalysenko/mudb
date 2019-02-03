@@ -16,10 +16,11 @@ import {
     MuDate,
     MuArray,
     MuSortedArray,
+    MuVector,
     MuDictionary,
     MuStruct,
     MuUnion,
-    MuVector,
+    MuJSON,
 } from '../index';
 
 test('schema.identity default', (t) => {
@@ -38,19 +39,10 @@ test('schema.identity default', (t) => {
     t.true(new MuDate().identity instanceof Date);
     t.deepEqual(new MuArray(new MuFloat32(), 0).identity,       []);
     t.deepEqual(new MuSortedArray(new MuFloat32(), 0).identity, []);
+    t.deepEqual(new MuVector(new MuFloat32(), 3).identity,      new Float32Array(3));
     t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
-    t.deepEqual(
-        new MuStruct({ f: new MuFloat32() }).identity,
-        { f: 0 },
-    );
-    t.deepEqual(
-        new MuUnion({ f: new MuFloat32() }).identity,
-        { type: '', data: undefined },
-    );
-    t.deepEqual(
-        new MuVector(new MuFloat32(), 3).identity,
-        new Float32Array(3),
-    );
+    t.deepEqual(new MuStruct({ f: new MuFloat32() }).identity,  { f: 0 });
+    t.deepEqual(new MuUnion({ f: new MuFloat32() }).identity,   { type: '', data: undefined });
     t.end();
 });
 
@@ -85,20 +77,24 @@ test('schema.identity', (t) => {
     t.deepEqual(sortedArray.identity, [1, 2, 3]);
     t.notEqual(sortedArray.identity, sa);
 
+    const vector = new MuVector(new MuFloat32(1), 3);
+    t.deepEqual(vector.identity, new Float32Array([1, 1, 1]));
+    t.end();
+
     const dict = {x: [], y: []};
     const dictionary = new MuDictionary(new MuArray(new MuFloat32(), Infinity), Infinity, dict);
     t.deepEqual(dictionary.identity, dict);
     t.notEqual(dictionary.identity, dict);
     t.notEqual(dictionary.identity.x, dict.x);
 
-    t.deepEqual(
-        new MuUnion({ f: new MuFloat32() }, 'f').identity,
-        { type: 'f', data: 0 },
-    );
+    const union = new MuUnion({ f: new MuFloat32() }, 'f');
+    t.deepEqual(union.identity, { type: 'f', data: 0 });
 
-    const vector = new MuVector(new MuFloat32(1), 3);
-    t.deepEqual(vector.identity, new Float32Array([1, 1, 1]));
-    t.end();
+    const o = {n: 0, b: false, a: []};
+    const json = new MuJSON(o);
+    t.deepEqual(json.identity, o);
+    t.notEqual(json.identity, o);
+    t.notEqual(json.identity['a'], o['a']);
 });
 
 test('setting number type identity', (t) => {

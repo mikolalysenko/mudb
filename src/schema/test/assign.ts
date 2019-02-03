@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuJSON,
 } from '../index';
 
 test('primitive.assign()', (t) => {
@@ -241,5 +242,21 @@ test('union.assign()', (t) => {
     union.assign(uDst, uSrc);
     t.deepEqual(uDst, uSrc);
     t.notEqual(uDst.data, uSrc.data);
+    t.end();
+});
+
+test('json.assign', (t) => {
+    const json = new MuJSON();
+    const o = {a: 0, b: 1};
+    const p = {a: {b: {c: [0]}}};
+    json.assign(o, p);
+    t.deepEqual(o, p);
+    t.notEqual(o, p);
+
+    const q = [0, 1, 2];
+    const r = [{}, {}];
+    json.assign(q, r);
+    t.deepEqual(q, r);
+    t.notEqual(q, r);
     t.end();
 });

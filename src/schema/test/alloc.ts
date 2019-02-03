@@ -7,9 +7,10 @@ import {
     MuArray,
     MuSortedArray,
     MuVector,
-    MuStruct,
     MuDictionary,
+    MuStruct,
     MuUnion,
+    MuJSON,
 } from '../index';
 
 test('primitive.alloc()', (t) => {
@@ -25,18 +26,20 @@ test('primitive.alloc()', (t) => {
 
 test('nonPrimitive.alloc()', (t) => {
     const date = new MuDate();
+    t.true(date.alloc() instanceof Date);
+
     const array = new MuArray(new MuFloat32(), Infinity);
     const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const vector = new MuVector(new MuFloat32(), 5);
     const dictionary = new MuDictionary(new MuFloat32(), Infinity);
     const union = new MuUnion({ f: new MuFloat32() }, 'f');
-
-    t.true(date.alloc() instanceof Date);
-    t.deepEqual(array.alloc(), []);
-    t.deepEqual(sortedArray.alloc(), []);
-    t.deepEqual(vector.alloc(), new Float32Array(vector.dimension));
-    t.deepEqual(dictionary.alloc(), {});
-    t.deepEqual(union.alloc(), {type: 'f', data: 0});
+    const json = new MuJSON();
+    t.deepEqual(array.alloc(),          []);
+    t.deepEqual(sortedArray.alloc(),    []);
+    t.deepEqual(dictionary.alloc(),     {});
+    t.deepEqual(union.alloc(),          {type: 'f', data: 0});
+    t.deepEqual(vector.alloc(),         new Float32Array(vector.dimension));
+    t.deepEqual(json.alloc(),           {});
     t.end();
 });
 

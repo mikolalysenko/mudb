@@ -10,6 +10,7 @@ import {
     MuDictionary,
     MuStruct,
     MuUnion,
+    MuJSON,
 } from '../index';
 import { randFloat32 } from '../util/random';
 
@@ -47,14 +48,14 @@ test('primitive.fromJSON()', (t) => {
 
 // date
 
-test('date.toJSON(Date)', (t) => {
+test('date.toJSON()', (t) => {
     const date = new MuDate();
     const d = date.alloc();
     t.equal(date.toJSON(d), d.toISOString());
     t.end();
 });
 
-test('date.fromJSON(string)', (t) => {
+test('date.fromJSON()', (t) => {
     const date = new MuDate();
     const d = date.alloc();
     t.deepEqual(date.fromJSON(date.toJSON(d)), d);
@@ -64,7 +65,7 @@ test('date.fromJSON(string)', (t) => {
 
 // vector
 
-test('vector.toJSON(Float32Array)', (t) => {
+test('vector.toJSON()', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
     const v = vector.alloc();
 
@@ -76,7 +77,7 @@ test('vector.toJSON(Float32Array)', (t) => {
     t.end();
 });
 
-test('vector.fromJSON(float32[])', (t) => {
+test('vector.fromJSON()', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
     const v1 = vector.alloc();
     for (let i = 0; i < v1.length; ++i) {
@@ -91,7 +92,7 @@ test('vector.fromJSON(float32[])', (t) => {
 
 // array
 
-test('array.toJSON(float32[])', (t) => {
+test('array.toJSON()', (t) => {
     const array = new MuArray(new MuFloat32(), Infinity);
 
     const a = array.alloc();
@@ -106,7 +107,7 @@ test('array.toJSON(float32[])', (t) => {
     t.end();
 });
 
-test('array.fromJSON(float32[])', (t) => {
+test('array.fromJSON()', (t) => {
     const array = new MuArray(new MuFloat32(), Infinity);
 
     const a = array.alloc();
@@ -123,7 +124,7 @@ test('array.fromJSON(float32[])', (t) => {
     t.end();
 });
 
-test('array.toJSON(vector[])', (t) => {
+test('array.toJSON()', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
     const array = new MuArray(vector, Infinity);
 
@@ -141,7 +142,7 @@ test('array.toJSON(vector[])', (t) => {
     t.end();
 });
 
-test('array.fromJSON(float32[][])', (t) => {
+test('array.fromJSON()', (t) => {
     const vector = new MuVector(new MuFloat32(), 1e3);
     const array = new MuArray(vector, Infinity);
 
@@ -162,7 +163,7 @@ test('array.fromJSON(float32[][])', (t) => {
 
 // sorted
 
-test('sorted.toJSON(float32[])', (t) => {
+test('sorted.toJSON()', (t) => {
     const sorted = new MuSortedArray(new MuFloat32(), Infinity);
 
     const s = sorted.alloc();
@@ -177,7 +178,7 @@ test('sorted.toJSON(float32[])', (t) => {
     t.end();
 });
 
-test('sorted.fromJSON(float32[])', (t) => {
+test('sorted.fromJSON()', (t) => {
     const sorted = new MuSortedArray(new MuFloat32(), Infinity);
 
     const s = sorted.alloc();
@@ -196,7 +197,7 @@ test('sorted.fromJSON(float32[])', (t) => {
 
 // dictionary
 
-test('dictionary.toJSON(float32{})', (t) => {
+test('dictionary.toJSON()', (t) => {
     const dictionary = new MuDictionary(new MuFloat32(), Infinity);
 
     const d = dictionary.alloc();
@@ -212,7 +213,7 @@ test('dictionary.toJSON(float32{})', (t) => {
     t.end();
 });
 
-test('dictionary.fromJSON(float32{})', (t) => {
+test('dictionary.fromJSON()', (t) => {
     const dictionary = new MuDictionary(new MuFloat32(), Infinity);
 
     const d = dictionary.alloc();
@@ -232,7 +233,7 @@ test('dictionary.fromJSON(float32{})', (t) => {
 
 // struct
 
-test('struct.toJSON({float32, vector})', (t) => {
+test('struct.toJSON()', (t) => {
     const float32 = new MuFloat32();
     const vector = new MuVector(float32, 1e3);
     const struct = new MuStruct({
@@ -258,7 +259,7 @@ test('struct.toJSON({float32, vector})', (t) => {
     t.end();
 });
 
-test('struct.fromJSON({float32, float32[]})', (t) => {
+test('struct.fromJSON()', (t) => {
     const float32 = new MuFloat32();
     const vector = new MuVector(float32, 1e3);
     const struct = new MuStruct({
@@ -280,7 +281,7 @@ test('struct.fromJSON({float32, float32[]})', (t) => {
 
 // union
 
-test('union.toJSON(u)', (t) => {
+test('union.toJSON()', (t) => {
     const union = new MuUnion(
         {
             f: new MuFloat32(),
@@ -308,7 +309,7 @@ test('union.toJSON(u)', (t) => {
     t.end();
 });
 
-test('union.fromJSON(j)', (t) => {
+test('union.fromJSON()', (t) => {
     const union = new MuUnion(
         {
             f: new MuFloat32(),
@@ -324,5 +325,21 @@ test('union.fromJSON(j)', (t) => {
     const u2 = union.fromJSON(union.toJSON(u1));
     t.ok(u2.data instanceof Float32Array);
     t.deepEqual(u2, u1);
+    t.end();
+});
+
+// json
+
+test('json.toJSON()', (t) => {
+    const json = new MuJSON();
+    const o = {};
+    t.equal(json.toJSON(o), o);
+    t.end();
+});
+
+test('json.fromJSON()', (t) => {
+    const json = new MuJSON();
+    const o = {};
+    t.equal(json.fromJSON(json.toJSON(o)), o);
     t.end();
 });
