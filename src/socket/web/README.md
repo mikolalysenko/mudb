@@ -41,7 +41,6 @@ muClient.start({ /* event handlers */ })
 
 # table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 interfaces](#section_2.1)
       * [2.2 `MuWebSocketServer(spec)`](#section_2.2)
@@ -55,12 +54,6 @@ muClient.start({ /* event handlers */ })
          * [2.3.3 `open(spec)`](#section_2.3.3)
          * [2.3.4 `send(data:Data, unreliable?:boolean)`](#section_2.3.4)
          * [2.3.5 `close()`](#section_2.3.5)
-
-# <a name="section_1"></a> 1 install
-
-```
-npm i muweb-socket
-```
 
 # <a name="section_2"></a> 2 api
 

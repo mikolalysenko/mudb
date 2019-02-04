@@ -14,7 +14,6 @@ A `mudb` instance can have multiple RPC protocols for different sets of behavior
    * [1 RPC protocol schema](#section_1)
    * [2 server-side protocol](#section_2)
    * [3 client-side protocol](#section_3)
-* [ install](#section_)
 * [ api](#section_)
    * [1 types](#section_1)
    * [2 MuRPC(argumentSchema, returnSchema)](#section_2)
@@ -129,12 +128,6 @@ export = function (client:MuClient) {
 ```
 
 # table of contents
-
-# <a name="section_"></a>  install
-
-```
-npm i murpc
-```
 
 # <a name="section_"></a>  api
 

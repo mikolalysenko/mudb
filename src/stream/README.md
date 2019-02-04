@@ -63,7 +63,6 @@ socketServer.on('connection', function (socket) {
 
 # table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 `MuWriteStream(bufferCapacity:number)`](#section_2.1)
          * [2.1.1 `buffer:MuBuffer`](#section_2.1.1)
@@ -105,12 +104,6 @@ socketServer.on('connection', function (socket) {
          * [2.3.3 `uint8:Uint8Array`](#section_2.3.3)
    * [3 usage tips](#section_3)
    * [4 TODO](#section_4)
-
-# <a name="section_1"></a> 1 install
-
-```
-npm i mustreams
-```
 
 # <a name="section_2"></a> 2 api
 

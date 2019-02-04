@@ -76,7 +76,6 @@ EntitySetSchema.free(otherEntities)
 
 # table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 interface](#section_2.1)
       * [2.2 primitives](#section_2.2)
@@ -96,12 +95,6 @@ EntitySetSchema.free(otherEntities)
       * [3.1 features](#section_3.1)
       * [3.2 schema types](#section_3.2)
       * [3.3 TBD](#section_3.3)
-
-# <a name="section_1"></a> 1 install
-
-```
-npm i muschema
-```
 
 # <a name="section_2"></a> 2 api
 
