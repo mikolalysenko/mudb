@@ -3,21 +3,24 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitiveType } from './type';
 
-export interface Union<SubTypes extends { [type:string]:MuSchema<any> }> {
-    type:keyof SubTypes;
-    data:SubTypes[keyof SubTypes]['identity'];
-}
+export type UnionInstance<SubTypes extends { [type:string]:MuSchema<any> }, Type extends keyof SubTypes> = {
+    type:Type;
+    data:SubTypes[Type]['identity'];
+};
 
-export interface UnionJSON<SubTypes extends { [type:string]:MuSchema<any> }> {
-    type:keyof SubTypes;
-    data:any;
+export interface UnionTypes <SubTypes extends { [type:string]:MuSchema<any> }> {
+    instance:UnionInstance<SubTypes, keyof SubTypes>;
+    json:{
+        type:keyof SubTypes;
+        data:any;
+    };
 }
 
 export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
-        implements MuSchema<Union<SubTypes>> {
+        implements MuSchema<UnionTypes<SubTypes>['instance']> {
     public readonly muType = 'union';
 
-    public readonly identity:Union<SubTypes>;
+    public readonly identity:UnionTypes<SubTypes>['instance'];
     public readonly muData:SubTypes;
     public readonly json:object;
     private _types:(keyof SubTypes)[];
@@ -52,7 +55,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public alloc () : Union<SubTypes> {
+    public alloc () : UnionTypes<SubTypes>['instance'] {
         const type = this.identity.type;
         return {
             type,
@@ -60,11 +63,11 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public free (union:Union<SubTypes>) : void {
+    public free (union:UnionTypes<SubTypes>['instance']) : void {
         this.muData[union.type].free(union.data);
     }
 
-    public equal (a:Union<SubTypes>, b:Union<SubTypes>) : boolean {
+    public equal (a:UnionTypes<SubTypes>['instance'], b:UnionTypes<SubTypes>['instance']) : boolean {
         if (a.type !== b.type) {
             return false;
         }
@@ -74,7 +77,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return this.muData[a.type].equal(a.data, b.data);
     }
 
-    public clone (union:Union<SubTypes>) : Union<SubTypes> {
+    public clone (union:UnionTypes<SubTypes>['instance']) : UnionTypes<SubTypes>['instance'] {
         const type = union.type;
         return {
             type,
@@ -82,7 +85,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public assign (dst:Union<SubTypes>, src:Union<SubTypes>) : Union<SubTypes> {
+    public assign (dst:UnionTypes<SubTypes>['instance'], src:UnionTypes<SubTypes>['instance']) : UnionTypes<SubTypes>['instance'] {
         const dType = dst.type;
         const sType = src.type;
         const schema = this.muData;
@@ -110,8 +113,8 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public diff (
-        base:Union<SubTypes>,
-        target:Union<SubTypes>,
+        base:UnionTypes<SubTypes>['instance'],
+        target:UnionTypes<SubTypes>['instance'],
         out:MuWriteStream,
     ) : boolean {
         out.grow(8);
@@ -143,9 +146,9 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public patch (
-        base:Union<SubTypes>,
+        base:UnionTypes<SubTypes>['instance'],
         inp:MuReadStream,
-    ) : Union<SubTypes> {
+    ) : UnionTypes<SubTypes>['instance'] {
         const result = this.clone(base);
         const opcode = inp.readUint8();
         if (opcode === 1) {
@@ -164,14 +167,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         return result;
     }
 
-    public toJSON (union:Union<SubTypes>) : UnionJSON<SubTypes> {
+    public toJSON (union:UnionTypes<SubTypes>['instance']) : UnionTypes<SubTypes>['json'] {
         return {
             type: union.type,
             data: this.muData[union.type].toJSON(union.data),
         };
     }
 
-    public fromJSON (json:UnionJSON<SubTypes>) : Union<SubTypes> {
+    public fromJSON (json:UnionTypes<SubTypes>['json']) : UnionTypes<SubTypes>['instance'] {
         return {
             type: json.type,
             data: this.muData[json.type].fromJSON(json.data),
