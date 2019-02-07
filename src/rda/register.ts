@@ -1,8 +1,8 @@
 import { MuStruct } from '../schema/struct';
 import { MuSchema } from '../schema/schema';
+import { MuArray } from '../schema/array';
 import { MuUUIDSchema, createUUID, MuUUID } from './uuid';
 import { MuRDA, MuRDAStore } from './rda';
-import { MuArray } from '../schema';
 
 export class MuRDARegisterNode<State> {
     public uuid:MuUUID;

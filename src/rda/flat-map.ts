@@ -3,7 +3,7 @@ import { MuDictionary } from '../schema/dictionary';
 import { MuUnion } from '../schema/union';
 import { MuStruct } from '../schema/struct';
 import { MuArray } from '../schema/array';
-import { MuVoid } from '../schema';
+import { MuVoid } from '../schema/void';
 import { MuUUID, MuUUIDSchema, createUUID } from './uuid';
 import { MuRDA, MuRDAStore } from './rda';
 
@@ -90,15 +90,18 @@ export class MuRDAFlatMapStore<Spec extends MuRDAFlatMapSpec<any, any>>
     private _valueSchema:MuRDAFlatMapTypes<Spec>['valueSchema'];
     private _elementActionSchema:MuRDAFlatMapTypes<Spec>['elementActionSchema'];
     private _elementStoreSchema:MuRDAFlatMapTypes<Spec>['elementStoreSchema'];
+    private _stateSchema:MuRDAFlatMapTypes<Spec>['stateSchema'];
 
     constructor(
         valueSchema:MuRDAFlatMapTypes<Spec>['valueSchema'],
         elementActionSchema:MuRDAFlatMapTypes<Spec>['elementActionSchema'],
         elementStoreSchema:MuRDAFlatMapTypes<Spec>['elementStoreSchema'],
+        stateSchema:MuRDAFlatMapTypes<Spec>['stateSchema'],
         initialState:MuRDAFlatMapTypes<Spec>['state']) {
         this._valueSchema = valueSchema;
         this._elementActionSchema = elementActionSchema;
         this._elementStoreSchema = elementStoreSchema;
+        this._stateSchema = stateSchema;
         const keys = Object.keys(initialState);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
@@ -287,6 +290,7 @@ export class MuRDAFlatMap<Spec extends MuRDAFlatMapSpec<any, any>>
             this.valueSchema,
             this.elementActionSchema,
             this.elementStoreSchema,
+            this.stateSchema,
             intialState);
     }
 

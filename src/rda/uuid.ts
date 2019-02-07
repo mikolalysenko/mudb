@@ -1,4 +1,4 @@
-import { MuFixedASCII } from '../schema';
+import { MuFixedASCII } from '../schema/fixed-ascii';
 
 export const MuUUIDSchema = new MuFixedASCII(12);
 export type MuUUID = typeof MuUUIDSchema['identity'];

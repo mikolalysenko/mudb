@@ -1,7 +1,7 @@
-import { MuRDA, MuRDAStore } from './rda';
 import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
-import { MuSchema } from '../schema';
+import { MuSchema } from '../schema/schema';
+import { MuRDA, MuRDAStore } from './rda';
 
 export type MuRDAStructSpec = {
     [prop:string]:MuRDA<any, any, any>;

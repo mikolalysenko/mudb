@@ -94,6 +94,7 @@ export class MuRDASetStore <RDAValue extends MuRDA<any, any, any>>
         MuRDASetTypes<RDAValue>['actionSchema'],
         MuRDASetTypes<RDAValue>['storeSchema']> {
     private _value:RDAValue;
+    private _stateSchema:MuRDASetTypes<RDAValue>['stateSchema'];
     private _elementStoreSchema:MuRDASetTypes<RDAValue>['elementStoreSchema'];
 
     public elements:{ [uuid:string]:MuRDAElement<RDAValue> } = {};
@@ -101,9 +102,11 @@ export class MuRDASetStore <RDAValue extends MuRDA<any, any, any>>
     constructor (
         value:RDAValue,
         elementStoreSchema:MuRDASetTypes<RDAValue>['elementStoreSchema'],
+        stateSchema:MuRDASetTypes<RDAValue>['stateSchema'],
         initialState:MuRDASetTypes<RDAValue>['state']) {
         this._value = value;
         this._elementStoreSchema = elementStoreSchema;
+        this._stateSchema = stateSchema;
         const ids = Object.keys(initialState);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -112,15 +115,17 @@ export class MuRDASetStore <RDAValue extends MuRDA<any, any, any>>
     }
 
     public state (out:MuRDASetTypes<RDAValue>['state']) : MuRDASetTypes<RDAValue>['state'] {
+        this._stateSchema.free(out);
+        const result:MuRDASetTypes<RDAValue>['state'] = {};
         const ids = Object.keys(this.elements);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
             const element = this.elements[i];
             if (element.created && !element.destroyed.state(false)) {
-                out[id] = element.store.state(this._value.stateSchema.alloc());
+                result[id] = element.store.state(this._value.stateSchema.alloc());
             }
         }
-        return out;
+        return result;
     }
 
     public squash (state:MuRDASetTypes<RDAValue>['state']) {
@@ -259,7 +264,11 @@ export class MuRDASet <RDAValue extends MuRDA<any, any, any>>
     }
 
     public store (initialState:MuRDASetTypes<RDAValue>['state']) : MuRDASetStore<RDAValue> {
-        return new MuRDASetStore(this.value, this.elementStoreSchema, initialState);
+        return new MuRDASetStore(
+            this.value,
+            this.elementStoreSchema,
+            this.stateSchema,
+            initialState);
     }
 
     public readonly actions = {
