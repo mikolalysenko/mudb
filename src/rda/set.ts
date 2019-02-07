@@ -1,129 +1,129 @@
-import { MuCRDT, MuStore } from './crdt';
-import { MuUUIDSchema, createUUID, MuUUID } from './uuid';
 import { MuDictionary } from '../schema/dictionary';
 import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
-import { MuRegisterCRDT } from './register';
 import { MuBoolean } from '../schema/boolean';
+import { MuRDA, MuRDAStore } from './rda';
+import { MuUUIDSchema, createUUID, MuUUID } from './uuid';
+import { MuRDARegister } from './register';
 
-export const FlagCRDT = new MuRegisterCRDT(new MuBoolean(false));
+const Flag = new MuRDARegister(new MuBoolean(false));
 
-export class MuSetElement<ValueCRDT extends MuCRDT<any, any, any>> {
-    public store:SetCRDTTypes<ValueCRDT>['valueStore'];
+export class MuRDAElement<RDAValue extends MuRDA<any, any, any>> {
+    public store:MuRDASetTypes<RDAValue>['valueStore'];
     public created:boolean = true;
-    public destroyed = FlagCRDT.store(false);
+    public destroyed = Flag.store(false);
 
-    constructor (valueCRDT:ValueCRDT, initialValue:SetCRDTTypes<ValueCRDT>['valueState']) {
-        this.store = <any>valueCRDT.store(initialValue);
+    constructor (value:RDAValue, initialValue:MuRDASetTypes<RDAValue>['valueState']) {
+        this.store = <any>value.store(initialValue);
     }
 
-    public squash (state:SetCRDTTypes<ValueCRDT>['valueState']) {
+    public squash (state:MuRDASetTypes<RDAValue>['valueState']) {
         this.store.squash(state);
         this.created = true;
         this.destroyed.squash(false);
     }
 
-    public serialize(out:SetCRDTTypes<ValueCRDT>['elementStore']) : SetCRDTTypes<ValueCRDT>['elementStore'] {
+    public serialize(out:MuRDASetTypes<RDAValue>['elementStore']) : MuRDASetTypes<RDAValue>['elementStore'] {
         out.state = this.store.serialize(out.state);
         out.created = this.created;
         out.destroyed = this.destroyed.serialize(out.destroyed);
         return out;
     }
 
-    public parse (info:SetCRDTTypes<ValueCRDT>['elementStore']) {
+    public parse (info:MuRDASetTypes<RDAValue>['elementStore']) {
         this.store.parse(info.state);
         this.created = info.created;
         this.destroyed.parse(info.destroyed);
     }
 }
 
-export interface SetCRDTTypes <ValueCRDT extends MuCRDT<any, any, any>> {
-    element:MuSetElement<ValueCRDT>;
+export interface MuRDASetTypes <RDAValue extends MuRDA<any, any, any>> {
+    element:MuRDAElement<RDAValue>;
 
-    valueState:ValueCRDT['stateSchema']['identity'];
-    valueAction:ValueCRDT['actionSchema']['identity'];
-    valueStore:ReturnType<ValueCRDT['store']>;
+    valueState:RDAValue['stateSchema']['identity'];
+    valueAction:RDAValue['actionSchema']['identity'];
+    valueStore:ReturnType<RDAValue['store']>;
 
-    stateSchema:MuDictionary<ValueCRDT['stateSchema']>;
-    state:SetCRDTTypes<ValueCRDT>['stateSchema']['identity'];
+    stateSchema:MuDictionary<RDAValue['stateSchema']>;
+    state:MuRDASetTypes<RDAValue>['stateSchema']['identity'];
 
     actionSchema:MuStruct<{
         uuid:typeof MuUUIDSchema,
         data:MuUnion<{
-            create:SetCRDTTypes<ValueCRDT>['valueState'],
-            update:SetCRDTTypes<ValueCRDT>['valueAction'],
-            destroy:typeof FlagCRDT['actionSchema'],
+            create:MuRDASetTypes<RDAValue>['valueState'],
+            update:MuRDASetTypes<RDAValue>['valueAction'],
+            destroy:typeof Flag['actionSchema'],
         }>;
     }>;
-    action:SetCRDTTypes<ValueCRDT>['actionSchema']['identity'];
+    action:MuRDASetTypes<RDAValue>['actionSchema']['identity'];
     createAction:{
         uuid:MuUUID;
         data:{
             type:'create',
-            data:SetCRDTTypes<ValueCRDT>['valueState'];
+            data:MuRDASetTypes<RDAValue>['valueState'];
         };
     };
     updateAction:{
         uuid:MuUUID;
         data:{
             type:'update',
-            data:SetCRDTTypes<ValueCRDT>['valueAction'];
+            data:MuRDASetTypes<RDAValue>['valueAction'];
         };
     };
     destroyAction:{
         uuid:MuUUID;
         data:{
             type:'destroy',
-            data:typeof FlagCRDT['actionSchema']['identity'];
+            data:typeof Flag['actionSchema']['identity'];
         };
     };
 
     elementStoreSchema:MuStruct<{
-        state:ValueCRDT['storeSchema'];
+        state:RDAValue['storeSchema'];
         created:MuBoolean;
-        destroyed:typeof FlagCRDT['storeSchema'];
+        destroyed:typeof Flag['storeSchema'];
     }>;
-    elementStore:SetCRDTTypes<ValueCRDT>['elementStoreSchema']['identity'];
-    storeSchema:MuDictionary<SetCRDTTypes<ValueCRDT>['elementStoreSchema']>;
-    store:SetCRDTTypes<ValueCRDT>['storeSchema']['identity'];
+    elementStore:MuRDASetTypes<RDAValue>['elementStoreSchema']['identity'];
+    storeSchema:MuDictionary<MuRDASetTypes<RDAValue>['elementStoreSchema']>;
+    store:MuRDASetTypes<RDAValue>['storeSchema']['identity'];
 }
 
-export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
-    implements MuStore<
-        SetCRDTTypes<ValueCRDT>['stateSchema'],
-        SetCRDTTypes<ValueCRDT>['actionSchema'],
-        SetCRDTTypes<ValueCRDT>['storeSchema']> {
-    private _valueCRDT:ValueCRDT;
-    private _elementStoreSchema:SetCRDTTypes<ValueCRDT>['elementStoreSchema'];
+export class MuRDASetStore <RDAValue extends MuRDA<any, any, any>>
+    implements MuRDAStore<
+        MuRDASetTypes<RDAValue>['stateSchema'],
+        MuRDASetTypes<RDAValue>['actionSchema'],
+        MuRDASetTypes<RDAValue>['storeSchema']> {
+    private _value:RDAValue;
+    private _elementStoreSchema:MuRDASetTypes<RDAValue>['elementStoreSchema'];
 
-    public elements:{ [uuid:string]:MuSetElement<ValueCRDT> } = {};
+    public elements:{ [uuid:string]:MuRDAElement<RDAValue> } = {};
 
     constructor (
-        valueCRDT:ValueCRDT,
-        elementStoreSchema:SetCRDTTypes<ValueCRDT>['elementStoreSchema'],
-        initialState:SetCRDTTypes<ValueCRDT>['state']) {
-        this._valueCRDT = valueCRDT;
+        value:RDAValue,
+        elementStoreSchema:MuRDASetTypes<RDAValue>['elementStoreSchema'],
+        initialState:MuRDASetTypes<RDAValue>['state']) {
+        this._value = value;
         this._elementStoreSchema = elementStoreSchema;
         const ids = Object.keys(initialState);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            this.elements[id] = new MuSetElement(valueCRDT, initialState[id]);
+            this.elements[id] = new MuRDAElement(value, initialState[id]);
         }
     }
 
-    public state (out:SetCRDTTypes<ValueCRDT>['state']) : SetCRDTTypes<ValueCRDT>['state'] {
+    public state (out:MuRDASetTypes<RDAValue>['state']) : MuRDASetTypes<RDAValue>['state'] {
         const ids = Object.keys(this.elements);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
             const element = this.elements[i];
             if (element.created && !element.destroyed.state(false)) {
-                out[id] = element.store.state(this._valueCRDT.stateSchema.alloc());
+                out[id] = element.store.state(this._value.stateSchema.alloc());
             }
         }
         return out;
     }
 
-    public squash (state:SetCRDTTypes<ValueCRDT>['state']) {
+    public squash (state:MuRDASetTypes<RDAValue>['state']) {
         const ids = Object.keys(this.elements);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -138,7 +138,7 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
             if (id in this.elements) {
                 this.elements[id].squash(state[id]);
             } else {
-                this.elements[id] = new MuSetElement(this._valueCRDT, state[id]);
+                this.elements[id] = new MuRDAElement(this._value, state[id]);
             }
         }
     }
@@ -151,7 +151,7 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
         this.elements = {};
     }
 
-    public apply (action:SetCRDTTypes<ValueCRDT>['action']) : boolean {
+    public apply (action:MuRDASetTypes<RDAValue>['action']) : boolean {
         const element = this.elements[action.uuid];
         switch (action.data.type) {
             case 'create':
@@ -162,7 +162,7 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
                     element.created = true;
                     return true;
                 } else {
-                    this.elements[action.uuid] = new MuSetElement(this._valueCRDT, action.data.data);
+                    this.elements[action.uuid] = new MuRDAElement(this._value, action.data.data);
                     return true;
                 }
             case 'update':
@@ -180,7 +180,7 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
         return false;
     }
 
-    public undo (action:SetCRDTTypes<ValueCRDT>['action']) : boolean {
+    public undo (action:MuRDASetTypes<RDAValue>['action']) : boolean {
         const element = this.elements[action.uuid];
         switch (action.data.type) {
             case 'create':
@@ -204,7 +204,7 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
         return false;
     }
 
-    public serialize (out:SetCRDTTypes<ValueCRDT>['store']) : SetCRDTTypes<ValueCRDT>['store'] {
+    public serialize (out:MuRDASetTypes<RDAValue>['store']) : MuRDASetTypes<RDAValue>['store'] {
         const ids = Object.keys(this.elements);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -213,75 +213,75 @@ export class MuSetStore <ValueCRDT extends MuCRDT<any, any, any>>
         return out;
     }
 
-    public parse (info:SetCRDTTypes<ValueCRDT>['store']) {
+    public parse (info:MuRDASetTypes<RDAValue>['store']) {
         this.destroy();
 
         const ids = Object.keys(info);
-        const identity = this._valueCRDT.stateSchema.identity;
+        const identity = this._value.stateSchema.identity;
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            const element:SetCRDTTypes<ValueCRDT>['element'] = new MuSetElement(this._valueCRDT, identity);
+            const element:MuRDASetTypes<RDAValue>['element'] = new MuRDAElement(this._value, identity);
             element.parse(info[id]);
             this.elements[id] = element;
         }
     }
 }
 
-export class MuSetCRDT <ValueCRDT extends MuCRDT<any, any, any>>
-    implements MuCRDT<
-        SetCRDTTypes<ValueCRDT>['stateSchema'],
-        SetCRDTTypes<ValueCRDT>['actionSchema'],
-        SetCRDTTypes<ValueCRDT>['storeSchema']> {
-    public stateSchema:SetCRDTTypes<ValueCRDT>['stateSchema'];
-    public actionSchema:SetCRDTTypes<ValueCRDT>['actionSchema'];
-    public elementStoreSchema:SetCRDTTypes<ValueCRDT>['elementStoreSchema'];
-    public storeSchema:SetCRDTTypes<ValueCRDT>['storeSchema'];
+export class MuRDASet <RDAValue extends MuRDA<any, any, any>>
+    implements MuRDA<
+        MuRDASetTypes<RDAValue>['stateSchema'],
+        MuRDASetTypes<RDAValue>['actionSchema'],
+        MuRDASetTypes<RDAValue>['storeSchema']> {
+    public stateSchema:MuRDASetTypes<RDAValue>['stateSchema'];
+    public actionSchema:MuRDASetTypes<RDAValue>['actionSchema'];
+    public elementStoreSchema:MuRDASetTypes<RDAValue>['elementStoreSchema'];
+    public storeSchema:MuRDASetTypes<RDAValue>['storeSchema'];
 
-    public valueCRDT:ValueCRDT;
+    public value:RDAValue;
 
-    constructor (valueCRDT:ValueCRDT) {
-        this.valueCRDT = valueCRDT;
-        this.stateSchema = new MuDictionary(valueCRDT.stateSchema, Infinity, {});
+    constructor (value:RDAValue) {
+        this.value = value;
+        this.stateSchema = new MuDictionary(value.stateSchema, Infinity, {});
         this.actionSchema = new MuStruct({
             uuid: MuUUIDSchema,
             data: new MuUnion({
-                create: valueCRDT.stateSchema,
-                update: valueCRDT.actionSchema,
-                destroy: FlagCRDT.actionSchema,
+                create: value.stateSchema,
+                update: value.actionSchema,
+                destroy: Flag.actionSchema,
             }),
         });
         this.elementStoreSchema = new MuStruct({
-            state: valueCRDT.storeSchema,
+            state: value.storeSchema,
             created: new MuBoolean(true),
-            destroyed: FlagCRDT.storeSchema,
+            destroyed: Flag.storeSchema,
         });
         this.storeSchema = new MuDictionary(this.elementStoreSchema, Infinity, {});
     }
 
-    public store (initialState:SetCRDTTypes<ValueCRDT>['state']) : MuSetStore<ValueCRDT> {
-        return new MuSetStore(this.valueCRDT, this.elementStoreSchema, initialState);
+    public store (initialState:MuRDASetTypes<RDAValue>['state']) : MuRDASetStore<RDAValue> {
+        return new MuRDASetStore(this.value, this.elementStoreSchema, initialState);
     }
 
     public readonly actions = {
-        create: (initial:SetCRDTTypes<ValueCRDT>['valueState']) : SetCRDTTypes<ValueCRDT>['createAction'] => {
+        create: (initial:MuRDASetTypes<RDAValue>['valueState']) : MuRDASetTypes<RDAValue>['createAction'] => {
             const result:any = this.actionSchema.alloc();
             result.uuid = createUUID();
             result.data.type = 'create';
             result.data.data = initial;
             return result;
         },
-        update: (id:MuUUID, action:SetCRDTTypes<ValueCRDT>['valueAction']) : SetCRDTTypes<ValueCRDT>['updateAction'] => {
+        update: (id:MuUUID, action:MuRDASetTypes<RDAValue>['valueAction']) : MuRDASetTypes<RDAValue>['updateAction'] => {
             const result:any = this.actionSchema.alloc();
             result.uuid = id;
             result.data.type = 'update';
             result.data.data = action;
             return result;
         },
-        destroy: (id:MuUUID) : SetCRDTTypes<ValueCRDT>['destroyAction'] => {
+        destroy: (id:MuUUID) : MuRDASetTypes<RDAValue>['destroyAction'] => {
             const result:any = this.actionSchema.alloc();
             result.uuid = id;
             result.data.type = 'destory';
-            result.data.data = FlagCRDT.actions.set(true);
+            result.data.data = Flag.actions.set(true);
             return result;
         },
     };

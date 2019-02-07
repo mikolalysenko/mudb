@@ -5,23 +5,23 @@ import { MuStruct } from '../schema/struct';
 import { MuArray } from '../schema/array';
 import { MuVoid } from '../schema';
 import { MuUUID, MuUUIDSchema, createUUID } from './uuid';
-import { MuCRDT, MuStore } from './crdt';
+import { MuRDA, MuRDAStore } from './rda';
 
-export interface MuFlatMapCRDTSpec<
+export interface MuRDAFlatMapSpec<
     KeySchema extends MuSchema<string>,
     ValueSchema extends MuSchema<any>> {
     keySchema:KeySchema;
     valueSchema:ValueSchema;
 }
 
-export class MuFlatMapNode<Value> {
+export class MuRDAFlatMapNode<Value> {
     public uuid:MuUUID;
     public remove = false;
     public value?:Value;
-    public prev:MuFlatMapNode<Value>|null;
-    public next:MuFlatMapNode<Value>|null;
+    public prev:MuRDAFlatMapNode<Value>|null;
+    public next:MuRDAFlatMapNode<Value>|null;
 
-    constructor (uuid:MuUUID, next:MuFlatMapNode<Value>|null, prev:MuFlatMapNode<Value>|null, remove:boolean, value?:Value) {
+    constructor (uuid:MuUUID, next:MuRDAFlatMapNode<Value>|null, prev:MuRDAFlatMapNode<Value>|null, remove:boolean, value?:Value) {
         this.uuid = uuid;
         this.remove = remove;
         this.value = value;
@@ -30,36 +30,36 @@ export class MuFlatMapNode<Value> {
     }
 }
 
-export interface FlatMapTypes<Spec extends MuFlatMapCRDTSpec<any, any>> {
+export interface MuRDAFlatMapTypes<Spec extends MuRDAFlatMapSpec<any, any>> {
     keySchema:Spec['keySchema'];
     key:Spec['keySchema']['identity'];
 
     valueSchema:Spec['valueSchema'];
     value:Spec['valueSchema']['identity'];
 
-    stateSchema:MuDictionary<FlatMapTypes<Spec>['valueSchema']>;
-    state:FlatMapTypes<Spec>['stateSchema']['identity'];
+    stateSchema:MuDictionary<MuRDAFlatMapTypes<Spec>['valueSchema']>;
+    state:MuRDAFlatMapTypes<Spec>['stateSchema']['identity'];
 
     actionSchema:MuStruct<{
         uuid:typeof MuUUIDSchema;
-        key:FlatMapTypes<Spec>['keySchema'];
+        key:MuRDAFlatMapTypes<Spec>['keySchema'];
         action:MuUnion<{
-            set:FlatMapTypes<Spec>['valueSchema'];
+            set:MuRDAFlatMapTypes<Spec>['valueSchema'];
             remove:MuVoid;
         }>;
     }>;
-    action:FlatMapTypes<Spec>['actionSchema']['identity'];
+    action:MuRDAFlatMapTypes<Spec>['actionSchema']['identity'];
     setAction:{
         uuid:MuUUID;
-        key:FlatMapTypes<Spec>['key'];
+        key:MuRDAFlatMapTypes<Spec>['key'];
         action:{
             type:'set';
-            data:FlatMapTypes<Spec>['value'];
+            data:MuRDAFlatMapTypes<Spec>['value'];
         };
     };
     removeAction:{
         uuid:MuUUID;
-        key:FlatMapTypes<Spec>['key'];
+        key:MuRDAFlatMapTypes<Spec>['key'];
         action:{
             type:'remove';
             data:MuVoid;
@@ -67,35 +67,35 @@ export interface FlatMapTypes<Spec extends MuFlatMapCRDTSpec<any, any>> {
     };
 
     elementActionSchema:MuUnion<{
-        set:FlatMapTypes<Spec>['valueSchema'];
+        set:MuRDAFlatMapTypes<Spec>['valueSchema'];
         remove:MuVoid;
     }>;
     elementStoreSchema:MuStruct<{
-        key:FlatMapTypes<Spec>['keySchema'];
+        key:MuRDAFlatMapTypes<Spec>['keySchema'];
         uuids:MuArray<typeof MuUUIDSchema>;
-        actions:MuArray<FlatMapTypes<Spec>['elementActionSchema']>;
+        actions:MuArray<MuRDAFlatMapTypes<Spec>['elementActionSchema']>;
     }>;
-    storeSchema:MuArray<FlatMapTypes<Spec>['elementStoreSchema']>;
-    store:FlatMapTypes<Spec>['storeSchema']['identity'];
+    storeSchema:MuArray<MuRDAFlatMapTypes<Spec>['elementStoreSchema']>;
+    store:MuRDAFlatMapTypes<Spec>['storeSchema']['identity'];
 
-    node:MuFlatMapNode<FlatMapTypes<Spec>['value']>;
+    node:MuRDAFlatMapNode<MuRDAFlatMapTypes<Spec>['value']>;
 }
 
-export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
-    implements MuStore<FlatMapTypes<Spec>['stateSchema'], FlatMapTypes<Spec>['actionSchema'], FlatMapTypes<Spec>['storeSchema']> {
+export class MuRDAFlatMapStore<Spec extends MuRDAFlatMapSpec<any, any>>
+    implements MuRDAStore<MuRDAFlatMapTypes<Spec>['stateSchema'], MuRDAFlatMapTypes<Spec>['actionSchema'], MuRDAFlatMapTypes<Spec>['storeSchema']> {
 
-    public map:{ [key:string]:FlatMapTypes<Spec>['node'] } = {};
-    public nodes:{ [uuid:string]:FlatMapTypes<Spec>['node'] } = {};
+    public map:{ [key:string]:MuRDAFlatMapTypes<Spec>['node'] } = {};
+    public nodes:{ [uuid:string]:MuRDAFlatMapTypes<Spec>['node'] } = {};
 
-    private _valueSchema:FlatMapTypes<Spec>['valueSchema'];
-    private _elementActionSchema:FlatMapTypes<Spec>['elementActionSchema'];
-    private _elementStoreSchema:FlatMapTypes<Spec>['elementStoreSchema'];
+    private _valueSchema:MuRDAFlatMapTypes<Spec>['valueSchema'];
+    private _elementActionSchema:MuRDAFlatMapTypes<Spec>['elementActionSchema'];
+    private _elementStoreSchema:MuRDAFlatMapTypes<Spec>['elementStoreSchema'];
 
     constructor(
-        valueSchema:FlatMapTypes<Spec>['valueSchema'],
-        elementActionSchema:FlatMapTypes<Spec>['elementActionSchema'],
-        elementStoreSchema:FlatMapTypes<Spec>['elementStoreSchema'],
-        initialState:FlatMapTypes<Spec>['state']) {
+        valueSchema:MuRDAFlatMapTypes<Spec>['valueSchema'],
+        elementActionSchema:MuRDAFlatMapTypes<Spec>['elementActionSchema'],
+        elementStoreSchema:MuRDAFlatMapTypes<Spec>['elementStoreSchema'],
+        initialState:MuRDAFlatMapTypes<Spec>['state']) {
         this._valueSchema = valueSchema;
         this._elementActionSchema = elementActionSchema;
         this._elementStoreSchema = elementStoreSchema;
@@ -103,13 +103,13 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const uuid = createUUID();
-            const node = new MuFlatMapNode<FlatMapTypes<Spec>['value']>(uuid, null, null, false, valueSchema.clone(initialState[key]));
+            const node = new MuRDAFlatMapNode<MuRDAFlatMapTypes<Spec>['value']>(uuid, null, null, false, valueSchema.clone(initialState[key]));
             this.map[key] = node;
             this.nodes[uuid] = node;
         }
     }
 
-    public state (out:FlatMapTypes<Spec>['state']) : FlatMapTypes<Spec>['state'] {
+    public state (out:MuRDAFlatMapTypes<Spec>['state']) : MuRDAFlatMapTypes<Spec>['state'] {
         const ids = Object.keys(this.map);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -121,7 +121,7 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         return out;
     }
 
-    public apply(action:FlatMapTypes<Spec>['action']) : boolean {
+    public apply(action:MuRDAFlatMapTypes<Spec>['action']) : boolean {
         const { key, uuid } = action;
         const node = this.nodes[uuid];
         if (node) {
@@ -129,7 +129,7 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         }
         switch (action.action.type) {
             case 'set':
-                this.map[key] = this.nodes[uuid] = new MuFlatMapNode(
+                this.map[key] = this.nodes[uuid] = new MuRDAFlatMapNode(
                     uuid,
                     null,
                     this.map[key] || null,
@@ -137,7 +137,7 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
                     this._valueSchema.clone(action.action.data));
                 return true;
             case 'remove':
-                this.map[key] = this.nodes[uuid] = new MuFlatMapNode(
+                this.map[key] = this.nodes[uuid] = new MuRDAFlatMapNode(
                     uuid,
                     null,
                     this.map[key] || null,
@@ -147,7 +147,7 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         return false;
     }
 
-    public undo(action:FlatMapTypes<Spec>['action']) : boolean {
+    public undo(action:MuRDAFlatMapTypes<Spec>['action']) : boolean {
         // remove node from list
         const { key, uuid } = action;
         const node = this.nodes[uuid];
@@ -173,19 +173,19 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         return false;
     }
 
-    public squash (state:FlatMapTypes<Spec>['state']) {
+    public squash (state:MuRDAFlatMapTypes<Spec>['state']) {
         this.destroy();
         const keys = Object.keys(state);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const uuid = createUUID();
-            const node = new MuFlatMapNode<FlatMapTypes<Spec>['value']>(uuid, null, null, false, this._valueSchema.clone(state[key]));
+            const node = new MuRDAFlatMapNode<MuRDAFlatMapTypes<Spec>['value']>(uuid, null, null, false, this._valueSchema.clone(state[key]));
             this.map[key] = node;
             this.nodes[uuid] = node;
         }
     }
 
-    public serialize (out:FlatMapTypes<Spec>['store']) : FlatMapTypes<Spec>['store'] {
+    public serialize (out:MuRDAFlatMapTypes<Spec>['store']) : MuRDAFlatMapTypes<Spec>['store'] {
         out.length = 0;
         const keys = Object.keys(this.map);
         for (let i = 0; i < keys.length; ++i) {
@@ -197,7 +197,7 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
             const actions = entry.actions;
             uuids.length = 0;
             actions.length = 0;
-            for (let node:FlatMapTypes<Spec>['node']|null = this.map[key]; node; node = node.prev) {
+            for (let node:MuRDAFlatMapTypes<Spec>['node']|null = this.map[key]; node; node = node.prev) {
                 uuids.push(node.uuid);
                 const action = this._elementActionSchema.alloc();
                 actions.push(action);
@@ -212,16 +212,16 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
         return out;
     }
 
-    public parse (data:FlatMapTypes<Spec>['store']) {
+    public parse (data:MuRDAFlatMapTypes<Spec>['store']) {
         this.destroy();
 
         for (let i = 0; i < data.length; ++i) {
             const entry = data[i];
-            let lastNode:FlatMapTypes<Spec>['node']|null = null;
+            let lastNode:MuRDAFlatMapTypes<Spec>['node']|null = null;
             for (let j = 0; j < entry.uuids.length; ++j) {
                 const uuid = entry.uuids[j];
                 const action = entry.actions[j];
-                const node = new MuFlatMapNode(
+                const node = new MuRDAFlatMapNode(
                     uuid,
                     lastNode,
                     null,
@@ -251,15 +251,15 @@ export class MuFlatMapStore<Spec extends MuFlatMapCRDTSpec<any, any>>
     }
 }
 
-export class MuFlatMapCRDT<Spec extends MuFlatMapCRDTSpec<any, any>>
-    implements MuCRDT<FlatMapTypes<Spec>['stateSchema'], FlatMapTypes<Spec>['actionSchema'], FlatMapTypes<Spec>['storeSchema']> {
-    public readonly keySchema:FlatMapTypes<Spec>['keySchema'];
-    public readonly valueSchema:FlatMapTypes<Spec>['valueSchema'];
-    public readonly stateSchema:FlatMapTypes<Spec>['stateSchema'];
-    public readonly actionSchema:FlatMapTypes<Spec>['actionSchema'];
-    public readonly storeSchema:FlatMapTypes<Spec>['storeSchema'];
-    public readonly elementActionSchema:FlatMapTypes<Spec>['elementActionSchema'];
-    public readonly elementStoreSchema:FlatMapTypes<Spec>['elementStoreSchema'];
+export class MuRDAFlatMap<Spec extends MuRDAFlatMapSpec<any, any>>
+    implements MuRDA<MuRDAFlatMapTypes<Spec>['stateSchema'], MuRDAFlatMapTypes<Spec>['actionSchema'], MuRDAFlatMapTypes<Spec>['storeSchema']> {
+    public readonly keySchema:MuRDAFlatMapTypes<Spec>['keySchema'];
+    public readonly valueSchema:MuRDAFlatMapTypes<Spec>['valueSchema'];
+    public readonly stateSchema:MuRDAFlatMapTypes<Spec>['stateSchema'];
+    public readonly actionSchema:MuRDAFlatMapTypes<Spec>['actionSchema'];
+    public readonly storeSchema:MuRDAFlatMapTypes<Spec>['storeSchema'];
+    public readonly elementActionSchema:MuRDAFlatMapTypes<Spec>['elementActionSchema'];
+    public readonly elementStoreSchema:MuRDAFlatMapTypes<Spec>['elementStoreSchema'];
 
     constructor (spec:Spec) {
         this.keySchema = spec.keySchema;
@@ -282,8 +282,8 @@ export class MuFlatMapCRDT<Spec extends MuFlatMapCRDTSpec<any, any>>
         this.storeSchema = new MuArray(this.elementStoreSchema, Infinity, []);
     }
 
-    public store (intialState:FlatMapTypes<Spec>['state']) : MuFlatMapStore<Spec> {
-        return new MuFlatMapStore(
+    public store (intialState:MuRDAFlatMapTypes<Spec>['state']) : MuRDAFlatMapStore<Spec> {
+        return new MuRDAFlatMapStore(
             this.valueSchema,
             this.elementActionSchema,
             this.elementStoreSchema,
@@ -291,16 +291,16 @@ export class MuFlatMapCRDT<Spec extends MuFlatMapCRDTSpec<any, any>>
     }
 
     public actions = {
-        set: (key:FlatMapTypes<Spec>['key'], value:FlatMapTypes<Spec>['value']) : FlatMapTypes<Spec>['setAction'] => {
-            const result = <FlatMapTypes<Spec>['setAction']>this.actionSchema.alloc();
+        set: (key:MuRDAFlatMapTypes<Spec>['key'], value:MuRDAFlatMapTypes<Spec>['value']) : MuRDAFlatMapTypes<Spec>['setAction'] => {
+            const result = <MuRDAFlatMapTypes<Spec>['setAction']>this.actionSchema.alloc();
             result.uuid = createUUID();
             result.key = this.keySchema.assign(result.key, key);
             result.action.type = 'set';
             result.action.data = this.valueSchema.clone(value);
             return result;
         },
-        remove: (key:FlatMapTypes<Spec>['key']) : FlatMapTypes<Spec>['removeAction'] => {
-            const result = <FlatMapTypes<Spec>['removeAction']>this.actionSchema.alloc();
+        remove: (key:MuRDAFlatMapTypes<Spec>['key']) : MuRDAFlatMapTypes<Spec>['removeAction'] => {
+            const result = <MuRDAFlatMapTypes<Spec>['removeAction']>this.actionSchema.alloc();
             result.uuid = createUUID();
             result.key = this.keySchema.assign(result.key, key);
             result.action.type = 'remove';

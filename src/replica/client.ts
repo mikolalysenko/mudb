@@ -1,20 +1,20 @@
-import { MuCRDT } from '../crdt/crdt';
+import { MuRDA, MuRDATypes } from '../rda/rda';
 import { MuClient, MuClientProtocol } from '../client';
-import { CRDTInfo, crdtProtocol } from './schema';
+import { rdaProtocol, RDAProtocol } from './schema';
 
-export class MuReplicaClient<CRDT extends MuCRDT<any, any, any>> {
-    public protocol:MuClientProtocol<CRDTInfo<CRDT>['protocol']>;
-    public crdt:CRDT;
-    public store:CRDTInfo<CRDT>['store'];
-    public history:CRDTInfo<CRDT>['action'][] = [];
+export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
+    public protocol:MuClientProtocol<RDAProtocol<RDA>>;
+    public crdt:RDA;
+    public store:MuRDATypes<RDA>['store'];
+    public history:MuRDATypes<RDA>['action'][] = [];
 
     constructor (spec:{
         client:MuClient,
-        crdt:CRDT,
+        rda:RDA,
     }) {
-        this.crdt = spec.crdt;
-        this.store = <CRDTInfo<CRDT>['store']>spec.crdt.store(spec.crdt.stateSchema.identity);
-        this.protocol = spec.client.protocol(crdtProtocol(spec.crdt));
+        this.crdt = spec.rda;
+        this.store = <MuRDATypes<RDA>['store']>spec.rda.store(spec.rda.stateSchema.identity);
+        this.protocol = spec.client.protocol(rdaProtocol(spec.rda));
         this.protocol.configure({
             message: {
                 init: (store) => {
@@ -37,11 +37,11 @@ export class MuReplicaClient<CRDT extends MuCRDT<any, any, any>> {
         });
     }
 
-    public state (out?:CRDTInfo<CRDT>['state']) {
+    public state (out?:MuRDATypes<RDA>['state']) {
         return this.store.state(out || this.crdt.stateSchema.alloc());
     }
 
-    public dispatch (action:CRDTInfo<CRDT>['action'], allowUndo:boolean=true) {
+    public dispatch (action:MuRDATypes<RDA>['action'], allowUndo:boolean=true) {
         if (this.store.apply(action)) {
             if (allowUndo) {
                 this.history.push(this.crdt.actionSchema.clone(action));

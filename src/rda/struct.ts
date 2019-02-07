@@ -1,37 +1,37 @@
-import { MuCRDT, MuStore } from './crdt';
+import { MuRDA, MuRDAStore } from './rda';
 import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
 import { MuSchema } from '../schema';
 
-export type MuStructCRDTSpec = {
-    [prop:string]:MuCRDT<any, any, any>;
+export type MuRDAStructSpec = {
+    [prop:string]:MuRDA<any, any, any>;
 };
 
-export interface StructSubActions<
+export interface MuRDAStructSubActions<
     ActionSchema extends MuUnion<any>,
     Action extends ActionSchema['identity'],
     ActionType extends Action['type'],
     ActionData extends Action['data'],
-    CRDTActions extends MuCRDT<any, ActionSchema, any>['actions'] > {
+    Dispatcher extends MuRDA<any, ActionSchema, any>['actions'] > {
     actions:{
-        [prop in keyof CRDTActions]:
-            CRDTActions[prop] extends (...args:infer ArgType) => infer RetType ? (...args:ArgType) => {
+        [prop in keyof Dispatcher]:
+            Dispatcher[prop] extends (...args:infer ArgType) => infer RetType ? (...args:ArgType) => {
                 type:ActionType,
                 data:RetType,
             } :
-            CRDTActions[prop] extends MuCRDT<MuSchema<any>, MuSchema<any>, MuSchema<any>>['actions'] ?
-                StructSubActions<ActionSchema, Action, ActionType, ActionData, CRDTActions[prop]>['actions'] :
+            Dispatcher[prop] extends MuRDA<MuSchema<any>, MuSchema<any>, MuSchema<any>>['actions'] ?
+                MuRDAStructSubActions<ActionSchema, Action, ActionType, ActionData, Dispatcher[prop]>['actions'] :
             never;
     };
 }
 
-export interface StructActions<
-    Spec extends MuStructCRDTSpec,
+export interface MuRDAStructActions<
+    Spec extends MuRDAStructSpec,
     ActionSchema extends MuUnion<{
         [id in keyof Spec]:Spec[id]['actionSchema'];
     }>> {
     actions:{
-        [SubType in keyof Spec]:StructSubActions<
+        [SubType in keyof Spec]:MuRDAStructSubActions<
             ActionSchema,
             ActionSchema['identity'],
             SubType,
@@ -40,34 +40,34 @@ export interface StructActions<
     };
 }
 
-export interface StructTypes<Spec extends MuStructCRDTSpec> {
+export interface MuRDAStructTypes<Spec extends MuRDAStructSpec> {
     stateSchema:MuStruct<{
         [id in keyof Spec]:Spec[id]['stateSchema'];
     }>;
-    state:StructTypes<Spec>['stateSchema']['identity'];
+    state:MuRDAStructTypes<Spec>['stateSchema']['identity'];
 
     actionSchema:MuUnion<{
         [id in keyof Spec]:Spec[id]['actionSchema'];
     }>;
-    action:StructTypes<Spec>['actionSchema']['identity'];
-    actions:StructActions<Spec, StructTypes<Spec>['actionSchema']>['actions'];
+    action:MuRDAStructTypes<Spec>['actionSchema']['identity'];
+    actions:MuRDAStructActions<Spec, MuRDAStructTypes<Spec>['actionSchema']>['actions'];
 
     storeSchema:MuStruct<{
         [id in keyof Spec]:Spec[id]['storeSchema'];
     }>;
-    store:StructTypes<Spec>['storeSchema']['identity'];
+    store:MuRDAStructTypes<Spec>['storeSchema']['identity'];
     stores:{
         [id in keyof Spec]:ReturnType<Spec[id]['store']>;
     };
 }
 
-export class MuStructStore<Spec extends MuStructCRDTSpec>
-    implements MuStore<StructTypes<Spec>['stateSchema'], StructTypes<Spec>['actionSchema'], StructTypes<Spec>['storeSchema']> {
-    public stores:StructTypes<Spec>['stores'];
+export class MuRDAStructStore<Spec extends MuRDAStructSpec>
+    implements MuRDAStore<MuRDAStructTypes<Spec>['stateSchema'], MuRDAStructTypes<Spec>['actionSchema'], MuRDAStructTypes<Spec>['storeSchema']> {
+    public stores:MuRDAStructTypes<Spec>['stores'];
 
     constructor (
         spec:Spec,
-        initialState:StructTypes<Spec>['state']) {
+        initialState:MuRDAStructTypes<Spec>['state']) {
         const ids = Object.keys(spec);
         const stores:any = {};
         for (let i = 0; i < ids.length; ++i) {
@@ -77,7 +77,7 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
         this.stores = stores;
     }
 
-    public state(out:StructTypes<Spec>['state']) : StructTypes<Spec>['state'] {
+    public state(out:MuRDAStructTypes<Spec>['state']) : MuRDAStructTypes<Spec>['state'] {
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -86,7 +86,7 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
         return out;
     }
 
-    public squash (state:StructTypes<Spec>['state']) {
+    public squash (state:MuRDAStructTypes<Spec>['state']) {
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -94,11 +94,11 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
         }
     }
 
-    public apply(action:StructTypes<Spec>['action']) : boolean {
+    public apply(action:MuRDAStructTypes<Spec>['action']) : boolean {
         return this.stores[action.type].apply(action.data);
     }
 
-    public undo(action:StructTypes<Spec>['action']) : boolean {
+    public undo(action:MuRDAStructTypes<Spec>['action']) : boolean {
         return this.stores[action.type].undo(action.data);
     }
 
@@ -109,7 +109,7 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
         }
     }
 
-    public serialize (out:StructTypes<Spec>['store']) : StructTypes<Spec>['store'] {
+    public serialize (out:MuRDAStructTypes<Spec>['store']) : MuRDAStructTypes<Spec>['store'] {
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -118,7 +118,7 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
         return out;
     }
 
-    public parse (store:StructTypes<Spec>['store']) {
+    public parse (store:MuRDAStructTypes<Spec>['store']) {
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
@@ -127,7 +127,7 @@ export class MuStructStore<Spec extends MuStructCRDTSpec>
     }
 }
 
-function actionDispatcher<Spec extends MuStructCRDTSpec> (spec:Spec) : StructTypes<Spec>['actions'] {
+function actionDispatcher<Spec extends MuRDAStructSpec> (spec:Spec) : MuRDAStructTypes<Spec>['actions'] {
     function subActionDispatcher(
             type:keyof Spec,
             subActionSchema:MuSchema<any>,
@@ -150,30 +150,30 @@ function actionDispatcher<Spec extends MuStructCRDTSpec> (spec:Spec) : StructTyp
         }
     }
 
-    const result:StructTypes<Spec>['actions'] = <any>{};
+    const result:MuRDAStructTypes<Spec>['actions'] = <any>{};
     const props = Object.keys(spec);
     for (let i = 0; i < props.length; ++i) {
         const prop = props[i];
-        const crdt = spec[prop];
-        result[prop] = <any>subActionDispatcher(prop, crdt.actionSchema, crdt.actions);
+        const rda = spec[prop];
+        result[prop] = <any>subActionDispatcher(prop, rda.actionSchema, rda.actions);
     }
 
     return result;
 }
 
-export class MuStructCRDT<Spec extends MuStructCRDTSpec>
-    implements MuCRDT<
-        StructTypes<Spec>['stateSchema'],
-        StructTypes<Spec>['actionSchema'],
-        StructTypes<Spec>['storeSchema']> {
-    public readonly stateSchema:StructTypes<Spec>['stateSchema'];
-    public readonly actionSchema:StructTypes<Spec>['actionSchema'];
-    public readonly storeSchema:StructTypes<Spec>['storeSchema'];
-    public readonly crdts:Spec;
-    public readonly actions:StructTypes<Spec>['actions'];
+export class MuRDAStruct<Spec extends MuRDAStructSpec>
+    implements MuRDA<
+        MuRDAStructTypes<Spec>['stateSchema'],
+        MuRDAStructTypes<Spec>['actionSchema'],
+        MuRDAStructTypes<Spec>['storeSchema']> {
+    public readonly stateSchema:MuRDAStructTypes<Spec>['stateSchema'];
+    public readonly actionSchema:MuRDAStructTypes<Spec>['actionSchema'];
+    public readonly storeSchema:MuRDAStructTypes<Spec>['storeSchema'];
+    public readonly rdas:Spec;
+    public readonly actions:MuRDAStructTypes<Spec>['actions'];
 
     constructor (spec:Spec) {
-        this.crdts = spec;
+        this.rdas = spec;
 
         // construct schemas for state and actions
         const stateSpec:any = {};
@@ -182,10 +182,10 @@ export class MuStructCRDT<Spec extends MuStructCRDTSpec>
         const props = Object.keys(spec);
         for (let i = 0; i < props.length; ++i) {
             const prop = props[i];
-            const crdt = spec[prop];
-            stateSpec[prop] = crdt[prop].stateSchema;
-            actionSpec[prop] = crdt[prop].actionSchema;
-            storeSpec[prop] = crdt[prop].storeSchema;
+            const rda = spec[prop];
+            stateSpec[prop] = rda.stateSchema;
+            actionSpec[prop] = rda.actionSchema;
+            storeSpec[prop] = rda.storeSchema;
         }
         this.stateSchema = new MuStruct(stateSpec);
         this.actionSchema = new MuUnion(actionSpec);
@@ -195,7 +195,7 @@ export class MuStructCRDT<Spec extends MuStructCRDTSpec>
         this.actions = actionDispatcher(spec);
     }
 
-    public store(initialState:StructTypes<Spec>['state']) {
-        return new MuStructStore(this.crdts, initialState);
+    public store(initialState:MuRDAStructTypes<Spec>['state']) {
+        return new MuRDAStructStore(this.rdas, initialState);
     }
 }

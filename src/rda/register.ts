@@ -1,14 +1,14 @@
 import { MuStruct } from '../schema/struct';
 import { MuSchema } from '../schema/schema';
 import { MuUUIDSchema, createUUID, MuUUID } from './uuid';
-import { MuCRDT, MuStore } from './crdt';
+import { MuRDA, MuRDAStore } from './rda';
 import { MuArray } from '../schema';
 
-export class MuRegisterNode<State> {
+export class MuRDARegisterNode<State> {
     public uuid:MuUUID;
     public state:State;
-    public next:MuRegisterNode<State>|null = null;
-    public prev:MuRegisterNode<State>|null = null;
+    public next:MuRDARegisterNode<State>|null = null;
+    public prev:MuRDARegisterNode<State>|null = null;
 
     constructor (id:MuUUID, state:State) {
         this.uuid = id;
@@ -16,7 +16,7 @@ export class MuRegisterNode<State> {
     }
 }
 
-export interface RegisterTypes<StateSchema extends MuSchema<any>> {
+export interface MuRDARegisterTypes<StateSchema extends MuSchema<any>> {
     stateSchema:StateSchema;
     state:StateSchema['identity'];
 
@@ -24,35 +24,35 @@ export interface RegisterTypes<StateSchema extends MuSchema<any>> {
         uuid:typeof MuUUIDSchema;
         state:StateSchema;
     }>;
-    action:RegisterTypes<StateSchema>['actionSchema']['identity'];
+    action:MuRDARegisterTypes<StateSchema>['actionSchema']['identity'];
 
     storeSchema:MuStruct<{
         uuids:MuArray<typeof MuUUIDSchema>;
         states:MuArray<StateSchema>;
     }>;
-    store:RegisterTypes<StateSchema>['storeSchema']['identity'];
+    store:MuRDARegisterTypes<StateSchema>['storeSchema']['identity'];
 
-    node:MuRegisterNode<RegisterTypes<StateSchema>['state']>;
+    node:MuRDARegisterNode<MuRDARegisterTypes<StateSchema>['state']>;
 }
 
-export class MuRegisterStore<StateSchema extends MuSchema<any>>
-    implements MuStore<
-        RegisterTypes<StateSchema>['stateSchema'],
-        RegisterTypes<StateSchema>['actionSchema'],
-        RegisterTypes<StateSchema>['storeSchema']> {
+export class MuRDARegisterStore<StateSchema extends MuSchema<any>>
+    implements MuRDAStore<
+        MuRDARegisterTypes<StateSchema>['stateSchema'],
+        MuRDARegisterTypes<StateSchema>['actionSchema'],
+        MuRDARegisterTypes<StateSchema>['storeSchema']> {
     private _stateSchema:StateSchema;
-    public head:RegisterTypes<StateSchema>['node']|null;
-    public nodes:{ [uuid:string]:RegisterTypes<StateSchema>['node'] } = {};
+    public head:MuRDARegisterTypes<StateSchema>['node']|null;
+    public nodes:{ [uuid:string]:MuRDARegisterTypes<StateSchema>['node'] } = {};
 
     constructor (
         stateSchema:StateSchema,
-        initial:StateSchema['identity']) {
+        initial:MuRDARegisterTypes<StateSchema>['state']) {
         this._stateSchema = stateSchema;
-        this.head = new MuRegisterNode('', this._stateSchema.clone(initial));
+        this.head = new MuRDARegisterNode('', this._stateSchema.clone(initial));
         this.nodes[''] = this.head;
     }
 
-    public state (out:StateSchema['identity']) {
+    public state (out:MuRDARegisterTypes<StateSchema>['state']) {
         if (this.head) {
             return this._stateSchema.assign(out, this.head.state);
         } else {
@@ -60,7 +60,7 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
         }
     }
 
-    public apply (action:RegisterTypes<StateSchema>['action']) {
+    public apply (action:MuRDARegisterTypes<StateSchema>['action']) {
         const node = this.nodes[action.uuid];
         if (node) {
             if (node !== this.head) {
@@ -75,7 +75,7 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
             }
         } else {
             // insert into front of list
-            const head = new MuRegisterNode(action.uuid, this._stateSchema.clone(action.state));
+            const head = new MuRDARegisterNode(action.uuid, this._stateSchema.clone(action.state));
             head.prev = this.head;
             if (this.head) {
                 this.head.next = head;
@@ -86,7 +86,7 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
         return true;
     }
 
-    public undo (action:RegisterTypes<StateSchema>['action']) {
+    public undo (action:MuRDARegisterTypes<StateSchema>['action']) {
         const node = this.nodes[action.uuid];
         if (node) {
             if (node.prev) {
@@ -101,14 +101,14 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
         }
     }
 
-    public squash (state:StateSchema['identity']) {
+    public squash (state:MuRDARegisterTypes<StateSchema>['state']) {
         const uuids = Object.keys(this.nodes);
         for (let i = 0; i < uuids.length; ++i) {
             const node = this.nodes[uuids[i]];
             node.next = node.prev = null;
             this._stateSchema.free(node.state);
         }
-        this.head = new MuRegisterNode('', this._stateSchema.clone(state));
+        this.head = new MuRDARegisterNode('', this._stateSchema.clone(state));
         this.nodes = {};
     }
 
@@ -122,7 +122,7 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
         this.nodes = {};
     }
 
-    public serialize (out:RegisterTypes<StateSchema>['store']) : RegisterTypes<StateSchema>['store'] {
+    public serialize (out:MuRDARegisterTypes<StateSchema>['store']) : MuRDARegisterTypes<StateSchema>['store'] {
         const ids = out.uuids;
         const states = out.states;
         ids.length = 0;
@@ -134,7 +134,7 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
         return out;
     }
 
-    public parse (store:RegisterTypes<StateSchema>['store']) {
+    public parse (store:MuRDARegisterTypes<StateSchema>['store']) {
         if (store.states.length !== store.uuids.length) {
             throw new Error('invalid register store');
         }
@@ -144,13 +144,13 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
 
         const ids = store.uuids;
         const states = store.states;
-        let lastNode:RegisterTypes<StateSchema>['node']|null = null;
+        let lastNode:MuRDARegisterTypes<StateSchema>['node']|null = null;
         for (let i = ids.length - 1; i >= 0; --i) {
             const id = ids[i];
             if (id in this.nodes) {
                 throw new Error(`duplicate id ${id}`);
             }
-            const node = new MuRegisterNode(id, this._stateSchema.clone(states[i]));
+            const node = new MuRDARegisterNode(id, this._stateSchema.clone(states[i]));
             this.nodes[id] = node;
             if (lastNode) {
                 lastNode.next = node;
@@ -162,16 +162,16 @@ export class MuRegisterStore<StateSchema extends MuSchema<any>>
     }
 }
 
-export class MuRegisterCRDT<StateSchema extends MuSchema<any>>
-    implements MuCRDT<
-        RegisterTypes<StateSchema>['stateSchema'],
-        RegisterTypes<StateSchema>['actionSchema'],
-        RegisterTypes<StateSchema>['storeSchema']> {
-    public readonly stateSchema:RegisterTypes<StateSchema>['stateSchema'];
-    public readonly actionSchema:RegisterTypes<StateSchema>['actionSchema'];
-    public readonly storeSchema:RegisterTypes<StateSchema>['storeSchema'];
+export class MuRDARegister<StateSchema extends MuSchema<any>>
+    implements MuRDA<
+        MuRDARegisterTypes<StateSchema>['stateSchema'],
+        MuRDARegisterTypes<StateSchema>['actionSchema'],
+        MuRDARegisterTypes<StateSchema>['storeSchema']> {
+    public readonly stateSchema:MuRDARegisterTypes<StateSchema>['stateSchema'];
+    public readonly actionSchema:MuRDARegisterTypes<StateSchema>['actionSchema'];
+    public readonly storeSchema:MuRDARegisterTypes<StateSchema>['storeSchema'];
 
-    constructor (stateSchema:RegisterTypes<StateSchema>['stateSchema']) {
+    constructor (stateSchema:MuRDARegisterTypes<StateSchema>['stateSchema']) {
         this.stateSchema = stateSchema;
         this.actionSchema = new MuStruct({
             uuid: MuUUIDSchema,
@@ -183,12 +183,12 @@ export class MuRegisterCRDT<StateSchema extends MuSchema<any>>
         });
     }
 
-    public store (initialState:StateSchema['identity']) {
-        return new MuRegisterStore<StateSchema>(this.stateSchema, initialState);
+    public store (initialState:MuRDARegisterTypes<StateSchema>['state']) {
+        return new MuRDARegisterStore<StateSchema>(this.stateSchema, initialState);
     }
 
     public actions = {
-        set: (nextValue:StateSchema['identity']) => {
+        set: (nextValue:MuRDARegisterTypes<StateSchema>['state']) => {
             const result = this.actionSchema.alloc();
             result.uuid = createUUID();
             result.state = this.stateSchema.assign(result.state, nextValue);

@@ -1,30 +1,32 @@
-import { MuCRDT } from '../crdt/crdt';
+import { MuRDA, MuRDATypes } from '../rda/rda';
 import { MuServer, MuServerProtocol } from '../server';
-import { CRDTInfo, crdtProtocol } from './schema';
+import { rdaProtocol, RDAProtocol } from './schema';
 
-export class MuReplicaServer<CRDT extends MuCRDT<any, any, any>> {
-    public protocol:MuServerProtocol<CRDTInfo<CRDT>['protocol']>;
-    public crdt:CRDT;
-    public store:CRDTInfo<CRDT>['store'];
-    private _applyOk:CRDTInfo<CRDT>['validate'];
-    private _undoOk:CRDTInfo<CRDT>['validate'];
+type ValidateAction<RDA extends MuRDA<any, any, any>> = (action:MuRDATypes<RDA>['action']) => boolean;
+
+export class MuReplicaServer<RDA extends MuRDA<any, any, any>> {
+    public protocol:MuServerProtocol<RDAProtocol<RDA>>;
+    public crdt:RDA;
+    public store:MuRDATypes<RDA>['store'];
+    private _applyOk:ValidateAction<RDA>;
+    private _undoOk:ValidateAction<RDA>;
 
     constructor (spec:{
         server:MuServer,
-        crdt:CRDT,
-        applyOk?:CRDTInfo<CRDT>['validate'],
-        undoOk?:CRDTInfo<CRDT>['validate'],
-        initialState?:CRDTInfo<CRDT>['state'],
+        crdt:RDA,
+        applyOk?:ValidateAction<RDA>,
+        undoOk?:ValidateAction<RDA>,
+        initialState?:MuRDATypes<RDA>['state'],
         squashOnConnect?:boolean,
     }) {
         this.crdt = spec.crdt;
         this._applyOk = spec.applyOk || (() => true);
         this._undoOk = spec.undoOk || (() => true);
 
-        this.store = <CRDTInfo<CRDT>['store']>this.crdt.store(
+        this.store = <MuRDATypes<RDA>['store']>this.crdt.store(
             'initialState' in spec ? spec.initialState : this.crdt.stateSchema.identity);
 
-        this.protocol = spec.server.protocol(crdtProtocol(spec.crdt));
+        this.protocol = spec.server.protocol(rdaProtocol(spec.crdt));
         this.protocol.configure({
             connect: (client) => {
                 if (spec.squashOnConnect) {
@@ -55,34 +57,29 @@ export class MuReplicaServer<CRDT extends MuCRDT<any, any, any>> {
     }
 
     // polls the current state
-    public state(out?:CRDTInfo<CRDT>['state']) {
-        if (out) {
-            return this.store.state(out);
-        } else {
-            const result = this.crdt.stateSchema.alloc();
-            return this.store.state(result);
-        }
+    public state(out?:MuRDATypes<RDA>['state']) {
+        return this.store.state(out || this.crdt.stateSchema.alloc());
     }
 
     // squash all history to current state.  erase history and ability to undo previous actions
-    public squash () {
-        const head = this.state();
+    public squash (state?:MuRDATypes<RDA>['state']) {
+        const head = state || this.state();
         this.store.squash(head);
         this.protocol.broadcast.squash(head);
         this.crdt.stateSchema.free(head);
     }
 
-    public dispatch (action:CRDTInfo<CRDT>['action']) {
+    public dispatch (action:MuRDATypes<RDA>['action']) {
         if (this.store.apply(action)) {
             this.protocol.broadcast.apply(action);
         }
     }
 
-    public save () : CRDTInfo<CRDT>['storeSerialized'] {
+    public save () : MuRDATypes<RDA>['serializedStore'] {
         return this.store.serialize(this.crdt.storeSchema.alloc());
     }
 
-    public load (saved:CRDTInfo<CRDT>['storeSerialized']) {
+    public load (saved:MuRDATypes<RDA>['serializedStore']) {
         this.protocol.broadcast.init(saved);
         this.store.parse(saved);
     }
