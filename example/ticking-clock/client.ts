@@ -1,3 +1,4 @@
+/*
 import { MuClient } from 'mudb/client';
 import { MuClockClient } from 'muclock/client';
 
@@ -144,3 +145,4 @@ function drawNumbers(ctx, radius) {
         ctx.rotate(-ang);
     }
 }
+*/

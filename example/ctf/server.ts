@@ -1,3 +1,4 @@
+/*
 import { MuServer } from 'mudb/server';
 import { MuServerState } from 'mustate/server';
 import { MuRPCServer } from 'murpc/server';
@@ -109,8 +110,6 @@ export = function(server:MuServer) {
 
   server.start();
 
-  /* ---------- running methods ---------- */
-
   function touchEnermy(x, y, enermyPlayer) {
     return (
       enermyPlayer &&
@@ -173,3 +172,4 @@ export = function(server:MuServer) {
     return {x, y, team};
   }
 };
+*/

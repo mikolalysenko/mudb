@@ -1,3 +1,4 @@
+/*
 import {
     MuStruct,
     MuDictionary,
@@ -15,3 +16,4 @@ export const GameSchema = {
     client: PlayerSchema,
     server: new MuDictionary(PlayerSchema),
 };
+*/

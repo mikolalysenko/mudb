@@ -1,3 +1,4 @@
+/*
 export enum Direction {
   left = 37,
   up,
@@ -133,3 +134,4 @@ export class Map {
     ctx.fillText(this.score[1].toString(), Config.canvas_width - 40, Config.canvas_height - 5);
   }
 }
+*/

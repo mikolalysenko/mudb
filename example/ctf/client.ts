@@ -1,3 +1,4 @@
+/*
 import { MuClient } from 'mudb/client';
 import { MuClientState } from 'mustate/client';
 import { MuRPCClient } from 'murpc/client';
@@ -78,8 +79,6 @@ export = function(client:MuClient) {
 
   client.start();
 
-  /* ---------- running methods ---------- */
-
   function runGame() {
     map.draw(ctx);
 
@@ -130,3 +129,4 @@ export = function(client:MuClient) {
     };
   }
 };
+*/

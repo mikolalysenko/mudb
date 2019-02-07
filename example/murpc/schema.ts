@@ -1,3 +1,4 @@
+/*
 import {
     MuArray,
     MuInt8,
@@ -34,3 +35,4 @@ export const RPCSchema = {
         hash: MuRPC(SecretSchema, DigestSchema),
     },
 };
+*/

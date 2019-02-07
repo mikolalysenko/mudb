@@ -1,3 +1,4 @@
+/*
 import { GameSchema } from './schema';
 import { MuServer } from 'mudb/server';
 import { MuServerState } from 'mustate/server';
@@ -30,3 +31,4 @@ export = function (server:MuServer) {
 
     server.start();
 };
+*/

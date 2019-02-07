@@ -1,3 +1,4 @@
+/*
 import { createHash } from 'crypto';
 
 import { MuServer } from 'mudb/server';
@@ -46,3 +47,4 @@ export = function (server:MuServer) {
     // start server after configuring all server-side protocols
     server.start();
 };
+*/

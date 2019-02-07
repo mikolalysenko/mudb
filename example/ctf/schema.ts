@@ -1,3 +1,4 @@
+/*
 import {
   MuStruct,
   MuDictionary,
@@ -47,3 +48,4 @@ export const RpcSchema = {
     joinTeam: MuRPC(new MuString(), new MuInt8()),
   },
 };
+*/

@@ -1,3 +1,4 @@
+/*
 import {
     MuString,
     MuStruct,
@@ -37,3 +38,4 @@ export const GameSchema = {
         redirect: new MuInt8(),
     },
 };
+*/
