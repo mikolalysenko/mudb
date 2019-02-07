@@ -1,7 +1,7 @@
-# crdt
+# MuRDA: Replicated Data Actions
 
-Data types for creating collaboratively editable documents.
+murda is another schema language built on top of muschema which allows for replicated data actions across user defined documents.
 
-mudb (ab)uses the term crdt in a very narrow sense to refer to a specific set of convergent operations.
+Specifically it is designed to support real time collaborative editing with optimistic execution and a localized undo buffer.
 
-All mudb CRDTs support the same basic semantics for apply/
+Performance is still a work-in-progress, and we may make optimizations to these data structures in the future.

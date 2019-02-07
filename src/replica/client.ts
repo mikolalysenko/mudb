@@ -42,18 +42,20 @@ export class MuReplicaClient<CRDT extends MuCRDT<any, any, any>> {
     }
 
     public dispatch (action:CRDTInfo<CRDT>['action'], allowUndo:boolean=true) {
-        if (allowUndo) {
-            this.history.push(this.crdt.actionSchema.clone(action));
+        if (this.store.apply(action)) {
+            if (allowUndo) {
+                this.history.push(this.crdt.actionSchema.clone(action));
+            }
+            this.protocol.server.message.apply(action);
         }
-        this.store.apply(action);
-        this.protocol.server.message.apply(action);
     }
 
     public dispatchUndo () {
         const action = this.history.pop();
         if (action) {
-            this.store.undo(action);
-            this.protocol.server.message.undo(action);
+            if (this.store.undo(action)) {
+                this.protocol.server.message.undo(action);
+            }
             this.crdt.actionSchema.free(action);
         }
     }
