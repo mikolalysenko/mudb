@@ -1,14 +1,13 @@
-/*
 import {
   MuStruct,
   MuDictionary,
-  MuString,
+  MuUTF8,
   MuFloat64,
   MuInt8,
   MuArray,
   MuBoolean,
-} from 'muschema';
-import { MuRPC } from 'murpc/rpc';
+} from 'mudb/schema';
+import { pair } from 'mudb/type';
 
 export const PlayerSchema = new MuStruct({
   team: new MuInt8(),
@@ -25,15 +24,15 @@ export const FlagSchema = new MuStruct({
 export const StateSchema = {
   client: PlayerSchema,
   server: new MuStruct({
-    player: new MuDictionary(PlayerSchema),
-    flag: new MuArray(FlagSchema),
+    player: new MuDictionary(PlayerSchema, Infinity),
+    flag: new MuArray(FlagSchema, Infinity),
   }),
 };
 
 export const MsgSchema = {
   client: {
-    score: new MuArray(new MuInt8()),
-    dead: new MuString(),
+    score: new MuArray(new MuInt8(), Infinity),
+    dead: new MuUTF8(),
   },
   server: {
 
@@ -42,10 +41,9 @@ export const MsgSchema = {
 
 export const RpcSchema = {
   client: {
-    joinTeam: MuRPC(new MuString(), new MuInt8()),
+    joinTeam: pair(new MuUTF8(), new MuInt8()),
   },
   server: {
-    joinTeam: MuRPC(new MuString(), new MuInt8()),
+    joinTeam: pair(new MuUTF8(), new MuInt8()),
   },
 };
-*/

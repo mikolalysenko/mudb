@@ -13,9 +13,10 @@ const expDir = path.join(path.resolve('.'), exp)
 const sockType = argv[1] || 'web'
 const cmd = `${mudoDir}/bin/mudo.js --client ${expDir}/client.js --server ${expDir}/server.js --socket ${sockType} --open`
 
-exec(cmd, (err) => {
+exec(cmd, (err, stdout) => {
     if (err) {
         console.error(err)
         return
     }
+    console.log(stdout)
 })

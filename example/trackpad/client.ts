@@ -1,4 +1,3 @@
-/*
 import { GameSchema } from './schema';
 import { MuClient } from 'mudb/client';
 import { MuClientState } from 'mudb/state/client';
@@ -56,4 +55,3 @@ export = function (client:MuClient) {
 
     client.start();
 };
-*/
