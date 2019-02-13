@@ -111,8 +111,6 @@ tape('de/serializing string', (t) => {
         test('https://github.com/mikolalysenko', 'https://github.com/mikolalysenko');
         test('e42dfecf821ebdfce692c7692b18d2b1', 'https://github.com/mikolalysenko');
         test('https://github.com/mikolalysenko', 'e42dfecf821ebdfce692c7692b18d2b1');
-        st.throws(() => test('', 'https://github.com/mikolalysenko'));
-        st.throws(() => test('https://github.com/mikolalysenko', ''));
         st.end();
     });
 
