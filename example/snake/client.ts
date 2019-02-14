@@ -1,4 +1,3 @@
-/*
 import { SnakeSchema } from './schema';
 import { MuClient } from 'mudb/client';
 import { PointInterface, GameMap, Snake, DirectDict, Food } from './snakeAPI';
@@ -108,4 +107,3 @@ export = function (client:MuClient) {
 
     client.start();
 };
-*/

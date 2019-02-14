@@ -1,6 +1,5 @@
-/*
 import { MuClient } from 'mudb/client';
-import { MuClockClient } from 'muclock/client';
+import { MuClockClient } from 'mudb/clock/client';
 
 export = function (client:MuClient) {
     const tickDiv = document.createElement('div');
@@ -9,19 +8,18 @@ export = function (client:MuClient) {
 
     const clock = new MuClockClient({
         client,
-        tick: (tick) => {
+        tick: (tickCount) => {
+            // whatever you want to do on tick
+            console.log(tickCount);
         },
     });
-
     client.start({
         ready: () => {
-            console.log('client ready');
             function render() {
-                tickDiv.innerHTML = `tick ${Math.round(clock.tick() * 100) / 100}<br/> ping ${clock.ping()}`;
+                tickDiv.innerHTML = `clock ${Math.round(clock.tick() * 100) / 100}`;
                 requestAnimationFrame(render);
             }
             render();
         },
     });
 };
-*/

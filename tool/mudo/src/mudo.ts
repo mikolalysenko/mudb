@@ -1,13 +1,13 @@
 import { MuClient, MuServer } from 'mudb';
+import { MuWebSocketServer } from 'mudb/socket/web/server';
 import path = require('path');
 import temp = require('temp');
 import fs = require('fs');
 import budo = require('budo');
-import { MuWebSocketServer } from 'muweb-socket/server';
 
 export enum MUDO_SOCKET_TYPES {
     LOCAL = 0,
-    WEBSOCKET = 1,
+    WEB = 1,
 }
 
 type ClientTemplateSpec = {
@@ -22,7 +22,7 @@ function clientTemplate (spec:ClientTemplateSpec) {
         return `
 var MuServer = require('${require.resolve('mudb/server')}').MuServer;
 var launchServer = require('${spec.serverPath}');
-var muLocalSocket = require('${require.resolve('mulocal-socket')}');
+var muLocalSocket = require('${require.resolve('mudb/socket/local')}');
 
 var socketServer = muLocalSocket.createLocalSocketServer();
 var server = new MuServer(socketServer);
@@ -37,7 +37,7 @@ var socket = muLocalSocket.createLocalSocket({
 
     function generateWebSocket() {
         return `
-var MuWebSocket = require('${require.resolve('muweb-socket/socket')}').MuWebSocket;
+var MuWebSocket = require('${require.resolve('mudb/socket/web/client')}').MuWebSocket;
 var socket = new MuWebSocket({
     sessionId: Math.round(1e12 * Math.random()).toString(32),
     url: 'ws://' + window.location.host,
@@ -49,7 +49,7 @@ var socket = new MuWebSocket({
         switch (spec.socketType) {
             case MUDO_SOCKET_TYPES.LOCAL:
                 return generateLocal();
-            case MUDO_SOCKET_TYPES.WEBSOCKET:
+            case MUDO_SOCKET_TYPES.WEB:
                 return generateWebSocket();
         }
     }
@@ -140,7 +140,7 @@ export function createMudo (spec:MudoSpec) {
                         };
 
                         const budoServer = budo(info.path, budoSpec);
-                        if (socketType === MUDO_SOCKET_TYPES.WEBSOCKET) {
+                        if (socketType === MUDO_SOCKET_TYPES.WEB) {
                             budoServer.on('connect', (event) => {
                                 const httpServer = event.server;
                                 const socketServer = new MuWebSocketServer({

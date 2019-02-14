@@ -12,20 +12,16 @@
   },
   "keywords": [
     "mudb",
-    "real-time",
-    "multiplayer",
-    "game",
-    "network"
+    "prototyping",
+    "framework"
   ],
   "author": "Mikola Lysenko",
   "license": "MIT",
   "dependencies": {
-    "browserify": "^16.2.2",
-    "budo": "^11.3.2",
+    "browserify": "^16.2.3",
+    "budo": "^11.6.0",
     "minimist": "^1.2.0",
-    "mudb": "0.2.8",
-    "mulocal-socket": "0.2.8",
-    "muweb-socket": "0.2.8",
+    "mudb": "^0.13.0",
     "temp": "^0.8.3"
   }
 }

@@ -1,7 +1,6 @@
-/*
 import { MuServer } from 'mudb/server';
-import { MuServerState } from 'mustate/server';
-import { MuRPCServer } from 'murpc/server';
+import { MuServerState } from 'mudb/state/server';
+import { MuRPCServer } from 'mudb/rpc/server';
 
 import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { Team, Config } from './game';
@@ -172,4 +171,3 @@ export = function(server:MuServer) {
     return {x, y, team};
   }
 };
-*/

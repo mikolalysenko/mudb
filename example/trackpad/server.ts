@@ -1,7 +1,6 @@
-/*
 import { GameSchema } from './schema';
 import { MuServer } from 'mudb/server';
-import { MuServerState } from 'mustate/server';
+import { MuServerState } from 'mudb/state/server';
 
 export = function (server:MuServer) {
     const protocol = new MuServerState({
@@ -31,4 +30,3 @@ export = function (server:MuServer) {
 
     server.start();
 };
-*/

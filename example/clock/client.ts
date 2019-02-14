@@ -1,6 +1,5 @@
-/*
 import { MuClient } from 'mudb/client';
-import { MuClockClient } from 'muclock/client';
+import { MuClockClient } from 'mudb/clock/client';
 
 export = function(client:MuClient) {
     document.body.innerHTML = `
@@ -53,7 +52,7 @@ export = function(client:MuClient) {
             }
             drawClock(_last_tick);
             tick_num.innerHTML = `tick ${Math.round(clock.tick() * 100) /
-                100}<br/> ping ${clock.ping()}`;
+                100}<br/> ping ${clock.tick()}`;
         },
     });
 
@@ -145,4 +144,3 @@ function drawNumbers(ctx, radius) {
         ctx.rotate(-ang);
     }
 }
-*/
