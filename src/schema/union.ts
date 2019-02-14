@@ -64,7 +64,10 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public free (union:UnionTypes<SubTypes>['instance']) : void {
-        this.muData[union.type].free(union.data);
+        const schema = this.muData[union.type];
+        if (schema) {
+            schema.free(union.data);
+        }
     }
 
     public equal (a:UnionTypes<SubTypes>['instance'], b:UnionTypes<SubTypes>['instance']) : boolean {

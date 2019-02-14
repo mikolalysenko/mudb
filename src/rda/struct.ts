@@ -114,11 +114,14 @@ export class MuRDAStructStore<
         return this.stores[action.type].apply(rda.rdas[action.type], action.data);
     }
 
-    public inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'] {
+    public inverse(rda:RDA, action:MuRDATypes<RDA>['action']) {
         const result = rda.actionSchema.alloc();
         result.type = action.type;
-        result.data = this.stores[action.type].inverse(rda.rdas[action.type], action.data);
-        return result;
+        const x = result.data = this.stores[action.type].inverse(rda.rdas[action.type], action.data);
+        return <{
+            type:(typeof action.type);
+            data:(typeof x);
+        }>result;
     }
 
     public serialize (rda:RDA, out:MuRDATypes<RDA>['serializedStore']) {
@@ -166,14 +169,10 @@ export class MuRDAStruct<Spec extends MuRDAStructSpec>
             function wrapPartialRec (meta:MuRDAActionMeta, index:string) {
                 if (meta.type === 'unit') {
                     return (new Function(
-                        `return function() {
-                            var result = rda.actionSchema.alloc();
-                            result.type = "${id}";
-                            result.data = partial.data${index}.apply(null, arguments);
-                            return result;
-                        }`,
                         'rda',
-                        'partial'))(self, savedPartial);
+                        'partial',
+                        `return function() { var result = rda.actionSchema.alloc(); result.type = "${id}"; result.data = partial.data${index}.apply(null, arguments); return result; }`,
+                    ))(self, savedPartial);
                 } else if (meta.type === 'table') {
                     const result:any = {};
                     const keys = Object.keys(meta.table);
@@ -184,37 +183,28 @@ export class MuRDAStruct<Spec extends MuRDAStructSpec>
                     return result;
                 } else if (meta.type === 'partial') {
                     return wrapPartial(meta.action, (new Function(
-                        `return function () {
-                            return partial.data${index}.apply(null, arguments);
-                        }`,
                         'partial',
+                        `return function () { return partial.data${index}.apply(null, arguments); }`,
                     ))(savedPartial));
                 }
                 return {};
             }
 
             return (new Function(
-                `return function () {
-                    partial.data = dispatch.apply(null, arguments);
-                    return wrappedDispatch;
-                }`,
                 'dispatch',
                 'partial',
                 'wrappedDispatch',
+                `return function () { partial.data = dispatch.apply(null, arguments); return wrappedDispatch; }`,
             ))(dispatch, savedPartial, wrapPartialRec(root, ''));
         }
 
         function wrapStore(meta:MuRDAActionMeta, index:string) {
             if (meta.type === 'unit') {
                 return (new Function(
-                    `return function() {
-                        var result = rda.actionSchema.alloc();
-                        result.type = "${id}";
-                        result.data = dispatch(rda._saveStore)${index}.apply(null, arguments);
-                        return result;
-                    }`,
                     'rda',
-                    'dispatch'))(self, rda.action);
+                    'dispatch',
+                    `return function() { var result = rda.actionSchema.alloc(); result.type = "${id}"; result.data = dispatch(rda._saveStore)${index}.apply(null, arguments); return result; }`,
+                ))(self, rda.action);
             } else if (meta.type === 'table') {
                 const result:any = {};
                 const ids = Object.keys(meta.table);
@@ -227,16 +217,21 @@ export class MuRDAStruct<Spec extends MuRDAStructSpec>
                 return wrapPartial(
                     meta.action,
                     (new Function(
-                        `return function() { return dispatch(rda._saveStore)${index}.apply(null, arguments); }`,
                         'rda',
-                        'dispatch'))(self, rda.action));
+                        'dispatch',
+                        `return function() { return dispatch(rda._saveStore)${index}.apply(null, arguments); }`))(self, rda.action));
             }
             return {};
         }
 
         function wrapAction (meta:MuRDAActionMeta, dispatch:any) {
             if (meta.type === 'unit') {
-                return dispatch;
+                return function (...args) {
+                    const result = self.actionSchema.alloc();
+                    result.type = id;
+                    result.data = dispatch.apply(null, args);
+                    return result;
+                };
             } else if (meta.type === 'table') {
                 const result:any = {};
                 const ids = Object.keys(meta.table);

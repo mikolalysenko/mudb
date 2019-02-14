@@ -1,1 +1,1 @@
-// test allocate/free for stores
+// check store constructor is correct, store.state() works as expected

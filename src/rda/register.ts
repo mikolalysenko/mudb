@@ -31,7 +31,7 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
     public readonly storeSchema:StateSchema;
 
     public readonly actionMeta:MuRDARegisterMeta = { type: 'unit' };
-    public action = (value:StateSchema['identity']) : StateSchema['identity'] => {
+    public action = (value:StateSchema['identity']) : typeof value => {
         return this.actionSchema.clone(value);
     }
 

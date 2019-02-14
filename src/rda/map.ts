@@ -393,7 +393,10 @@ export class MuRDAMap<
         set:(key:KeySchema['identity'], value:ValueRDA['stateSchema']['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['setAction'];
         remove:(key:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['removeAction'];
         update:(key:KeySchema['identity']) => StripBindAndWrap<KeySchema['identity'], ValueRDA>;
-        clear:() => MuRDAMapTypes<KeySchema, ValueRDA>['resetAction'];
+        clear:() => {
+            type:'reset';
+            data:[];
+        };
         reset:(state:MuRDAMapTypes<KeySchema, ValueRDA>['state']) => MuRDAMapTypes<KeySchema, ValueRDA>['resetAction'];
     } = (store) => {
         this._savedStore = store;
@@ -408,12 +411,10 @@ export class MuRDAMap<
             function wrapPartialRec (meta, index:string) {
                 if (meta.type === 'unit') {
                     return (new Function(
-                        `return function () {
-                            rda._savedUpdate.action = saved.data${index}.apply(null, arguments);
-                            return rda._savedAction;
-                        }`,
                         'rda',
-                        'saved'))(self, savedPartial);
+                        'saved',
+                        `return function () { rda._savedUpdate.action = saved.data${index}.apply(null, arguments); return rda._savedAction; }`,
+                    ))(self, savedPartial);
                 } else if (meta.type === 'table') {
                     const result = {};
                     const keys = Object.keys(meta.table);
@@ -426,33 +427,26 @@ export class MuRDAMap<
                     return wrapPartial(
                         meta.action,
                         (new Function(
-                            `return function () {
-                                return saved.data${index}.apply(null, arguments);
-                            }`,
-                            'saved'))(savedPartial));
+                            'saved',
+                            `return function () { return saved.data${index}.apply(null, arguments); }`,
+                        ))(savedPartial));
                 }
                 return {};
             }
             return (new Function(
-                `return function () {
-                    savedPartial.data = dispatch.apply(null, arguments);
-                    return wrapped;
-                }`,
                 'savedPartial',
                 'dispatch',
                 'wrapped',
+                `return function () { savedPartial.data = dispatch.apply(null, arguments); return wrapped; }`,
             ))(savedPartial, dispatcher, wrapPartialRec(root, ''));
         }
 
         function wrapStore (meta, dispatcher, index) {
             if (meta.type === 'unit') {
                 return (new Function(
-                    `return function () {
-                        rda._savedUpdate.action = dispatch(rda._savedElement)${index}.apply(null, arguments);
-                        return rda._savedAction;
-                    }`,
                     'rda',
                     'dispatch',
+                    `return function () { rda._savedUpdate.action = dispatch(rda._savedElement)${index}.apply(null, arguments); return rda._savedAction; }`,
                 ))(self, dispatcher);
             } else if (meta.type === 'table') {
                 const result:any = {};
@@ -466,11 +460,10 @@ export class MuRDAMap<
                 return wrapPartial(
                     meta.action,
                     (new Function(
-                        `return function () {
-                            return dispatch(rda._savedElement)${index}.apply(null, arguments);
-                        }`,
                         'rda',
-                        'dispatch'))(self, dispatcher));
+                        'dispatch',
+                        `return function () { return dispatch(rda._savedElement)${index}.apply(null, arguments); }`,
+                    ))(self, dispatcher));
             }
             return {};
         }
