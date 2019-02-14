@@ -101,6 +101,7 @@ test('maps', (t) => {
 
     const store = X.store({
         foo: 3,
+        'ashdfhasdhfasdf': -1,
     });
 
     const anotherStore = X.store({
