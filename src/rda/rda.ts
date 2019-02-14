@@ -1,64 +1,97 @@
 import { MuSchema } from '../schema/schema';
 
-export interface MuRDAStore<
-    StateSchema extends MuSchema<any>,
-    ActionSchema extends MuSchema<any>,
-    StoreSchema extends MuSchema<any>> {
-    // computes a snapshot of the head state
-    state(out:StateSchema['identity']) : StateSchema['identity'];
+// Typescript helpers
+export interface MuRDATypes<RDA extends MuRDA<any, any, any, any>> {
+    // Type of an RDA's state schema and state object
+    stateSchema:RDA['stateSchema'];
+    state:this['stateSchema']['identity'];
 
-    // apply takes an action and either appends it or moves it to the end of the queue
-    apply(action:ActionSchema['identity']) : boolean;
+    // Type of an RDA's action schema and acction object
+    actionSchema:RDA['actionSchema'];
+    action:this['actionSchema']['identity'];
 
-    // removes an action from the queue
-    undo(action:ActionSchema['identity']) : boolean;
+    // Store serialization schemas
+    serializedStoreSchema:RDA['storeSchema'];
+    serializedStore:this['serializedStoreSchema']['identity'];
 
-    // squash all actions
-    squash(state:StateSchema['identity']);
+    // Type of the store associated to an RDA
+    store:ReturnType<RDA['store']> & ReturnType<RDA['parse']>;
 
-    // serialize state of the store and all recorded actions into a MuSchema object
-    serialize(out:StoreSchema['identity']) : StoreSchema['identity'];
-    parse(inp:StoreSchema['identity']);
-
-    // destroy store, clean up resources
-    destroy();
+    meta:RDA['actionMeta'];
+    dispatcher:RDA['action'];
 }
 
 export interface MuRDA<
     StateSchema extends MuSchema<any>,
     ActionSchema extends MuSchema<any>,
-    StoreSchema extends MuSchema<any>> {
+    StoreSchema extends MuSchema<any>,
+    Meta extends MuRDABindableActionMeta> {
     readonly stateSchema:StateSchema;
     readonly actionSchema:ActionSchema;
     readonly storeSchema:StoreSchema;
 
-    // store constructor
-    store(initialState:StateSchema['identity']) : MuRDAStore<StateSchema, ActionSchema, StoreSchema>;
+    // store constructors
+    store(initialState:StateSchema['identity']) : MuRDAStore<this>;
+    parse(inp:StoreSchema['identity']) : MuRDAStore<this>;
 
-    // action constructors for the crdt
-    readonly actions:{
-        [action:string]:((...args:any[]) => ActionSchema['identity']) | MuRDA<StateSchema, ActionSchema, StoreSchema>['actions'];
+    // action constructor and reflection metadata
+    actionMeta:Meta;
+    action:any;
+}
+
+export interface MuRDAStore<RDA extends MuRDA<any, any, any, any>> {
+    // computes a snapshot of the head state
+    state(rda:RDA, out:MuRDATypes<RDA>['state']) : MuRDATypes<RDA>['state'];
+
+    // apply takes an action and either appends it or moves it to the end of the queue
+    apply(rda:RDA, action:MuRDATypes<RDA>['action']) : boolean;
+
+    // removes an action from the queue
+    inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'];
+
+    // serialize state of the store and all recorded actions into a MuSchema object
+    serialize(rda:RDA, out:MuRDATypes<RDA>['serializedStore']) : MuRDATypes<RDA>['serializedStore'];
+
+    // destroy store, clean up resources
+    free(rda:RDA);
+}
+
+export type MuRDAActionMeta =
+    {
+        type:'unit';
+    } |
+    {
+        type:'partial';
+        action:MuRDAActionMeta;
+    } |
+    {
+        type:'table';
+        table:{
+            [id:string]:MuRDAActionMeta;
+        };
     };
-}
 
-// Typescript helpers
-export interface MuRDATypes<RDA extends MuRDA<any, any, any>> {
-    // Type of an RDA's state schema and state object
-    stateSchema:RDA['stateSchema'];
-    state:MuRDATypes<RDA>['stateSchema']['identity'];
+export type MuRDAAction<Action, Meta extends MuRDAActionMeta> =
+    Meta extends { type:'unit' }
+        ? (...args) => Action
+    : Meta extends { type:'partial', action:MuRDAActionMeta }
+        ? (...args) => MuRDAAction<Action, Meta['action']>
+    : Meta extends { type:'table', table:{ [id:string]:MuRDAActionMeta }}
+        ? {
+            [id in keyof Meta['table']]:MuRDAAction<Action, Meta['table'][id]>;
+        }
+    : never;
 
-    // Type of an RDA's action schema and acction object
-    actionSchema:RDA['actionSchema'];
-    action:MuRDATypes<RDA>['actionSchema']['identity'];
+export type MuRDABindableActionMeta =
+    {
+        type:'store';
+        action:MuRDAActionMeta;
+    } |
+    MuRDAActionMeta;
 
-    // Store serialization schemas
-    serializedStoreSchema:RDA['storeSchema'];
-    serializedStore:MuRDATypes<RDA>['serializedStoreSchema']['identity'];
-
-    // Type of the store associated to an RDA
-    store:RDA['store'] extends (...args:any[]) => infer StoreType
-        ? StoreType extends MuRDAStore<RDA['stateSchema'], RDA['actionSchema'], RDA['storeSchema']>
-            ? StoreType
-            : MuRDAStore<RDA['stateSchema'], RDA['actionSchema'], RDA['storeSchema']>
-        : MuRDAStore<RDA['stateSchema'], RDA['actionSchema'], RDA['storeSchema']>;
-}
+export type MuRDABindableAction<Action, Meta extends MuRDABindableActionMeta> =
+    Meta extends { type:'store', action:MuRDAActionMeta }
+        ? (store) => MuRDAAction<Action, Meta['action']>
+    : Meta extends MuRDAActionMeta
+        ?  MuRDAAction<Action, Meta>
+        : never;

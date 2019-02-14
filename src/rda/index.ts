@@ -3,8 +3,9 @@ import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
 import { MuRDAConstant, MuRDAConstantStore } from './constant';
 import { MuRDARegister, MuRDARegisterStore } from './register';
 import { MuRDAStruct, MuRDAStructStore } from './struct';
-import { MuRDASet, MuRDASetStore } from './set';
-import { MuRDAFlatMap, MuRDAFlatMapStore } from './flat-map';
+/*
+import { MuRDAMap, MuRDAMapStore } from './map';
+*/
 
 export {
     createUUID, MuUUID, MuUUIDSchema,
@@ -12,6 +13,7 @@ export {
     MuRDAConstant, MuRDAConstantStore,
     MuRDARegister, MuRDARegisterStore,
     MuRDAStruct, MuRDAStructStore,
-    MuRDASet, MuRDASetStore,
-    MuRDAFlatMap, MuRDAFlatMapStore,
+    /*
+    MuRDAMap, MuRDAMapStore,
+    */
 };

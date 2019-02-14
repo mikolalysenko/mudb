@@ -1,54 +1,56 @@
 import { MuSchema } from '../schema/schema';
 import { MuVoid } from '../schema/void';
-import { MuRDA, MuRDAStore } from './rda';
+import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
 
-export class MuRDAConstantStore<StateSchema extends MuSchema<any>> implements MuRDAStore<StateSchema, MuVoid, StateSchema> {
-    private _stateSchema:StateSchema;
-    public value:StateSchema['identity'];
+export class MuRDAConstantStore<RDA extends MuRDAConstant<MuSchema<any>>>
+    implements MuRDAStore<RDA> {
+    public value:MuRDATypes<RDA>['state'];
 
-    constructor (
-        stateSchema:StateSchema,
-        initial:StateSchema['identity']) {
-        this._stateSchema = stateSchema;
+    constructor (initial:MuRDATypes<RDA>['state']) {
         this.value = initial;
     }
 
-    public state (out:StateSchema['identity']) {
-        return this._stateSchema.assign(out, this.value);
+    public state (rda:RDA, out:MuRDATypes<RDA>['state']) {
+        return rda.stateSchema.assign(out, this.value);
     }
 
     public apply () { return false; }
-    public undo () { return false; }
+    public inverse () : undefined { return undefined; }
 
-    public squash (state:StateSchema['identity']) {
-        this.value = this._stateSchema.assign(this.value, state);
+    public serialize (rda:RDA, out:MuRDATypes<RDA>['serializedStore']) : MuRDATypes<RDA>['serializedStore'] {
+        return rda.storeSchema.assign(out, this.value);
     }
 
-    public destroy () {
-        this._stateSchema.free(this.value);
-    }
-
-    public serialize (out:StateSchema['identity']) : StateSchema['identity'] {
-        return this._stateSchema.assign(out, this.value);
-    }
-
-    public parse (store:StateSchema['identity']) {
-        this.value = this._stateSchema.assign(this.value, store);
+    public free (rda:RDA) {
+        rda.stateSchema.free(this.value);
     }
 }
 
-export class MuRDAConstant<StateSchema extends MuSchema<any>> implements MuRDA<StateSchema, MuVoid, StateSchema> {
+type MuRDAConstantMeta = {
+    type:'table';
+    table:{};
+};
+
+export class MuRDAConstant<StateSchema extends MuSchema<any>>
+    implements MuRDA<StateSchema, MuVoid, StateSchema, MuRDAConstantMeta> {
     public readonly stateSchema:StateSchema;
     public readonly actionSchema = new MuVoid();
     public readonly storeSchema:StateSchema;
-    public actions = {};
+    public readonly actionMeta:MuRDAConstantMeta = {
+        type:'table',
+        table:{},
+    };
+    public readonly action = {};
 
     constructor (stateSchema:StateSchema) {
         this.stateSchema = stateSchema;
         this.storeSchema = stateSchema;
     }
 
-    public store (initialState:StateSchema['identity']) {
-        return new MuRDAConstantStore<StateSchema>(this.stateSchema, initialState);
+    public store (initialState:StateSchema['identity']) : MuRDAConstantStore<this> {
+        return new MuRDAConstantStore<this>(this.stateSchema.clone(initialState));
+    }
+    public parse (store:StateSchema['identity']) : MuRDAConstantStore<this> {
+        return new MuRDAConstantStore<this>(this.stateSchema.clone(store));
     }
 }

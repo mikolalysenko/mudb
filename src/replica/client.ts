@@ -1,3 +1,4 @@
+/*
 import { MuRDA, MuRDATypes } from '../rda/rda';
 import { MuClient, MuClientProtocol } from '../client';
 import { rdaProtocol, RDAProtocol } from './schema';
@@ -6,7 +7,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
     public protocol:MuClientProtocol<RDAProtocol<RDA>>;
     public rda:RDA;
     public store:MuRDATypes<RDA>['store'];
-    public history:MuRDATypes<RDA>['action'][] = [];
+    private _undoActions:MuRDATypes<RDA>['action'][] = [];
 
     constructor (spec:{
         client:MuClient,
@@ -49,65 +50,72 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
         this.protocol.configure({
             message: {
                 init: (store) => {
-                    this.store.parse(store);
+                    this.store.parse(this.rda, store);
                     if (spec.ready) {
                         spec.ready();
                     }
                     this._notifyChange();
                 },
                 squash: (state) => {
-                    this.store.squash(state);
-                    for (let i = 0; i < this.history.length; ++i) {
-                        this.rda.actionSchema.free(this.history[i]);
+                    this.store.free(this.rda);
+                    this.store = <MuRDATypes<RDA>['store']>this.rda.store(state);
+                    for (let i = 0; i < this._undoActions.length; ++i) {
+                        this.rda.actionSchema.free(this._undoActions[i]);
                     }
-                    this.history.length = 0;
+                    this._undoActions.length = 0;
                     this._notifyChange();
                 },
                 apply: (action) => {
-                    if (this.store.apply(action)) {
-                        this._notifyChange();
-                    }
-                },
-                undo: (action) => {
-                    if (this.store.undo(action)) {
+                    if (this.store.apply(this.rda, action)) {
                         this._notifyChange();
                     }
                 },
             },
             close: () => {
+                if (spec.close) {
+                    spec.close();
+                }
+                this.store.free(this.rda);
+                for (let i = 0; i < this._undoActions.length; ++i) {
+                    this.rda.actionSchema.free(this._undoActions[i]);
+                }
+                this._undoActions.length = 0;
                 if (this._changeTimeout) {
                     clearTimeout(this._changeTimeout);
                     this._changeTimeout = null;
-                }
-                if (spec.close) {
-                    spec.close();
                 }
             },
         });
     }
 
     public state (out?:MuRDATypes<RDA>['state']) {
-        return this.store.state(out || this.rda.stateSchema.alloc());
+        return this.store.state(this.rda, out || this.rda.stateSchema.alloc());
     }
 
     public dispatch (action:MuRDATypes<RDA>['action'], allowUndo:boolean=true) {
-        if (this.store.apply(action)) {
-            if (allowUndo) {
-                this.history.push(this.rda.actionSchema.clone(action));
+        if (allowUndo) {
+            const inverse = this.store.inverse(this.rda, action);
+            if (this.store.apply(this.rda, action)) {
+                this._undoActions.push(inverse);
+                this.protocol.server.message.apply(action);
+                this._notifyChange();
+            } else {
+                this.rda.actionSchema.free(inverse);
             }
+        } else if (this.store.apply(this.rda, action)) {
             this.protocol.server.message.apply(action);
             this._notifyChange();
         }
     }
 
-    public dispatchUndo () {
-        const action = this.history.pop();
+    public undo () {
+        const action = this._undoActions.pop();
         if (action) {
-            if (this.store.undo(action)) {
-                this.protocol.server.message.undo(action);
+            if (this.store.apply(this.rda, action)) {
+                this.protocol.server.message.apply(action);
             }
             this.rda.actionSchema.free(action);
             this._notifyChange();
         }
     }
-}
+}*/

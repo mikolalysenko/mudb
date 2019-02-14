@@ -1,3 +1,4 @@
+/*
 import { MuRDA, MuRDATypes } from '../rda/rda';
 import { MuServer, MuServerProtocol } from '../server';
 import { rdaProtocol, RDAProtocol } from './schema';
@@ -72,47 +73,40 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any>> {
                     }
                     this.dispatch(action);
                 },
-                undo: (client, action) => {
-                    if (spec.checkUndo && !spec.checkUndo(action, client.sessionId)) {
-                        return;
-                    }
-                    if (this.store.undo(action)) {
-                        this.protocol.broadcast.undo(action);
-                        this._notifyChange();
-                    }
-                },
             },
         });
     }
 
     // polls the current state
     public state(out?:MuRDATypes<RDA>['state']) {
-        return this.store.state(out || this.rda.stateSchema.alloc());
+        return this.store.state(this.rda, out || this.rda.stateSchema.alloc());
     }
 
     // squash all history to current state.  erase history and ability to undo previous actions
     public squash (state?:MuRDATypes<RDA>['state']) {
         const head = state || this.state();
-        this.store.squash(head);
+        this.store.free(this.rda);
+        this.store = <MuRDATypes<RDA>['store']>this.rda.store(head);
         this.protocol.broadcast.squash(head);
         this.rda.stateSchema.free(head);
         this._notifyChange();
     }
 
     public dispatch (action:MuRDATypes<RDA>['action']) {
-        if (this.store.apply(action)) {
+        if (this.store.apply(this.rda, action)) {
             this.protocol.broadcast.apply(action);
             this._notifyChange();
         }
     }
 
     public save () : MuRDATypes<RDA>['serializedStore'] {
-        return this.store.serialize(this.rda.storeSchema.alloc());
+        return this.store.serialize(this.rda, this.rda.storeSchema.alloc());
     }
 
     public load (saved:MuRDATypes<RDA>['serializedStore']) {
         this.protocol.broadcast.init(saved);
-        this.store.parse(saved);
+        this.store.parse(this.rda, saved);
         this._notifyChange();
     }
 }
+*/
