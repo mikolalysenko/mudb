@@ -1,0 +1,1 @@
+// test allocate/free for stores
