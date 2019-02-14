@@ -1,7 +1,6 @@
-/*
 import { MuRDA } from '../rda/rda';
 
-export function rdaProtocol<RDA extends MuRDA<any, any, any>>(rda:RDA) {
+export function rdaProtocol<RDA extends MuRDA<any, any, any, any>>(rda:RDA) {
     return {
         client: {
             init: rda.storeSchema,
@@ -14,7 +13,7 @@ export function rdaProtocol<RDA extends MuRDA<any, any, any>>(rda:RDA) {
     };
 }
 
-export type RDAProtocol<RDA extends MuRDA<any, any, any>> = {
+export type RDAProtocol<RDA extends MuRDA<any, any, any, any>> = {
     client:{
         init:RDA['storeSchema'],
         squash:RDA['stateSchema'],
@@ -24,4 +23,3 @@ export type RDAProtocol<RDA extends MuRDA<any, any, any>> = {
         apply:RDA['actionSchema'],
     },
 };
-*/
