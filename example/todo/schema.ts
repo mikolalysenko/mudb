@@ -1,3 +1,4 @@
+/*
 import { MuRDAStruct, MuRDASet, MuRDARegister, MuRDAConstant } from 'mudb/rda';
 import { MuBoolean, MuUTF8, MuDate } from 'mudb/schema';
 
@@ -8,3 +9,4 @@ export const TodoRDA = new MuRDAStruct({
 });
 
 export const TodoListRDA = new MuRDASet(TodoRDA);
+*/

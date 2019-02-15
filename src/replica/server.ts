@@ -1,25 +1,61 @@
-/*
-import { MuRDA, MuRDATypes } from '../rda/rda';
+import { MuRDA, MuRDATypes, MuRDAActionMeta } from '../rda/rda';
 import { MuServer, MuServerProtocol } from '../server';
 import { rdaProtocol, RDAProtocol } from './schema';
 import { MuSessionId } from '../socket';
 
-export class MuReplicaServer<RDA extends MuRDA<any, any, any>> {
+export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuServerProtocol<RDAProtocol<RDA>>;
     public rda:RDA;
     public store:MuRDATypes<RDA>['store'];
 
+    public action:
+        RDA['actionMeta'] extends { type:'store' }
+            ? RDA['action'] extends (store:any) => infer RetType
+                ? RetType
+                : never
+        : RDA['action'];
+
     constructor (spec:{
         server:MuServer,
         rda:RDA,
+        savedStore?:MuRDATypes<RDA>['serializedStore'],
         initialState?:MuRDATypes<RDA>['state'],
     }) {
         this.rda = spec.rda;
-        this.store = <MuRDATypes<RDA>['store']>this.rda.store(
-            'initialState' in spec
-                ? spec.initialState
-                : this.rda.stateSchema.identity);
+        if ('savedStore' in spec) {
+            this.store = <MuRDATypes<RDA>['store']>this.rda.parse(spec.savedStore);
+        } else {
+            this.store = <MuRDATypes<RDA>['store']>this.rda.store(
+                'initialState' in spec
+                    ? spec.initialState
+                    : this.rda.stateSchema.identity);
+        }
         this.protocol = spec.server.protocol(rdaProtocol(spec.rda));
+
+        const self = this;
+        function wrapAction (meta:MuRDAActionMeta, index:string) {
+            if (meta.type === 'unit' || meta.type === 'partial') {
+                return (new Function(
+                    'self',
+                    `return function () { return self.rda.action(self.store)${index}.apply(null, arguments); }`,
+                ))(self);
+            } else if (meta.type === 'table') {
+                const result:any = {};
+                const ids = Object.keys(meta.table);
+                for (let i = 0; i < ids.length; ++i) {
+                    const id = ids[i];
+                    result[id] = wrapAction(meta.table[id], `${index}["${id}"]`);
+                }
+                return result;
+            }
+            return {};
+        }
+
+        if (spec.rda.actionMeta.type === 'store') {
+            this.action = wrapAction(spec.rda.actionMeta.action, '');
+        } else {
+            this.action = spec.rda.action;
+        }
     }
 
     private _onChange?:(state?:MuRDATypes<RDA>['state']) => void;
@@ -82,16 +118,7 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any>> {
         return this.store.state(this.rda, out || this.rda.stateSchema.alloc());
     }
 
-    // squash all history to current state.  erase history and ability to undo previous actions
-    public squash (state?:MuRDATypes<RDA>['state']) {
-        const head = state || this.state();
-        this.store.free(this.rda);
-        this.store = <MuRDATypes<RDA>['store']>this.rda.store(head);
-        this.protocol.broadcast.squash(head);
-        this.rda.stateSchema.free(head);
-        this._notifyChange();
-    }
-
+    // dispatch an action
     public dispatch (action:MuRDATypes<RDA>['action']) {
         if (this.store.apply(this.rda, action)) {
             this.protocol.broadcast.apply(action);
@@ -99,14 +126,25 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any>> {
         }
     }
 
+    // squash all history to current state.  erase history and ability to undo previous actions
+    public reset (state?:MuRDATypes<RDA>['state']) {
+        const head = state || this.rda.stateSchema.identity;
+        this.store.free(this.rda);
+        this.store = <MuRDATypes<RDA>['store']>this.rda.store(head);
+        this.protocol.broadcast.squash(head);
+        this._notifyChange();
+    }
+
+    // save store
     public save () : MuRDATypes<RDA>['serializedStore'] {
         return this.store.serialize(this.rda, this.rda.storeSchema.alloc());
     }
 
+    // load store
     public load (saved:MuRDATypes<RDA>['serializedStore']) {
         this.protocol.broadcast.init(saved);
-        this.store.parse(this.rda, saved);
+        this.store.free(this.rda);
+        this.store = <MuRDATypes<RDA>['store']>this.rda.parse(saved);
         this._notifyChange();
     }
 }
-*/

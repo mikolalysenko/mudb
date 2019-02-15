@@ -1,3 +1,4 @@
+/*
 import { MuClient } from 'mudb/client';
 import { MuReplicaClient } from 'mudb/replica/client';
 import { TodoRDA, TodoListRDA } from './schema';
@@ -70,3 +71,4 @@ export = function (client:MuClient) {
 
     render();
 };
+*/

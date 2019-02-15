@@ -1,3 +1,4 @@
+/*
 import { MuServer } from 'mudb/server';
 import { MuReplicaServer } from 'mudb/replica/server';
 import { TodoListRDA } from './schema';
@@ -19,3 +20,4 @@ export = function (server:MuServer) {
         },
     });
 };
+*/

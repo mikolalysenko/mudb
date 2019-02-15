@@ -1,13 +1,20 @@
-/*
 import { MuRDA, MuRDATypes } from '../rda/rda';
 import { MuClient, MuClientProtocol } from '../client';
+import { MuStruct } from '../schema/struct';
 import { rdaProtocol, RDAProtocol } from './schema';
 
-export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
+export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuClientProtocol<RDAProtocol<RDA>>;
     public rda:RDA;
     public store:MuRDATypes<RDA>['store'];
-    private _undoActions:MuRDATypes<RDA>['action'][] = [];
+
+    private _undoRedoSchema:MuStruct<{
+        undo:RDA['actionSchema'],
+        redo:RDA['actionSchema'],
+    }>;
+
+    private _undoActions:MuReplicaClient<RDA>['_undoRedoSchema']['identity'][] = [];
+    private _redoActions:MuRDATypes<RDA>['action'][] = [];
 
     constructor (spec:{
         client:MuClient,
@@ -16,6 +23,10 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
         this.rda = spec.rda;
         this.store = <MuRDATypes<RDA>['store']>spec.rda.store(spec.rda.stateSchema.identity);
         this.protocol = spec.client.protocol(rdaProtocol(spec.rda));
+        this._undoRedoSchema = new MuStruct({
+            undo: spec.rda.actionSchema,
+            redo: spec.rda.actionSchema,
+        });
     }
 
     // change listener stuff
@@ -50,7 +61,8 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
         this.protocol.configure({
             message: {
                 init: (store) => {
-                    this.store.parse(this.rda, store);
+                    this.store.free(this.rda);
+                    this.store = <MuRDATypes<RDA>['store']>this.rda.parse(store);
                     if (spec.ready) {
                         spec.ready();
                     }
@@ -60,9 +72,13 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
                     this.store.free(this.rda);
                     this.store = <MuRDATypes<RDA>['store']>this.rda.store(state);
                     for (let i = 0; i < this._undoActions.length; ++i) {
-                        this.rda.actionSchema.free(this._undoActions[i]);
+                        this._undoRedoSchema.free(this._undoActions[i]);
                     }
                     this._undoActions.length = 0;
+                    for (let i = 0; i < this._redoActions.length; ++i) {
+                        this.rda.actionSchema.free(this._redoActions[i]);
+                    }
+                    this._redoActions.length = 0;
                     this._notifyChange();
                 },
                 apply: (action) => {
@@ -77,9 +93,13 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
                 }
                 this.store.free(this.rda);
                 for (let i = 0; i < this._undoActions.length; ++i) {
-                    this.rda.actionSchema.free(this._undoActions[i]);
+                    this._undoRedoSchema.free(this._undoActions[i]);
                 }
                 this._undoActions.length = 0;
+                for (let i = 0; i < this._redoActions.length; ++i) {
+                    this.rda.actionSchema.free(this._redoActions[i]);
+                }
+                this._redoActions.length = 0;
                 if (this._changeTimeout) {
                     clearTimeout(this._changeTimeout);
                     this._changeTimeout = null;
@@ -95,14 +115,12 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
     public dispatch (action:MuRDATypes<RDA>['action'], allowUndo:boolean=true) {
         if (allowUndo) {
             const inverse = this.store.inverse(this.rda, action);
-            if (this.store.apply(this.rda, action)) {
-                this._undoActions.push(inverse);
-                this.protocol.server.message.apply(action);
-                this._notifyChange();
-            } else {
-                this.rda.actionSchema.free(inverse);
-            }
-        } else if (this.store.apply(this.rda, action)) {
+            const undo = this._undoRedoSchema.alloc();
+            undo.undo = this.rda.actionSchema.assign(undo.undo, inverse);
+            undo.redo = this.rda.actionSchema.assign(undo.redo, action);
+            this.rda.actionSchema.free(inverse);
+        }
+        if (this.store.apply(this.rda, action)) {
             this.protocol.server.message.apply(action);
             this._notifyChange();
         }
@@ -111,11 +129,20 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any>> {
     public undo () {
         const action = this._undoActions.pop();
         if (action) {
-            if (this.store.apply(this.rda, action)) {
+            this._redoActions.push(this.rda.actionSchema.clone(action.redo));
+            if (this.store.apply(this.rda, action.undo)) {
                 this.protocol.server.message.apply(action);
             }
             this.rda.actionSchema.free(action);
             this._notifyChange();
         }
     }
-}*/
+
+    public redo () {
+        const action = this._redoActions.pop();
+        if (action) {
+            this.dispatch(action, true);
+            this.rda.actionSchema.free(action);
+        }
+    }
+}
