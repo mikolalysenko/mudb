@@ -142,7 +142,7 @@ export class MuRDAStructStore<
     }
 }
 
-export class MuRDAStruct<Spec extends MuRDAStructSpec>
+export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> }>
     implements MuRDA<
         MuRDAStructTypes<Spec>['stateSchema'],
         MuRDAStructTypes<Spec>['actionSchema'],
