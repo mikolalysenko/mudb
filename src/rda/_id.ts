@@ -156,23 +156,25 @@ function interpolate (list:Id[], prefix:number, l:number, h:number, id:Id) {
     return Math.max(l, Math.min(h, Math.round((1 - t) * l + t * h) | 0));
 }
 
-export function predecessorId (list:Id[], id:Id) : number {
+export function searchId (list:Id[], id:Id) : number {
     if (list.length === 0) {
-        return -1;
+        return 0;
     }
     let l = 0;
     let lprefix = prefixLengthFromIndex(list[l], id, 0);
     let h = list.length - 1;
     let hprefix = prefixLengthFromIndex(list[h], id, 0);
-    let i = l - 1;
+    let i = 0;
     while (l < h) {
         let p = Math.min(lprefix, hprefix);
         const m = interpolate(list, p, l, h, id);
         const x = list[id];
         p = prefixLengthFromIndex(id, x, p);
-        if (compareIdFromIndex(x, id, p) <= 0) {
-            i = m;
-            l = m + 1;
+        const d = compareIdFromIndex(x, id, p);
+        if (d === 0) {
+            return m;
+        } else if (d < 0) {
+            i = l = m + 1;
             lprefix = p;
         } else {
             h = m - 1;
