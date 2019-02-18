@@ -126,14 +126,14 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
             if (key in this.stores) {
-                rda.valueRDA.stateSchemea.free(out[key]);
+                rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
         }
         const keys = Object.keys(this.stores);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.alloc());
+            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.stateSchema.alloc());
         }
         return out;
     }
