@@ -476,7 +476,7 @@ export class MuRDAMap<
                 };
             } else if (meta.type === 'table') {
                 const result:any = {};
-                const keys = Object.keys(meta.action);
+                const keys = Object.keys(meta.table);
                 for (let i = 0; i < keys.length; ++i) {
                     const key = keys[i];
                     result[key] = wrapAction(meta.table[key], dispatcher[key]);
