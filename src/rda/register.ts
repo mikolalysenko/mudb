@@ -39,7 +39,7 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
         this.stateSchema = this.actionSchema = this.storeSchema = stateSchema;
     }
 
-    public store (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {
+    public createStore (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {
         return new MuRDARegisterStore<this>(this.stateSchema.clone(initialState));
     }
     public parse (store:StateSchema['identity']) : MuRDARegisterStore<this> {

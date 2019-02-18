@@ -577,12 +577,12 @@ export class MuRDAMap<
         this._noopDispatcher = this._constructNoopDispatcher();
     }
 
-    public store(initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
+    public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
         const result:any = {};
         const ids = Object.keys(initialState);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            result[id] = this.valueRDA.store(initialState[id]);
+            result[id] = this.valueRDA.createStore(initialState[id]);
         }
         return new MuRDAMapStore<this>(result);
     }
