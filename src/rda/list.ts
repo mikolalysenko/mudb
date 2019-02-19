@@ -195,22 +195,62 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         return false;
     }
 
+    private _insertInverse (rda:RDA, id:Id, inverseAction:MuRDAListTypes<RDA['valueRDA']>['restoreAction']) {
+        const index = searchId(this.ids, id);
+        if (index < this.ids.length && this.ids[index] === id) {
+            const entry = rda.storeEntrySchema.alloc();
+            entry.id = id;
+            entry.store = this.list[index].serialize(rda.valueRDA, entry.store);
+            inverseAction.data.add.push(entry);
+        } else {
+            inverseAction.data.remove.push(id);
+        }
+    }
+
+    private _removeInverse (rda:RDA, id:Id, inverseAction:MuRDAListTypes<RDA['valueRDA']>['restoreAction']) {
+        const index = searchId(this.ids, id);
+        if (index < this.ids.length && this.ids[index] === id) {
+            const entry = rda.storeEntrySchema.alloc();
+            entry.id = id;
+            entry.store = this.list[index].serialize(rda.valueRDA, entry.store);
+            inverseAction.data.add.push(entry);
+        }
+    }
+
     public inverse (rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'] {
         if (action.type === 'insert') {
             const items = <RDA['insertSchema']['identity']>action.data;
-            const result = rda.actionSchema.alloc();
+            const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
             result.type = 'restore';
-            result.data = [];
             for (let i = 0; i < items.length; ++i) {
                 const item = items[i];
+                this._insertInverse(rda, item.id, result);
             }
             return result;
         } else if (action.type === 'remove') {
-
+            const items = <Id[]>action.data;
+            const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
+            result.type = 'restore';
+            for (let i = 0; i < items.length; ++i) {
+                this._removeInverse(rda, items[i], result);
+            }
+            return result;
         } else if (action.type === 'restore') {
-
+            const input = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>action;
+            const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
+            result.type = 'restore';
+            for (let i = 0; i < input.data.add.length; ++i) {
+                this._insertInverse(rda, input.data.add[i].id, result);
+            }
+            for (let i = 0; i < input.data.remove.length; ++i) {
+                this._removeInverse(rda, input.data.remove[i], result);
+            }
+            return result;
         } else if (action.type === 'reset') {
-
+            const result = rda.actionSchema.alloc();
+            result.type = 'reset';
+            result.data = this.serialize(rda, <MuRDATypes<RDA>['serializedStore']>result.data);
+            return result;
         }
         const noop = rda.actionSchema.alloc();
         noop.type = 'restore';
