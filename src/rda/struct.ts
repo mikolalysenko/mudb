@@ -78,7 +78,7 @@ export interface MuRDAStructTypes<Spec extends MuRDAStructSpec> {
     }>;
     store:this['storeSchema']['identity'];
     stores:{
-        [id in keyof Spec]:ReturnType<Spec[id]['store']>;
+        [id in keyof Spec]:ReturnType<Spec[id]['createStore']>;
     };
 
     actionMeta:{
@@ -142,7 +142,7 @@ export class MuRDAStructStore<
     }
 }
 
-export class MuRDAStruct<Spec extends MuRDAStructSpec>
+export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> }>
     implements MuRDA<
         MuRDAStructTypes<Spec>['stateSchema'],
         MuRDAStructTypes<Spec>['actionSchema'],
@@ -294,12 +294,12 @@ export class MuRDAStruct<Spec extends MuRDAStructSpec>
         });
     }
 
-    public store(state:MuRDAStructTypes<Spec>['state']) : MuRDAStructStore<Spec, this> {
+    public createStore (state:MuRDAStructTypes<Spec>['state']) : MuRDAStructStore<Spec, this> {
         const stores:any = {};
         const ids = Object.keys(this.rdas);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            stores[id] = this.rdas[id].store(state[id]);
+            stores[id] = this.rdas[id].createStore(state[id]);
         }
         return new MuRDAStructStore<Spec, this>(stores);
     }

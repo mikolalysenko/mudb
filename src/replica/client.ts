@@ -21,7 +21,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         rda:RDA,
     }) {
         this.rda = spec.rda;
-        this.store = <MuRDATypes<RDA>['store']>spec.rda.store(spec.rda.stateSchema.identity);
+        this.store = <MuRDATypes<RDA>['store']>spec.rda.createStore(spec.rda.stateSchema.identity);
         this.protocol = spec.client.protocol(rdaProtocol(spec.rda));
         this._undoRedoSchema = new MuStruct({
             undo: spec.rda.actionSchema,
@@ -70,7 +70,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
                 },
                 squash: (state) => {
                     this.store.free(this.rda);
-                    this.store = <MuRDATypes<RDA>['store']>this.rda.store(state);
+                    this.store = <MuRDATypes<RDA>['store']>this.rda.createStore(state);
                     for (let i = 0; i < this._undoActions.length; ++i) {
                         this._undoRedoSchema.free(this._undoActions[i]);
                     }

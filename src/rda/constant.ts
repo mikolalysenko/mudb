@@ -47,7 +47,7 @@ export class MuRDAConstant<StateSchema extends MuSchema<any>>
         this.storeSchema = stateSchema;
     }
 
-    public store (initialState:StateSchema['identity']) : MuRDAConstantStore<this> {
+    public createStore (initialState:StateSchema['identity']) : MuRDAConstantStore<this> {
         return new MuRDAConstantStore<this>(this.stateSchema.clone(initialState));
     }
     public parse (store:StateSchema['identity']) : MuRDAConstantStore<this> {

@@ -40,7 +40,7 @@ test('structs', (t) => {
         b: new MuRDARegister(new MuInt32(2)),
     });
 
-    const store = X.store(X.stateSchema.identity);
+    const store = X.createStore(X.stateSchema.identity);
 
     t.same(X.action(store).a, {}, 'struct constant empty actions');
     t.same(X.action(store).b(1), {
@@ -65,7 +65,7 @@ test('nested structs', (t) => {
         }),
     });
 
-    const store = Y.store(Y.stateSchema.identity);
+    const store = Y.createStore(Y.stateSchema.identity);
 
     t.same(Y.action(store).q('baz'), {
         type: 'q',
@@ -99,12 +99,12 @@ test('maps', (t) => {
         new MuUTF8(),
         new MuRDARegister(new MuFloat64(1)));
 
-    const store = X.store({
+    const store = X.createStore({
         foo: 3,
         'ashdfhasdhfasdf': -1,
     });
 
-    const anotherStore = X.store({
+    const anotherStore = X.createStore({
         blah: 71474.1888,
     });
 
@@ -158,7 +158,7 @@ test('map of maps', (t) => {
             new MuUTF8(),
             new MuRDARegister(new MuUTF8())));
 
-    const store = X.store({ foo: { bar: '1' }});
+    const store = X.createStore({ foo: { bar: '1' }});
     t.same(X.action(store).set('foo', { 'bar': '1' }), {
         type: 'set',
         data: {
@@ -209,7 +209,7 @@ test('map of structs', (t) => {
             }),
         }));
 
-    const store = X.store({
+    const store = X.createStore({
         foo: {
             a: 3,
             b: 2,

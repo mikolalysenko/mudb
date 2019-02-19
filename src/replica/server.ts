@@ -25,7 +25,7 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
         if ('savedStore' in spec) {
             this.store = <MuRDATypes<RDA>['store']>this.rda.parse(spec.savedStore);
         } else {
-            this.store = <MuRDATypes<RDA>['store']>this.rda.store(
+            this.store = <MuRDATypes<RDA>['store']>this.rda.createStore(
                 'initialState' in spec
                     ? spec.initialState
                     : this.rda.stateSchema.identity);
@@ -130,7 +130,7 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public reset (state?:MuRDATypes<RDA>['state']) {
         const head = state || this.rda.stateSchema.identity;
         this.store.free(this.rda);
-        this.store = <MuRDATypes<RDA>['store']>this.rda.store(head);
+        this.store = <MuRDATypes<RDA>['store']>this.rda.createStore(head);
         this.protocol.broadcast.squash(head);
         this._notifyChange();
     }

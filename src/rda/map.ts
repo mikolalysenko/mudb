@@ -126,14 +126,14 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
             if (key in this.stores) {
-                rda.valueRDA.stateSchemea.free(out[key]);
+                rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
         }
         const keys = Object.keys(this.stores);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.alloc());
+            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.stateSchema.alloc());
         }
         return out;
     }
@@ -476,7 +476,7 @@ export class MuRDAMap<
                 };
             } else if (meta.type === 'table') {
                 const result:any = {};
-                const keys = Object.keys(meta.action);
+                const keys = Object.keys(meta.table);
                 for (let i = 0; i < keys.length; ++i) {
                     const key = keys[i];
                     result[key] = wrapAction(meta.table[key], dispatcher[key]);
@@ -577,12 +577,12 @@ export class MuRDAMap<
         this._noopDispatcher = this._constructNoopDispatcher();
     }
 
-    public store(initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
+    public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
         const result:any = {};
         const ids = Object.keys(initialState);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            result[id] = this.valueRDA.store(initialState[id]);
+            result[id] = this.valueRDA.createStore(initialState[id]);
         }
         return new MuRDAMapStore<this>(result);
     }

@@ -414,10 +414,10 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         return this._dispatchers;
     }
 
-    public store (initialState:MuRDAListTypes<RDA>['state']) : MuRDAListStore<this> {
+    public createStore (initialState:MuRDAListTypes<RDA>['state']) : MuRDAListStore<this> {
         return new MuRDAListStore(
             initialIds(initialState.length),
-            initialState.map((state) => <MuRDATypes<RDA>['store']>this.valueRDA.store(state)));
+            initialState.map((state) => <MuRDATypes<RDA>['store']>this.valueRDA.createStore(state)));
     }
 
     public parse (store:MuRDAListTypes<RDA>['store']) : MuRDAListStore<this> {
