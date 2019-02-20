@@ -213,7 +213,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 result.type = 'update';
                 result.data = rda.updateActionSchema.alloc();
                 result.data.id = rda.keySchema.assign(result.data.id, key);
-                rda.valueRDA.free(result.data.action);
+                rda.valueRDA.actionSchema.free(result.data.action);
                 result.data.action = store.inverse(rda.valueRDA, data.action);
                 return <{
                     type:'update';
@@ -279,7 +279,7 @@ type WrapAction<Key, Meta, Dispatch> =
         ? Dispatch extends (...args:infer ArgType) => infer RetType
             ?  (...args:ArgType) => {
                     type:'noop';
-                    data:void
+                    data:MuVoid['identity'];
                 } | {
                     type:'update';
                     data:{
