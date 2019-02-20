@@ -1,4 +1,4 @@
-import { MuRDA, MuRDATypes, MuRDAStore } from './rda';
+import { MuRDA, MuRDATypes, MuRDAStore, MuRDAActionMeta } from './rda';
 import { MuArray } from '../schema/array';
 import { MuUnion } from '../schema/union';
 import { MuStruct } from '../schema/struct';
@@ -15,12 +15,10 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
     }>;
     insertSchema:MuSortedArray<MuRDAListTypes<RDA>['insertEntrySchema']>;
     removeSchema:MuSortedArray<typeof IdSchema>;
-    /*
     updateSchema:MuStruct<{
         id:typeof IdSchema;
         action:RDA['actionSchema'];
     }>;
-    */
     restoreSchema:MuStruct<{
         remove:MuRDAListTypes<RDA>['removeSchema'];
         add:MuRDAListTypes<RDA>['storeSchema'];
@@ -29,7 +27,7 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
         insert:MuRDAListTypes<RDA>['insertSchema'];
         remove:MuRDAListTypes<RDA>['removeSchema'];
         restore:MuRDAListTypes<RDA>['restoreSchema'];
-        // update:MuRDAListTypes<RDA>['updateSchema'];
+        update:MuRDAListTypes<RDA>['updateSchema'];
         reset:MuRDAListTypes<RDA>['storeSchema'];
     }>;
     insertAction:{
@@ -40,12 +38,10 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
         type:'remove';
         data:MuRDAListTypes<RDA>['removeSchema']['identity'];
     };
-    /*
     updateAction:{
         type:'update';
         data:MuRDAListTypes<RDA>['updateSchema']['identity'];
     };
-    */
     restoreAction:{
         type:'restore';
         data:{
@@ -78,7 +74,6 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
                 unshift:{ type:'unit'; };
                 clear:{ type:'unit'; };
                 reset:{ type:'unit'; };
-                /*
                 update:{
                     type:'partial';
                     action:
@@ -86,7 +81,6 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
                             ? RDA['actionMeta']['action']
                             : RDA['actionMeta'];
                 };
-                */
             }
         };
     };
@@ -95,20 +89,6 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
 export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RDA> {
     public ids:Id[];
     public list:MuRDATypes<RDA['valueRDA']>['store'][];
-
-    public idPred (index:number) : Id {
-        if (index <= 0) {
-            return ID_MIN;
-        }
-        return IdSchema.clone(this.ids[Math.min(this.ids.length - 1, index - 1)]);
-    }
-
-    public idSucc (index:number) : Id {
-        if (index >= this.ids.length - 1) {
-            return ID_MAX;
-        }
-        return IdSchema.clone(this.ids[Math.max(0, index)]);
-    }
 
     constructor (ids:Id[], list:MuRDATypes<RDA['valueRDA']>['store'][]) {
         this.ids = ids;
@@ -126,7 +106,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         return out;
     }
 
-    private _insert (rda:RDA, id:Id, value:MuRDATypes<RDA['valueRDA']>['state']) {
+    private _insertApply (rda:RDA, id:Id, value:MuRDATypes<RDA['valueRDA']>['state']) {
         const index = searchId(this.ids, id);
         if (index >= this.ids.length) {
             this.ids.push(id);
@@ -142,7 +122,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         }
     }
 
-    private _remove (rda:RDA, id:Id) {
+    private _removeApply (rda:RDA, id:Id) {
         const index = searchId(this.ids, id);
         if (index < this.ids.length && this.ids[index] === id) {
             this.ids.splice(index, 1);
@@ -151,7 +131,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         }
     }
 
-    private _restore (rda:RDA, id:Id, store:MuRDATypes<RDA['valueRDA']>['serializedStore']) {
+    private _restoreApply (rda:RDA, id:Id, store:MuRDATypes<RDA['valueRDA']>['serializedStore']) {
         const index = searchId(this.ids, id);
         if (index < this.ids.length && this.ids[index] === id) {
             //
@@ -165,32 +145,38 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             const items = <RDA['insertSchema']['identity']>action.data;
             for (let i = 0; i < items.length; ++i) {
                 const item = items[i];
-                this._insert(rda, item.id, item.value);
+                this._insertApply(rda, item.id, item.value);
             }
             return true;
         } else if (action.type === 'remove') {
             const items = <RDA['removeSchema']['identity']>action.data;
             for (let i = 0; i < items.length; ++i) {
                 const item = items[i];
-                this._remove(rda, item);
+                this._removeApply(rda, item);
             }
             return true;
         } else if (action.type === 'restore') {
             const items = <RDA['restoreSchema']['identity']>action.data;
             for (let i = 0; i < items.add.length; ++i) {
-                this._restore(rda, items.add[i].id, items.add[i].store);
+                this._restoreApply(rda, items.add[i].id, items.add[i].store);
             }
             for (let i = 0; i < items.remove.length; ++i) {
-                this._remove(rda, items.remove[i]);
+                this._removeApply(rda, items.remove[i]);
             }
             return true;
         } else if (action.type === 'reset') {
             const items = <RDA['storeSchema']['identity']>action.data;
             this.free(rda);
             for (let i = 0; i < items.length; ++i) {
-                this._restore(rda, items[i].id, items[i].store);
+                this._restoreApply(rda, items[i].id, items[i].store);
             }
             return true;
+        } else if (action.type === 'update') {
+            const input = <MuRDAListTypes<RDA['valueRDA']>['updateAction']>action;
+            const index = searchId(this.ids, input.data.id);
+            if (index < this.ids.length && this.ids[index] === input.data.id) {
+                return this.list[index].apply(rda.valueRDA, input.data.action);
+            }
         }
         return false;
     }
@@ -251,6 +237,12 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             result.type = 'reset';
             result.data = this.serialize(rda, <MuRDATypes<RDA>['serializedStore']>result.data);
             return result;
+        } else if (action.type === 'update') {
+            const input = <MuRDAListTypes<RDA['valueRDA']>['updateAction']>action;
+            const index = searchId(this.ids, input.data.id);
+            if (index < this.ids.length && this.ids[index] === input.data.id) {
+                return this.list[index].inverse(rda.valueRDA, input.data.action);
+            }
         }
         const noop = rda.actionSchema.alloc();
         noop.type = 'restore';
@@ -294,7 +286,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
     public readonly insertEntrySchema:MuRDAListTypes<RDA>['insertEntrySchema'];
     public readonly insertSchema:MuRDAListTypes<RDA>['insertSchema'];
     public readonly removeSchema:MuRDAListTypes<RDA>['removeSchema'];
-    // public readonly updateSchema:MuRDAListTypes<RDA>['updateSchema'];
+    public readonly updateSchema:MuRDAListTypes<RDA>['updateSchema'];
     public readonly restoreSchema:MuRDAListTypes<RDA>['restoreSchema'];
 
     public readonly stateSchema:MuRDAListTypes<RDA>['stateSchema'];
@@ -307,8 +299,8 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
 
     private _savedStore:MuRDAListStore<this> = <any>null;
     private _insert = (index:number, elements:RDA['stateSchema']['identity'][]) : MuRDAListTypes<RDA>['insertAction'] => {
-        const pred = this._savedStore.idPred(index);
-        const succ = this._savedStore.idSucc(index);
+        const pred = index <= 0 ? ID_MIN : this._savedStore.ids[Math.min(this._savedStore.ids.length - 1, index - 1)];
+        const succ = index >= this._savedStore.ids.length ? ID_MAX : this._savedStore.ids[Math.max(0, index)];
         const ids = allocIds(pred, succ, elements.length);
         const action = <MuRDAListTypes<RDA>['insertAction']>this.actionSchema.alloc();
         action.type = 'insert';
@@ -327,8 +319,8 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         const action = <MuRDAListTypes<RDA>['removeAction']>this.actionSchema.alloc();
         action.type = 'remove';
         const ids = action.data = this.removeSchema.alloc();
-        for (let i = 0; i < count; ++i) {
-            ids[i] = this._savedStore.idSucc(index + i);
+        for (let i = index; i < Math.min(index + count, this._savedStore.ids.length); ++i) {
+            ids[i] = this._savedStore.ids[i];
         }
         return action;
     }
@@ -391,12 +383,10 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
 
         this.insertSchema = new MuSortedArray(this.insertEntrySchema, Infinity, compareTaggedId);
         this.removeSchema = new MuSortedArray(IdSchema, Infinity, compareId);
-        /*
         this.updateSchema = new MuStruct({
             id: IdSchema,
             action: valueRDA.actionSchema,
         });
-        */
         this.restoreSchema = new MuStruct({
             add: this.storeSchema,
             remove: this.removeSchema,
@@ -405,6 +395,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             insert: this.insertSchema,
             remove: this.removeSchema,
             restore: this.restoreSchema,
+            update: this.updateSchema,
             reset: this.storeSchema,
         });
     }

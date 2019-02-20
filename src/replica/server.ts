@@ -8,13 +8,6 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public rda:RDA;
     public store:MuRDATypes<RDA>['store'];
 
-    public action:
-        RDA['actionMeta'] extends { type:'store' }
-            ? RDA['action'] extends (store:any) => infer RetType
-                ? RetType
-                : never
-        : RDA['action'];
-
     constructor (spec:{
         server:MuServer,
         rda:RDA,
@@ -124,6 +117,13 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
             this.protocol.broadcast.apply(action);
             this._notifyChange();
         }
+    }
+
+    public action () : RDA['actionMeta'] extends { type:'store' } ? ReturnType<RDA['action']> : RDA['action'] {
+        if (this.rda.actionMeta.type === 'store') {
+            return this.rda.action(this.store);
+        }
+        return this.rda.action;
     }
 
     // squash all history to current state.  erase history and ability to undo previous actions

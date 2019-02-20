@@ -1,4 +1,4 @@
-import { MuRDA, MuRDATypes } from '../rda/rda';
+import { MuRDA, MuRDATypes, MuRDAAction, MuRDAActionMeta } from '../rda/rda';
 import { MuClient, MuClientProtocol } from '../client';
 import { MuStruct } from '../schema/struct';
 import { rdaProtocol, RDAProtocol } from './schema';
@@ -144,5 +144,12 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
             this.dispatch(action, true);
             this.rda.actionSchema.free(action);
         }
+    }
+
+    public action () : RDA['actionMeta'] extends { type:'store' } ? ReturnType<RDA['action']> : RDA['action'] {
+        if (this.rda.actionMeta.type === 'store') {
+            return this.rda.action(this.store);
+        }
+        return this.rda.action;
     }
 }
