@@ -237,5 +237,88 @@ test('map of structs', (t) => {
 });
 
 test('map of structs of maps of structs', (t) => {
+    const X = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+        props: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+            color: new MuRDARegister(new MuUTF8()),
+            weight: new MuRDARegister(new MuFloat64()),
+        })),
+        foo: new MuRDAConstant(new MuFloat64()),
+    }));
+
+    const store = X.createStore({
+        'foo': {
+            props: {
+                'x': {
+                    color: 'red',
+                    weight: Infinity,
+                },
+            },
+            foo: 1,
+        },
+        'bar': {
+            props: {
+                'y': {
+                    color: 'blue',
+                    weight: 0,
+                },
+                'z': {
+                    color: 'green',
+                    weight: 1,
+                },
+            },
+            foo: 1,
+        },
+    });
+
+    const setG = X.action(store).set('g', {
+        props: {
+            h: {
+                color: '',
+                weight: -1,
+            },
+        },
+        foo: -1,
+    });
+    t.same(setG, {
+        type: 'set',
+        data: {
+            id: 'g',
+            value: {
+                props: {
+                    h: {
+                        color: '',
+                        weight: -1,
+                    },
+                },
+                foo: -1,
+            },
+        },
+    }, 'set constructor ok');
+
+    const updateSubG = X.action(store).update('foo').props.update('x').color('purple');
+    t.same(updateSubG, {
+        type: 'update',
+        data: {
+            id: 'foo',
+            action: {
+                type: 'props',
+                data: {
+                    type: 'update',
+                    data: {
+                        id: 'x',
+                        action: {
+                            type: 'color',
+                            data: 'purple',
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    t.end();
+});
+
+test('list', (t) => {
     t.end();
 });

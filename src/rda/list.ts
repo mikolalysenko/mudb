@@ -111,14 +111,12 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         if (index >= this.ids.length) {
             this.ids.push(id);
             this.list.push(rda.valueRDA.store(value));
+        } else if (this.ids[index] === id) {
+            this.list[index].free(rda.valueRDA);
+            this.list[index] = rda.valueRDA.store(value);
         } else {
-            if (this.ids[index] === id) {
-                this.list[index].free(rda.valueRDA);
-                this.list[index] = rda.valueRDA.store(value);
-            } else {
-                this.ids.splice(index + 1, 0, id);
-                this.list.splice(index + 1, 0, rda.valueRDA.store(value));
-            }
+            this.ids.splice(index + 1, 0, id);
+            this.list.splice(index + 1, 0, rda.valueRDA.store(value));
         }
     }
 
@@ -133,10 +131,15 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
 
     private _restoreApply (rda:RDA, id:Id, store:MuRDATypes<RDA['valueRDA']>['serializedStore']) {
         const index = searchId(this.ids, id);
-        if (index < this.ids.length && this.ids[index] === id) {
-            //
+        if (index >= this.ids.length) {
+            this.ids.push(id);
+            this.list.push(rda.valueRDA.parse(store));
+        } else if (this.ids[index] === id) {
+            this.list[index].free(rda.valueRDA);
+            this.list[index] = rda.valueRDA.parse(store);
         } else {
-            //
+            this.ids.splice(index + 1, 0, id);
+            this.list.splice(index + 1, 0, rda.valueRDA.parse(store));
         }
     }
 
@@ -275,6 +278,40 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
     }
 }
 
+type WrapAction<Meta, Dispatch> =
+    Meta extends { type:'unit' }
+        ? Dispatch extends (...args:infer ArgType) => infer RetType
+            ?  (...args:ArgType) => {
+                    type:'restore';
+                    data:{
+                        remove:[],
+                        add:[],
+                    };
+                } | {
+                    type:'update';
+                    data:{
+                        id:Id;
+                        action:RetType;
+                    };
+                }
+            : never
+    : Meta extends { action:MuRDAActionMeta }
+        ? Dispatch extends (...args:infer ArgType) => infer RetType
+            ? (...args:ArgType) => WrapAction<Meta['action'], RetType>
+            : never
+    : Meta extends { table:{ [id in keyof Dispatch]:MuRDAActionMeta } }
+        ? Dispatch extends { [id in keyof Meta['table']]:any }
+            ? { [id in keyof Meta['table']]:WrapAction<Meta['table'][id], Dispatch[id]>; }
+            : never
+    : never;
+
+type StripBindAndWrap<ValueRDA extends MuRDA<any, any, any, any>> =
+    ValueRDA['actionMeta'] extends { type:'store'; action:MuRDAActionMeta; }
+        ? ValueRDA['action'] extends (store) => infer RetAction
+            ? WrapAction<ValueRDA['actionMeta']['action'], RetAction>
+            : never
+    : WrapAction<ValueRDA['actionMeta'], ValueRDA['action']>;
+
 export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
     implements MuRDA<
         MuRDAListTypes<RDA>['stateSchema'],
@@ -325,6 +362,11 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         return action;
     }
 
+    private _savedElement:MuRDATypes<RDA>['store'];
+    private _savedUpdateAction:MuRDAListTypes<RDA>['updateAction'];
+    private _updateAction;
+    private _noopAction;
+
     private _dispatchers = {
         insert: this._insert,
         remove: this._remove,
@@ -363,6 +405,16 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             }
             return result;
         },
+        update: (index:number) : StripBindAndWrap<RDA> => {
+            if (index >= 0 && index < this._savedStore.list.length) {
+                this._savedElement = this._savedStore.list[index];
+                this._savedUpdateAction = <MuRDAListTypes<RDA>['updateAction']>this.actionSchema.alloc();
+                this._savedUpdateAction.type = 'update';
+                this._savedUpdateAction.data.id = this._savedStore.ids[index];
+                return this._updateAction;
+            }
+            return this._noopAction;
+        },
     };
 
     constructor (valueRDA:RDA) {
@@ -391,13 +443,130 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             add: this.storeSchema,
             remove: this.removeSchema,
         });
-        this.actionSchema = new MuUnion({
+        const actionSchema = this.actionSchema = new MuUnion({
             insert: this.insertSchema,
             remove: this.removeSchema,
             restore: this.restoreSchema,
             update: this.updateSchema,
             reset: this.storeSchema,
         });
+
+        function generateNoop (meta:MuRDAActionMeta) {
+            if (meta.type === 'unit') {
+                return () => {
+                    const result = actionSchema.alloc();
+                    result.type = 'restore';
+                    return result;
+                };
+            } else if (meta.type === 'partial') {
+                const partial = generateNoop(meta.action);
+                return () => partial;
+            } else if (meta.type === 'table') {
+                const table:any = {};
+                const ids = Object.keys(meta.table);
+                for (let i = 0; i < ids.length; ++i) {
+                    table[ids[i]] = generateNoop(meta.table[ids[i]]);
+                }
+                return table;
+            }
+            return {};
+        }
+        this._noopAction = generateNoop(valueRDA.action.type === 'store' ? valueRDA.action.action : valueRDA.action);
+
+        const self = this;
+
+        function wrapPartial (root, dispatcher) {
+            const savedPartial = { data:<any>null };
+            function wrapPartialRec (meta, index:string) {
+                if (meta.type === 'unit') {
+                    return (new Function(
+                        'rda',
+                        'saved',
+                        `return function () { rda._savedUpdate.action = saved.data${index}.apply(null, arguments); return rda._savedAction; }`,
+                    ))(self, savedPartial);
+                } else if (meta.type === 'table') {
+                    const result = {};
+                    const keys = Object.keys(meta.table);
+                    for (let i = 0; i < keys.length; ++i) {
+                        const key = keys[i];
+                        result[key] = wrapPartialRec(meta.table[key], `${index}["${key}"]`);
+                    }
+                    return result;
+                } else if (meta.type === 'partial') {
+                    return wrapPartial(
+                        meta.action,
+                        (new Function(
+                            'saved',
+                            `return function () { return saved.data${index}.apply(null, arguments); }`,
+                        ))(savedPartial));
+                }
+                return {};
+            }
+            return (new Function(
+                'savedPartial',
+                'dispatch',
+                'wrapped',
+                `return function () { savedPartial.data = dispatch.apply(null, arguments); return wrapped; }`,
+            ))(savedPartial, dispatcher, wrapPartialRec(root, ''));
+        }
+
+        function wrapAction (meta, dispatcher) {
+            if (meta.type === 'unit') {
+                return function (...args) {
+                    const tmp = dispatcher.apply(null, args);
+                    self._savedUpdateAction.data.action = self.actionSchema.assign(self._savedUpdateAction.data.action, tmp);
+                    self.actionSchema.free(tmp);
+                    return self._savedUpdateAction;
+                };
+            } else if (meta.type === 'table') {
+                const result:any = {};
+                const keys = Object.keys(meta.table);
+                for (let i = 0; i < keys.length; ++i) {
+                    const key = keys[i];
+                    result[key] = wrapAction(meta.table[key], dispatcher[key]);
+                }
+                return result;
+            } else if (meta.type === 'partial') {
+                return wrapPartial(meta.action, dispatcher);
+            }
+            return {};
+        }
+
+        function wrapStore (meta, dispatcher, index) {
+            if (meta.type === 'unit') {
+                return (new Function(
+                    'rda',
+                    'dispatch',
+                    `return function () {
+                        var tmp = dispatch(rda._savedElement)${index}.apply(null, arguments);
+                        rda._savedUpdate.data.action = rda.actionSchema.assign(rda._savedUpdate.data.action, tmp);
+                        rda.actionSchema.free(tmp);
+                        return rda._savedAction;
+                    }`,
+                ))(self, dispatcher);
+            } else if (meta.type === 'table') {
+                const result:any = {};
+                const keys = Object.keys(meta.table);
+                for (let i = 0; i < keys.length; ++i) {
+                    const key = keys[i];
+                    result[key] = wrapStore(meta.table[key], dispatcher, `${index}["${key}"]`);
+                }
+                return result;
+            } else if (meta.type === 'partial') {
+                return wrapPartial(
+                    meta.action,
+                    (new Function(
+                        'rda',
+                        'dispatch',
+                        `return function () { return dispatch(rda._savedElement)${index}.apply(null, arguments); }`,
+                    ))(self, dispatcher));
+            }
+            return {};
+        }
+
+        this._updateAction = valueRDA.actionMeta.type === 'store'
+            ? wrapStore(valueRDA.actionMeta, valueRDA.action, '')
+            : wrapAction(valueRDA.actionMeta, valueRDA.action);
     }
 
     public action(store:MuRDAListStore<this>) {
