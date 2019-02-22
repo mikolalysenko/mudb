@@ -1,5 +1,5 @@
 import tape = require('tape');
-import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX } from '../_id';
+import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX, searchId } from '../_id';
 
 function idRangeOk (pred:Id, succ:Id, range:Id[]) {
     for (let i = 0; i < range.length; ++i) {
@@ -54,16 +54,44 @@ tape('id allocate', (t) => {
     for (let i = 0; i < 100; ++i) {
         let ids:Id[] = [];
         for (let j = 0; j < 100; ++j) {
-            ids = validateInsertion(ids, Math.floor(Math.random() * (ids.length + 1)), 10);
+            ids = validateInsertion(ids, Math.floor(Math.random() * (ids.length + 1)), 128);
         }
     }
 
-    // try inserting a bunch between adjacent elements
     validateInsertion(['aaaa', 'baaa'], 1, (1 << 16));
 
     t.end();
 });
 
+function searchBruteForce (ids:Id[], id:Id) {
+    for (let i = 0; i < ids.length; ++i) {
+        const d = compareId(ids[i], id);
+        if (d >= 0) {
+            return i;
+        }
+    }
+    return ids.length;
+}
+
 tape('id search', (t) => {
+    function testSearch (ids:Id[], id:Id, msg:string) {
+        t.equals(searchId(ids, id), searchBruteForce(ids, id), msg);
+    }
+
+    function testList (ids:Id[]) {
+        for (let i = 0; i < ids.length; ++i) {
+            testSearch(ids, ids[i], `search element ${i}`);
+        }
+        testSearch(ids, ID_MIN, 'min');
+        testSearch(ids, ID_MAX, 'max');
+
+        const alloc = allocIds(ID_MIN, ID_MAX, 1000);
+        for (let i = 0; i < alloc.length; ++i) {
+            testSearch(ids, alloc[i], 'random');
+        }
+    }
+
+    testList(initialIds(100));
+
     t.end();
 });

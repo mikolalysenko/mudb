@@ -162,12 +162,12 @@ export function compareTaggedId<T extends { id:Id }> (a:T, b:T) {
 }
 
 function interpolate (list:Id[], prefix:number, l:number, h:number, id:Id) {
-    const ax = list[l];
-    const a = (list[l].length < prefix) ? ax.charCodeAt(prefix) : 0;
-    const bx = list[h];
-    const b = (list[h].length < prefix) ? bx.charCodeAt(prefix) : 128;
-    const t = (id.charCodeAt(prefix) - a) / (b - a);
-    return Math.max(l, Math.min(h, Math.round((1 - t) * l + t * h) | 0));
+    const a = prefixCode(list[l], prefix);
+    const b = prefixCode(list[h], prefix);
+    const x = prefixCode(id, prefix);
+    const t = (x - a) / (b - a);
+    const r = Math.max(l, Math.min(h, Math.round((1 - t) * l + t * h))) | 0;
+    return r;
 }
 
 export function searchId (list:Id[], id:Id) : number {
@@ -182,7 +182,7 @@ export function searchId (list:Id[], id:Id) : number {
     while (l < h) {
         let p = Math.min(lprefix, hprefix);
         const m = interpolate(list, p, l, h, id);
-        const x = list[id];
+        const x = list[m];
         p = prefixLengthFromIndex(id, x, p);
         const d = compareIdFromIndex(x, id, p);
         if (d === 0) {
