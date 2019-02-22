@@ -51,12 +51,15 @@ tape('id allocate', (t) => {
         return ids;
     }
 
-    for (let i = 0; i < 20; ++i) {
+    for (let i = 0; i < 100; ++i) {
         let ids:Id[] = [];
         for (let j = 0; j < 100; ++j) {
             ids = validateInsertion(ids, Math.floor(Math.random() * (ids.length + 1)), 10);
         }
     }
+
+    // try inserting a bunch between adjacent elements
+    validateInsertion(['aaaa', 'baaa'], 1, (1 << 16));
 
     t.end();
 });
