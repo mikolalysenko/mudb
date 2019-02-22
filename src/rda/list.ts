@@ -101,7 +101,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             stateSchema.free(<any>out.pop());
         }
         for (let i = 0; i < this.list.length; ++i) {
-            out.push(stateSchema.clone(this.list[i]));
+            out.push(this.list[i].state(rda.valueRDA, stateSchema.alloc()));
         }
         return out;
     }
@@ -110,13 +110,13 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         const index = searchId(this.ids, id);
         if (index >= this.ids.length) {
             this.ids.push(id);
-            this.list.push(rda.valueRDA.store(value));
+            this.list.push(rda.valueRDA.createStore(value));
         } else if (this.ids[index] === id) {
             this.list[index].free(rda.valueRDA);
-            this.list[index] = rda.valueRDA.store(value);
+            this.list[index] = rda.valueRDA.createStore(value);
         } else {
             this.ids.splice(index + 1, 0, id);
-            this.list.splice(index + 1, 0, rda.valueRDA.store(value));
+            this.list.splice(index + 1, 0, rda.valueRDA.createStore(value));
         }
     }
 
@@ -260,7 +260,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         for (let i = 0; i < this.ids.length; ++i) {
             const entry = rda.storeEntrySchema.alloc();
             entry.id = IdSchema.assign(entry.id, this.ids[i]);
-            entry.store = this.list[i].store(rda.valueRDA.rda, entry.store);
+            entry.store = this.list[i].serialize(rda.valueRDA, entry.store);
             out.push(entry);
         }
         return out;

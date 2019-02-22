@@ -214,5 +214,11 @@ test('lists', (t) => {
         b: 1,
     }]);
 
+    const bs = b.serialize(X, X.storeSchema.alloc());
+    const bp = X.parse(bs);
+
+    t.same(b.ids, bp.ids);
+    t.same(b.state(X, X.stateSchema.alloc()), bp.state(X, X.stateSchema.alloc()));
+
     t.end();
 });
