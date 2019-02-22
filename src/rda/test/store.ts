@@ -8,7 +8,7 @@ import { MuRDAConstant } from '../constant';
 import { MuRDARegister } from '../register';
 import { MuRDAStruct } from '../struct';
 import { MuRDAMap } from '../map';
-import { MuRDAStructStore } from '..';
+import { MuRDAStructStore, MuRDAList } from '..';
 
 test('constants', (t) => {
     const X = new MuRDAConstant(new MuInt32());
@@ -195,5 +195,24 @@ test('map of structs of maps of structs', (t) => {
 });
 
 test('lists', (t) => {
+    const X = new MuRDAList(new MuRDAStruct({
+        a: new MuRDARegister(new MuUTF8()),
+        b: new MuRDARegister(new MuFloat64()),
+    }));
+
+    const a = X.createStore([]);
+
+    t.same(a.state(X, []), []);
+
+    const b = X.createStore([{
+        a: 'foo',
+        b: 1,
+    }]);
+
+    t.same(b.state(X, X.stateSchema.alloc()), [{
+        a: 'foo',
+        b: 1,
+    }]);
+
     t.end();
 });
