@@ -5,6 +5,7 @@ import { MuRDAConstant } from '../constant';
 import { MuRDARegister } from '../register';
 import { MuRDAStruct } from '../struct';
 import { MuRDAMap } from '../map';
+import { MuRDAList } from '..';
 
 test('constants', (t) => {
     const C = new MuRDAConstant(new MuInt32(1));
@@ -320,5 +321,11 @@ test('map of structs of maps of structs', (t) => {
 });
 
 test('list', (t) => {
+    const X = new MuRDAList(new MuRDARegister(new MuFloat64()));
+
+    const a = X.createStore([]);
+
+    const pushBlah = X.action(a).push([1, 2, 3]);
+
     t.end();
 });

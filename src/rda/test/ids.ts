@@ -1,0 +1,66 @@
+import tape = require('tape');
+import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX } from '../_id';
+
+function idRangeOk (pred:Id, succ:Id, range:Id[]) {
+    for (let i = 0; i < range.length; ++i) {
+        if (compareId(pred, range[i]) >= 0) {
+            return false;
+        }
+        if (compareId(range[i], succ) >= 0) {
+            return false;
+        }
+        if (i > 0 && compareId(range[i - 1], range[i]) >= 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+tape('id initialization', (t) => {
+    const N = [
+        1,
+        2,
+        10,
+        256,
+        65536,
+        (1 << 20),
+    ];
+
+    N.forEach((n) => {
+        const ids = initialIds(n);
+        t.ok(
+            idRangeOk(ID_MIN, ID_MAX, ids),
+            'initialized valid ids');
+        t.equals(
+            initialIds(n).join(),
+            ids.join(),
+            'initialization deterministic');
+    });
+
+    t.end();
+});
+
+tape('id allocate', (t) => {
+    function validateInsertion (ids:string[], index:number, count:number) {
+        const pred = index > 0 ? ids[index - 1] : ID_MIN;
+        const succ = index < ids.length ? ids[index] : ID_MAX;
+        const alloc = allocIds(pred, succ, count);
+        t.ok(idRangeOk(pred, succ, alloc), 'allocated ids ok');
+        ids.splice(index, 0, ...alloc);
+        t.ok(idRangeOk(ID_MIN, ID_MAX, ids), 'inserted ids ok');
+        return ids;
+    }
+
+    for (let i = 0; i < 20; ++i) {
+        let ids:Id[] = [];
+        for (let j = 0; j < 100; ++j) {
+            ids = validateInsertion(ids, Math.floor(Math.random() * (ids.length + 1)), 10);
+        }
+    }
+
+    t.end();
+});
+
+tape('id search', (t) => {
+    t.end();
+});

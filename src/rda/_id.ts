@@ -43,7 +43,7 @@ function getStep (range:number, count:number) {
 
 export function initialIds (count:number) : Id[] {
     const step = getStep(1 << 27, count);
-    const result:IdSet = IdSetSchema.alloc();
+    const result:Id[] = [];
     result.length = 0;
     for (let i = 0, id = step; i < count; ++i, id += step) {
         const x0 = id >> 21;
@@ -92,15 +92,29 @@ function computePrefix (a:string, b:string) {
     return a.slice(0, n);
 }
 
+function prefixCode (a:Id, index:number) {
+    const n = a.length;
+    if (n <= index) {
+        return 0;
+    } else if (n <= index + 1) {
+        return a.charCodeAt(index) << 21;
+    } else if (n <= index + 2) {
+        return (a.charCodeAt(index) << 21) + (a.charCodeAt(index + 1) << 14);
+    } else if (n <= index + 3) {
+        return (a.charCodeAt(index) << 21) + (a.charCodeAt(index + 1) << 14) + (a.charCodeAt(index + 2) << 7);
+    } else {
+        return (a.charCodeAt(index) << 21) + (a.charCodeAt(index + 1) << 14) + (a.charCodeAt(index + 2) << 7) + a.charCodeAt(index + 3);
+    }
+}
+
 export function allocIds (begin:Id, end:Id, count:number) : Id[] {
     const prefix = computePrefix(begin, end);
-    const lo = ((prefix.length < begin.length) ? begin.charCodeAt(prefix.length) : 0) << 21;
-    const hi = ((prefix.length < end.length) ? end.charCodeAt(prefix.length) : 128) << 21;
+    const lo = prefixCode(begin, prefix.length);
+    const hi = prefixCode(end, prefix.length);
     const step = getStep(hi - lo, 2 * count);
     const bits = log2(BASE_COUNT + count);
-    const offset = (Math.floor(Math.random() * (1 << bits)) * getStep(hi - lo, 2 << bits)) >>> 0;
-    const result:IdSet = IdSetSchema.alloc();
-    result.length = 0;
+    const offset = (Math.floor(1 + Math.random() * (1 << bits)) * getStep(hi - lo, 2 << bits)) >>> 0;
+    const result:Id[] = [];
     for (let i = 0, id = lo + offset; i < count; ++i, id += step) {
         const x0 = id >> 21;
         const x1 = (id >> 14) & 0x7f;
