@@ -3,7 +3,7 @@ import { MuArray } from '../schema/array';
 import { MuUnion } from '../schema/union';
 import { MuStruct } from '../schema/struct';
 import { MuSortedArray } from '../schema/sorted-array';
-import { IdSchema, Id, compareId, compareTaggedId, allocIds, ID_MIN, ID_MAX, initialIds, IdSetSchema, searchId } from './_id';
+import { IdSchema, Id, compareId, compareTaggedId, allocIds, ID_MIN, ID_MAX, initialIds, searchId } from './_id';
 
 export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
     stateSchema:MuArray<RDA['stateSchema']>;
@@ -259,7 +259,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         }
         for (let i = 0; i < this.ids.length; ++i) {
             const entry = rda.storeEntrySchema.alloc();
-            entry.id = IdSchema.assign(entry.id, this.ids[i]);
+            entry.id = this.ids[i];
             entry.store = this.list[i].serialize(rda.valueRDA, entry.store);
             out.push(entry);
         }
@@ -267,9 +267,6 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
     }
 
     public free (rda:RDA) {
-        for (let i = 0; i < this.ids.length; ++i) {
-            IdSchema.free(this.ids[i]);
-        }
         this.ids.length = 0;
         for (let i = 0; i < this.list.length; ++i) {
             this.list[i].free(rda.valueRDA);
@@ -345,19 +342,18 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         result.length = 0;
         for (let i = 0; i < elements.length; ++i) {
             const item = this.insertEntrySchema.alloc();
-            item.id = IdSchema.assign(item.id, ids[i]);
+            item.id = ids[i];
             item.value = this.valueRDA.stateSchema.assign(item.value, elements[i]);
             result.push(item);
         }
-        IdSetSchema.free(ids);
         return action;
     }
     private _remove = (index:number, count:number=1) : MuRDAListTypes<RDA>['removeAction'] => {
         const action = <MuRDAListTypes<RDA>['removeAction']>this.actionSchema.alloc();
         action.type = 'remove';
-        const ids = action.data = this.removeSchema.alloc();
+        const ids:string[] = action.data = [];
         for (let i = index; i < Math.min(index + count, this._savedStore.ids.length); ++i) {
-            ids[i] = this._savedStore.ids[i];
+            ids.push(this._savedStore.ids[i]);
         }
         return action;
     }
@@ -374,7 +370,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             return this._insert(this._savedStore.ids.length, elements);
         },
         pop: (count:number=1) : MuRDAListTypes<RDA>['removeAction'] => {
-            return this._remove(this._savedStore.ids.length - 1, count);
+            return this._remove(Math.max(this._savedStore.ids.length - count, 0), count);
         },
         unshift: (elements:RDA['stateSchema']['identity'][]) : MuRDAListTypes<RDA>['insertAction'] => {
             return this._insert(0, elements);
@@ -584,7 +580,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         const ids:Id[] = new Array(store.length);
         const list:MuRDATypes<RDA>['store'][] = new Array(store.length);
         for (let i = 0; i < store.length; ++i) {
-            ids[i] = IdSchema.clone(store[i].id);
+            ids[i] = store[i].id;
             list[i] = <MuRDATypes<RDA>['store']>this.valueRDA.parse(store[i].store);
         }
         return new MuRDAListStore<this>(ids, list);

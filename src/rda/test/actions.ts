@@ -326,6 +326,10 @@ test('list', (t) => {
     const a = X.createStore([]);
 
     const pushBlah = X.action(a).push([1, 2, 3]);
+    t.equals(pushBlah.type, 'insert');
+
+    const popBlah = X.action(a).pop(10);
+    console.log(popBlah);
 
     t.end();
 });
