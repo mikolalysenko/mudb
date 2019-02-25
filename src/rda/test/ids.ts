@@ -1,7 +1,6 @@
 import tape = require('tape');
 import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX, searchId } from '../_id';
 
-/*
 function idRangeOk (pred:Id, succ:Id, range:Id[]) {
     for (let i = 0; i < range.length; ++i) {
         if (compareId(pred, range[i]) >= 0) {
@@ -63,7 +62,7 @@ tape('id allocate', (t) => {
 
     t.end();
 });
-*/
+
 function searchBruteForce (ids:Id[], id:Id) {
     for (let i = 0; i < ids.length; ++i) {
         const d = compareId(ids[i], id);
