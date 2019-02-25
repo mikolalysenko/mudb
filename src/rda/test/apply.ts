@@ -226,5 +226,27 @@ test('map of structs of maps of structs apply', (t) => {
 });
 
 test('list apply', (t) => {
+    const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
+
+    const store = L.createStore([]);
+    const dispatchers = L.action(store);
+
+    function checkState (expected:number[], msg:string) {
+        t.same(store.state(L, L.stateSchema.alloc()), expected, msg);
+    }
+
+    t.true(store.apply(L, dispatchers.push([1, 2, 3])), 'check push ok');
+    checkState([1, 2, 3], 'post push ok');
+    t.true(store.apply(L, dispatchers.pop(1)), 'check pop ok');
+    checkState([1, 2], 'post pop ok');
+
+    t.end();
+});
+
+test('nested list', (t) => {
+    t.end();
+});
+
+test('list of nested structs', (t) => {
     t.end();
 });
