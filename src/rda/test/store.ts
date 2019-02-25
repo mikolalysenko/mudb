@@ -2,13 +2,13 @@
 // test state accessor
 
 import test = require('tape');
-import { MuInt32, MuStruct, MuUTF8, MuInt8, MuFloat64, MuSchema } from '../../schema';
+import { MuInt32, MuStruct, MuUTF8, MuInt8, MuFloat64 } from '../../schema';
 
 import { MuRDAConstant } from '../constant';
 import { MuRDARegister } from '../register';
 import { MuRDAStruct } from '../struct';
 import { MuRDAMap } from '../map';
-import { MuRDAStructStore, MuRDAList } from '..';
+import { MuRDAList } from '../list';
 
 test('constants', (t) => {
     const X = new MuRDAConstant(new MuInt32());
@@ -183,14 +183,17 @@ test('maps', (t) => {
 });
 
 test('map of maps', (t) => {
+    // TODO
     t.end();
 });
 
 test('map of structs', (t) => {
+    // TODO
     t.end();
 });
 
 test('map of structs of maps of structs', (t) => {
+    // TODO
     t.end();
 });
 
