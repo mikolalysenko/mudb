@@ -199,7 +199,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 result.type = 'restore';
                 result.data = rda.setActionSchema.alloc();
                 result.data.id = rda.keySchema.assign(result.data.id, key);
-                result.data.value = store.serialize(rda.valueRDA, result.data.value);
+                result.data.store = store.serialize(rda.valueRDA, result.data.value);
                 return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
             } else {
                 result.type = 'remove';
@@ -232,7 +232,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 result.type = 'restore';
                 result.data = rda.setActionSchema.alloc();
                 result.data.id = rda.keySchema.assign(result.data.id, key);
-                result.data.value = store.serialize(rda.valueRDA, result.data.value);
+                result.data.store = store.serialize(rda.valueRDA, result.data.value);
                 return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
             }
         } else if (type === 'reset') {
