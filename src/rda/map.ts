@@ -261,7 +261,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             const element = result[i];
             const store = this.stores[id];
             element.id = id;
-            element.store = store.serialize(rda.valueRDA, store);
+            element.store = store.serialize(rda.valueRDA, rda.valueRDA.storeSchema.alloc());
         }
         return result;
     }

@@ -225,3 +225,66 @@ test('lists', (t) => {
 
     t.end();
 });
+
+test('puzzle thing', (t) => {
+    const PuzzlePiece = new MuRDAStruct({
+        color: new MuRDARegister(new MuUTF8()),
+        position: new MuRDAStruct({
+            x: new MuRDARegister(new MuFloat64(0)),
+            y: new MuRDARegister(new MuFloat64(0)),
+        }),
+        rotation: new MuRDARegister(new MuFloat64(0)),
+    });
+
+    const Puzzle = new MuRDAMap(new MuUTF8(), PuzzlePiece);
+
+    const store = Puzzle.createStore({
+        'red':{
+            color: 'red',
+            position: { x: 0, y: 0 },
+            rotation: 0,
+        },
+        'green':{
+            color: 'green',
+            position: { x: 100, y: 0 },
+            rotation: 0,
+        },
+        'blue':{
+            color: 'blue',
+            position: { x: 0, y: 100 },
+            rotation: 0,
+        },
+        'yellow':{
+            color: 'yellow',
+            position: { x: 100, y: 100 },
+            rotation: 0,
+        },
+    });
+
+    const serialized = store.serialize(Puzzle, Puzzle.storeSchema.alloc());
+    const parsed = Puzzle.parse(serialized);
+    t.same(parsed.state(Puzzle, Puzzle.stateSchema.alloc()), {
+        'red':{
+            color: 'red',
+            position: { x: 0, y: 0 },
+            rotation: 0,
+        },
+        'green':{
+            color: 'green',
+            position: { x: 100, y: 0 },
+            rotation: 0,
+        },
+        'blue':{
+            color: 'blue',
+            position: { x: 0, y: 100 },
+            rotation: 0,
+        },
+        'yellow':{
+            color: 'yellow',
+            position: { x: 100, y: 100 },
+            rotation: 0,
+        },
+    }, 'puzzle schema serialize');
+
+    t.end();
+});
