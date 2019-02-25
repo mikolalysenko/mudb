@@ -269,5 +269,17 @@ test('nested list', (t) => {
 });
 
 test('list of nested structs', (t) => {
+    const L = new MuRDAList(new MuRDAStruct({
+        child: new MuRDAStruct({
+            a: new MuRDARegister(new MuFloat64()),
+        }),
+        others: new MuRDAList(
+            new MuRDAStruct({
+                f: new MuRDAConstant(new MuUTF8()),
+            })),
+    }));
+
+    // some crazy mess data structure
+
     t.end();
 });
