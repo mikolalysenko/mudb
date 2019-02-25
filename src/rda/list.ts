@@ -406,6 +406,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
                 this._savedElement = this._savedStore.list[index];
                 this._savedUpdateAction = <MuRDAListTypes<RDA>['updateAction']>this.actionSchema.alloc();
                 this._savedUpdateAction.type = 'update';
+                this._savedUpdateAction.data = this.updateSchema.alloc();
                 this._savedUpdateAction.data.id = this._savedStore.ids[index];
                 return this._updateAction;
             }
@@ -510,8 +511,8 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             if (meta.type === 'unit') {
                 return function (...args) {
                     const tmp = dispatcher.apply(null, args);
-                    self._savedUpdateAction.data.action = self.actionSchema.assign(self._savedUpdateAction.data.action, tmp);
-                    self.actionSchema.free(tmp);
+                    self._savedUpdateAction.data.action = self.valueRDA.actionSchema.assign(self._savedUpdateAction.data.action, tmp);
+                    self.valueRDA.actionSchema.free(tmp);
                     return self._savedUpdateAction;
                 };
             } else if (meta.type === 'table') {
@@ -560,13 +561,24 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             return {};
         }
 
-        this._updateAction = valueRDA.actionMeta.type === 'store'
-            ? wrapStore(valueRDA.actionMeta, valueRDA.action, '')
-            : wrapAction(valueRDA.actionMeta, valueRDA.action);
+        if (valueRDA.actionMeta.type === 'store') {
+            this._updateAction = wrapStore(valueRDA.actionMeta, valueRDA.action, '');
+            this.actionMeta = {
+                type: 'store',
+                action: valueRDA.actionMeta.action,
+            };
+        } else {
+            this._updateAction = wrapAction(valueRDA.actionMeta, valueRDA.action);
+            this.actionMeta = {
+                type: 'store',
+                action: valueRDA.actionMeta,
+            };
+        }
     }
 
     public action(store:MuRDAListStore<this>) {
         this._savedStore = store;
+        console.log('here', store);
         return this._dispatchers;
     }
 

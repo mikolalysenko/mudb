@@ -229,16 +229,17 @@ test('list apply', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
 
     const store = L.createStore([]);
-    const dispatchers = L.action(store);
 
     function checkState (expected:number[], msg:string) {
         t.same(store.state(L, L.stateSchema.alloc()), expected, msg);
     }
 
-    t.true(store.apply(L, dispatchers.push([1, 2, 3])), 'check push ok');
+    t.true(store.apply(L, L.action(store).push([1, 2, 3])), 'check push ok');
     checkState([1, 2, 3], 'post push ok');
-    t.true(store.apply(L, dispatchers.pop(1)), 'check pop ok');
+    t.true(store.apply(L, L.action(store).pop(1)), 'check pop ok');
     checkState([1, 2], 'post pop ok');
+    t.true(store.apply(L, L.action(store).update(0)(100)), 'check update ok');
+    checkState([100, 2], 'update ok');
 
     t.end();
 });
