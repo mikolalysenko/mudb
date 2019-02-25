@@ -226,7 +226,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 }>result;
             }
         } else if (type === 'remove') {
-            const key = data.id;
+            const key = data;
             const store = this.stores[key];
             if (store) {
                 result.type = 'restore';
