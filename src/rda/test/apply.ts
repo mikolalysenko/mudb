@@ -246,11 +246,25 @@ test('list apply', (t) => {
     checkState([6, 7, 100, 2], 'insert ok');
     t.true(store.apply(L, L.action(store).insert(4, [8])), 'check insert ok');
     checkState([6, 7, 100, 2, 8], 'insert ok');
+    t.true(store.apply(L, L.action(store).shift(2)), 'shift ok');
+    checkState([100, 2, 8], 'shift ok');
+    t.true(store.apply(L, L.action(store).unshift([99, 13])), 'apply unshift ok');
+    checkState([99, 13, 100, 2, 8], 'unshift ok');
+    t.true(store.apply(L, L.action(store).clear()), 'apply clear ok');
+    checkState([], 'clear ok');
+    t.true(store.apply(L, L.action(store).push([0, 1, 2, 3, 4, 5, 7, 8, 9, 10])), 'check push ok');
+    checkState([0, 1, 2, 3, 4, 5, 7, 8, 9, 10], 'post push ok');
+    t.true(store.apply(L, L.action(store).remove(1, 2)), 'check remove ok');
+    checkState([0, 3, 4, 5, 7, 8, 9, 10], 'post remove ok');
 
     t.end();
 });
 
 test('nested list', (t) => {
+    const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
+
+    const store = L.createStore([]);
+
     t.end();
 });
 
