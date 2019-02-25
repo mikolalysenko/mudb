@@ -178,25 +178,31 @@ export function searchId (list:Id[], id:Id) : number {
     let lprefix = prefixLengthFromIndex(list[l], id, 0);
     let h = list.length - 1;
     let hprefix = prefixLengthFromIndex(list[h], id, 0);
-    let i = 0;
+    let i = list.length;
     while (l < h) {
         let p = Math.min(lprefix, hprefix);
         const m = interpolate(list, p, l, h, id);
         const x = list[m];
         p = prefixLengthFromIndex(id, x, p);
-        const d = compareIdFromIndex(x, id, p);
-        if (d === 0) {
+        if (p === x.length && p === id.length) {
             return m;
-        } else if (d < 0) {
-            i = l = m + 1;
+        }
+        const d = compareIdFromIndex(x, id, p);
+        if (d <= 0) {
+            l = m + 1;
             lprefix = p;
         } else {
+            i = m;
             h = m - 1;
             hprefix = p;
         }
     }
-    if (l === h && compareIdFromIndex(list[l], id, lprefix) <= 0) {
-        return l;
+    if (l === h) {
+        if (compareId(list[l], id) < 0) {
+            return l + 1;
+        } else {
+            return l;
+        }
     }
     return i;
 }

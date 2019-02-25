@@ -1,6 +1,7 @@
 import tape = require('tape');
 import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX, searchId } from '../_id';
 
+/*
 function idRangeOk (pred:Id, succ:Id, range:Id[]) {
     for (let i = 0; i < range.length; ++i) {
         if (compareId(pred, range[i]) >= 0) {
@@ -62,7 +63,7 @@ tape('id allocate', (t) => {
 
     t.end();
 });
-
+*/
 function searchBruteForce (ids:Id[], id:Id) {
     for (let i = 0; i < ids.length; ++i) {
         const d = compareId(ids[i], id);
@@ -89,8 +90,19 @@ tape('id search', (t) => {
         for (let i = 0; i < alloc.length; ++i) {
             testSearch(ids, alloc[i], 'random');
         }
+
+        for (let i = 0; i <= ids.length; ++i) {
+            allocIds(
+                i > 0 ? ids[i - 1] : ID_MIN,
+                i < ids.length ? ids[i] : ID_MAX,
+                16).forEach((id) => testSearch(ids, id, `range ${i}`));
+        }
     }
 
+    testList(['@']);
+    testList(['1', '2']);
+    testList(['11', '33', '88']);
+    testList(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
     testList(initialIds(100));
 
     t.end();

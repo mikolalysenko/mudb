@@ -240,6 +240,12 @@ test('list apply', (t) => {
     checkState([1, 2], 'post pop ok');
     t.true(store.apply(L, L.action(store).update(0)(100)), 'check update ok');
     checkState([100, 2], 'update ok');
+    t.true(store.apply(L, L.action(store).insert(0, [6])), 'check insert ok');
+    checkState([6, 100, 2], 'insert ok');
+    t.true(store.apply(L, L.action(store).insert(1, [7])), 'check insert ok');
+    checkState([6, 7, 100, 2], 'insert ok');
+    t.true(store.apply(L, L.action(store).insert(4, [8])), 'check insert ok');
+    checkState([6, 7, 100, 2, 8], 'insert ok');
 
     t.end();
 });

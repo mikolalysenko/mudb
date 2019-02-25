@@ -115,8 +115,8 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             this.list[index].free(rda.valueRDA);
             this.list[index] = rda.valueRDA.createStore(value);
         } else {
-            this.ids.splice(index + 1, 0, id);
-            this.list.splice(index + 1, 0, rda.valueRDA.createStore(value));
+            this.ids.splice(index, 0, id);
+            this.list.splice(index, 0, rda.valueRDA.createStore(value));
         }
     }
 
@@ -578,7 +578,6 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
 
     public action(store:MuRDAListStore<this>) {
         this._savedStore = store;
-        console.log('here', store);
         return this._dispatchers;
     }
 
