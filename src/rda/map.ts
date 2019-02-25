@@ -146,7 +146,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (store) {
                 store.free(rda.valueRDA);
             }
-            this.stores[key] = rda.valueRDA.store(data.value);
+            this.stores[key] = rda.valueRDA.createStore(data.value);
             return true;
         } else if (action.type === 'update') {
             const key = data.id;
