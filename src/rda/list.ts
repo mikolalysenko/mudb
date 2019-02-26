@@ -138,8 +138,8 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             this.list[index].free(rda.valueRDA);
             this.list[index] = rda.valueRDA.parse(store);
         } else {
-            this.ids.splice(index + 1, 0, id);
-            this.list.splice(index + 1, 0, rda.valueRDA.parse(store));
+            this.ids.splice(index, 0, id);
+            this.list.splice(index, 0, rda.valueRDA.parse(store));
         }
     }
 
