@@ -211,6 +211,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             const items = <RDA['insertSchema']['identity']>action.data;
             const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
             result.type = 'restore';
+            result.data = rda.actionSchema.muData[result.type].alloc();
             for (let i = 0; i < items.length; ++i) {
                 const item = items[i];
                 this._insertInverse(rda, item.id, result);
@@ -220,6 +221,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             const items = <Id[]>action.data;
             const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
             result.type = 'restore';
+            result.data = rda.actionSchema.muData[result.type].alloc();
             for (let i = 0; i < items.length; ++i) {
                 this._removeInverse(rda, items[i], result);
             }
@@ -238,7 +240,8 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
         } else if (action.type === 'reset') {
             const result = rda.actionSchema.alloc();
             result.type = 'reset';
-            result.data = this.serialize(rda, <MuRDATypes<RDA>['serializedStore']>result.data);
+            result.data = rda.actionSchema.muData[result.type].alloc();
+            this.serialize(rda, <MuRDATypes<RDA>['serializedStore']>result.data);
             return result;
         } else if (action.type === 'update') {
             const input = <MuRDAListTypes<RDA['valueRDA']>['updateAction']>action;

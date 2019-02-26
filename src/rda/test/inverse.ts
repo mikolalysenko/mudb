@@ -252,9 +252,41 @@ test('map of structs of maps of structs', (t) => {
     t.end();
 });
 
-test('list', (t) => {
+test('list inverse', (t) => {
+    const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
+    const store = L.createStore([1.11, 2.22, 3.33, 4.44, 5.55]);
+    const dispatchers = L.action(store);
 
-    // TODO test inverse of each action type
+    const actions:any[] = [];
+    actions.push(dispatchers.remove(1, 2));
+    actions.push(dispatchers.shift());
+    actions.push(dispatchers.pop());
+    actions.push(dispatchers.unshift([1.11, 2.22]));
+    actions.push(dispatchers.push([5.55, 6.66]));
+    actions.push(dispatchers.insert(2, [3.33]));
+    actions.push(dispatchers.reset([11.1, 22.2, 33.3]));
+    actions.push(dispatchers.clear());
 
+    testInverse(t, store, L, actions[0], 'remove');
+    testInverse(t, store, L, actions[1], 'shift');
+    testInverse(t, store, L, actions[2], 'pop');
+    testInverse(t, store, L, actions[3], 'unshift');
+    testInverse(t, store, L, actions[4], 'push');
+    testInverse(t, store, L, actions[5], 'insert');
+    testInverse(t, store, L, actions[6], 'reset');
+    testInverse(t, store, L, actions[7], 'clear');
+
+    const inverses:any[] = [];
+    for (let i = 0; i < actions.length; ++i) {
+        inverses.push(store.inverse(L, actions[i]));
+    }
+
+    for (let i = 0; i < actions.length; ++i) {
+        store.apply(L, actions[i]);
+    }
+    for (let i = 0; i < inverses.length; ++i) {
+        store.apply(L, inverses[i]);
+    }
+    t.deepEqual(store.state(L, []), [1.11, 2.22, 3.33, 4.44, 5.55]);
     t.end();
 });
