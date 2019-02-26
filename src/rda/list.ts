@@ -395,7 +395,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
                 const entry = this.storeEntrySchema.alloc();
                 entry.id = ids[i];
                 const store = this.valueRDA.createStore(state[i]);
-                store.serialize(this.valueRDA, entry.store);
+                entry.store = store.serialize(this.valueRDA, entry.store);
                 store.free(this.valueRDA);
                 result.data.push(entry);
             }
