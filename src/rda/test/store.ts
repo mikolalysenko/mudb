@@ -1,203 +1,220 @@
-// test store construction
-// test state accessor
-
 import test = require('tape');
-import { MuInt32, MuStruct, MuUTF8, MuInt8, MuFloat64 } from '../../schema';
 
-import { MuRDAConstant } from '../constant';
-import { MuRDARegister } from '../register';
-import { MuRDAStruct } from '../struct';
-import { MuRDAMap } from '../map';
-import { MuRDAList } from '../list';
+import { MuInt32, MuStruct, MuFloat64, MuUTF8, MuUint8, MuInt8 } from '../../schema';
+import { MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
 
-test('constants', (t) => {
-    const X = new MuRDAConstant(new MuInt32());
-
-    const a = X.createStore(100);
-    t.equals(a.state(X, 0), 100, 'constant construct');
-
-    const as = a.serialize(X, X.storeSchema.alloc());
-    const ap = X.parse(as);
-    t.same(
-        ap.state(X, X.stateSchema.alloc()),
-        a.state(X, X.stateSchema.alloc()),
-        'serialize -> parse ok');
-
-    const b = X.createStore(-1);
-    t.equals(b.state(X, 0), -1, 'construct another constant');
-
-    a.free(X);
-    b.free(X);
-
-    t.end();
-});
-
-test('registers', (t) => {
-    const X = new MuRDARegister(new MuStruct({
-        a: new MuInt32(),
-        b: new MuFloat64(),
-        c: new MuUTF8(),
+test('constant store', (t) => {
+    const C = new MuRDAConstant(new MuStruct({
+        x: new MuInt32(),
+        y: new MuInt32(),
     }));
+    const o = {x: -123, y: 456};
+    const store = C.createStore(o);
+    t.deepEqual(store.state(C, C.stateSchema.alloc()), o, 'construct int32');
+    t.isNot(store.state(C, C.stateSchema.alloc()), o, 'should be a copy');
 
-    const a = X.createStore({
-        a: 1,
-        b: -1,
-        c: 'foo',
-    });
+    const serialized = store.serialize(C, C.storeSchema.alloc());
+    const storeReplica = C.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(C, C.stateSchema.alloc()),
+        store.state(C, C.stateSchema.alloc()),
+        'serialize -> parse',
+    );
 
-    t.same(a.state(X, X.stateSchema.alloc()), {
-        a: 1,
-        b: -1,
-        c: 'foo',
-    }, 'register ok');
-
-    const ap = a.serialize(X, X.storeSchema.alloc());
-    const as = X.parse(ap);
-    t.same(
-        as.state(X, X.stateSchema.alloc()),
-        a.state(X, X.stateSchema.alloc()),
-        'register serialize -> parse ok');
-    t.notEqual(as.value, a.value, 'deserialized stores reference distinct objects');
-
-    const b = X.createStore({
-        a: 1000,
-        b: 100000,
-        c: 'x',
-    });
-
-    t.same(b.state(X, X.stateSchema.alloc()), {
-        a: 1000,
-        b: 100000,
-        c: 'x',
-    }, 'register ok 2');
-
-    a.free(X);
-    b.free(X);
-    as.free(X);
-
+    const anotherStore = C.createStore(C.stateSchema.alloc());
+    store.free(C);
+    storeReplica.free(C);
+    anotherStore.free(C);
+    t.is(C.stateSchema.pool[0], store.value, 'free store');
+    t.is(C.stateSchema.pool[1], storeReplica.value, 'free store replica');
+    t.is(C.stateSchema.pool[2], anotherStore.value, 'free another store');
     t.end();
 });
 
-test('structs', (t) => {
-    const X = new MuRDAStruct({
-        a: new MuRDAConstant(new MuUTF8()),
-        b: new MuRDARegister(new MuUTF8()),
-    });
+test('register store', (t) => {
+    const R = new MuRDARegister(new MuStruct({
+        i: new MuInt32(),
+        f: new MuFloat64(),
+        u: new MuUTF8(),
+    }));
+    const s = {i: 1, f: -1.11, u: 'Iñtërnâtiônàlizætiøn☃💩'};
+    const store = R.createStore(s);
+    t.deepEqual(store.state(R, R.stateSchema.alloc()), s, 'construct struct');
+    t.isNot(store.state(R, R.stateSchema.alloc()), s, 'should be a copy');
 
-    const a = X.createStore({
-        a: 'foo',
-        b: 'bar',
-    });
+    const serialized = store.serialize(R, R.storeSchema.alloc());
+    const storeReplica = R.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(R, R.stateSchema.alloc()),
+        store.state(R, R.stateSchema.alloc()),
+        'serialize -> parse',
+    );
 
-    t.same(a.state(X, X.stateSchema.alloc()), {
-        a: 'foo',
-        b: 'bar',
-    }, 'state ok');
-
-    const as = a.serialize(X, X.stateSchema.alloc());
-    const ap = X.parse(as);
-    t.same(
-        ap.state(X, X.stateSchema.alloc()),
-        a.state(X, X.stateSchema.alloc()),
-        'serialize -> parse ok');
-
-    a.free(X);
-    ap.free(X);
-
+    const anotherStore = R.createStore(R.stateSchema.alloc());
+    store.free(R);
+    storeReplica.free(R);
+    anotherStore.free(R);
+    t.is(R.stateSchema.pool[0], store.value, 'free store');
+    t.is(R.stateSchema.pool[1], storeReplica.value, 'free store replica');
+    t.is(R.stateSchema.pool[2], anotherStore.value, 'free another store');
     t.end();
 });
 
-test('nested structs', (t) => {
-    const X = new MuRDAStruct({
-        a: new MuRDAConstant(new MuInt8()),
-
-        child: new MuRDAStruct({
-            grandchild: new MuRDAStruct({
-                data: new MuRDARegister(new MuUTF8()),
-            }),
+test('struct store', (t) => {
+    const Role = new MuRDAStruct({
+        id: new MuRDAConstant(new MuUTF8()),
+        hp: new MuRDARegister(new MuUint8(100)),
+        coord: new MuRDAStruct({
+            x: new MuRDARegister(new MuFloat64()),
+            y: new MuRDARegister(new MuFloat64()),
         }),
-
-        sibling: new MuRDAStruct({
-            blah: new MuRDARegister(new MuUTF8()),
+        ability: new MuRDAStruct({
+            id: new MuRDAConstant(new MuUint8()),
+            name: new MuRDAConstant(new MuUTF8()),
         }),
     });
-
-    const a = X.createStore({
-        a: 10,
-        child: {
-            grandchild: {
-                data: 'x',
-            },
-        },
-        sibling: {
-            blah: 'foo',
-        },
+    const store = Role.createStore({
+        id: 'invisible assassin',
+        hp: 1,
+        coord: {x: 1.111, y: -2.222},
+        ability: {id: 123, name: 'stealth'},
+    });
+    t.deepEqual(store.state(Role, Role.stateSchema.alloc()), {
+        id: 'invisible assassin',
+        hp: 1,
+        coord: {x: 1.111, y: -2.222},
+        ability: {id: 123, name: 'stealth'},
     });
 
-    t.same(a.state(X, X.stateSchema.alloc()), {
-        a: 10,
-        child: {
-            grandchild: {
-                data: 'x',
-            },
-        },
-        sibling: {
-            blah: 'foo',
-        },
-    }, 'nested struct create');
+    const serialized = store.serialize(Role, Role.storeSchema.alloc());
+    const storeReplica = Role.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(Role, Role.stateSchema.alloc()),
+        store.state(Role, Role.stateSchema.alloc()),
+        'serialize -> parse',
+    );
 
+    store.free(Role);
+    storeReplica.free(Role);
     t.end();
 });
 
-test('maps', (t) => {
-    const X = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-        x: new MuRDARegister(new MuUTF8()),
+test('map store', (t) => {
+    const M = new MuRDAMap(new MuUTF8(), new MuRDARegister(new MuUTF8()));
+    const store = M.createStore({x: 'x', 123: '123', 'Iñtërnâtiônàlizætiøn☃💩': 'Iñtërnâtiônàlizætiøn☃💩'});
+    t.deepEqual(
+        store.state(M, M.stateSchema.alloc()),
+        {x: 'x', 123: '123', 'Iñtërnâtiônàlizætiøn☃💩': 'Iñtërnâtiônàlizætiøn☃💩'},
+        'construct map',
+    );
+
+    const serialized = store.serialize(M, M.storeSchema.alloc());
+    const storeReplica = M.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(M, M.stateSchema.alloc()),
+        store.state(M, M.stateSchema.alloc()),
+        'serialize -> parse',
+    );
+
+    store.free(M);
+    storeReplica.free(M);
+    t.end();
+});
+
+test('map of structs store', (t) => {
+    const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+        i: new MuRDARegister(new MuInt32()),
+        f: new MuRDARegister(new MuFloat64()),
+        u: new MuRDARegister(new MuUTF8()),
     }));
-
-    const a = X.createStore({
-        'foo': {
-            x: 'bar',
-        },
-        'y': {
-            x: 'z',
-        },
+    const store = M.createStore({
+        x: {i: -1, f: 1.11, u: 'x'},
+        123: {i: -2, f: 2.22, u: '123'},
+        'Iñtërnâtiônàlizætiøn☃💩': {i: -3, f: 3.33, u: 'Iñtërnâtiônàlizætiøn☃💩'},
     });
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
+        x: {i: -1, f: 1.11, u: 'x'},
+        123: {i: -2, f: 2.22, u: '123'},
+        'Iñtërnâtiônàlizætiøn☃💩': {i: -3, f: 3.33, u: 'Iñtërnâtiônàlizætiøn☃💩'},
+    }, 'construct map');
 
-    t.same(a.state(X, X.stateSchema.alloc()), {
-        'foo': {
-            x: 'bar',
-        },
-        'y': {
-            x: 'z',
-        },
+    const serialized = store.serialize(M, M.storeSchema.alloc());
+    const storeReplica = M.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(M, M.stateSchema.alloc()),
+        store.state(M, M.stateSchema.alloc()),
+        'serialize -> parse',
+    );
+
+    store.free(M);
+    storeReplica.free(M);
+    t.end();
+});
+
+test('map of maps store', (t) => {
+    const M = new MuRDAMap(
+        new MuUTF8(),
+        new MuRDAMap(new MuUTF8(), new MuRDARegister(new MuUTF8())),
+    );
+    const store = M.createStore({
+        x: {x: 'Iñtërnâtiônàlizætiøn☃💩', 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩'},
+        123: {123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩'},
+        'Iñtërnâtiônàlizætiøn☃💩': {123: 'Iñtërnâtiônàlizætiøn☃💩'},
+        '': {},
     });
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
+        x: {x: 'Iñtërnâtiônàlizætiøn☃💩', 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩'},
+        123: {123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩'},
+        'Iñtërnâtiônàlizætiøn☃💩': {123: 'Iñtërnâtiônàlizætiøn☃💩'},
+        '': {},
+    }, 'construct map');
 
-    const ap = a.serialize(X, X.storeSchema.alloc());
-    const as = X.parse(ap);
+    const serialized = store.serialize(M, M.storeSchema.alloc());
+    const storeReplica = M.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(M, M.stateSchema.alloc()),
+        store.state(M, M.stateSchema.alloc()),
+        'serialize -> parse',
+    );
 
-    t.same(
-        as.state(X, X.stateSchema.alloc()),
-        a.state(X, X.stateSchema.alloc()));
-
+    store.free(M);
+    storeReplica.free(M);
     t.end();
 });
 
-test('map of maps', (t) => {
-    // TODO
+test('map of structs of maps of structs store', (t) => {
+    const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+        m: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+            i: new MuRDARegister(new MuInt32()),
+            f: new MuRDARegister(new MuFloat64()),
+            u: new MuRDARegister(new MuUTF8()),
+        })),
+    }));
+    const store = M.createStore({
+        '': {m: {}},
+        x: {m: {x: {i: -1, f: 1.11, u: 'x'}}},
+        123: {m: {x: {i: -1, f: 1.11, u: 'x'}, 123: {i: -2, f: 2.22, u: '123'}}},
+    });
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
+        '': {m: {}},
+        x: {m: {x: {i: -1, f: 1.11, u: 'x'}}},
+        123: {m: {x: {i: -1, f: 1.11, u: 'x'}, 123: {i: -2, f: 2.22, u: '123'}}},
+    }, 'construct map');
+
+    const serialized = store.serialize(M, M.storeSchema.alloc());
+    const storeReplica = M.parse(serialized);
+    t.deepEqual(
+        storeReplica.state(M, M.stateSchema.alloc()),
+        store.state(M, M.stateSchema.alloc()),
+        'serialize -> parse',
+    );
+
+    store.free(M);
+    storeReplica.free(M);
     t.end();
 });
 
-test('map of structs', (t) => {
-    // TODO
-    t.end();
-});
-
-test('map of structs of maps of structs', (t) => {
-    // TODO
-    t.end();
-});
-
-test('lists', (t) => {
+test('list store', (t) => {
     const X = new MuRDAList(new MuRDAStruct({
         a: new MuRDARegister(new MuUTF8()),
         b: new MuRDARegister(new MuFloat64()),
@@ -289,7 +306,7 @@ test('puzzle thing', (t) => {
     t.end();
 });
 
-test('list of structs', (t) => {
+test('lis of structs store', (t) => {
     const PuzzlePiece = new MuRDAStruct({
         color: new MuRDARegister(new MuUTF8()),
         position: new MuRDAStruct({
