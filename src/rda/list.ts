@@ -565,7 +565,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         }
 
         if (valueRDA.actionMeta.type === 'store') {
-            this._updateAction = wrapStore(valueRDA.actionMeta, valueRDA.action, '');
+            this._updateAction = wrapStore(valueRDA.actionMeta.action, valueRDA.action, '');
             this.actionMeta = {
                 type: 'store',
                 action: valueRDA.actionMeta.action,
