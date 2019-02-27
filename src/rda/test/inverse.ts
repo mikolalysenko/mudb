@@ -280,6 +280,14 @@ test('list inverse', (t) => {
     for (let i = 0; i < actions.length; ++i) {
         inverses.push(store.inverse(L, actions[i]));
     }
+    testInverse(t, store, L, inverses[0], 'remove inverse');
+    testInverse(t, store, L, inverses[1], 'shift inverse');
+    testInverse(t, store, L, inverses[2], 'pop inverse');
+    testInverse(t, store, L, inverses[3], 'unshift inverse');
+    testInverse(t, store, L, inverses[4], 'push inverse');
+    testInverse(t, store, L, inverses[5], 'insert inverse');
+    testInverse(t, store, L, inverses[6], 'reset inverse');
+    testInverse(t, store, L, inverses[7], 'clear inverse');
 
     for (let i = 0; i < actions.length; ++i) {
         store.apply(L, actions[i]);

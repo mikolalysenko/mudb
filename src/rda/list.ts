@@ -230,6 +230,7 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             const input = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>action;
             const result = <MuRDAListTypes<RDA['valueRDA']>['restoreAction']>rda.actionSchema.alloc();
             result.type = 'restore';
+            result.data = rda.actionSchema.muData[result.type].alloc();
             for (let i = 0; i < input.data.add.length; ++i) {
                 this._insertInverse(rda, input.data.add[i].id, result);
             }
