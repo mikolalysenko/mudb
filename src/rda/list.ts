@@ -565,18 +565,34 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             return {};
         }
 
+        this.actionMeta = {
+            type: 'store',
+            action: {
+                type: 'table',
+                table: {
+                    insert:{ type:'unit' },
+                    remove:{ type:'unit' },
+                    push:{ type:'unit' },
+                    pop:{ type:'unit' },
+                    shift:{ type:'unit' },
+                    unshift:{ type:'unit' },
+                    clear:{ type:'unit' },
+                    reset:{ type:'unit' },
+                    update:{
+                        type:'partial',
+                        action:
+                            valueRDA.actionMeta.type === 'store'
+                                ? valueRDA.actionMeta.action
+                                : valueRDA.actionMeta,
+                    },
+                },
+            },
+        };
+
         if (valueRDA.actionMeta.type === 'store') {
             this._updateAction = wrapStore(valueRDA.actionMeta.action, valueRDA.action, '');
-            this.actionMeta = {
-                type: 'store',
-                action: valueRDA.actionMeta.action,
-            };
         } else {
             this._updateAction = wrapAction(valueRDA.actionMeta, valueRDA.action);
-            this.actionMeta = {
-                type: 'store',
-                action: valueRDA.actionMeta,
-            };
         }
     }
 
