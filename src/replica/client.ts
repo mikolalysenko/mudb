@@ -118,6 +118,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
             const undo = this._undoRedoSchema.alloc();
             undo.undo = this.rda.actionSchema.assign(undo.undo, inverse);
             undo.redo = this.rda.actionSchema.assign(undo.redo, action);
+            this._undoActions.push(undo);
             this.rda.actionSchema.free(inverse);
         }
         if (this.store.apply(this.rda, action)) {
@@ -131,7 +132,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         if (action) {
             this._redoActions.push(this.rda.actionSchema.clone(action.redo));
             if (this.store.apply(this.rda, action.undo)) {
-                this.protocol.server.message.apply(action);
+                this.protocol.server.message.apply(action.undo);
             }
             this.rda.actionSchema.free(action);
             this._notifyChange();
