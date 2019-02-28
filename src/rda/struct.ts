@@ -114,7 +114,7 @@ export class MuRDAStructStore<
         return this.stores[action.type].apply(rda.rdas[action.type], action.data);
     }
 
-    public inverse(rda:RDA, action:MuRDATypes<RDA>['action']) {
+    public inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'] {
         const result = rda.actionSchema.alloc();
         result.type = action.type;
         const x = result.data = this.stores[action.type].inverse(rda.rdas[action.type], action.data);

@@ -5,6 +5,10 @@
     "launch": "bin/launch.js"
   },
   "dependencies": {
-    "mudb": "0.13.0"
+    "@types/react": "^16.8.4",
+    "@types/react-dom": "^16.8.2",
+    "mudb": "0.13.0",
+    "react": "^16.8.3",
+    "react-dom": "^16.8.3"
   }
 }
