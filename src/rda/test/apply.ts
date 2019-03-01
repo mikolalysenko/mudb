@@ -269,7 +269,7 @@ test('list apply', (t) => {
     t.end();
 });
 
-test.only('nested list', (t) => {
+test('nested list', (t) => {
     const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
     const store = L.createStore([]);
     const dispatchers = L.action(store);
