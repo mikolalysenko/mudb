@@ -363,9 +363,10 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
     }
 
     private _savedElement:MuRDATypes<RDA>['store'];
-    private _savedUpdateAction:MuRDAListTypes<RDA>['updateAction'];
-    private _updateAction;
-    private _noopAction;
+    private _savedAction:MuRDAListTypes<RDA>['updateAction'];
+    private _savedUpdate:MuRDAListTypes<RDA>['updateSchema']['identity'];
+    private _updateDispatcher;
+    private _noopDispatcher;
 
     private _dispatchers = {
         insert: this._insert,
@@ -408,13 +409,15 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
         update: (index:number) : StripBindAndWrap<RDA> => {
             if (index >= 0 && index < this._savedStore.list.length) {
                 this._savedElement = this._savedStore.list[index];
-                this._savedUpdateAction = <MuRDAListTypes<RDA>['updateAction']>this.actionSchema.alloc();
-                this._savedUpdateAction.type = 'update';
-                this._savedUpdateAction.data = this.updateSchema.alloc();
-                this._savedUpdateAction.data.id = this._savedStore.ids[index];
-                return this._updateAction;
+                this._savedAction = <MuRDAListTypes<RDA>['updateAction']>this.actionSchema.alloc();
+                this._savedAction.type = 'update';
+                this._savedAction.data = this._savedUpdate = this.updateSchema.alloc();
+                this._savedAction.data.id = this._savedStore.ids[index];
+
+                this.valueRDA.actionSchema.free(this._savedUpdate.action);
+                return this._updateDispatcher;
             }
-            return this._noopAction;
+            return this._noopDispatcher;
         },
     };
 
@@ -452,6 +455,30 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             reset: this.storeSchema,
         });
 
+        this.actionMeta = {
+            type: 'store',
+            action: {
+                type: 'table',
+                table: {
+                    insert:{ type:'unit' },
+                    remove:{ type:'unit' },
+                    push:{ type:'unit' },
+                    pop:{ type:'unit' },
+                    shift:{ type:'unit' },
+                    unshift:{ type:'unit' },
+                    clear:{ type:'unit' },
+                    reset:{ type:'unit' },
+                    update:{
+                        type:'partial',
+                        action:
+                            valueRDA.actionMeta.type === 'store'
+                                ? valueRDA.actionMeta.action
+                                : valueRDA.actionMeta,
+                    },
+                },
+            },
+        };
+
         function generateNoop (meta:MuRDAActionMeta) {
             if (meta.type === 'unit') {
                 return () => {
@@ -472,7 +499,7 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             }
             return {};
         }
-        this._noopAction = generateNoop(valueRDA.action.type === 'store' ? valueRDA.action.action : valueRDA.action);
+        this._noopDispatcher = generateNoop(valueRDA.action.type === 'store' ? valueRDA.action.action : valueRDA.action);
 
         const self = this;
 
@@ -515,9 +542,9 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             if (meta.type === 'unit') {
                 return function (...args) {
                     const tmp = dispatcher.apply(null, args);
-                    self._savedUpdateAction.data.action = self.valueRDA.actionSchema.assign(self._savedUpdateAction.data.action, tmp);
+                    self._savedUpdate.action = self.valueRDA.actionSchema.assign(self._savedUpdate.action, tmp);
                     self.valueRDA.actionSchema.free(tmp);
-                    return self._savedUpdateAction;
+                    return self._savedAction;
                 };
             } else if (meta.type === 'table') {
                 const result:any = {};
@@ -540,8 +567,8 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
                     'dispatch',
                     `return function () {
                         var tmp = dispatch(rda._savedElement)${index}.apply(null, arguments);
-                        rda._savedUpdate.data.action = rda.actionSchema.assign(rda._savedUpdate.data.action, tmp);
-                        rda.actionSchema.free(tmp);
+                        rda._savedUpdate.action = rda.valueRDA.actionSchema.assign(rda._savedUpdate.action, tmp);
+                        rda.valueRDA.actionSchema.free(tmp);
                         return rda._savedAction;
                     }`,
                 ))(self, dispatcher);
@@ -565,38 +592,14 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
             return {};
         }
 
-        this.actionMeta = {
-            type: 'store',
-            action: {
-                type: 'table',
-                table: {
-                    insert:{ type:'unit' },
-                    remove:{ type:'unit' },
-                    push:{ type:'unit' },
-                    pop:{ type:'unit' },
-                    shift:{ type:'unit' },
-                    unshift:{ type:'unit' },
-                    clear:{ type:'unit' },
-                    reset:{ type:'unit' },
-                    update:{
-                        type:'partial',
-                        action:
-                            valueRDA.actionMeta.type === 'store'
-                                ? valueRDA.actionMeta.action
-                                : valueRDA.actionMeta,
-                    },
-                },
-            },
-        };
-
         if (valueRDA.actionMeta.type === 'store') {
-            this._updateAction = wrapStore(valueRDA.actionMeta.action, valueRDA.action, '');
+            this._updateDispatcher = wrapStore(valueRDA.actionMeta.action, valueRDA.action, '');
         } else {
-            this._updateAction = wrapAction(valueRDA.actionMeta, valueRDA.action);
+            this._updateDispatcher = wrapAction(valueRDA.actionMeta, valueRDA.action);
         }
     }
 
-    public action(store:MuRDAListStore<this>) {
+    public readonly action = (store:MuRDAListStore<this>) => {
         this._savedStore = store;
         return this._dispatchers;
     }

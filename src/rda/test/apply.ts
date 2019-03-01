@@ -237,7 +237,6 @@ test('map of structs of maps of structs apply', (t) => {
 
 test('list apply', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
-
     const store = L.createStore([]);
 
     function checkState (expected:number[], msg:string) {
@@ -270,11 +269,54 @@ test('list apply', (t) => {
     t.end();
 });
 
-test('nested list', (t) => {
+test.only('nested list', (t) => {
     const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
-
     const store = L.createStore([]);
+    const dispatchers = L.action(store);
+    let action;
 
+    function checkState (expected) {
+        t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
+    }
+
+    t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
+    checkState([]);
+    t.true(store.apply(L, action = dispatchers.push([[0], [], [1, 2], [3, 4, 5]])), 'outer push');
+    checkState([[0], [], [1, 2], [3, 4, 5]]);
+    t.true(store.apply(L, action = dispatchers.pop(2)), 'outer pop');
+    checkState([[0], []]);
+    t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop when empty');
+    checkState([[0], []]);
+    t.true(store.apply(L, action = dispatchers.update(1).shift(2)), 'shift when empty');
+    checkState([[0], []]);
+    t.true(store.apply(L, action = dispatchers.update(1).push([0, 1, 2, 3, 4, 5, 6])), 'push when empty');
+    checkState([[0], [0, 1, 2, 3, 4, 5, 6]]);
+    t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop');
+    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    t.true(store.apply(L, action = dispatchers.update(1).pop(2)), 'pop 2');
+    checkState([[0], [0, 1, 2, 3]]);
+    t.true(store.apply(L, action = dispatchers.update(1).shift()), 'shift');
+    checkState([[0], [1, 2, 3]]);
+    t.true(store.apply(L, action = dispatchers.update(1).shift(3)), 'shift 3');
+    checkState([[0], []]);
+    t.true(store.apply(L, action = dispatchers.update(1).unshift([0, 1, 2])), 'unshift when empty');
+    checkState([[0], [0, 1, 2]]);
+    t.true(store.apply(L, action = dispatchers.update(1).insert(1, [1, 2])), 'insert');
+    checkState([[0], [0, 1, 2, 1, 2]]);
+    t.true(store.apply(L, action = dispatchers.update(1).insert(3, [1, 2])), 'insert');
+    checkState([[0], [0, 1, 2, 1, 2, 1, 2]]);
+    t.true(store.apply(L, action = dispatchers.update(1).remove(2, 4)), 'remove');
+    checkState([[0], [0, 1, 2]]);
+    t.true(store.apply(L, action = dispatchers.update(1).push([3, 4, 5])), 'push');
+    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    t.true(store.apply(L, action = dispatchers.update(1).unshift([3, 4, 5])), 'unshift');
+    checkState([[0], [3, 4, 5, 0, 1, 2, 3, 4, 5]]);
+    t.true(store.apply(L, action = dispatchers.update(1).clear()), 'clear');
+    checkState([[0], []]);
+    t.true(store.apply(L, action = dispatchers.update(1).reset([0, 1, 2, 6, 4, 5])), 'reset');
+    checkState([[0], [0, 1, 2, 6, 4, 5]]);
+    t.true(store.apply(L, action = dispatchers.update(1).update(3)(3)), 'update');
+    checkState([[0], [0, 1, 2, 3, 4, 5]]);
     t.end();
 });
 
