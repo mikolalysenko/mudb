@@ -1,15 +1,15 @@
 import test = require('tape');
 
-import { MuFloat64, MuUint8, MuStruct, MuUint32, MuUTF8, MuASCII, MuInt8 } from '../../schema';
+import { MuFloat64, MuStruct, MuUint32, MuUTF8, MuInt8 } from '../../schema';
 import { MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
 
-test('constant apply', (t) => {
+test('apply - constant', (t) => {
     const store = new MuRDAConstant(new MuFloat64()).createStore(0);
     t.false(store.apply(), 'always false');
     t.end();
 });
 
-test('register apply', (t) => {
+test('apply - register', (t) => {
     const Durability = new MuRDARegister(new MuFloat64());
     const durabilityStore = Durability.createStore(100);
     t.true(durabilityStore.apply(Durability, 99.97), 'decrease durability');
@@ -27,7 +27,7 @@ test('register apply', (t) => {
     t.end();
 });
 
-test('struct apply', (t) => {
+test('apply - struct', (t) => {
     const S = new MuRDAStruct({
         c: new MuRDAConstant(new MuInt8()),
         rf: new MuRDARegister(new MuFloat64()),
@@ -83,7 +83,7 @@ test('struct apply', (t) => {
     t.end();
 });
 
-test('map apply', (t) => {
+test('apply - map', (t) => {
     const M = new MuRDAMap(new MuUTF8(), new MuRDAConstant(new MuFloat64()));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
@@ -123,7 +123,7 @@ test('map apply', (t) => {
     t.end();
 });
 
-test('map of structs apply', (t) => {
+test('apply - map of structs', (t) => {
     const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
         r: new MuRDARegister(new MuFloat64()),
         s: new MuRDAStruct({
@@ -164,7 +164,7 @@ test('map of structs apply', (t) => {
     t.end();
 });
 
-test('map of maps apply', (t) => {
+test('apply - map of maps', (t) => {
     const M = new MuRDAMap(
         new MuUTF8(),
         new MuRDAMap(new MuUTF8(), new MuRDARegister(new MuFloat64())),
@@ -205,7 +205,7 @@ test('map of maps apply', (t) => {
     t.end();
 });
 
-test('map of structs of maps of structs apply', (t) => {
+test('apply - map of structs of map of structs', (t) => {
     const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
         m: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
             rf: new MuRDARegister(new MuFloat64()),
@@ -235,7 +235,7 @@ test('map of structs of maps of structs apply', (t) => {
     t.end();
 });
 
-test('list apply', (t) => {
+test('apply - list', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
     const store = L.createStore([]);
 
@@ -269,7 +269,7 @@ test('list apply', (t) => {
     t.end();
 });
 
-test('nested list', (t) => {
+test('apply - list of lists', (t) => {
     const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
     const store = L.createStore([]);
     const dispatchers = L.action(store);
@@ -320,18 +320,64 @@ test('nested list', (t) => {
     t.end();
 });
 
-test('list of nested structs', (t) => {
+test('apply - list of structs of list of structs', (t) => {
     const L = new MuRDAList(new MuRDAStruct({
-        child: new MuRDAStruct({
-            a: new MuRDARegister(new MuFloat64()),
+        s: new MuRDAStruct({
+            f: new MuRDARegister(new MuFloat64()),
         }),
-        others: new MuRDAList(
+        l: new MuRDAList(
             new MuRDAStruct({
-                f: new MuRDAConstant(new MuUTF8()),
-            })),
+                u: new MuRDARegister(new MuUTF8()),
+            }),
+        ),
     }));
+    const store = L.createStore([]);
+    const dispatchers = L.action(store);
+    let action;
 
-    // some crazy mess data structure
+    function checkState (expected) {
+        t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
+    }
 
+    t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
+    checkState([]);
+    t.true(store.apply(L, action = dispatchers.pop()), 'outer pop when empty');
+    checkState([]);
+    t.true(store.apply(L, action = dispatchers.shift()), 'outer shift when empty');
+    checkState([]);
+    t.true(store.apply(L, action = dispatchers.push([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}])), 'outer push');
+    checkState([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).s.f(11.22)), 'update [0].s.f');
+    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(1).s.f(22.22)), 'update [1].s.f');
+    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.11'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(1).l.update(0).u('22.22')), 'update [1].l[0].u');
+    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.pop()), 'outer pop');
+    checkState([{s: {f: 11.22}, l: []}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop when empty');
+    checkState([{s: {f: 11.22}, l: []}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift when empty');
+    checkState([{s: {f: 11.22}, l: []}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.push([{u: '11.11'}, {u: '11.22'}, {u: '11.33'}])), 'push');
+    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}, {u: '11.33'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop');
+    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift');
+    checkState([{s: {f: 11.22}, l: [{u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.unshift([{u: '11.00'}, {u: '11.11'}])), 'unshift');
+    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.insert(1, [{u: '11.33'}])), 'insert');
+    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.insert(1, [{u: '11.11'}, {u: '11.22'}])), 'insert 2');
+    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.remove(1)), 'remove');
+    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.remove(1, 2)), 'remove 2');
+    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.clear()), 'clear');
+    checkState([{s: {f: 11.22}, l: []}]);
+    t.true(store.apply(L, action = dispatchers.update(0).l.reset([{u: '11.33'}, {u: '11.44'}, {u: '11.55'}])), 'reset');
+    checkState([{s: {f: 11.22}, l: [{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]}]);
     t.end();
 });

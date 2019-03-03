@@ -1,6 +1,6 @@
 import test = require('tape');
 
-import { MuInt32, MuStruct, MuFloat64, MuUTF8, MuUint8, MuInt8 } from '../../schema';
+import { MuInt32, MuStruct, MuFloat64, MuUTF8, MuUint8 } from '../../schema';
 import { MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
 
 test('constant store', (t) => {
@@ -182,7 +182,7 @@ test('map of maps store', (t) => {
     t.end();
 });
 
-test('map of structs of maps of structs store', (t) => {
+test('map of structs of map of structs store', (t) => {
     const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
         m: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
             i: new MuRDARegister(new MuInt32()),

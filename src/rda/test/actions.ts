@@ -1,19 +1,15 @@
 import test = require('tape');
-import { MuInt32, MuStruct, MuUTF8, MuInt8, MuFloat64, MuSchema } from '../../schema';
 
-import { MuRDAConstant } from '../constant';
-import { MuRDARegister } from '../register';
-import { MuRDAStruct } from '../struct';
-import { MuRDAMap } from '../map';
-import { MuRDAList } from '..';
+import { MuInt32, MuStruct, MuUTF8, MuInt8, MuFloat64 } from '../../schema';
+import { MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
 
-test('constants', (t) => {
+test('action - constant', (t) => {
     const C = new MuRDAConstant(new MuInt32(1));
     t.equals(Object.keys(C.action).length, 0, 'constants have no actions');
     t.end();
 });
 
-test('registers', (t) => {
+test('action - register', (t) => {
     const X = new MuRDARegister(new MuInt32(1));
 
     t.equals(X.action(1), 1, 'set register ok');
@@ -35,7 +31,7 @@ test('registers', (t) => {
     t.end();
 });
 
-test('structs', (t) => {
+test('action - struct', (t) => {
     const X = new MuRDAStruct({
         a: new MuRDAConstant(new MuInt32(1)),
         b: new MuRDARegister(new MuInt32(2)),
@@ -52,7 +48,7 @@ test('structs', (t) => {
     t.end();
 });
 
-test('nested structs', (t) => {
+test('action - nested struct', (t) => {
     const Y = new MuRDAStruct({
         q: new MuRDARegister(new MuUTF8()),
         child: new MuRDAStruct({
@@ -95,7 +91,7 @@ test('nested structs', (t) => {
     t.end();
 });
 
-test('maps', (t) => {
+test('action - map', (t) => {
     const X = new MuRDAMap(
         new MuUTF8(),
         new MuRDARegister(new MuFloat64(1)));
@@ -152,7 +148,7 @@ test('maps', (t) => {
     t.end();
 });
 
-test('map of maps', (t) => {
+test('action - map of maps', (t) => {
     const X = new MuRDAMap(
         new MuUTF8(),
         new MuRDAMap(
@@ -199,7 +195,7 @@ test('map of maps', (t) => {
     t.end();
 });
 
-test('map of structs', (t) => {
+test('action - map of structs', (t) => {
     const X = new MuRDAMap(
         new MuUTF8(),
         new MuRDAStruct({
@@ -237,7 +233,7 @@ test('map of structs', (t) => {
     t.end();
 });
 
-test('map of structs of maps of structs', (t) => {
+test('action - map of structs of map of structs', (t) => {
     const X = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
         props: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
             color: new MuRDARegister(new MuUTF8()),
@@ -320,16 +316,50 @@ test('map of structs of maps of structs', (t) => {
     t.end();
 });
 
-test('list', (t) => {
-    const X = new MuRDAList(new MuRDARegister(new MuFloat64()));
+test('action - list', (t) => {
+    const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
+    const store = L.createStore([]);
+    const dispatchers = L.action(store);
+    let action;
 
-    const a = X.createStore([]);
+    t.deepEqual(dispatchers.pop(), {type: 'remove', data: []}, 'pop when empty');
+    t.deepEqual(dispatchers.shift(), {type: 'remove', data: []}, 'shift when empty');
+    t.deepEqual(dispatchers.update(0), {}, 'update when empty');
 
-    const pushBlah = X.action(a).push([1, 2, 3]);
-    t.equals(pushBlah.type, 'insert');
+    action = dispatchers.push([0, 1, 2, 3]);
+    store.apply(L, action);
+    t.equal(action.type, 'insert', 'push type');
+    t.equal(action.data.length, 4, 'push 4 number');
+    t.deepEqual(action.data.map((a) => a.value).sort(), [0, 1, 2, 3], 'push content');
 
-    const popBlah = X.action(a).pop(10);
-    console.log(popBlah);
+    action = dispatchers.pop();
+    t.equal(action.type, 'remove', 'pop type');
+    t.equal(action.data.length, 1, 'pop 1 member');
 
+    action = dispatchers.shift(5);
+    t.equal(action.type, 'remove', 'shift type');
+    t.equal(action.data.length, 4, 'cannot shift more than number of members');
+
+    action = dispatchers.unshift([3, 2, 1]);
+    store.apply(L, action);
+    t.equal(action.type, 'insert', 'unshift type');
+    t.equal(action.data.length, 3, 'unshift 3 number');
+    t.deepEqual(action.data.map((a) => a.value).sort(), [1, 2, 3], 'unshift content');
+
+    action = dispatchers.pop(8);
+    t.equal(action.data.length, store.state(L, []).length, 'cannot pop more than number of members');
+
+    action = dispatchers.clear();
+    t.equal(action.type, 'reset', 'clear type');
+    t.deepEqual(action.data, [], 'clear data');
+
+    action = dispatchers.reset([1, 1, 2]);
+    store.apply(L, action);
+    t.equal(action.type, 'reset', 'reset type');
+    t.deepEqual(action.data.length, 3, 'reset data');
+
+    action = dispatchers.update(0)(0);
+    t.equal(action.type, 'update', 'update type');
+    t.equal(action.data.action, 0, 'update content')
     t.end();
 });

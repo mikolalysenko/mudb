@@ -13,13 +13,13 @@ function testInverse<
     t.deepEqual(store.state(rda, rda.stateSchema.alloc()), origin, msg);
 }
 
-test('constant inverse', (t) => {
+test('inverse - constant', (t) => {
     const store = new MuRDAConstant(new MuInt8()).createStore(0);
     t.equal(store.inverse.toString(), 'function () { }', 'should be noop');
     t.end();
 });
 
-test('register inverse', (t) => {
+test('inverse - register', (t) => {
     const Uint32Reg = new MuRDARegister(new MuUint32());
     const Uint32RegStore = Uint32Reg.createStore(-54321);
     testInverse(t, Uint32RegStore, Uint32Reg, Uint32Reg.action(54321), 'set to 54321');
@@ -33,7 +33,7 @@ test('register inverse', (t) => {
     t.end();
 });
 
-test('struct inverse', (t) => {
+test('inverse - struct', (t) => {
     const S = new MuRDAStruct({
         r: new MuRDARegister(new MuStruct({
             a: new MuASCII(),
@@ -79,7 +79,7 @@ test('struct inverse', (t) => {
     t.end();
 });
 
-test('map inverse', (t) => {
+test('inverse - map', (t) => {
     const M = new MuRDAMap(
         new MuASCII(),
         new MuRDAConstant(new MuFloat64()),
@@ -121,7 +121,7 @@ test('map inverse', (t) => {
     t.end();
 });
 
-test('map of structs inverse', (t) => {
+test('inverse - map of structs', (t) => {
     const M = new MuRDAMap(new MuASCII(), new MuRDAStruct({
         r: new MuRDARegister(new MuFloat64()),
         s: new MuRDAStruct({
@@ -158,7 +158,7 @@ test('map of structs inverse', (t) => {
     t.end();
 });
 
-test('map of maps inverse', (t) => {
+test('inverse - map of maps', (t) => {
     const M = new MuRDAMap(new MuASCII(), new MuRDAMap(
         new MuASCII(),
         new MuRDAConstant(new MuFloat64()),
@@ -198,7 +198,7 @@ test('map of maps inverse', (t) => {
     t.end();
 });
 
-test('map of structs of maps of structs', (t) => {
+test('inverse - map of structs of map of structs', (t) => {
     const M = new MuRDAMap(new MuASCII(), new MuRDAStruct({
         constants: new MuRDAMap(new MuASCII(), new MuRDAStruct({
             name: new MuRDARegister(new MuASCII()),
@@ -252,7 +252,7 @@ test('map of structs of maps of structs', (t) => {
     t.end();
 });
 
-test('list inverse', (t) => {
+test('inverse - list', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
     const store = L.createStore([1.11, 2.22, 3.33, 4.44, 5.55]);
     const dispatchers = L.action(store);
