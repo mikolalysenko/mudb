@@ -1,11 +1,14 @@
 {
   "private": true,
   "author": "Mikola Lysenko",
-  "devDependencies": {
-    "muclock": "^0.1.8",
-    "mudb": "^0.2.7",
-    "murpc": "^0.1.6",
-    "muschema": "^0.2.2",
-    "mustate": "^0.2.5"
+  "scripts": {
+    "launch": "bin/launch.js"
+  },
+  "dependencies": {
+    "@types/react": "^16.8.4",
+    "@types/react-dom": "^16.8.2",
+    "mudb": "0.13.0",
+    "react": "^16.8.3",
+    "react-dom": "^16.8.3"
   }
 }

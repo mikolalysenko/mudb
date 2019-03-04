@@ -1,6 +1,6 @@
 import { MuClient } from 'mudb/client';
-import { MuClientState } from 'mustate/client';
-import { MuRPCClient } from 'murpc/client';
+import { MuClientState } from 'mudb/state/client';
+import { MuRPCClient } from 'mudb/rpc/client';
 
 import { StateSchema, MsgSchema, RpcSchema } from './schema';
 import { Map, Player, Flag, Team, Direction, Config } from './game';
@@ -77,8 +77,6 @@ export = function(client:MuClient) {
   });
 
   client.start();
-
-  /* ---------- running methods ---------- */
 
   function runGame() {
     map.draw(ctx);
