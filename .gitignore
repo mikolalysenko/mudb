@@ -17,6 +17,7 @@ Desktop.ini
 .jsbeautifyrc
 .vscode
 coverage
+package-lock.json
 yarn.lock
 
 # build
