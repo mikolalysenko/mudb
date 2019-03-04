@@ -59,18 +59,11 @@ muClient.start()
 
 # table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 class: MuNetSocketServer](#section_2.1)
          * [2.1.1 new MuNetSocketServer(spec)](#section_2.1.1)
       * [2.2 class: MuNetSocket](#section_2.2)
          * [2.2.1 new MuNetSocket(spec)](#section_2.2.1)
-
-# <a name="section_1"></a> 1 install
-
-```
-npm i munet-socket
-```
 
 # <a name="section_2"></a> 2 api
 

@@ -6,7 +6,7 @@ export class MuUTF8 extends MuString<'utf8'> {
         super(identity || '', 'utf8');
     }
 
-    public diff (base:string, target:string, stream:MuWriteStream) {
+    public diff (base:string, target:string, stream:MuWriteStream) : boolean {
         if (base !== target) {
             stream.grow(4 + 4 * target.length);
             stream.writeString(target);
@@ -15,7 +15,7 @@ export class MuUTF8 extends MuString<'utf8'> {
         return false;
     }
 
-    public patch (base:string, stream:MuReadStream) {
+    public patch (base:string, stream:MuReadStream) : string {
         return stream.readString();
     }
 }

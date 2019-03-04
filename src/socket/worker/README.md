@@ -38,7 +38,6 @@ muClient.start(/* listeners */)
 
 # table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 interfaces](#section_2.1)
       * [2.2 `createWorkerSocketServer()`](#section_2.2)
@@ -46,12 +45,6 @@ muClient.start(/* listeners */)
       * [2.4 `MuWorkerSocketServer`](#section_2.4)
          * [2.4.1 `listen()`](#section_2.4.1)
       * [2.5 `MuWorkerSocket`](#section_2.5)
-
-# <a name="section_1"></a> 1 install
-
-```
-npm i muworker-socket
-```
 
 # <a name="section_2"></a> 2 api
 

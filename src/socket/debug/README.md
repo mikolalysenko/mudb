@@ -49,19 +49,12 @@ Unlike in other `mudb` socket modules, `MuDebugSocket` and `MuDebugServer` are d
 
 ## table of contents
 
-   * [1 install](#section_1)
    * [2 api](#section_2)
       * [2.1 class: MuDebugServer](#section_2.1)
          * [2.1.1 new MuDebugServer(spec)](#section_2.1.1)
       * [2.2 class: MuDebugSocket](#section_2.2)
          * [2.2.1 new MuDebugSocket(spec)](#section_2.2.1)
    * [3 TODO](#section_3)
-
-## <a name="section_1"></a> 1 install
-
-```
-npm i mudebug-socket
-```
 
 ## <a name="section_2"></a> 2 api
 

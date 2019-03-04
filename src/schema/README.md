@@ -74,38 +74,27 @@ if (hasPatch) {
 EntitySetSchema.free(otherEntities)
 ```
 
-# table of contents
+## table of contents
 
-   * [1 install](#section_1)
-   * [2 api](#section_2)
-      * [2.1 interface](#section_2.1)
-      * [2.2 primitives](#section_2.2)
-         * [2.2.1 void](#section_2.2.1)
-         * [2.2.2 boolean](#section_2.2.2)
-         * [2.2.3 number](#section_2.2.3)
-         * [2.2.4 string](#section_2.2.4)
-      * [2.3 functors](#section_2.3)
-         * [2.3.1 struct](#section_2.3.1)
-         * [2.3.2 array](#section_2.3.2)
-         * [2.3.3 sorted array](#section_2.3.3)
-         * [2.3.4 union](#section_2.3.4)
-      * [2.4 data structures](#section_2.4)
-         * [2.4.1 dictionary](#section_2.4.1)
-         * [2.4.2 vector](#section_2.4.2)
-   * [3 more examples](#section_3)
-      * [3.1 features](#section_3.1)
-      * [3.2 schema types](#section_3.2)
-      * [3.3 TBD](#section_3.3)
+* [API](#api)
+    * [`MuSchema`](#muschema)
+    * [primitive](#primitive)
+        * [void](#void)
+        * [boolean](#boolean)
+        * [number](#number)
+        * [string](#string)
+    * [functor](#functor)
+        * [struct](#struct)
+        * [array](#array)
+        * [sorted-array](#sorted-array)
+        * [union](#union)
+    * [data structure](#data-structure)
+        * [dictionary](#dictionary)
+        * [vector](#vector)
 
-# <a name="section_1"></a> 1 install
+## API
 
-```
-npm i muschema
-```
-
-# <a name="section_2"></a> 2 api
-
-## <a name="section_2.1"></a> 2.1 interface
+### `MuSchema`
 Each schema should implement the `MuSchema` interface:
 * `identity` the default value of the schema
 * `muType` a string of type name for run-time reflection
@@ -139,13 +128,10 @@ schema.patch(schema.identity, inp)
 
 Schemas can be composed recursively by calling submethods.  `muschema` provides several common schemas for primitive types and some functions for combining them together into structs, tuples and other common data structures.  If necessary user-defined applications can specify custom serialization and diff/patch methods for various common types.
 
-### for TypeScript ##
-For TypeScript, the generic interface described above can be found in `muschema/schema`.  The module exports the interface as `MuSchema<ValueType>`, which any schema types should implement.
-
-## <a name="section_2.2"></a> 2.2 primitives
+### primitive
 `muschema` comes with schema types for all primitive types in JavaScript out of the box.
 
-### <a name="section_2.2.1"></a> 2.2.1 void
+#### void
 An empty value type.  Useful for specifying arguments to messages which do not need to be serialized.
 
 ```javascript
@@ -161,7 +147,7 @@ EmptySchema.free(nothingness)           // noop
 EmptySchema.clone(nothingness)          // always returns undefined
 ```
 
-### <a name="section_2.2.2"></a> 2.2.2 boolean
+#### boolean
 `true` or `false`
 
 ```javascript
@@ -177,8 +163,7 @@ SwitchSchema.free(switch)           // noop
 SwitchSchema.clone(switch)          // returns the value of `switch`
 ```
 
-### <a name="section_2.2.3"></a> 2.2.3 number
-
+#### number
 ```javascript
 // for signed integers of 8/16/32-bit
 const { MuInt8 } = require('muschema/int8')
@@ -209,8 +194,7 @@ AnyNumberSchema.clone(num)          // returns the value of `num`
 * for numbers in general, use `MuFloat64`
 * but if you know the range of the numbers in advance, use a more specific data type instead
 
-### <a name="section_2.2.4"></a> 2.2.4 string
-
+#### string
 ```javascript
 const { MuString } = require('muschema/string')
 const { MuASCII } = require('muschema/ascii')
@@ -253,10 +237,10 @@ IDSchema.clone(id)          // returns the value of `id`
 * if the strings consist of only ASCII characters, use `MuASCII`
 * if the strings consist of only ASCII characters and are of the same length, use `MuFixedASCII` instead
 
-## <a name="section_2.3"></a> 2.3 functors
+### functor
 Primitive data types in `muschema` can be composed using functors.  These take in multiple sub-schemas and construct new schemas.
 
-### <a name="section_2.3.1"></a> 2.3.1 struct
+#### struct
 A struct is a collection of subtypes.  Structs are constructed by passing in a dictionary of schemas.  Struct schemas may be nested as follows:
 
 ```javascript
@@ -280,8 +264,7 @@ p.position.y = 10
 Particle.free(p)
 ```
 
-### <a name="section_2.3.2"></a> 2.3.2 array
-
+#### array
 ```javascript
 const { MuStruct } = require('muschema/struct')
 const { MuArray } = require('muschema/array')
@@ -302,8 +285,7 @@ InventorySchema.free(backpack)              // pools `backpack` and all its memb
 InventorySchema.clone(backpack)             // returns a deep copy of `backpack`
 ```
 
-### <a name="section_2.3.3"></a> 2.3.3 sorted array
-
+#### sorted-array
 ```javascript
 const { MuStruct } = require('muschema/struct')
 const { MuSortedArray } = require('muschema/sorted')
@@ -342,7 +324,7 @@ DeckSchema.free(deck)           // pools `deck` and all its members
 DeckSchema.clone(deck)          // returns a deep copy of `deck`
 ```
 
-### <a name="section_2.3.4"></a> 2.3.4 union
+#### union
 A discriminated union of several subtypes.  Each subtype must be given a label.
 
 ```javascript
@@ -370,9 +352,9 @@ const inp = new MuReadStream(out.buffer.uint32)
 const y = FloatOrString.patch(FloatOrString.identity, inp)
 ```
 
-## <a name="section_2.4"></a> 2.4 data structures
+### data structure
 
-### <a name="section_2.4.1"></a> 2.4.1 dictionary
+#### dictionary
 A dictionary is a labelled collection of values.
 
 ```javascript
@@ -391,8 +373,7 @@ NumberDictionary.free(dict)     // pools `dict` and all its members
 NumberDictionary.clone(dict)    // returns a deep copy of `dict`
 ```
 
-### <a name="section_2.4.2"></a> 2.4.2 vector
-
+#### vector
 ```javascript
 const { MuVector } = require('muschema/vector')
 const { MuFloat32 } = require('muschema/float64')
@@ -408,33 +389,5 @@ ColorSchema.free(rgba)              // pools `rgba`
 ColorSchema.clone(rgba)             // returns a copy of `rgba`
 ```
 
-# <a name="section_3"></a> 3 more examples
-
-Check out `mudb` for some examples of using `muschema`.
-
-# TODO
-
-## <a name="section_3.1"></a> 3.1 features
-
-* smarter delta encoding
-* memory pool stats
-
-## <a name="section_3.2"></a> 3.2 schema types
-
-* fixed point numbers
-* enums
-* tuples
-* multidimensional arrays
-
-## <a name="section_3.3"></a> 3.3 TBD
-
-* should models define constructors?
-* should pool allocation be optional?
-    + some types don't need a pool
-    + pooled allocation can be cumbersome
-* do we need JSON and RPC serialization for debugging?
-
-# credits
+## credits
 Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
-
-
