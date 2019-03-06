@@ -7,9 +7,10 @@
     "clean": "ls -F src | grep / | xargs rm -rf *.d.ts *.js *.js.map",
     "coverage": "nyc npm run test",
     "link": "npm link && npm run clean && npm run build",
-    "release": "npm run clean && npm run build && npm publish",
+    "release": "npm run test-all && npm run clean && npm run build && npm publish",
     "report": "nyc report --reporter=text",
-    "test": "tape -r ts-node/register src/schema/test/*.ts",
+    "test": "f(){ tape -r ts-node/register src/$1/test/*.ts; }; f",
+    "test-all": "tape -r ts-node/register src/*/test/*.ts",
     "watch": "tsc -w"
   },
   "main": "index.js",
