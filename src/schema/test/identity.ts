@@ -13,13 +13,14 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-    MuDate,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuBytes,
+    MuDictionary,
+    MuVector,
+    MuDate,
     MuJSON,
 } from '../index';
 
@@ -36,20 +37,21 @@ test('schema.identity default', (t) => {
     t.equal(new MuUint8().identity,     0);
     t.equal(new MuUint16().identity,    0);
     t.equal(new MuUint32().identity,    0);
-    t.true(new MuDate().identity instanceof Date);
     t.deepEqual(new MuArray(new MuFloat32(), 0).identity,       []);
     t.deepEqual(new MuSortedArray(new MuFloat32(), 0).identity, []);
-    t.deepEqual(new MuVector(new MuFloat32(), 3).identity,      new Float32Array(3));
-    t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
     t.deepEqual(new MuStruct({ f: new MuFloat32() }).identity,  { f: 0 });
     t.deepEqual(new MuUnion({ f: new MuFloat32() }).identity,   { type: '', data: undefined });
+    t.deepEqual(new MuBytes().identity,                         new Uint8Array(1));
+    t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
+    t.deepEqual(new MuVector(new MuFloat32(), 3).identity,      new Float32Array(3));
+    t.true(new MuDate().identity instanceof Date);
     t.end();
 });
 
 test('schema.identity', (t) => {
     t.equal(new MuBoolean(true).identity,       true);
     t.equal(new MuASCII('skr').identity,        'skr');
-    t.equal(new MuUTF8('凉凉').identity,        '凉凉');
+    t.equal(new MuUTF8('Iñtërn').identity,      'Iñtërn');
     t.equal(new MuFixedASCII(1).identity,       ' ');
     t.equal(new MuFixedASCII(2).identity,       '  ');
     t.equal(new MuFixedASCII('000').identity,   '000');
@@ -62,40 +64,45 @@ test('schema.identity', (t) => {
     t.equal(new MuUint16(0xFFFF).identity,      0xFFFF);
     t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
 
-    const d = new Date();
-    const date = new MuDate(d);
-    t.deepEqual(date.identity, d);
-    t.notEqual(date.identity, d);
-
     const a = [{}, {}];
     const array = new MuArray(new MuDictionary(new MuFloat32(), Infinity), Infinity, a);
     t.deepEqual(array.identity, a);
-    t.notEqual(array.identity, a);
-    t.notEqual(array.identity[0], a[0]);
+    t.isNot(array.identity, a);
+    t.isNot(array.identity[0], a[0]);
 
     const sa = [1, 3, 2];
     const sortedArray = new MuSortedArray(new MuFloat32(), Infinity, undefined, sa);
     t.deepEqual(sortedArray.identity, [1, 2, 3]);
-    t.notEqual(sortedArray.identity, sa);
+    t.isNot(sortedArray.identity, sa);
+
+    const union = new MuUnion({ f: new MuFloat32() }, 'f');
+    t.deepEqual(union.identity, { type: 'f', data: 0 });
+
+    const b = new Uint8Array([0, 1, 2]);
+    const bytes = new MuBytes(b);
+    t.deepEqual(bytes.identity, b);
+    t.isNot(bytes.identity, b);
+
+    const dict = {x: [], y: []};
+    const dictionary = new MuDictionary(new MuArray(new MuFloat32(), Infinity), Infinity, dict);
+    t.deepEqual(dictionary.identity, dict);
+    t.isNot(dictionary.identity, dict);
+    t.isNot(dictionary.identity.x, dict.x);
 
     const vector = new MuVector(new MuFloat32(1), 3);
     t.deepEqual(vector.identity, new Float32Array([1, 1, 1]));
     t.end();
 
-    const dict = {x: [], y: []};
-    const dictionary = new MuDictionary(new MuArray(new MuFloat32(), Infinity), Infinity, dict);
-    t.deepEqual(dictionary.identity, dict);
-    t.notEqual(dictionary.identity, dict);
-    t.notEqual(dictionary.identity.x, dict.x);
-
-    const union = new MuUnion({ f: new MuFloat32() }, 'f');
-    t.deepEqual(union.identity, { type: 'f', data: 0 });
+    const d = new Date();
+    const date = new MuDate(d);
+    t.deepEqual(date.identity, d);
+    t.isNot(date.identity, d);
 
     const o = {n: 0, b: false, a: []};
     const json = new MuJSON(o);
     t.deepEqual(json.identity, o);
-    t.notEqual(json.identity, o);
-    t.notEqual(json.identity['a'], o['a']);
+    t.isNot(json.identity, o);
+    t.isNot(json.identity['a'], o['a']);
 });
 
 test('setting number type identity', (t) => {

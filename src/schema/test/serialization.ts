@@ -17,13 +17,14 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
-    MuDate,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuBytes,
+    MuDictionary,
+    MuVector,
+    MuDate,
     MuJSON,
 } from '../index';
 import { MuString } from '../_string';
@@ -34,6 +35,7 @@ import {
     randFloat32,
     randArray,
     randDict,
+    randUint8,
 } from '../util/random';
 
 function createTest<T> (
@@ -163,19 +165,6 @@ tape('de/serializing number', (t) => {
     t.end();
 });
 
-tape('de/serializing date', (t) => {
-    const date = new MuDate();
-    const test = createTest(t, date);
-    const d1 = date.alloc();
-    const d2 = date.alloc();
-    d2.setTime(0);
-    test(d1, d1);
-    test(d2, d2);
-    test(d1, d2);
-    test(d2, d1);
-    t.end();
-});
-
 tape('de/serializing array', (t) => {
     function createTestPair (
         _t:tape.Test,
@@ -259,143 +248,6 @@ tape('de/serializing sorted array', (t) => {
         testPair(randArray(), randArray());
     }
     t.end();
-});
-
-function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['identity'] {
-    const v = new MuVector(new MuFloat32(), dimension).alloc();
-    for (let i = 0; i < v.length; ++i) {
-        v[i] = randFloat32();
-    }
-    return v;
-}
-
-tape('de/serializing vector', (t) => {
-    function createTestPair<Schema extends MuVector<any, number>> (
-        _t:tape.Test,
-        schema:Schema,
-    ) : (a:Schema['identity'], b:Schema['identity']) => void {
-        const test = createTest(_t, schema);
-        return (a, b) => {
-            test(a, a);
-            test(b, b);
-            test(a, b);
-            test(b, a);
-            test(schema.alloc(), a);
-            test(schema.alloc(), b);
-        };
-    }
-
-    t.test('vec0', (st) => {
-        const vector = new MuVector(new MuFloat32(), 0);
-        const test = createTest(st, vector);
-        const zeroA = vector.alloc();
-        const zeroB = vector.alloc();
-        test(zeroA, zeroB);
-        st.end();
-    });
-
-    t.test('vec1', (st) => {
-        const vector = new MuVector(new MuFloat32(), 1);
-        const testPair = createTestPair(st, vector);
-        for (let i = 0; i < 10; ++i) {
-            testPair(randVec(1), randVec(1));
-        }
-        st.end();
-    });
-
-    t.test('vec2', (st) => {
-        const vector = new MuVector(new MuFloat32(), 2);
-        const testPair = createTestPair(st, vector);
-        for (let i = 0; i < 100; ++i) {
-            testPair(randVec(2), randVec(2));
-        }
-        st.end();
-    });
-
-    t.test('vec3', (st) => {
-        const vector = new MuVector(new MuFloat32(), 3);
-        const testPair = createTestPair(st, vector);
-        for (let i = 0; i < 1000; ++i) {
-            testPair(randVec(3), randVec(3));
-        }
-        st.end();
-    });
-
-    t.test('vec10000', (st) => {
-        const vector = new MuVector(new MuFloat32(), 10000);
-        const testPair = createTestPair(st, vector);
-        for (let i = 0; i < 10; ++i) {
-            testPair(randVec(10000), randVec(10000));
-        }
-        st.end();
-    });
-});
-
-tape('de/serializing dictionary', (t) => {
-    function createTestPair<T extends MuSchema<any>> (
-        _t:tape.Test,
-        schema:MuDictionary<T>,
-    ) : (a:MuDictionary<T>['identity'], b:MuDictionary<T>['identity']) => void {
-        const test = createTest(_t, schema);
-        return (a, b) => {
-            test(a, a);
-            test(b, b);
-            test(a, b);
-            test(b, a);
-            test({}, a);
-            test({}, b);
-        };
-    }
-
-    function randNestedDict () {
-        const nd = {};
-        let code = 97 + Math.random() * 6 | 0;
-        for (let i = Math.random() * 6 | 0; i > 0; --i) {
-            nd[String.fromCharCode(code++)] = randDict();
-        }
-        return nd;
-    }
-
-    t.test('simple dictionary', (st) => {
-        const dictionary = new MuDictionary(new MuFloat32(), Infinity);
-        const testPair = createTestPair(st, dictionary);
-        testPair({f: 0}, {f: 0.5});
-        testPair({f: 0, g: 0.5}, {f: 0, g: 1});
-        testPair({f: 0, g: 0.5}, {f: 1, g: 0.5});
-        testPair({f: 0, g: 0.5}, {f: 1, g: 1.5});
-        testPair({f: 0}, {g: 0});
-        testPair({f: 0}, {g: 0.5});
-        testPair({f: 0, g: 0.5}, {g: 1, h: 1.5});
-        testPair({f: 0, g: 0.5}, {h: 1, i: 1.5});
-        testPair({f: 0}, {f: 0, g: 0.5});
-        testPair({f: 0}, {f: 0.5, g: 1});
-        for (let i = 0; i < 1000; ++i) {
-            testPair(randDict(), randDict());
-        }
-        st.end();
-    });
-
-    t.test('nested dictionary', (st) => {
-        const dictionary = new MuDictionary(
-            new MuDictionary(new MuFloat32(), Infinity),
-            Infinity,
-        );
-        const testPair = createTestPair(st, dictionary);
-        testPair({a: {a: 0}}, {a: {b: 0.5}});
-        testPair({a: {a: 0}, b: {a: 0}}, {a: {a: 0}, b: {b: 0.5}});
-        testPair({a: {a: 0}, b: {a: 0}}, {a: {b: 0.5}, b: {a: 0}});
-        testPair({a: {a: 0}, b: {a: 0}}, {a: {b: 0.5}, b: {b: 0.5}});
-        testPair({a: {a: 0}}, {b: {a: 0}});
-        testPair({a: {a: 0}}, {b: {b: 0}});
-        testPair({a: {a: 0}, b: {a: 0}}, {b: {b: 0.5}, c: {a: 0}});
-        testPair({a: {a: 0}, b: {a: 0}}, {c: {a: 0}, d: {a: 0}});
-        testPair({a: {a: 0}}, {a: {b: 0.5}, b: {a: 0}});
-        testPair({a: {a: 0}}, {b: {a: 0.5}, c: {a: 0.5}});
-        for (let i = 0; i < 1000; ++i) {
-            testPair(randNestedDict(), randNestedDict());
-        }
-        st.end();
-    });
 });
 
 tape('de/serializing struct', (t) => {
@@ -526,6 +378,189 @@ tape('de/serializing union', (t) => {
     for (let i = 0; i < 1000; ++i) {
         testPair(randUnionCase(), randUnionCase());
     }
+    t.end();
+});
+
+tape('de/serializing bytes', (t) => {
+    function createTestPair (
+        _t:tape.Test,
+        schema:MuBytes,
+    ) : (a:Uint8Array, b:Uint8Array) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, b);
+            test(b, a);
+        }
+    }
+
+    function randUint8Array () {
+        const a = new Uint8Array(Math.ceil(Math.random() * 100));
+        for (let i = 0; i < a.length; ++i) {
+            a[i] = randUint8();
+        }
+        return a;
+    }
+
+    const bytes = new MuBytes();
+    const testPair =  createTestPair(t, bytes);
+    testPair(new Uint8Array([]), randUint8Array());
+    for (let i = 0; i < 1000; ++i) {
+        const a = randUint8Array();
+        const b = randUint8Array();
+        if (!bytes.equal(a, b)) {
+            testPair(a, b);
+        }
+    }
+    t.end();
+});
+
+tape('de/serializing dictionary', (t) => {
+    function createTestPair<T extends MuSchema<any>> (
+        _t:tape.Test,
+        schema:MuDictionary<T>,
+    ) : (a:MuDictionary<T>['identity'], b:MuDictionary<T>['identity']) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+            test({}, a);
+            test({}, b);
+        };
+    }
+
+    function randNestedDict () {
+        const nd = {};
+        let code = 97 + Math.random() * 6 | 0;
+        for (let i = Math.random() * 6 | 0; i > 0; --i) {
+            nd[String.fromCharCode(code++)] = randDict();
+        }
+        return nd;
+    }
+
+    t.test('simple dictionary', (st) => {
+        const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+        const testPair = createTestPair(st, dictionary);
+        testPair({f: 0}, {f: 0.5});
+        testPair({f: 0, g: 0.5}, {f: 0, g: 1});
+        testPair({f: 0, g: 0.5}, {f: 1, g: 0.5});
+        testPair({f: 0, g: 0.5}, {f: 1, g: 1.5});
+        testPair({f: 0}, {g: 0});
+        testPair({f: 0}, {g: 0.5});
+        testPair({f: 0, g: 0.5}, {g: 1, h: 1.5});
+        testPair({f: 0, g: 0.5}, {h: 1, i: 1.5});
+        testPair({f: 0}, {f: 0, g: 0.5});
+        testPair({f: 0}, {f: 0.5, g: 1});
+        for (let i = 0; i < 1000; ++i) {
+            testPair(randDict(), randDict());
+        }
+        st.end();
+    });
+
+    t.test('nested dictionary', (st) => {
+        const dictionary = new MuDictionary(
+            new MuDictionary(new MuFloat32(), Infinity),
+            Infinity,
+        );
+        const testPair = createTestPair(st, dictionary);
+        testPair({a: {a: 0}}, {a: {b: 0.5}});
+        testPair({a: {a: 0}, b: {a: 0}}, {a: {a: 0}, b: {b: 0.5}});
+        testPair({a: {a: 0}, b: {a: 0}}, {a: {b: 0.5}, b: {a: 0}});
+        testPair({a: {a: 0}, b: {a: 0}}, {a: {b: 0.5}, b: {b: 0.5}});
+        testPair({a: {a: 0}}, {b: {a: 0}});
+        testPair({a: {a: 0}}, {b: {b: 0}});
+        testPair({a: {a: 0}, b: {a: 0}}, {b: {b: 0.5}, c: {a: 0}});
+        testPair({a: {a: 0}, b: {a: 0}}, {c: {a: 0}, d: {a: 0}});
+        testPair({a: {a: 0}}, {a: {b: 0.5}, b: {a: 0}});
+        testPair({a: {a: 0}}, {b: {a: 0.5}, c: {a: 0.5}});
+        for (let i = 0; i < 1000; ++i) {
+            testPair(randNestedDict(), randNestedDict());
+        }
+        st.end();
+    });
+});
+
+function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['identity'] {
+    const v = new MuVector(new MuFloat32(), dimension).alloc();
+    for (let i = 0; i < v.length; ++i) {
+        v[i] = randFloat32();
+    }
+    return v;
+}
+
+tape('de/serializing vector', (t) => {
+    function createTestPair<Schema extends MuVector<any, number>> (
+        _t:tape.Test,
+        schema:Schema,
+    ) : (a:Schema['identity'], b:Schema['identity']) => void {
+        const test = createTest(_t, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+            test(schema.alloc(), a);
+            test(schema.alloc(), b);
+        };
+    }
+
+    t.test('vec0', (st) => {
+        const vector = new MuVector(new MuFloat32(), 0);
+        const test = createTest(st, vector);
+        const zeroA = vector.alloc();
+        const zeroB = vector.alloc();
+        test(zeroA, zeroB);
+        st.end();
+    });
+
+    t.test('vec1', (st) => {
+        const vector = new MuVector(new MuFloat32(), 1);
+        const testPair = createTestPair(st, vector);
+        for (let i = 0; i < 10; ++i) {
+            testPair(randVec(1), randVec(1));
+        }
+        st.end();
+    });
+
+    t.test('vec2', (st) => {
+        const vector = new MuVector(new MuFloat32(), 2);
+        const testPair = createTestPair(st, vector);
+        for (let i = 0; i < 100; ++i) {
+            testPair(randVec(2), randVec(2));
+        }
+        st.end();
+    });
+
+    t.test('vec3', (st) => {
+        const vector = new MuVector(new MuFloat32(), 3);
+        const testPair = createTestPair(st, vector);
+        for (let i = 0; i < 1000; ++i) {
+            testPair(randVec(3), randVec(3));
+        }
+        st.end();
+    });
+
+    t.test('vec10000', (st) => {
+        const vector = new MuVector(new MuFloat32(), 10000);
+        const testPair = createTestPair(st, vector);
+        for (let i = 0; i < 10; ++i) {
+            testPair(randVec(10000), randVec(10000));
+        }
+        st.end();
+    });
+});
+
+tape('de/serializing date', (t) => {
+    const date = new MuDate();
+    const test = createTest(t, date);
+    const d1 = date.alloc();
+    const d2 = date.alloc();
+    d2.setTime(0);
+    test(d1, d1);
+    test(d2, d2);
+    test(d1, d2);
+    test(d2, d1);
     t.end();
 });
 

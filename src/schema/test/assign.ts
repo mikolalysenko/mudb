@@ -3,13 +3,14 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
-    MuDate,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuBytes,
+    MuDictionary,
+    MuVector,
+    MuDate,
     MuJSON,
 } from '../index';
 
@@ -25,152 +26,65 @@ test('primitive.assign()', (t) => {
     t.end();
 });
 
-test('date.assign()', (t) => {
-    const date = new MuDate();
-    const dst = date.alloc();
-    const src = date.alloc();
-    date.assign(dst, src);
-    t.deepEqual(dst, src);
-    t.notEqual(dst, src);
-    dst.setTime(0);
-    t.notDeepEqual(dst, src);
-    date.assign(dst, src);
-    t.deepEqual(dst, src);
-    t.end();
-});
-
 test('array.assign()', (t) => {
     const array = new MuArray(new MuFloat32(), Infinity);
-    const aDst = array.alloc();
     const aSrc = array.alloc();
-    array.assign(aDst, aSrc);
-    t.notEqual(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    const aDst = array.alloc();
     aSrc.push(0);
-    array.assign(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    t.is(array.assign(aDst, aSrc), aDst);
+    t.deepEqual(aDst, [0]);
     aSrc.push(0.5);
     array.assign(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    t.deepEqual(aDst, [0, 0.5]);
     aDst.push(1);
     array.assign(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    t.deepEqual(aDst, [0, 0.5]);
 
     const nestedArray = new MuArray(
         new MuArray(new MuFloat32(), Infinity),
         Infinity,
     );
-    const naDst = nestedArray.alloc();
     const naSrc = nestedArray.alloc();
+    const naDst = nestedArray.alloc();
     naSrc.push([]);
-    nestedArray.assign(naDst, naSrc);
-    t.deepEqual(naDst, naSrc);
-    t.notEqual(naDst[0], naSrc[0]);
+    t.is(nestedArray.assign(naDst, naSrc), naDst);
+    t.deepEqual(naDst, [[]]);
+    t.isNot(naDst[0], naSrc[0]);
     naSrc.push([0, 0.5]);
     nestedArray.assign(naDst, naSrc);
-    t.deepEqual(naDst, naSrc);
-    t.notEqual(naDst[1], naSrc[1]);
+    t.deepEqual(naDst, [[], [0, 0.5]]);
+    t.isNot(naDst[1], naSrc[1]);
     t.end();
 });
 
 test('sortedArray.assign()', (t) => {
     const array = new MuSortedArray(new MuFloat32(), Infinity);
-    const aDst = array.alloc();
     const aSrc = array.alloc();
-    array.assign(aDst, aSrc);
-    t.notEqual(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    const aDst = array.alloc();
     aSrc.push(0);
-    array.assign(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    t.is(array.assign(aDst, aSrc), aDst);
+    t.deepEqual(aDst, [0]);
     aSrc.push(0.5);
     array.assign(aDst, aSrc);
-    t.deepEqual(aDst, aSrc);
+    t.deepEqual(aDst, [0, 0.5]);
+    aDst.push(1);
+    array.assign(aDst, aSrc);
+    t.deepEqual(aDst, [0, 0.5]);
 
     const nestedArray = new MuSortedArray(
         new MuSortedArray(new MuFloat32(), Infinity),
         Infinity,
     );
-    const naDst = nestedArray.alloc();
     const naSrc = nestedArray.alloc();
+    const naDst = nestedArray.alloc();
     naSrc.push([]);
-    nestedArray.assign(naDst, naSrc);
-    t.deepEqual(naDst, naSrc);
-    t.notEqual(naDst[0], naSrc[0]);
+    t.is(nestedArray.assign(naDst, naSrc), naDst);
+    t.deepEqual(naDst, [[]]);
+    t.isNot(naDst[0], naSrc[0]);
     naSrc.push([0, 0.5]);
     nestedArray.assign(naDst, naSrc);
-    t.deepEqual(naDst, naSrc);
-    t.notEqual(naDst[1], naSrc[1]);
-    t.end();
-});
-
-test('vector.assign()', (t) => {
-    t.test('dimension 0', (st) => {
-        const vector = new MuVector(new MuFloat32(), 0);
-        const dst = vector.alloc();
-        const src = vector.alloc();
-        vector.assign(dst, src);
-        st.deepEqual(dst, src);
-        st.notEqual(dst, src);
-        st.end();
-    });
-    t.test('dimension 1', (st) => {
-        const vector = new MuVector(new MuFloat32(), 1);
-        const dst = vector.alloc();
-        const src = vector.alloc();
-        vector.assign(dst, src);
-        st.deepEqual(dst, src);
-        st.notEqual(dst, src);
-        src[0] = 0.5;
-        vector.assign(dst, src);
-        t.deepEqual(dst, src);
-        st.end();
-    });
-    t.test('dimension 2', (st) => {
-        const vector = new MuVector(new MuFloat32(), 2);
-        const dst = vector.alloc();
-        const src = vector.alloc();
-        vector.assign(dst, src);
-        st.deepEqual(dst, src);
-        st.notEqual(dst, src);
-        src[0] = 0.5;
-        src[1] = 1.5;
-        vector.assign(dst, src);
-        t.deepEqual(dst, src);
-        st.end();
-    });
-});
-
-test('dictionary.assign()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
-    const dDst = dictionary.alloc();
-    const dSrc = dictionary.alloc();
-    dictionary.assign(dDst, dSrc);
-    t.deepEqual(dDst, dSrc);
-    t.notEqual(dDst, dSrc);
-    dSrc.a = 0.5;
-    dictionary.assign(dDst, dSrc);
-    t.deepEqual(dDst, dSrc);
-    dSrc.b = 1.5;
-    dictionary.assign(dDst, dSrc);
-    t.deepEqual(dDst, dSrc);
-    dDst.c = 1;
-    dictionary.assign(dDst, dSrc);
-    t.deepEqual(dDst, dSrc);
-
-    const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32(), Infinity),
-        Infinity,
-    );
-    const ndDst = nestedDictionary.alloc();
-    const ndSrc = nestedDictionary.alloc();
-    ndSrc.a = {};
-    nestedDictionary.assign(ndDst, ndSrc);
-    t.deepEqual(ndDst, ndSrc);
-    t.notEqual(ndDst.a, ndSrc.a);
-    ndSrc.b = {c: 0.5, d: 1.5};
-    nestedDictionary.assign(ndDst, ndSrc);
-    t.deepEqual(ndDst, ndSrc);
+    t.deepEqual(naDst, [[], [0, 0.5]]);
+    t.isNot(naDst[1], naSrc[1]);
     t.end();
 });
 
@@ -178,13 +92,10 @@ test('struct.assign()', (t) => {
     const struct = new MuStruct({
         f: new MuFloat32(),
     });
-    const sDst = struct.alloc();
     const sSrc = struct.alloc();
-    struct.assign(sDst, sSrc);
-    t.deepEqual(sDst, sSrc);
-    t.notEqual(sDst, sSrc);
+    const sDst = struct.alloc();
     sSrc.f = 0.5;
-    struct.assign(sDst, sSrc);
+    t.is(struct.assign(sDst, sSrc), sDst);
     t.deepEqual(sDst, sSrc);
 
     const nestedStruct = new MuStruct({
@@ -192,14 +103,12 @@ test('struct.assign()', (t) => {
             f: new MuFloat32(),
         }),
     });
-    const nsDst = nestedStruct.alloc();
     const nsSrc = nestedStruct.alloc();
-    nestedStruct.assign(nsDst, nsSrc);
-    t.deepEqual(nsDst, nsSrc);
-    t.notEqual(nsDst.s, nsSrc.s);
+    const nsDst = nestedStruct.alloc();
     nsSrc.s.f = 0.5;
-    nestedStruct.assign(nsDst, nsSrc);
+    t.is(nestedStruct.assign(nsDst, nsSrc), nsDst);
     t.deepEqual(nsDst, nsSrc);
+    t.isNot(nsDst.s, nsSrc.s);
     t.end();
 });
 
@@ -208,22 +117,21 @@ test('union.assign()', (t) => {
         u: new MuUTF8(),
         f: new MuFloat32(),
     });
-    const dst = stringOrFloat.alloc();
     const src = stringOrFloat.alloc();
-    stringOrFloat.assign(dst, src);
-    t.deepEqual(dst, src);
-    t.notEqual(dst, src);
+    const dst = stringOrFloat.alloc();
     src.type = 'u';
     src.data = 'Iñtërnâtiônàlizætiøn☃💩';
-    stringOrFloat.assign(dst, src);
-    t.deepEqual(dst, src);
+    t.is(stringOrFloat.assign(dst, src), dst);
+    t.deepEqual(dst, {type: 'u', data: 'Iñtërnâtiônàlizætiøn☃💩'});
+
     dst.data = 'Internationalization';
     stringOrFloat.assign(dst, src);
-    t.deepEqual(dst, src);
+    t.deepEqual(dst, {type: 'u', data: 'Iñtërnâtiônàlizætiøn☃💩'});
+
     src.type = 'f';
     src.data = 0.5;
     stringOrFloat.assign(dst, src);
-    t.deepEqual(dst, src);
+    t.deepEqual(dst, {type: 'f', data: 0.5});
     stringOrFloat.assign(dst, stringOrFloat.alloc());
     t.deepEqual(dst, stringOrFloat.alloc());
 
@@ -235,13 +143,82 @@ test('union.assign()', (t) => {
             f: new MuFloat32(),
         }),
     }, 'us');
-    const uDst = union.alloc();
     const uSrc = union.alloc();
+    const uDst = union.alloc();
     uSrc.type = 'fs';
     uSrc.data = union.muData.fs.alloc();
-    union.assign(uDst, uSrc);
-    t.deepEqual(uDst, uSrc);
-    t.notEqual(uDst.data, uSrc.data);
+    t.is(union.assign(uDst, uSrc), uDst);
+    t.deepEqual(uDst, {type: 'fs', data: {f: 0}});
+    t.isNot(uDst.data, uSrc.data);
+    t.end();
+});
+
+test('bytes.assign()', (t) => {
+    const bytes = new MuBytes();
+    const src = new Uint8Array(3);
+    const dst = new Uint8Array(3);
+    src[1] = 1;
+    src[2] = 255;
+    t.is(bytes.assign(dst, src), dst);
+    t.deepEqual(dst, new Uint8Array([0, 1, 255]));
+    t.end();
+});
+
+test('dictionary.assign()', (t) => {
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+    const dSrc = dictionary.alloc();
+    const dDst = dictionary.alloc();
+    dSrc.a = 0.5;
+    t.is(dictionary.assign(dDst, dSrc), dDst);
+    t.deepEqual(dDst, {a: 0.5});
+
+    dSrc.b = 1.5;
+    dictionary.assign(dDst, dSrc);
+    t.deepEqual(dDst, {a: 0.5, b: 1.5});
+
+    dDst.c = 1;
+    dictionary.assign(dDst, dSrc);
+    t.deepEqual(dDst, {a: 0.5, b: 1.5});
+
+    const nestedDictionary = new MuDictionary(
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
+    );
+    const ndSrc = nestedDictionary.alloc();
+    const ndDst = nestedDictionary.alloc();
+    ndSrc.a = {};
+    t.is(nestedDictionary.assign(ndDst, ndSrc), ndDst);
+    t.deepEqual(ndDst, {a: {}});
+    t.isNot(ndDst.a, ndSrc.a);
+
+    ndSrc.b = {c: 0.5, d: 1.5};
+    nestedDictionary.assign(ndDst, ndSrc);
+    t.deepEqual(ndDst, {a: {}, b: {c: 0.5, d: 1.5}});
+
+    ndDst.c = {e: 2.5};
+    nestedDictionary.assign(ndDst, ndSrc);
+    t.deepEqual(ndDst, {a: {}, b: {c: 0.5, d: 1.5}});
+    t.end();
+});
+
+test('vector.assign()', (t) => {
+    const vector = new MuVector(new MuFloat32(), 2);
+    const src = vector.alloc();
+    const dst = vector.alloc();
+    src[0] = 0.5;
+    src[1] = 1.5;
+    t.is(vector.assign(dst, src), dst);
+    t.deepEqual(dst, new Float32Array([0.5, 1.5]));
+    t.end();
+});
+
+test('date.assign()', (t) => {
+    const date = new MuDate();
+    const src = date.alloc();
+    const dst = date.alloc();
+    dst.setTime(0);
+    t.is(date.assign(dst, src), dst);
+    t.deepEqual(dst, src);
     t.end();
 });
 
@@ -249,14 +226,14 @@ test('json.assign', (t) => {
     const json = new MuJSON();
     const o = {a: 0, b: 1};
     const p = {a: {b: {c: [0]}}};
-    json.assign(o, p);
-    t.deepEqual(o, p);
-    t.notEqual(o, p);
+    t.is(json.assign(o, p), o);
+    t.deepEqual(o, {a: {b: {c: [0]}}});
+    t.isNot(o.a, p.a);
 
     const q = [0, 1, 2];
     const r = [{}, {}];
-    json.assign(q, r);
-    t.deepEqual(q, r);
-    t.notEqual(q, r);
+    t.is(json.assign(q, r), q);
+    t.deepEqual(q, [{}, {}]);
+    t.isNot(q[0], r[0]);
     t.end();
 });

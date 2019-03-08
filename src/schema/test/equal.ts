@@ -3,13 +3,14 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
-    MuDate,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuBytes,
+    MuDictionary,
+    MuVector,
+    MuDate,
     MuJSON,
 } from '../index';
 
@@ -33,17 +34,6 @@ test('primitive.equal()', (t) => {
     t.true(float32.equal(0.5, 0.5));
     t.false(float32.equal(0, 1));
 
-    t.end();
-});
-
-test('date.equal()', (t) => {
-    const date = new MuDate();
-    const d1 = date.alloc();
-    const d2 = date.alloc();
-    d2.setTime(0);
-    t.false(date.equal(d1, d2));
-    d2.setTime(d1.getTime());
-    t.true(date.equal(d1, d2));
     t.end();
 });
 
@@ -123,50 +113,6 @@ test('sortedArray.equal()', (t) => {
     t.end();
 });
 
-test('vector.equal()', (t) => {
-    const mat3 = new MuVector(new MuFloat32(), 9);
-    const m1 = mat3.alloc();
-    const m2 = mat3.alloc();
-    t.true(mat3.equal(m1, m2));
-    m2[8] += 0.5;
-    t.false(mat3.equal(m1, m2));
-    t.end();
-});
-
-test('dictionary.equal()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
-    t.true(dictionary.equal({}, {}));
-    t.true(dictionary.equal({a: 0}, {a: 0}));
-    t.true(dictionary.equal({a: 0, b: 1}, {a: 0, b: 1}));
-    t.false(dictionary.equal({}, {a: 0}));
-    t.false(dictionary.equal({a: 0, b: 0}, {a: 0}));
-    t.false(dictionary.equal({a: 0}, {b: 0}));
-    t.false(dictionary.equal({a: 0}, {a: 1}));
-
-    const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32(), Infinity),
-        Infinity,
-    );
-    t.true(nestedDictionary.equal({}, {}));
-    t.true(nestedDictionary.equal({a: {}}, {a: {}}));
-    t.true(nestedDictionary.equal({a: {}, b: {}}, {a: {}, b: {}}));
-    t.true(nestedDictionary.equal({a: {b: 0}}, {a: {b: 0}}));
-    t.true(nestedDictionary.equal({a: {b: 0, c: 1}}, {a: {b: 0, c: 1}}));
-    t.true(nestedDictionary.equal(
-        {a: {c: 0}, b: {d: 1}},
-        {a: {c: 0}, b: {d: 1}},
-    ));
-    t.true(nestedDictionary.equal(
-        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
-        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
-    ));
-    t.false(nestedDictionary.equal({}, {a: {}}));
-    t.false(nestedDictionary.equal({a: {}, b: {}}, {a: {}}));
-    t.false(nestedDictionary.equal({a: {}}, {b: {}}));
-    t.false(nestedDictionary.equal({a: {b: 0}}, {a: {b: 1}}));
-    t.end();
-});
-
 test('struct.equal()', (t) => {
     const struct = new MuStruct({
         a: new MuFloat32(),
@@ -241,6 +187,71 @@ test('union.equal()', (t) => {
         {type: 'voxel', data: {name: 'soil', destructible: true}},
         {type: 'tool', data: {name: 'torch', durability: 1}},
     ));
+    t.end();
+});
+
+test('bytes.equal()', (t) => {
+    const bytes = new MuBytes();
+    t.true(bytes.equal(new Uint8Array([]), new Uint8Array([])));
+    t.false(bytes.equal(new Uint8Array([0]), new Uint8Array([])));
+    t.false(bytes.equal(new Uint8Array([0]), new Uint8Array([0, 0])));
+    t.true(bytes.equal(new Uint8Array([0, 0]), new Uint8Array([0, 0])));
+    t.false(bytes.equal(new Uint8Array([0, 0]), new Uint8Array([1, 0])));
+    t.end();
+});
+
+test('dictionary.equal()', (t) => {
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+    t.true(dictionary.equal({}, {}));
+    t.true(dictionary.equal({a: 0}, {a: 0}));
+    t.true(dictionary.equal({a: 0, b: 1}, {a: 0, b: 1}));
+    t.false(dictionary.equal({}, {a: 0}));
+    t.false(dictionary.equal({a: 0, b: 0}, {a: 0}));
+    t.false(dictionary.equal({a: 0}, {b: 0}));
+    t.false(dictionary.equal({a: 0}, {a: 1}));
+
+    const nestedDictionary = new MuDictionary(
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
+    );
+    t.true(nestedDictionary.equal({}, {}));
+    t.true(nestedDictionary.equal({a: {}}, {a: {}}));
+    t.true(nestedDictionary.equal({a: {}, b: {}}, {a: {}, b: {}}));
+    t.true(nestedDictionary.equal({a: {b: 0}}, {a: {b: 0}}));
+    t.true(nestedDictionary.equal({a: {b: 0, c: 1}}, {a: {b: 0, c: 1}}));
+    t.true(nestedDictionary.equal(
+        {a: {c: 0}, b: {d: 1}},
+        {a: {c: 0}, b: {d: 1}},
+    ));
+    t.true(nestedDictionary.equal(
+        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
+        {a: {c: 0, d: 1}, b: {c: 0, d: 1}},
+    ));
+    t.false(nestedDictionary.equal({}, {a: {}}));
+    t.false(nestedDictionary.equal({a: {}, b: {}}, {a: {}}));
+    t.false(nestedDictionary.equal({a: {}}, {b: {}}));
+    t.false(nestedDictionary.equal({a: {b: 0}}, {a: {b: 1}}));
+    t.end();
+});
+
+test('vector.equal()', (t) => {
+    const mat3 = new MuVector(new MuFloat32(), 9);
+    const m1 = mat3.alloc();
+    const m2 = mat3.alloc();
+    t.true(mat3.equal(m1, m2));
+    m2[8] += 0.5;
+    t.false(mat3.equal(m1, m2));
+    t.end();
+});
+
+test('date.equal()', (t) => {
+    const date = new MuDate();
+    const d1 = date.alloc();
+    const d2 = date.alloc();
+    d2.setTime(0);
+    t.false(date.equal(d1, d2));
+    d2.setTime(d1.getTime());
+    t.true(date.equal(d1, d2));
     t.end();
 });
 

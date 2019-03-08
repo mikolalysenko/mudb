@@ -3,13 +3,14 @@ import {
     MuBoolean,
     MuUTF8,
     MuFloat32,
-    MuDate,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuBytes,
+    MuDictionary,
+    MuVector,
+    MuDate,
     MuJSON,
 } from '../index';
 
@@ -33,19 +34,10 @@ test('primitive.clone()', (t) => {
     t.end();
 });
 
-test('data.clone()', (t) => {
-    const date = new MuDate();
-    const moment = date.alloc();
-    const instant = date.clone(moment);
-    t.deepEqual(moment, instant);
-    t.notEqual(moment, instant);
-    t.end();
-});
-
 test('array.clone()', (t) => {
     const array = new MuArray(new MuFloat32(), Infinity);
     let a = array.alloc();
-    t.notEqual(array.clone(a), a);
+    t.isNot(array.clone(a), a);
     t.deepEqual(array.clone(a), a);
     a = [0.5];
     t.deepEqual(array.clone(a), a);
@@ -60,7 +52,7 @@ test('array.clone()', (t) => {
     t.deepEqual(nestedArray.clone(na), na);
     na = [[]];
     t.deepEqual(nestedArray.clone(na), na);
-    t.notEqual(nestedArray.clone(na)[0], na[0]);
+    t.isNot(nestedArray.clone(na)[0], na[0]);
     na = [[0.5]];
     t.deepEqual(nestedArray.clone(na), na);
     na = [[0.5, 1.5]];
@@ -73,7 +65,7 @@ test('array.clone()', (t) => {
 test('sortedArray.clone()', (t) => {
     const array = new MuSortedArray(new MuFloat32(), Infinity);
     let a = array.alloc();
-    t.notEqual(array.clone(a), a);
+    t.isNot(array.clone(a), a);
     t.deepEqual(array.clone(a), a);
     a = [0.5];
     t.deepEqual(array.clone(a), a);
@@ -88,48 +80,13 @@ test('sortedArray.clone()', (t) => {
     t.deepEqual(nestedArray.clone(na), na);
     na = [[]];
     t.deepEqual(nestedArray.clone(na), na);
-    t.notEqual(nestedArray.clone(na)[0], na[0]);
+    t.isNot(nestedArray.clone(na)[0], na[0]);
     na = [[0.5]];
     t.deepEqual(nestedArray.clone(na), na);
     na = [[0.5, 1.5]];
     t.deepEqual(nestedArray.clone(na), na);
     na = [[0.5, 1.5], [0.5, 1.5]];
     t.deepEqual(nestedArray.clone(na), na);
-    t.end();
-});
-
-test('vector.clone()', (t) => {
-    const vector = new MuVector(new MuFloat32(), 2);
-    const v = vector.alloc();
-    t.notEqual(vector.clone(v), v);
-    t.deepEqual(vector.clone(v), v);
-    v[0] = 0.5;
-    v[1] = 1.5;
-    t.deepEqual(vector.clone(v), v);
-    t.end();
-});
-
-test('dictionary.clone()', (t) => {
-    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
-    const d = dictionary.alloc();
-    t.notEqual(dictionary.clone(d), d);
-    t.deepEqual(dictionary.clone(d), d);
-    d['a'] = 0.5;
-    t.deepEqual(dictionary.clone(d), d);
-    d['b'] = 1.5;
-    t.deepEqual(dictionary.clone(d), d);
-
-    const nestedDictionary = new MuDictionary(
-        new MuDictionary(new MuFloat32(), Infinity),
-        Infinity,
-    );
-    const nd = nestedDictionary.alloc();
-    t.deepEqual(nestedDictionary.clone(nd), nd);
-    nd['a'] = {f: 0.5};
-    t.deepEqual(nestedDictionary.clone(nd), nd);
-    t.notEqual(nestedDictionary.clone(nd)['a'], nd['a']);
-    nd['b'] = {f: 0.5, g: 1.5};
-    t.deepEqual(nestedDictionary.clone(nd), nd);
     t.end();
 });
 
@@ -140,7 +97,7 @@ test('struct.clone()', (t) => {
         f: new MuFloat32(),
     });
     const s = struct.alloc();
-    t.notEqual(struct.clone(s), s);
+    t.isNot(struct.clone(s), s);
     t.deepEqual(struct.clone(s), s);
     s.b = true;
     s.u = 'Iñtërnâtiônàlizætiøn☃💩';
@@ -161,7 +118,7 @@ test('struct.clone()', (t) => {
     });
     const ns = nestedStruct.alloc();
     t.deepEqual(nestedStruct.clone(ns), ns);
-    t.notEqual(nestedStruct.clone(ns).s1, ns.s1);
+    t.isNot(nestedStruct.clone(ns).s1, ns.s1);
     ns.s1.b = true;
     ns.s1.u = 'Iñtërnâtiônàlizætiøn☃💩';
     ns.s1.f = 0.5;
@@ -175,7 +132,7 @@ test('union.clone()', (t) => {
         f: new MuFloat32(),
     });
     const sf = stringOrFloat.alloc();
-    t.notEqual(stringOrFloat.clone(sf), sf);
+    t.isNot(stringOrFloat.clone(sf), sf);
     t.deepEqual(stringOrFloat.clone(sf), sf);
     sf.type = 'u';
     sf.data = 'Iñtërnâtiônàlizætiøn☃💩';
@@ -192,8 +149,8 @@ test('union.clone()', (t) => {
         }),
     }, 's');
     const u = union.alloc();
-    t.notEqual(union.clone(u), u);
-    t.notEqual(union.clone(u).data, u.data);
+    t.isNot(union.clone(u), u);
+    t.isNot(union.clone(u).data, u.data);
     t.deepEqual(union.clone(u), u);
     u.data.b = true;
     u.data.u = 'Iñtërnâtiônàlizætiøn☃💩';
@@ -202,13 +159,68 @@ test('union.clone()', (t) => {
     t.end();
 });
 
+test('bytes.clone()', (t) => {
+    const bytes = new MuBytes();
+    const b = new Uint8Array([0, 0, 0]);
+    t.deepEqual(bytes.clone(b), b);
+    t.isNot(bytes.clone(b) ,b);
+    b[1] = 1;
+    b[2] = 255;
+    t.deepEqual(bytes.clone(b), b);
+    t.end();
+});
+
+test('dictionary.clone()', (t) => {
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+    const d = dictionary.alloc();
+    t.isNot(dictionary.clone(d), d);
+    t.deepEqual(dictionary.clone(d), d);
+    d['a'] = 0.5;
+    t.deepEqual(dictionary.clone(d), d);
+    d['b'] = 1.5;
+    t.deepEqual(dictionary.clone(d), d);
+
+    const nestedDictionary = new MuDictionary(
+        new MuDictionary(new MuFloat32(), Infinity),
+        Infinity,
+    );
+    const nd = nestedDictionary.alloc();
+    t.deepEqual(nestedDictionary.clone(nd), nd);
+    nd['a'] = {f: 0.5};
+    t.deepEqual(nestedDictionary.clone(nd), nd);
+    t.isNot(nestedDictionary.clone(nd)['a'], nd['a']);
+    nd['b'] = {f: 0.5, g: 1.5};
+    t.deepEqual(nestedDictionary.clone(nd), nd);
+    t.end();
+});
+
+test('vector.clone()', (t) => {
+    const vector = new MuVector(new MuFloat32(), 2);
+    const v = vector.alloc();
+    t.isNot(vector.clone(v), v);
+    t.deepEqual(vector.clone(v), v);
+    v[0] = 0.5;
+    v[1] = 1.5;
+    t.deepEqual(vector.clone(v), v);
+    t.end();
+});
+
+test('data.clone()', (t) => {
+    const date = new MuDate();
+    const moment = date.alloc();
+    const instant = date.clone(moment);
+    t.deepEqual(moment, instant);
+    t.isNot(moment, instant);
+    t.end();
+});
+
 test('json.clone()', (t) => {
     const json = new MuJSON();
     const o = {a: [{b: [{c: 0}]}]};
     t.deepEqual(json.clone(o), o);
-    t.notEqual(json.clone(o), o);
+    t.isNot(json.clone(o), o);
     const p = [{a: [{b: [{c: ''}]}]}];
     t.deepEqual(json.clone(p), p);
-    t.notEqual(json.clone(p), p);
+    t.isNot(json.clone(p), p);
     t.end();
 });

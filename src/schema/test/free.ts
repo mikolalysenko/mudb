@@ -3,10 +3,11 @@ import {
     MuFloat32,
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+    MuDictionary,
+    MuVector,
+    MuBytes,
 } from '../index';
 import { MuSchemaTrace } from '../trace';
 
@@ -29,15 +30,6 @@ test('schema.free()', (t) => {
     sortedArray.free(sa);
     t.equal(sortedArrayTrace.freeCount, 1, 'sorted array schema should call free() on subtype');
 
-    const dictionaryTrace = new MuSchemaTrace(
-        new MuDictionary(new MuFloat32(), Infinity),
-    );
-    const dictionary = new MuDictionary(dictionaryTrace, Infinity);
-    const d = dictionary.alloc();
-    d.d = dictionaryTrace.alloc();
-    dictionary.free(d);
-    t.equal(dictionaryTrace.freeCount, 1, 'dictionary schema should call free() on subtype');
-
     const structTrace = new MuSchemaTrace(
         new MuStruct({ f: new MuFloat32() }),
     );
@@ -55,5 +47,24 @@ test('schema.free()', (t) => {
     const u = union.alloc();
     union.free(u);
     t.equal(vectorTrace.freeCount, 1, 'union schema should call free() on subtype');
+
+    const dictionaryTrace = new MuSchemaTrace(
+        new MuDictionary(new MuFloat32(), Infinity),
+    );
+    const dictionary = new MuDictionary(dictionaryTrace, Infinity);
+    const d = dictionary.alloc();
+    d.d = dictionaryTrace.alloc();
+    dictionary.free(d);
+    t.equal(dictionaryTrace.freeCount, 1, 'dictionary schema should call free() on subtype');
+    t.end();
+});
+
+test('bytes.free()', (t) => {
+    const bytes = new MuBytes();
+    bytes.free(new Uint8Array(1));
+    bytes.free(new Uint8Array(2));
+    bytes.free(new Uint8Array(2));
+    t.equal(bytes.pool[1].length, 1);
+    t.equal(bytes.pool[2].length, 2);
     t.end();
 });
