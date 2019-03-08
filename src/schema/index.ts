@@ -22,22 +22,19 @@ import { MuUint8 } from './uint8';
 import { MuUint16 } from './uint16';
 import { MuUint32 } from './uint32';
 
-// date type
-import { MuDate } from './date';
-
-// array types
+// functors
 import { MuArray } from './array';
 import { MuSortedArray } from './sorted-array';
-import { MuVector } from './vector';
-
-// dictionary types
-import { MuDictionary } from './dictionary';
 import { MuStruct } from './struct';
-
-// union type
 import { MuUnion } from './union';
 
-// generic JSON type
+// data structures
+import { MuBytes } from './bytes';
+import { MuDictionary } from './dictionary';
+import { MuVector } from './vector';
+
+// misc. types
+import { MuDate } from './date';
 import { MuJSON } from './json';
 
 export {
@@ -56,13 +53,16 @@ export {
     MuUint8,
     MuUint16,
     MuUint32,
-    MuDate,
 
     MuArray,
     MuSortedArray,
-    MuVector,
-    MuDictionary,
     MuStruct,
     MuUnion,
+
+    MuBytes,
+    MuVector,
+    MuDictionary,
+
+    MuDate,
     MuJSON,
 };
