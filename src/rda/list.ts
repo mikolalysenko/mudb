@@ -248,7 +248,12 @@ export class MuRDAListStore<RDA extends MuRDAList<any>> implements MuRDAStore<RD
             const input = <MuRDAListTypes<RDA['valueRDA']>['updateAction']>action;
             const index = searchId(this.ids, input.data.id);
             if (index < this.ids.length && this.ids[index] === input.data.id) {
-                return this.list[index].inverse(rda.valueRDA, input.data.action);
+                const result = <MuRDAListTypes<RDA['valueRDA']>['updateAction']>rda.actionSchema.alloc();
+                result.type = 'update';
+                result.data = rda.updateSchema.alloc();
+                result.data.id = input.data.id;
+                result.data.action = this.list[index].inverse(rda.valueRDA, input.data.action);
+                return result;
             }
         }
         const noop = rda.actionSchema.alloc();
