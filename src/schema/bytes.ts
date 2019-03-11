@@ -6,7 +6,7 @@ export class MuBytes implements MuSchema<Uint8Array> {
     public readonly identity:Uint8Array;
     public readonly json:object;
 
-    public pool:{ [dimension:string] : Uint8Array[] } = {};
+    public pool:{ [dimension:string]:Uint8Array[] } = {};
 
     constructor (identity?:Uint8Array) {
         if (identity) {
@@ -17,7 +17,7 @@ export class MuBytes implements MuSchema<Uint8Array> {
 
         this.json = {
             type: 'bytes',
-            identity: `[${this.identity.toString()}]`,
+            identity: `[${(Array.prototype.slice.call(this.identity).join())}]`,
         };
     }
 
@@ -37,7 +37,7 @@ export class MuBytes implements MuSchema<Uint8Array> {
         this.pool[length].push(bytes);
     }
 
-    public equal (a:Uint8Array, b: Uint8Array) {
+    public equal (a:Uint8Array, b:Uint8Array) {
         if (a.length !== b.length) {
             return false;
         }
