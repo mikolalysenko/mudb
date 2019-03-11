@@ -1,7 +1,8 @@
 import test = require('tape');
 
 import { MuInt8, MuFloat64, MuASCII, MuStruct, MuUint32, MuUTF8 } from '../../schema';
-import { MuRDA, MuRDAStore, MuRDATypes, MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
+import { MuRDA, MuRDAStore, MuRDATypes, MuRDARegisterStore } from '../index';
+import { MuRDAConstant, MuRDARegister, MuRDAStruct, MuRDAMap, MuRDAList } from '../index';
 
 function testInverse<
     RDA extends MuRDA<any, any, any, any>,
@@ -296,5 +297,40 @@ test('inverse - list', (t) => {
         store.apply(L, inverses[i]);
     }
     t.deepEqual(store.state(L, []), [1.11, 2.22, 3.33, 4.44, 5.55]);
+    t.end();
+});
+
+test('inverse - list of structs', (t) => {
+    const L = new MuRDAList(new MuRDAStruct({
+        f: new MuRDARegister(new MuFloat64()),
+        u: new MuRDARegister(new MuUTF8()),
+        s: new MuRDAStruct({
+            x: new MuRDARegister(new MuFloat64()),
+        }),
+    }));
+    const store = L.createStore([L.valueRDA.stateSchema.identity]);
+    const dispatchers = L.action(store);
+
+    const actions:any[] = [];
+    actions.push(dispatchers.update(0).f(1));
+    actions.push(dispatchers.update(0).u('Iñtërnâtiônàlizætiøn☃💩'));
+    actions.push(dispatchers.update(0).s.x(0.5));
+
+    const inverses:any[] = [];
+    for (let i = 0; i < actions.length; ++i) {
+        const action = actions[i];
+        const inverse = store.inverse(L, actions[i]);
+        testInverse(t, store, L, action, JSON.stringify(action));
+        testInverse(t, store, L, inverse, JSON.stringify(inverse));
+        inverses.push(store.inverse(L, actions[i]));
+    }
+
+    for (let i = 0; i < actions.length; ++i) {
+        store.apply(L, actions[i]);
+    }
+    for (let i = 0; i < inverses.length; ++i) {
+        store.apply(L, inverses[i]);
+    }
+    t.deepEqual(store.state(L, []), [L.valueRDA.stateSchema.identity]);
     t.end();
 });
