@@ -4,6 +4,7 @@ import {
     MuUTF8,
     MuFloat32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -345,5 +346,35 @@ test('json.fromJSON()', (t) => {
     const json = new MuJSON();
     const o = {};
     t.equal(json.fromJSON(json.toJSON(o)), o);
+    const o2 = {a: 1234};
+    t.equal(json.fromJSON(json.toJSON(o2)), o2);
+    t.end();
+});
+
+test('option.toJSON()', (t) => {
+    const op = new MuOption(new MuFloat32()); // optional primitive
+    const of = new MuOption(new MuStruct({op: op})); // optional functor
+
+    t.equal(op.toJSON(undefined), undefined);
+    t.equal(op.toJSON(4), 4);
+
+    t.equal(of.toJSON(undefined), undefined);
+    t.deepEqual(of.toJSON({op: undefined}), {op: undefined});
+    t.deepEqual(of.toJSON({op: 4}), {op: 4});
+
+    t.end();
+});
+
+test('option.fromJSON()', (t) => {
+    const op = new MuOption(new MuFloat32()); // optional primitive
+    const of = new MuOption(new MuStruct({op: op})); // optional functor
+
+    t.equal(op.fromJSON(op.toJSON(undefined)), undefined);
+    t.equal(op.fromJSON(op.toJSON(4)), 4);
+
+    t.equal(of.fromJSON(of.toJSON(undefined)), undefined);
+    t.deepEqual(of.fromJSON(of.toJSON({op: undefined})), {op: undefined});
+    t.deepEqual(of.fromJSON(of.toJSON({op: 4})), {op: 4});
+
     t.end();
 });

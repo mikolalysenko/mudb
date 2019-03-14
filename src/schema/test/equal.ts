@@ -12,6 +12,8 @@ import {
     MuVector,
     MuDate,
     MuJSON,
+    MuOption,
+    MuUint8,
 } from '../index';
 
 test('primitive.equal()', (t) => {
@@ -252,6 +254,27 @@ test('date.equal()', (t) => {
     t.false(date.equal(d1, d2));
     d2.setTime(d1.getTime());
     t.true(date.equal(d1, d2));
+    t.end();
+});
+
+test('option.equal()', (t) => {
+    const optNum = new MuOption(new MuUint8());
+    t.true(optNum.equal(undefined, undefined));
+    t.false(optNum.equal(2, undefined));
+    t.false(optNum.equal(undefined, 2));
+    t.false(optNum.equal(4, 2));
+    t.true(optNum.equal(2, 2));
+
+    const struct = new MuStruct({a: optNum});
+    t.true(struct.equal({a: undefined}, {a: undefined}));
+    t.false(struct.equal({a: 2}, {a: undefined}));
+    t.false(struct.equal({a: undefined}, {a: 2}));
+    t.false(struct.equal({a: 4}, {a: 2}));
+    t.true(struct.equal({a: 2}, {a: 2}));
+    // t.true(struct.equal({}, {}));
+    // t.false(struct.equal({}, {a: 2}));
+    // t.false(struct.equal({a:2}, {}));
+
     t.end();
 });
 

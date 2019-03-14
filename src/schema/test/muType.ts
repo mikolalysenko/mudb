@@ -14,6 +14,7 @@ import {
     MuUint16,
     MuUint32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -47,5 +48,6 @@ test('schema.muType', (t) => {
     t.equal(new MuBytes(new Uint8Array(1)).muType,          'bytes');
     t.equal(new MuDictionary(new MuFloat32(), 0).muType,    'dictionary');
     t.equal(new MuVector(new MuFloat32(), 5).muType,        'vector');
+    t.equal(new MuOption(new MuFloat32()).muType,           'option');
     t.end();
 });
