@@ -342,8 +342,8 @@ export class MuRDAList<RDA extends MuRDA<any, any, any, any>>
 
     private _savedStore:MuRDAListStore<this> = <any>null;
     private _insert = (index:number, elements:RDA['stateSchema']['identity'][]) : MuRDAListTypes<RDA>['insertAction'] => {
-        const pred = index <= 0 ? ID_MIN : this._savedStore.ids[Math.min(this._savedStore.ids.length - 1, index - 1)];
-        const succ = index >= this._savedStore.ids.length ? ID_MAX : this._savedStore.ids[Math.max(0, index)];
+        const pred = index <= 0 ? ID_MIN : this._savedStore.ids[Math.min(this._savedStore.ids.length - 1, index - 1)] || ID_MIN;
+        const succ = index >= this._savedStore.ids.length ? ID_MAX : this._savedStore.ids[Math.max(0, index)] || ID_MAX;
         const ids = allocIds(pred, succ, elements.length);
         const action = <MuRDAListTypes<RDA>['insertAction']>this.actionSchema.alloc();
         action.type = 'insert';
