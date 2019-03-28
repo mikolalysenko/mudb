@@ -1,13 +1,5 @@
-import * as test from 'tape';
-import { MuWriteStream, MuReadStream } from '../';
-import { reallocBuffer, allocBuffer, freeBuffer } from '../';
-
-import StringCodec = require('../codec');
-
-const {
-    encodeString,
-    decodeString,
-} = StringCodec;
+import test = require('tape');
+import { MuWriteStream, MuReadStream, allocBuffer } from '../';
 
 test('buffer allocation', (t) => {
     t.equals(allocBuffer(8).buffer.byteLength, 8);
