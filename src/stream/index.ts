@@ -1,23 +1,20 @@
-const root = (typeof self == 'object' && self['Object'] == Object && self) ||
-            (typeof global == 'object' && global['Object'] == Object && global);
+const root = (typeof self == 'object' && self['Object'] == Object && self)
+          || (typeof global == 'object' && global['Object'] == Object && global);
 
-export let encodeString:(str:string) => Uint8Array;
-export let decodeString:(bytes:Uint8Array) => string;
+export let encodeUTF8:(str:string) => Uint8Array;
+export let decodeUTF8:(bytes:Uint8Array) => string;
 
-// `TextEncoder` and `TextDecoder` have become globals since Node.js v11
+// TextEncoder and TextDecoder have become globals since Node v11
 if (typeof root === 'object' && 'TextEncoder' in root) {
     const encoder = new TextEncoder();
-    encodeString = (str) => encoder.encode(str);
+    encodeUTF8 = (str) => encoder.encode(str);
     const decoder = new TextDecoder();
-    decodeString = (bytes) => decoder.decode(bytes);
+    decodeUTF8 = (bytes) => decoder.decode(bytes);
 } else {
-    const StringCodec = require('./codec');
-    encodeString = StringCodec.encodeString;
-    decodeString = StringCodec.decodeString;
+    const codec = require('./codec');
+    encodeUTF8 = codec.encode;
+    decodeUTF8 = codec.decode;
 }
-
-export const encodeUTF8 = encodeString;
-export const decodeUTF8 = decodeString;
 
 // round to next highest power of 2
 function ceilLog2 (v_) {
@@ -176,7 +173,7 @@ export class MuWriteStream {
     }
 
     public writeString (str:string) {
-        const bytes = encodeString(str);
+        const bytes = encodeUTF8(str);
         this.writeVarint(bytes.length);
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
@@ -299,7 +296,7 @@ export class MuReadStream {
         const byteLength = this.readVarint();
         const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
         this.offset += byteLength;
-        return decodeString(bytes);
+        return decodeUTF8(bytes);
     }
 
     public readUint8At (offset:number) : number {

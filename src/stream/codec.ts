@@ -74,7 +74,7 @@ function utf8ToBytes(str:string) : number[] {
     return bytes;
 }
 
-export function encodeString(str:string) {
+export function encode (str:string) {
     return new Uint8Array(utf8ToBytes(str));
 }
 
@@ -103,7 +103,7 @@ function decodeCodePointsArray (codePoints:number[]) : string {
 }
 
 // Taken from https://github.com/feross/buffer
-export function decodeString (bytes:Uint8Array) : string {
+export function decode (bytes:Uint8Array) : string {
     const { byteLength } = bytes;
     const res:number[] = [];
 
