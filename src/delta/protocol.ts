@@ -1,17 +1,16 @@
 import { MuSchema } from '../schema/schema';
 
-export function muDeltaProtocol<Schema extends MuSchema<any>> (schema:Schema) {
+export function muDeltaSchema<Schema extends MuSchema<any>> (schema:Schema) {
     return {
         client: {
-            reset:schema,
+            reset: schema,
         },
-        server: {
-        },
+        server: { },
     };
 }
 
 // FIXME: Figure out how to use ReturnType<> correctly here
-export type DeltaProtocol<Schema extends MuSchema<any>> = {
+export type MuDeltaSchema<Schema extends MuSchema<any>> = {
     client:{
         reset:Schema,
     },
