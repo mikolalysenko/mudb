@@ -1,30 +1,36 @@
-import { GameSchema } from './schema';
-import { MuServer } from 'mudb/server';
-import { MuServerState } from 'mudb/state/server';
+import { MuServer } from '../../server';
+import { MuDeltaServer } from '../../delta/server';
+import { PlayerSetSchema, ControllerSchema } from './schema';
 
-export = function (server:MuServer) {
-    const protocol = new MuServerState({
-        schema: GameSchema,
-        server,
-        windowSize: 0,
+export = (server:MuServer) => {
+    const deltaServer = new MuDeltaServer({
+        server: server,
+        schema: PlayerSetSchema,
     });
 
-    protocol.configure({
-        state: (client, { x, y, color }) => {
-            protocol.state[client.sessionId] = { x, y, color };
-            protocol.commit();
-        },
+    const players = {};
+
+    const playProtocol = server.protocol(ControllerSchema);
+    playProtocol.configure({
         connect: (client) => {
-            protocol.state[client.sessionId] = {
+            players[client.sessionId] = {
                 x: 0,
                 y: 0,
-                color: '#fff',
+                color: `#${Math.floor(Math.random() * 0xefffff + 0x100000).toString(16)}`,
             };
-            protocol.commit();
+            deltaServer.publish(players);
+        },
+        message: {
+            move: (client, data) => {
+                const { x, y } = data;
+                players[client.sessionId].x = x;
+                players[client.sessionId].y = y;
+                deltaServer.publish(players);
+            },
         },
         disconnect: (client) => {
-            delete protocol.state[client.sessionId];
-            protocol.commit();
+            delete players[client.sessionId];
+            deltaServer.publish(players);
         },
     });
 

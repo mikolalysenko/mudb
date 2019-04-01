@@ -20,9 +20,9 @@ type ClientTemplateSpec = {
 function clientTemplate (spec:ClientTemplateSpec) {
     function generateLocal() {
         return `
-var MuServer = require('${require.resolve('mudb/server')}').MuServer;
-var launchServer = require('${spec.serverPath}');
-var muLocalSocket = require('${require.resolve('mudb/socket/local')}');
+var MuServer = require('${require.resolve('mudb/server').replace(/\\/g, '\\\\')}').MuServer;
+var launchServer = require('${spec.serverPath.replace(/\\/g, '\\\\')}');
+var muLocalSocket = require('${require.resolve('mudb/socket/local').replace(/\\/g, '\\\\')}');
 
 var socketServer = muLocalSocket.createLocalSocketServer();
 var server = new MuServer(socketServer);
@@ -37,7 +37,7 @@ var socket = muLocalSocket.createLocalSocket({
 
     function generateWebSocket() {
         return `
-var MuWebSocket = require('${require.resolve('mudb/socket/web/client')}').MuWebSocket;
+var MuWebSocket = require('${require.resolve('mudb/socket/web/client').replace(/\\/g, '\\\\')}').MuWebSocket;
 var socket = new MuWebSocket({
     sessionId: Math.round(1e12 * Math.random()).toString(32),
     url: 'ws://' + window.location.host,
@@ -55,8 +55,8 @@ var socket = new MuWebSocket({
     }
 
     return `
-var MuClient = require('${require.resolve('mudb/client')}').MuClient;
-var runClient = require('${spec.clientPath}');
+var MuClient = require('${require.resolve('mudb/client').replace(/\\/g, '\\\\')}').MuClient;
+var runClient = require('${spec.clientPath.replace(/\\/g, '\\\\')}');
 
 ${generateSocket()}
 
@@ -118,6 +118,7 @@ export function createMudo (spec:MudoSpec) {
                 socketType,
             };
             const clientModule = clientTemplate(clientModuleSpec);
+            console.log(clientModule);
             fs.write(
                 info.fd,
                 clientModule,
