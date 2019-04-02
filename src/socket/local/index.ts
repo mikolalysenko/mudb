@@ -53,14 +53,22 @@ export class MuLocalSocket implements MuSocket {
     private _isClientSocket:boolean;
     public state = MuSocketState.INIT;
 
-    constructor (sessionId:string, server:MuLocalSocketServer, isClientSocket?:boolean) {
+    private _setTimeout:(handler:(...args:any[]) => void, timeout:number) => void;
+
+    constructor (
+        sessionId:string,
+        server:MuLocalSocketServer,
+        isClientSocket:boolean,
+        setTimeout:(handler:(...args:any[]) => void, timeout:number) => void,
+    ) {
         this.sessionId = sessionId;
         this._server = server;
-        this._isClientSocket = !!isClientSocket;
+        this._isClientSocket = isClientSocket;
+        this._setTimeout = setTimeout;
     }
 
     public open (spec:MuSocketSpec) {
-        setTimeout(
+        this._setTimeout(
             () => {
                 if (this.state === MuSocketState.OPEN) {
                     this._onClose('socket already open');
@@ -140,12 +148,12 @@ export class MuLocalSocket implements MuSocket {
         const data = typeof data_ === 'string' ? data_ : new BufferWrapper(data_);
         if (unreliable) {
             this._pendingUnreliableMessages.push(data);
-            setTimeout(this._drainUnreliable, 0);
+            this._setTimeout(this._drainUnreliable, 0);
         } else {
             this._pendingMessages.push(data);
             // if no awaiting draining task
             if (!this._drainTimeout) {
-                this._drainTimeout = setTimeout(this._drain, 0);
+                this._drainTimeout = this._setTimeout(this._drain, 0);
             }
         }
     }
@@ -253,12 +261,14 @@ export function createLocalSocketServer () : MuLocalSocketServer {
 export function createLocalSocket (spec:{
     sessionId:MuSessionId;
     server:MuLocalSocketServer;
+    mockSetTimeout?:(handler:(...args:any[]) => void, timeout:number) => void,
 }) : MuLocalSocket {
     const server = spec.server;
 
     // manually spawn and relate sockets on both sides
-    const clientSocket = new MuLocalSocket(spec.sessionId, server, true);
-    const serverSocket = new MuLocalSocket(spec.sessionId, server);
+    const mockSetTimeout = spec.mockSetTimeout || setTimeout;
+    const clientSocket = new MuLocalSocket(spec.sessionId, server, true, mockSetTimeout);
+    const serverSocket = new MuLocalSocket(spec.sessionId, server, false, mockSetTimeout);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
 
