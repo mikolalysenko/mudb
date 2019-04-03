@@ -1,6 +1,13 @@
 import { MuScheduler } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
+export const MuSystemScheduler:MuScheduler = {
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout,
+    setInterval: setInterval,
+    clearInterval: clearInterval,
+};
+
 export class MuMockScheduler implements MuScheduler {
     private _eventQueue = NIL;
     private _timeoutCounter:number = 0;
