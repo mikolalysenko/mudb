@@ -1,6 +1,7 @@
+import { MuScheduler } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
-export class MuMockScheduler {
+export class MuMockScheduler implements MuScheduler {
     private _eventQueue = NIL;
     private _timeoutCounter:number = 0;
     private _mockMSCounter = 0;
