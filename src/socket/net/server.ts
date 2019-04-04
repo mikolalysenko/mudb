@@ -15,6 +15,8 @@ import {
 } from '../../socket';
 
 import { messagify, isJSON } from './util';
+import { MuScheduler } from '../../scheduler/scheduler';
+import { MuSystemScheduler } from '../../scheduler';
 
 function noop () { }
 
@@ -37,12 +39,15 @@ class MuNetSocketClient implements MuSocket {
     public onmessage:MuMessageHandler = noop;
     private _onclose:MuCloseHandler = noop;
 
+    public scheduler:MuScheduler;
+
     constructor (
         sessionId:MuSessionId,
         reliableSocket:tcp.Socket,
         unreliableSocket:udp.Socket,
         remotePort:number,
         remoteAddr:string,
+        scheduler:MuScheduler,
         removeConnection:() => void,
     ) {
         this.sessionId = sessionId;
@@ -50,6 +55,7 @@ class MuNetSocketClient implements MuSocket {
         this._unreliableSocket = unreliableSocket;
         this._remotePort = remotePort;
         this._remoteAddr = remoteAddr;
+        this.scheduler = scheduler;
 
         this._reliableSocket.on('message', (msg) => {
             if (isJSON(msg)) {
@@ -76,7 +82,7 @@ class MuNetSocketClient implements MuSocket {
             throw new Error('mudb/net-socket: socket was already opened');
         }
 
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 const onmessage = this.onmessage = spec.message;
                 this._onclose = spec.close;
@@ -143,12 +149,16 @@ export class MuNetSocketServer implements MuSocketServer {
 
     private _onclose:MuCloseHandler;
 
+    public scheduler:MuScheduler;
+
     constructor (spec:{
         tcpServer:tcp.Server,
         udpServer:udp.Socket,
+        scheduler?:MuScheduler,
     }) {
         this._tcpServer = spec.tcpServer;
         this._udpServer = spec.udpServer;
+        this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
     public start (spec:MuSocketServerSpec) {
@@ -185,6 +195,7 @@ export class MuNetSocketServer implements MuSocketServer {
                         this._udpServer,
                         clientInfo.p,
                         clientInfo.a,
+                        this.scheduler,
                         () => {
                             this.clients.splice(this.clients.indexOf(client), 1);
                             delete this._unreliableMsgHandlers[url];

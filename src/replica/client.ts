@@ -2,6 +2,8 @@ import { MuRDA, MuRDATypes, MuRDAAction, MuRDAActionMeta } from '../rda/rda';
 import { MuClient, MuClientProtocol } from '../client';
 import { MuStruct } from '../schema/struct';
 import { rdaProtocol, RDAProtocol } from './schema';
+import { MuScheduler } from '../scheduler/scheduler';
+import { MuSystemScheduler } from '../scheduler';
 
 export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuClientProtocol<RDAProtocol<RDA>>;
@@ -16,9 +18,12 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
     private _undoActions:MuReplicaClient<RDA>['_undoRedoSchema']['identity'][] = [];
     private _redoActions:MuRDATypes<RDA>['action'][] = [];
 
+    public scheduler:MuScheduler;
+
     constructor (spec:{
         client:MuClient,
         rda:RDA,
+        scheduler?:MuScheduler,
     }) {
         this.rda = spec.rda;
         this.store = <MuRDATypes<RDA>['store']>spec.rda.createStore(spec.rda.stateSchema.identity);
@@ -27,6 +32,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
             undo: spec.rda.actionSchema,
             redo: spec.rda.actionSchema,
         });
+        this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
     // change listener stuff
@@ -49,7 +55,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         if (!this._onChange || this._changeTimeout) {
             return;
         }
-        this._changeTimeout = setTimeout(this._handleChange, 0);
+        this._changeTimeout = this.scheduler.setTimeout(this._handleChange, 0);
     }
 
     public configure(spec:{
@@ -101,7 +107,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
                 }
                 this._redoActions.length = 0;
                 if (this._changeTimeout) {
-                    clearTimeout(this._changeTimeout);
+                    this.scheduler.clearTimeout(this._changeTimeout);
                     this._changeTimeout = null;
                 }
             },

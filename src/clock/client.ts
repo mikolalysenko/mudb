@@ -1,6 +1,8 @@
 import { MuClient, MuClientProtocol } from '../client';
 import { MuClockProtocol } from './schema';
 import { MuClock } from './clock';
+import { MuScheduler } from '../scheduler/scheduler';
+import { MuSystemScheduler } from '../scheduler';
 
 const DEFAULT_TICK_RATE = 60;
 const DEFAULT_PING_RATE = 300;
@@ -69,6 +71,8 @@ export class MuClockClient {
         this.poll();
     }
 
+    public scheduler:MuScheduler;
+
     constructor(spec:{
         client:MuClient,
         ready?:() => void,
@@ -77,6 +81,7 @@ export class MuClockClient {
         pingBufferSize?:number,
         frameSkip?:number,
         enableRewind?:boolean,
+        scheduler?:MuScheduler,
     }) {
         this._protocol = spec.client.protocol(MuClockProtocol);
         this._onTick = spec.tick || function () { };
@@ -86,6 +91,8 @@ export class MuClockClient {
         }
         this.monotone = !spec.enableRewind;
         this.maxPingSamples = spec.pingBufferSize || DEFAULT_PING_BUFFER_SIZE;
+
+        this.scheduler = spec.scheduler || MuSystemScheduler;
 
         this._protocol.configure({
             message: {
@@ -100,7 +107,7 @@ export class MuClockClient {
                     for (let i = 0; i < 5; ++i) {
                         this._doPing();
                     }
-                    this._pingInterval = setInterval(() => this._doPing(), spec.pingRate || DEFAULT_PING_RATE);
+                    this._pingInterval = this.scheduler.setInterval(() => this._doPing(), spec.pingRate || DEFAULT_PING_RATE);
 
                     this._pollHandle = ric(this._poll, { timeout: 0.5 * this.tickRate });
                     if (spec.ready) {
@@ -126,7 +133,7 @@ export class MuClockClient {
             },
             close: () => {
                 cic(this._pollHandle);
-                clearInterval(this._pingInterval);
+                this.scheduler.clearInterval(this._pingInterval);
             },
         });
     }

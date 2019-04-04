@@ -1,3 +1,4 @@
+import { allocBuffer, freeBuffer, MuBuffer } from '../../stream';
 import {
     MuSocket,
     MuSocketSpec,
@@ -11,11 +12,8 @@ import {
     MuCloseHandler,
     MuConnectionHandler,
 } from '../../socket';
-import {
-    allocBuffer,
-    freeBuffer,
-    MuBuffer,
-} from '../../stream';
+import { MuScheduler } from '../../scheduler/scheduler';
+import { MuSystemScheduler } from '../../scheduler';
 
 function noop () {}
 
@@ -53,14 +51,22 @@ export class MuLocalSocket implements MuSocket {
     private _isClientSocket:boolean;
     public state = MuSocketState.INIT;
 
-    constructor (sessionId:string, server:MuLocalSocketServer, isClientSocket?:boolean) {
+    public scheduler:MuScheduler;
+
+    constructor (
+        sessionId:string,
+        server:MuLocalSocketServer,
+        isClientSocket:boolean,
+        scheduler:MuScheduler,
+    ) {
         this.sessionId = sessionId;
         this._server = server;
-        this._isClientSocket = !!isClientSocket;
+        this._isClientSocket = isClientSocket;
+        this.scheduler = scheduler;
     }
 
     public open (spec:MuSocketSpec) {
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 if (this.state === MuSocketState.OPEN) {
                     this._onClose('socket already open');
@@ -140,12 +146,12 @@ export class MuLocalSocket implements MuSocket {
         const data = typeof data_ === 'string' ? data_ : new BufferWrapper(data_);
         if (unreliable) {
             this._pendingUnreliableMessages.push(data);
-            setTimeout(this._drainUnreliable, 0);
+            this.scheduler.setTimeout(this._drainUnreliable, 0);
         } else {
             this._pendingMessages.push(data);
             // if no awaiting draining task
             if (!this._drainTimeout) {
-                this._drainTimeout = setTimeout(this._drain, 0);
+                this._drainTimeout = this.scheduler.setTimeout(this._drain, 0);
             }
         }
     }
@@ -180,6 +186,12 @@ export class MuLocalSocketServer implements MuSocketServer {
     private _onConnection:MuConnectionHandler;
     private _onClose:MuCloseHandler;
 
+    public scheduler:MuScheduler;
+
+    constructor (scheduler:MuScheduler) {
+        this.scheduler = scheduler;
+    }
+
     // should only be used inside the module
     public _handleConnection (socket) {
         switch (this.state) {
@@ -202,7 +214,7 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 if (this.state === MuSocketServerState.RUNNING) {
                     this._onClose('local socket server already running');
@@ -246,19 +258,22 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 }
 
-export function createLocalSocketServer () : MuLocalSocketServer {
-    return new MuLocalSocketServer();
+export function createLocalSocketServer (spec?:{
+    scheduler?:MuScheduler,
+}) : MuLocalSocketServer {
+    return new MuLocalSocketServer(spec && spec.scheduler || MuSystemScheduler);
 }
 
 export function createLocalSocket (spec:{
     sessionId:MuSessionId;
     server:MuLocalSocketServer;
+    scheduler?:MuScheduler;
 }) : MuLocalSocket {
-    const server = spec.server;
+    const scheduler = spec.scheduler || MuSystemScheduler;
 
     // manually spawn and relate sockets on both sides
-    const clientSocket = new MuLocalSocket(spec.sessionId, server, true);
-    const serverSocket = new MuLocalSocket(spec.sessionId, server);
+    const clientSocket = new MuLocalSocket(spec.sessionId, spec.server, true, scheduler);
+    const serverSocket = new MuLocalSocket(spec.sessionId, spec.server, false, scheduler);
     clientSocket._duplex = serverSocket;
     serverSocket._duplex = clientSocket;
 

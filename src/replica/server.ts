@@ -2,17 +2,22 @@ import { MuRDA, MuRDATypes, MuRDAActionMeta } from '../rda/rda';
 import { MuServer, MuServerProtocol } from '../server';
 import { rdaProtocol, RDAProtocol } from './schema';
 import { MuSessionId } from '../socket';
+import { MuScheduler } from '../scheduler/scheduler';
+import { MuSystemScheduler } from '../scheduler';
 
 export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuServerProtocol<RDAProtocol<RDA>>;
     public rda:RDA;
     public store:MuRDATypes<RDA>['store'];
 
+    public scheduler:MuScheduler;
+
     constructor (spec:{
         server:MuServer,
         rda:RDA,
         savedStore?:MuRDATypes<RDA>['serializedStore'],
         initialState?:MuRDATypes<RDA>['state'],
+        scheduler?:MuScheduler,
     }) {
         this.rda = spec.rda;
         if ('savedStore' in spec) {
@@ -24,6 +29,8 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
                     : this.rda.stateSchema.identity);
         }
         this.protocol = spec.server.protocol(rdaProtocol(spec.rda));
+
+        this.scheduler = spec.scheduler || MuSystemScheduler;
 
         const self = this;
         function wrapAction (meta:MuRDAActionMeta, index:string) {
@@ -70,7 +77,7 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
         if (!this._onChange || this._changeTimeout) {
             return;
         }
-        this._changeTimeout = setTimeout(this._handleChange, 0);
+        this._changeTimeout = this.scheduler.setTimeout(this._handleChange, 0);
     }
 
     public configure(spec:{
