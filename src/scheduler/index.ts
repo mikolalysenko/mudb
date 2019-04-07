@@ -1,11 +1,79 @@
+import now = require('right-now');
+
 import { MuScheduler } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
+
+const root = typeof self === 'object' ? self : global;
+const frameDuration = 1000 / 16;
+
+let rAF:(callback:(time:number) => void) => number = root['requestAnimationFrame']
+    || root['webkitRequestAnimationFrame']
+    || root['mozRequestAnimationFrame'];
+
+let cAF:(handle:number) => void = root['cancelAnimationFrame']
+    || root['webkitCancelAnimationFrame']
+    || root['mozCancelAnimationFrame']
+    || root['webkitRequestCancelAnimationFrame']
+    || root['mozCancelRequestAnimationFrame'];
+
+// ported from https://github.com/chrisdickinson/raf/
+if (!rAF || !cAF) {
+    const queue:{
+        handle:number,
+        callback:(id:number) => void,
+        cancelled:boolean,
+    }[] = [];
+
+    let last = 0;
+    let id = 0;
+
+    rAF = (callback) => {
+        if (queue.length === 0) {
+            const now_ = now();
+            const next = Math.max(0, frameDuration - (now_ - last));
+
+            last = now_ + next;
+            setTimeout(() => {
+                const copy = queue.slice(0);
+                queue.length = 0;
+
+                for (let i = 0; i < copy.length; ++i) {
+                    if (!copy[i].cancelled) {
+                        try {
+                            copy[i].callback(last);
+                        } catch (e) {
+                            setTimeout(() => { throw e; }, 0);
+                        }
+                    }
+                }
+            }, Math.round(next));
+        }
+
+        queue.push({
+            handle: ++id,
+            callback: callback,
+            cancelled: false,
+        });
+
+        return id;
+    };
+
+    cAF = (handle) => {
+        for (let i = 0; i < queue.length; ++i) {
+            if (queue[i].handle === handle) {
+                queue[i].cancelled = true;
+            }
+        }
+    };
+}
 
 export const MuSystemScheduler:MuScheduler = {
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
     setInterval: setInterval,
     clearInterval: clearInterval,
+    requestAnimationFrame: rAF,
+    cancelAnimationFrame: cAF,
 };
 
 export class MuMockScheduler implements MuScheduler {
@@ -31,10 +99,10 @@ export class MuMockScheduler implements MuScheduler {
         }
     }
 
-    public setTimeout = (event:() => void, ms:number) => {
+    public setTimeout = (callback:() => void, ms:number) => {
         const id = this._timeoutCounter++;
         const time = 1 + this._mockMSCounter + Math.max(ms, 0);
-        const node = createNode(id, time, event);
+        const node = createNode(id, time, callback);
         this._idToEvent[id] = node;
         this._eventQueue = merge(this._eventQueue, node);
         return id;
@@ -49,7 +117,7 @@ export class MuMockScheduler implements MuScheduler {
         }
     }
 
-    public setInterval = (cb:() => void, ms:number) => {
+    public setInterval = (callback:() => void, ms:number) => {
         const id = this._timeoutCounter++;
         const self = this;
 
@@ -62,7 +130,7 @@ export class MuMockScheduler implements MuScheduler {
 
         function event () {
             insertNode();
-            cb();
+            callback();
         }
 
         insertNode();
@@ -71,4 +139,15 @@ export class MuMockScheduler implements MuScheduler {
     }
 
     public clearInterval = this.clearTimeout;
+
+    private _rAFLast = 0;
+    public requestAnimationFrame = (callback:(time:number) => void) => {
+        const now_ = now();
+        const timeout = Math.max(0, frameDuration - (now_ - this._rAFLast));
+        const then = this._rAFLast = now_ + timeout;
+
+        return this.setTimeout(() => callback(then), timeout);
+    }
+
+    public cancelAnimationFrame = this.clearTimeout;
 }
