@@ -146,7 +146,7 @@ export class MuMockScheduler implements MuScheduler {
         const timeout = Math.max(0, frameDuration - (now_ - this._rAFLast));
         const then = this._rAFLast = now_ + timeout;
 
-        return this.setTimeout(() => callback(then), timeout);
+        return this.setTimeout(() => callback(then), Math.round(timeout));
     }
 
     public cancelAnimationFrame = this.clearTimeout;
