@@ -13,7 +13,7 @@ let rAF:(callback:(time:number) => void) => number = root['requestAnimationFrame
 let cAF:(handle:number) => void = root['cancelAnimationFrame']
     || root['webkitCancelAnimationFrame']
     || root['mozCancelAnimationFrame']
-    || root['webkitRequestCancelAnimationFrame']
+    || root['webkitCancelRequestAnimationFrame']
     || root['mozCancelRequestAnimationFrame'];
 
 // ported from https://github.com/chrisdickinson/raf/
