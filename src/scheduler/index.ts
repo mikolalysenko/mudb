@@ -1,16 +1,22 @@
 import now = require('right-now');
 
-import { MuScheduler } from './scheduler';
+import {
+    MuScheduler,
+    MuRequestAnimationFrame,
+    MuCancelAnimationFrame,
+    MuRequestIdleCallback,
+    MuCancelIdleCallback,
+} from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
 const root = typeof self === 'object' ? self : global;
 const frameDuration = 1000 / 16;
 
-let rAF:(callback:(time:number) => void) => number = root['requestAnimationFrame']
+let rAF:MuRequestAnimationFrame = root['requestAnimationFrame']
     || root['webkitRequestAnimationFrame']
     || root['mozRequestAnimationFrame'];
 
-let cAF:(handle:number) => void = root['cancelAnimationFrame']
+let cAF:MuCancelAnimationFrame = root['cancelAnimationFrame']
     || root['webkitCancelAnimationFrame']
     || root['mozCancelAnimationFrame']
     || root['webkitCancelRequestAnimationFrame']
@@ -67,6 +73,22 @@ if (!rAF || !cAF) {
     };
 }
 
+let rIC:MuRequestIdleCallback = root['requestIdleCallback'];
+let cIC:MuCancelIdleCallback = root['cancelIdleCallback'];
+
+// ported from https://gist.github.com/paullewis/55efe5d6f05434a96c36
+if (!rIC || !cIC) {
+    rIC = (cb) => setTimeout(() => {
+        const start = now();
+        cb({
+            didTimeout: false,
+            timeRemaining: () => Math.max(0, 50 - (now - start)),
+        });
+    }, 1);
+
+    cIC = (handle) => clearTimeout(handle);
+}
+
 export const MuSystemScheduler:MuScheduler = {
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
@@ -74,6 +96,8 @@ export const MuSystemScheduler:MuScheduler = {
     clearInterval: clearInterval,
     requestAnimationFrame: rAF,
     cancelAnimationFrame: cAF,
+    requestIdleCallback: rIC,
+    cancelIdleCallback: cIC,
 };
 
 export class MuMockScheduler implements MuScheduler {
@@ -141,7 +165,7 @@ export class MuMockScheduler implements MuScheduler {
     public clearInterval = this.clearTimeout;
 
     private _rAFLast = 0;
-    public requestAnimationFrame = (callback:(time:number) => void) => {
+    public requestAnimationFrame = (callback) => {
         const now_ = now();
         const timeout = Math.max(0, frameDuration - (now_ - this._rAFLast));
         const then = this._rAFLast = now_ + timeout;
@@ -150,4 +174,14 @@ export class MuMockScheduler implements MuScheduler {
     }
 
     public cancelAnimationFrame = this.clearTimeout;
+
+    public requestIdleCallback = (callback) => this.setTimeout(() => {
+        const start = now();
+        callback({
+            didTimeout: false,
+            timeRemaining: () => Math.max(0, 50 - (now() - start)),
+        });
+    }, 1)
+
+    public cancelIdleCallback = this.clearTimeout;
 }

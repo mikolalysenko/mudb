@@ -10,10 +10,6 @@ const DEFAULT_PING_BUFFER_SIZE = 1024;
 
 const DEFAULT_FRAME_SKIP = Infinity;
 
-const ric = (typeof window !== 'undefined' && (<any>window).requestIdleCallback) ||
-    ((cb, { timeout }) => setTimeout(cb, timeout));
-const cic = (typeof window !== 'undefined' && (<any>window).cancelIdleCallback) || clearTimeout;
-
 // ping = average of all samples within +/- standard deviation of median
 const scratchBuffer:number[] = [];
 function compareNum (a:number, b:number) { return a - b; }
@@ -67,7 +63,7 @@ export class MuClockClient {
 
     private _pollHandle:any;
     private _poll = () => {
-        this._pollHandle = ric(this._poll, { timeout: 0.5 * this.tickRate });
+        this._pollHandle = this.scheduler.requestIdleCallback(this._poll, { timeout: 0.5 * this.tickRate });
         this.poll();
     }
 
@@ -109,7 +105,7 @@ export class MuClockClient {
                     }
                     this._pingInterval = this.scheduler.setInterval(() => this._doPing(), spec.pingRate || DEFAULT_PING_RATE);
 
-                    this._pollHandle = ric(this._poll, { timeout: 0.5 * this.tickRate });
+                    this._pollHandle = this.scheduler.requestIdleCallback(this._poll, { timeout: 0.5 * this.tickRate });
                     if (spec.ready) {
                         spec.ready();
                     }
@@ -132,7 +128,7 @@ export class MuClockClient {
                 },
             },
             close: () => {
-                cic(this._pollHandle);
+                this.scheduler.cancelIdleCallback(this._pollHandle);
                 this.scheduler.clearInterval(this._pingInterval);
             },
         });
