@@ -16,6 +16,8 @@ export type MuRequestIdleCallback = (
 
 export type MuCancelIdleCallback = (handle:any) => void;
 
+export type MuProcessNextTick = (callback:(...args:any[]) => void) => void;
+
 export interface MuScheduler {
     setTimeout:(callback:(...args:any[]) => void, ms:number, ...args:any[]) => MuTimer;
     clearTimeout:(handle:any) => void;
@@ -25,4 +27,5 @@ export interface MuScheduler {
     cancelAnimationFrame:MuCancelAnimationFrame;
     requestIdleCallback:MuRequestIdleCallback;
     cancelIdleCallback:MuCancelIdleCallback;
+    nextTick:MuProcessNextTick;
 }

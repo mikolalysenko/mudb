@@ -6,6 +6,7 @@ import {
     MuCancelAnimationFrame,
     MuRequestIdleCallback,
     MuCancelIdleCallback,
+    MuProcessNextTick,
 } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
@@ -89,6 +90,19 @@ if (!rIC || !cIC) {
     cIC = (handle) => clearTimeout(handle);
 }
 
+let nextTick:MuProcessNextTick;
+if (typeof process === 'object' && typeof process.nextTick === 'function') {
+    nextTick = process.nextTick;
+} else if (typeof setImmediate === 'function') {
+    nextTick = (cb) => {
+        setImmediate(cb);
+    };
+} else {
+    nextTick = (cb) => {
+        setTimeout(cb, 0);
+    };
+}
+
 export const MuSystemScheduler:MuScheduler = {
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
@@ -98,6 +112,7 @@ export const MuSystemScheduler:MuScheduler = {
     cancelAnimationFrame: cAF,
     requestIdleCallback: rIC,
     cancelIdleCallback: cIC,
+    nextTick: nextTick,
 };
 
 export class MuMockScheduler implements MuScheduler {
@@ -184,4 +199,8 @@ export class MuMockScheduler implements MuScheduler {
     }, 1)
 
     public cancelIdleCallback = this.clearTimeout;
+
+    public nextTick = (callback) => {
+        this.setTimeout(callback, 0);
+    }
 }
