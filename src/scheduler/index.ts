@@ -10,13 +10,12 @@ import {
 } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
-const root = typeof self === 'object' ? self : global;
+const root = (typeof self === 'object' ? self : global) || {};
 const frameDuration = 1000 / 16;
 
 let rAF:MuRequestAnimationFrame = root['requestAnimationFrame']
     || root['webkitRequestAnimationFrame']
     || root['mozRequestAnimationFrame'];
-
 let cAF:MuCancelAnimationFrame = root['cancelAnimationFrame']
     || root['webkitCancelAnimationFrame']
     || root['mozCancelAnimationFrame']
