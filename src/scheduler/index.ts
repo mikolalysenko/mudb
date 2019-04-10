@@ -8,13 +8,13 @@ import {
 } from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
-const root = (typeof self === 'object' ? self : global) || {};
+const root = (typeof self !== 'undefined' ? self : global) || {};
 const frameDuration = 1000 / 60;
 
 let perfNow:() => number;
-if (typeof performance === 'object' && typeof performance.now === 'function') {
+if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
     perfNow = () => performance.now();
-} else if (typeof process === 'object' && typeof process.hrtime === 'function') {
+} else if (typeof process !== 'undefined' && typeof process.hrtime === 'function') {
     perfNow = (() => {
         function nanoSeconds () {
             const hrt = process.hrtime();
@@ -112,7 +112,7 @@ if (!rIC || !cIC) {
 }
 
 let nextTick:MuProcessNextTick;
-if (typeof process === 'object' && typeof process.nextTick === 'function') {
+if (typeof process !== 'undefined' && typeof process.nextTick === 'function') {
     nextTick = process.nextTick;
 } else if (typeof setImmediate === 'function') {
     nextTick = (cb) => {
