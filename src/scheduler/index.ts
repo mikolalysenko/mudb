@@ -1,5 +1,3 @@
-import now = require('right-now');
-
 import {
     MuScheduler,
     MuRequestAnimationFrame,
@@ -12,6 +10,30 @@ import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 
 const root = (typeof self === 'object' ? self : global) || {};
 const frameDuration = 1000 / 60;
+
+let perfNow:() => number;
+if (typeof performance === 'object' && typeof performance.now === 'function') {
+    perfNow = () => performance.now();
+} else if (typeof process === 'object' && typeof process.hrtime === 'function') {
+    perfNow = (() => {
+        function nanoSeconds () {
+            const hrt = process.hrtime();
+            return hrt[0] * 1e9 + hrt[1];
+        }
+        const loadTime = nanoSeconds() - process.uptime() * 1e9;
+        return () => (nanoSeconds() - loadTime) / 1e6;
+    })();
+} else if (typeof Date.now === 'function') {
+    perfNow = (() => {
+        const loadTime = Date.now();
+        return () => Date.now() - loadTime;
+    })();
+} else {
+    perfNow = (() => {
+        const loadTime = new Date().getTime();
+        return () => new Date().getTime() - loadTime;
+    })();
+}
 
 let rAF:MuRequestAnimationFrame = root['requestAnimationFrame']
     || root['webkitRequestAnimationFrame']
@@ -35,7 +57,7 @@ if (!rAF || !cAF) {
 
     rAF = (callback) => {
         if (queue.length === 0) {
-            const now_ = now();
+            const now_ = perfNow();
             const next = Math.max(0, frameDuration - (now_ - last));
 
             last = now_ + next;
@@ -79,10 +101,10 @@ let cIC:MuCancelIdleCallback = root['cancelIdleCallback'];
 // ported from https://gist.github.com/paullewis/55efe5d6f05434a96c36
 if (!rIC || !cIC) {
     rIC = (cb) => setTimeout(() => {
-        const start = now();
+        const start = perfNow();
         cb({
             didTimeout: false,
-            timeRemaining: () => Math.max(0, 50 - (now - start)),
+            timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
         });
     }, 1);
 
@@ -180,7 +202,7 @@ export class MuMockScheduler implements MuScheduler {
 
     private _rAFLast = 0;
     public requestAnimationFrame = (callback) => {
-        const now_ = now();
+        const now_ = perfNow();
         const timeout = Math.max(0, frameDuration - (now_ - this._rAFLast));
         const then = this._rAFLast = now_ + timeout;
 
@@ -190,10 +212,10 @@ export class MuMockScheduler implements MuScheduler {
     public cancelAnimationFrame = this.clearTimeout;
 
     public requestIdleCallback = (callback) => this.setTimeout(() => {
-        const start = now();
+        const start = perfNow();
         callback({
             didTimeout: false,
-            timeRemaining: () => Math.max(0, 50 - (now() - start)),
+            timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
         });
     }, 1)
 
