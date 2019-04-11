@@ -34,7 +34,7 @@ export function merge(a:PQEvent, b:PQEvent) {
         return b;
     } else if (b === NIL) {
       return a;
-    } else if (a.time < b.time) {
+    } else if (a.time <= b.time) {
       return link(a, b);
     } else {
       return link(b, a);
