@@ -146,17 +146,18 @@ export class MuMockScheduler implements MuScheduler {
         return this._mockMSCounter;
     }
 
-    public step (count:number) {
-        for (let i = 0; i < count; ++i) {
-            if (this._eventQueue === NIL) {
-                return;
-            }
-            this._mockMSCounter = this._eventQueue.time;
-            const event = this._eventQueue.event;
-            delete this._idToEvent[this._eventQueue.id];
-            this._eventQueue = pop(this._eventQueue);
-            event();
+    public poll () : boolean {
+        if (this._eventQueue === NIL) {
+            return false;
         }
+
+        this._mockMSCounter = this._eventQueue.time;
+        const event = this._eventQueue.event;
+        delete this._idToEvent[this._eventQueue.id];
+        this._eventQueue = pop(this._eventQueue);
+        event();
+
+        return true;
     }
 
     public setTimeout = (callback:() => void, ms:number) => {
