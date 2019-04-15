@@ -19,25 +19,24 @@ export class PQEvent {
 export const NIL = new PQEvent(-1, -Infinity, () => {}, <any>null, <any>null, <any>null);
 NIL.parent = NIL.left = NIL.right = NIL;
 
-function link(a:PQEvent, b:PQEvent) {
-    const al = a.left;
-    b.right = al;
-    al.parent = b;
-    b.parent = a;
+function link (a:PQEvent, b:PQEvent) {
+    b.right = a.left;
+    a.left.parent = b;
     a.left = b;
+    b.parent = a;
     a.right = NIL;
     return a;
 }
 
-export function merge(a:PQEvent, b:PQEvent) {
+export function merge (a:PQEvent, b:PQEvent) {
     if (a === NIL) {
         return b;
     } else if (b === NIL) {
-      return a;
-    } else if (a.time <= b.time) {
-      return link(a, b);
+        return a;
+    } else if (a.time < b.time) {
+        return link(a, b);
     } else {
-      return link(b, a);
+        return link(b, a);
     }
 }
 
@@ -73,7 +72,7 @@ export function pop (root:PQEvent) {
     return root;
 }
 
-export function decreaseKey(root:PQEvent, p:PQEvent, time:number) {
+export function decreaseKey (root:PQEvent, p:PQEvent, time:number) {
     p.time = time;
     const q = p.parent;
     if  (q.time < p.time) {
@@ -104,12 +103,6 @@ export function decreaseKey(root:PQEvent, p:PQEvent, time:number) {
     }
 }
 
-export function createNode(id:number, time:number, event:() => void) {
-    return new PQEvent(
-        id,
-        time,
-        event,
-        NIL,
-        NIL,
-        NIL);
+export function createNode (id:number, time:number, event:() => void) {
+    return new PQEvent(id, time, event, NIL, NIL, NIL);
 }

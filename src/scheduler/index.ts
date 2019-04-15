@@ -165,7 +165,7 @@ export class MuMockScheduler implements MuScheduler {
         const time = 1 + this._mockMSCounter + Math.max(ms, 0);
         const node = createNode(id, time, callback);
         this._idToEvent[id] = node;
-        this._eventQueue = merge(this._eventQueue, node);
+        this._eventQueue = merge(node, this._eventQueue);
         return id;
     }
 
@@ -186,7 +186,7 @@ export class MuMockScheduler implements MuScheduler {
             const time = 1 + self._mockMSCounter + Math.max(ms, 0);
             const node = createNode(id, time, event);
             self._idToEvent[id] = node;
-            self._eventQueue = merge(self._eventQueue, node);
+            self._eventQueue = merge(node, self._eventQueue);
         }
 
         function event () {
