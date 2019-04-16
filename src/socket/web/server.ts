@@ -8,6 +8,8 @@ import {
     MuSocketServer,
     MuSocketServerSpec,
 } from '../../socket';
+import { MuScheduler } from '../../scheduler/scheduler';
+import { MuSystemScheduler } from '../../scheduler/system';
 
 export interface UWSSocketInterface {
     onmessage:(message:{ data:Uint8Array|string }) => void;
@@ -116,9 +118,12 @@ export class MuWebSocketClient implements MuSocket {
 
     public state = MuSocketState.INIT;
 
-    constructor (connection:MuWebSocketConnection) {
+    public scheduler:MuScheduler;
+
+    constructor (connection:MuWebSocketConnection, scheduler:MuScheduler) {
         this.sessionId = connection.sessionId;
         this._connection = connection;
+        this.scheduler = scheduler;
     }
 
     public open (spec:MuSocketSpec) {
@@ -129,7 +134,7 @@ export class MuWebSocketClient implements MuSocket {
             throw new Error('mudb/web-socket: cannot reopen closed socket');
         }
 
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 this._connection.started = true;
 
@@ -179,10 +184,14 @@ export class MuWebSocketServer implements MuSocketServer {
 
     private _onClose;
 
+    public scheduler:MuScheduler;
+
     constructor (spec:{
         server:object,
+        scheduler?:MuScheduler,
     }) {
         this._httpServer = spec.server;
+        this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
     private _findConnection (sessionId:string) : MuWebSocketConnection | null {
@@ -202,7 +211,7 @@ export class MuWebSocketServer implements MuSocketServer {
             throw new Error('mudb/web-socket: server already shut down, cannot restart');
         }
 
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 this._websocketServer = new ws.Server({
                     server: this._httpServer,
@@ -249,7 +258,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                 });
                                 this._connections.push(connection);
 
-                                const client = new MuWebSocketClient(connection);
+                                const client = new MuWebSocketClient(connection, this.scheduler);
                                 this.clients.push(client);
 
                                 spec.connection(client);

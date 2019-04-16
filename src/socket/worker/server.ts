@@ -10,6 +10,8 @@ import {
     MuConnectionHandler,
     MuCloseHandler,
 } from '../../socket';
+import { MuScheduler } from '../../scheduler/scheduler';
+import { MuSystemScheduler } from '../../scheduler/system';
 
 function noop () { }
 
@@ -21,6 +23,12 @@ export class MuWorkerSocketServer implements MuSocketServer {
 
     private _onconnection:MuConnectionHandler = noop;
     private _onclose:MuCloseHandler = noop;
+
+    public scheduler:MuScheduler;
+
+    constructor (scheduler?:MuScheduler) {
+        this.scheduler = scheduler || MuSystemScheduler;
+    }
 
     private _handleConnection (socket) {
         switch (this.state) {
@@ -44,7 +52,7 @@ export class MuWorkerSocketServer implements MuSocketServer {
             throw new Error('Worker socket server already shut down, cannot restart');
         }
 
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 this.state = MuSocketServerState.RUNNING;
 
@@ -99,9 +107,12 @@ class MuWorkerServerSocket implements MuSocket {
 
     private _onclose:MuCloseHandler = noop;
 
-    constructor (sessionId:MuSessionId, socket) {
+    public scheduler:MuScheduler;
+
+    constructor (sessionId:MuSessionId, socket, scheduler?:MuScheduler) {
         this.sessionId = sessionId;
         this._socket = socket;
+        this.scheduler = scheduler || MuSystemScheduler;
     }
 
     public open (spec:MuSocketSpec) {
@@ -112,7 +123,7 @@ class MuWorkerServerSocket implements MuSocket {
             throw new Error('server-side Worker socket already closed, cannot reopen');
         }
 
-        setTimeout(
+        this.scheduler.setTimeout(
             () => {
                 this.state = MuSocketState.OPEN;
 

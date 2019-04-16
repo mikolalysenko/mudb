@@ -1,13 +1,11 @@
 import { MuServer, MuServerProtocol } from '../server';
 import { MuClock } from './clock';
 import { MuClockProtocol, MuPingResponseSchema } from './schema';
+import { MuScheduler } from '../scheduler/scheduler';
+import { MuSystemScheduler } from '../scheduler/system';
 
 const DEFAULT_TICK_RATE = 60;
 const DEFAULT_FRAMESKIP = Infinity;
-
-const ric = (typeof window !== 'undefined' && (<any>window).requestIdleCallback) ||
-    ((cb, { timeout }) => setTimeout(cb, timeout));
-const cic = (typeof window !== 'undefined' && (<any>window).cancelIdleCallback) || clearTimeout;
 
 export class MuClockServer {
     private _clock:MuClock = new MuClock();
@@ -22,15 +20,18 @@ export class MuClockServer {
 
     private _pollHandle:any;
     private _poll = () => {
-        this._pollHandle = ric(this._poll, { timeout: 0.5 * this.tickRate });
+        this._pollHandle = this.scheduler.requestIdleCallback(this._poll, { timeout: 0.5 * this.tickRate });
         this.poll();
     }
+
+    public scheduler:MuScheduler;
 
     constructor (spec:{
         server:MuServer,
         tickRate?:number,
         tick?:(t:number) => void,
         frameSkip?:number,
+        scheduler?:MuScheduler,
     }) {
         this.tickRate = spec.tickRate || DEFAULT_TICK_RATE;
 
@@ -41,10 +42,12 @@ export class MuClockServer {
             this.frameSkip = +(spec.frameSkip || 0);
         }
 
+        this.scheduler = spec.scheduler || MuSystemScheduler;
+
         this._protocol.configure({
             ready: () => {
                 this._clock.reset(0);
-                this._pollHandle = ric(this._poll, {timeout: 0.5 * this.tickRate});
+                this._pollHandle = this.scheduler.requestIdleCallback(this._poll, {timeout: 0.5 * this.tickRate});
             },
             message: {
                 ping: (client, clientClock) => {
@@ -64,7 +67,7 @@ export class MuClockServer {
                 });
             },
             close: () => {
-                cic(this._pollHandle);
+                this.scheduler.cancelIdleCallback(this._pollHandle);
             },
         });
     }
