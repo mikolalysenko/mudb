@@ -2,7 +2,7 @@ import { MuServer, MuServerProtocol } from '../server';
 import { MuClock } from './clock';
 import { MuClockProtocol, MuPingResponseSchema } from './schema';
 import { MuScheduler } from '../scheduler/scheduler';
-import { MuSystemScheduler } from '../scheduler';
+import { MuSystemScheduler } from '../scheduler/system';
 
 const DEFAULT_TICK_RATE = 60;
 const DEFAULT_FRAMESKIP = Infinity;

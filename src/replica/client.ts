@@ -3,7 +3,7 @@ import { MuClient, MuClientProtocol } from '../client';
 import { MuStruct } from '../schema/struct';
 import { rdaProtocol, RDAProtocol } from './schema';
 import { MuScheduler } from '../scheduler/scheduler';
-import { MuSystemScheduler } from '../scheduler';
+import { MuSystemScheduler } from '../scheduler/system';
 
 export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuClientProtocol<RDAProtocol<RDA>>;

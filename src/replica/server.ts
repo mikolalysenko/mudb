@@ -3,7 +3,7 @@ import { MuServer, MuServerProtocol } from '../server';
 import { rdaProtocol, RDAProtocol } from './schema';
 import { MuSessionId } from '../socket';
 import { MuScheduler } from '../scheduler/scheduler';
-import { MuSystemScheduler } from '../scheduler';
+import { MuSystemScheduler } from '../scheduler/system';
 
 export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuServerProtocol<RDAProtocol<RDA>>;

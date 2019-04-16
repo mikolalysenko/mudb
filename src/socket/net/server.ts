@@ -16,7 +16,7 @@ import {
 
 import { messagify, isJSON } from './util';
 import { MuScheduler } from '../../scheduler/scheduler';
-import { MuSystemScheduler } from '../../scheduler';
+import { MuSystemScheduler } from '../../scheduler/system';
 
 function noop () { }
 

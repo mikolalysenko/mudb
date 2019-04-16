@@ -1,5 +1,5 @@
 import test = require('tape');
-import { MuMockScheduler } from '..';
+import { MuMockScheduler } from '../mock';
 
 test('FIFO', (t) => {
     const scheduler = new MuMockScheduler();

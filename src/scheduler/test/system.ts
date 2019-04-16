@@ -1,5 +1,5 @@
 import test = require('tape');
-import { MuSystemScheduler  } from '../index';
+import { MuSystemScheduler  } from '../system';
 
 test('rAF', (t) => {
     t.plan(10);

@@ -2,7 +2,7 @@ import { MuClient, MuClientProtocol } from '../client';
 import { MuClockProtocol } from './schema';
 import { MuClock } from './clock';
 import { MuScheduler } from '../scheduler/scheduler';
-import { MuSystemScheduler } from '../scheduler';
+import { MuSystemScheduler } from '../scheduler/system';
 
 const DEFAULT_TICK_RATE = 60;
 const DEFAULT_PING_RATE = 300;

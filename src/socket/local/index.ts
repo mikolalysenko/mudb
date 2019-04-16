@@ -13,7 +13,7 @@ import {
     MuConnectionHandler,
 } from '../../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
-import { MuSystemScheduler } from '../../scheduler';
+import { MuSystemScheduler } from '../../scheduler/system';
 
 function noop () {}
 
