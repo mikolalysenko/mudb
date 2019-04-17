@@ -76,13 +76,16 @@ let cIC:MuCancelIdleCallback = root['cancelIdleCallback'];
 
 // ported from https://gist.github.com/paullewis/55efe5d6f05434a96c36
 if (!rIC || !cIC) {
-    rIC = (cb) => setTimeout(() => {
-        const start = perfNow();
-        cb({
-            didTimeout: false,
-            timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
-        });
-    }, 1);
+    rIC = (cb, options?) => {
+        const timeout = options ? options.timeout : 1;
+        return setTimeout(() => {
+            const start = perfNow();
+            cb({
+                didTimeout: false,
+                timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
+            });
+        }, timeout);
+    };
 
     cIC = (handle) => clearTimeout(handle);
 }
@@ -101,13 +104,13 @@ if (typeof process !== 'undefined' && typeof process.nextTick === 'function') {
 }
 
 export const MuSystemScheduler:MuScheduler = {
-    setTimeout: setTimeout,
-    clearTimeout: clearTimeout,
-    setInterval: setInterval,
-    clearInterval: clearInterval,
-    requestAnimationFrame: rAF,
-    cancelAnimationFrame: cAF,
-    requestIdleCallback: rIC,
-    cancelIdleCallback: cIC,
-    nextTick: nextTick,
+    setTimeout: (cb, ms) => setTimeout(cb, ms),
+    clearTimeout: (handle) => clearTimeout(handle),
+    setInterval: (cb, ms) => setInterval(cb, ms),
+    clearInterval: (handle) => clearInterval(handle),
+    requestAnimationFrame: (cb) => rAF(cb),
+    cancelAnimationFrame: (handle) => cAF(handle),
+    requestIdleCallback: (cb, options?) => rIC(cb, options),
+    cancelIdleCallback: (handle) => cIC(handle),
+    nextTick: (cb) => nextTick(cb),
 };

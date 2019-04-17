@@ -1,4 +1,11 @@
-import { MuScheduler } from './scheduler';
+import {
+    MuScheduler,
+    MuRequestAnimationFrame,
+    MuCancelAnimationFrame,
+    MuRequestIdleCallback,
+    MuCancelIdleCallback,
+    MuProcessNextTick,
+} from './scheduler';
 import { NIL, PQEvent, pop, createNode, merge, decreaseKey } from './pq';
 import { perfNow } from './perf-now';
 
@@ -28,7 +35,7 @@ export class MuMockScheduler implements MuScheduler {
         return true;
     }
 
-    public setTimeout = (callback:() => void, ms:number) => {
+    public setTimeout = (callback:() => void, ms:number) : number => {
         const id = this._timeoutCounter++;
         const time = 1 + this._mockMSCounter + Math.max(ms, 0);
         const node = createNode(id, time, callback);
@@ -46,7 +53,7 @@ export class MuMockScheduler implements MuScheduler {
         }
     }
 
-    public setInterval = (callback:() => void, ms:number) => {
+    public setInterval = (callback:() => void, ms:number) : number => {
         const id = this._timeoutCounter++;
         const self = this;
 
@@ -70,7 +77,7 @@ export class MuMockScheduler implements MuScheduler {
     public clearInterval = this.clearTimeout;
 
     private _rAFLast = 0;
-    public requestAnimationFrame = (callback) => {
+    public requestAnimationFrame:MuRequestAnimationFrame = (callback) => {
         const now_ = perfNow();
         const timeout = Math.max(0, frameDuration - (now_ - this._rAFLast));
         const then = this._rAFLast = now_ + timeout;
@@ -78,19 +85,22 @@ export class MuMockScheduler implements MuScheduler {
         return this.setTimeout(() => callback(then), Math.round(timeout));
     }
 
-    public cancelAnimationFrame = this.clearTimeout;
+    public cancelAnimationFrame:MuCancelAnimationFrame = this.clearTimeout;
 
-    public requestIdleCallback = (callback) => this.setTimeout(() => {
-        const start = perfNow();
-        callback({
-            didTimeout: false,
-            timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
-        });
-    }, 1)
+    public requestIdleCallback:MuRequestIdleCallback = (callback, options?) => {
+        const timeout = options ? options.timeout : 1;
+        return this.setTimeout(() => {
+            const start = perfNow();
+            callback({
+                didTimeout: false,
+                timeRemaining: () => Math.max(0, 50 - (perfNow() - start)),
+            });
+        }, timeout);
+    }
 
-    public cancelIdleCallback = this.clearTimeout;
+    public cancelIdleCallback:MuCancelIdleCallback = this.clearTimeout;
 
-    public nextTick = (callback) => {
+    public nextTick:MuProcessNextTick = (callback) => {
         this.setTimeout(callback, 0);
     }
 }
