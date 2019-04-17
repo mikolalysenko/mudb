@@ -31,50 +31,23 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
         this.protocol = spec.server.protocol(rdaProtocol(spec.rda));
 
         this.scheduler = spec.scheduler || MuSystemScheduler;
-
-        const self = this;
-        function wrapAction (meta:MuRDAActionMeta, index:string) {
-            if (meta.type === 'unit' || meta.type === 'partial') {
-                return (new Function(
-                    'self',
-                    `return function () { return self.rda.action(self.store)${index}.apply(null, arguments); }`,
-                ))(self);
-            } else if (meta.type === 'table') {
-                const result:any = {};
-                const ids = Object.keys(meta.table);
-                for (let i = 0; i < ids.length; ++i) {
-                    const id = ids[i];
-                    result[id] = wrapAction(meta.table[id], `${index}["${id}"]`);
-                }
-                return result;
-            }
-            return {};
-        }
-
-        if (spec.rda.actionMeta.type === 'store') {
-            this.action = wrapAction(spec.rda.actionMeta.action, '');
-        } else {
-            this.action = spec.rda.action;
-        }
     }
 
-    private _onChange?:(state?:MuRDATypes<RDA>['state']) => void;
+    private _pendingChangeCallback:((state:MuRDATypes<RDA>['state']) => void)[] = [];
+    private _onChange = (state:MuRDATypes<RDA>['state']) => {};
     private _changeTimeout:any = null;
-    private _handleChange () {
+    private _handleChange = () => {
         this._changeTimeout = null;
-        if (!this._onChange) {
-            return;
+        const state = this.state();
+        this._onChange(state);
+        for (let i = 0; i < this._pendingChangeCallback.length; ++i) {
+            this._pendingChangeCallback[i].call(null, state);
         }
-        if (this._onChange.length > 0) {
-            const state = this.state();
-            this._onChange(state);
-            this.rda.stateSchema.free(state);
-        } else {
-            this._onChange();
-        }
+        this._pendingChangeCallback.length = 0;
+        this.rda.stateSchema.free(state);
     }
-    private _notifyChange() {
-        if (!this._onChange || this._changeTimeout) {
+    private _notifyChange () {
+        if (this._changeTimeout) {
             return;
         }
         this._changeTimeout = this.scheduler.setTimeout(this._handleChange, 0);
@@ -87,7 +60,9 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
         checkApply?:(action:MuRDATypes<RDA>['action'], sessionId:MuSessionId) => boolean;
         checkUndo?:(action:MuRDATypes<RDA>['action'], sessionId:MuSessionId) => boolean;
     }) {
-        this._onChange = spec.change;
+        if (spec.change) {
+            this._onChange = spec.change;
+        }
         this.protocol.configure({
             connect: (client) => {
                 const state = this.save();
@@ -119,10 +94,15 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     }
 
     // dispatch an action
-    public dispatch (action:MuRDATypes<RDA>['action']) {
+    public dispatch (action:MuRDATypes<RDA>['action'], cb?:(state:MuRDATypes<RDA>['state']|null) => void) {
         if (this.store.apply(this.rda, action)) {
             this.protocol.broadcast.apply(action);
+            if (cb) {
+                this._pendingChangeCallback.push(cb);
+            }
             this._notifyChange();
+        } else if (cb) {
+            this.scheduler.setTimeout(() => cb(null), 0);
         }
     }
 

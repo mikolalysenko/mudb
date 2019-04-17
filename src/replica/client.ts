@@ -36,23 +36,21 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
     }
 
     // change listener stuff
-    private _onChange?:(state?:MuRDATypes<RDA>['state']) => void;
+    private _pendingChangeCallback:((state:MuRDATypes<RDA>['state']) => void)[] = [];
+    private _onChange = (state:MuRDATypes<RDA>['state']) => {};
     private _changeTimeout:any = null;
     private _handleChange = () => {
         this._changeTimeout = null;
-        if (!this._onChange) {
-            return;
+        const state = this.state();
+        this._onChange(state);
+        for (let i = 0; i < this._pendingChangeCallback.length; ++i) {
+            this._pendingChangeCallback[i].call(null, state);
         }
-        if (this._onChange.length > 0) {
-            const state = this.state();
-            this._onChange(state);
-            this.rda.stateSchema.free(state);
-        } else {
-            this._onChange();
-        }
+        this._pendingChangeCallback.length = 0;
+        this.rda.stateSchema.free(state);
     }
     private _notifyChange () {
-        if (!this._onChange || this._changeTimeout) {
+        if (this._changeTimeout) {
             return;
         }
         this._changeTimeout = this.scheduler.setTimeout(this._handleChange, 0);
@@ -63,7 +61,9 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         change?:(state:MuRDATypes<RDA>['state']) => void,
         close?:() => void,
     }) {
-        this._onChange = spec.change;
+        if (spec.change) {
+            this._onChange = spec.change;
+        }
         this.protocol.configure({
             message: {
                 init: (store) => {
@@ -118,7 +118,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         return this.store.state(this.rda, out || this.rda.stateSchema.alloc());
     }
 
-    public dispatch (action:MuRDATypes<RDA>['action'], allowUndo:boolean=true) {
+    public dispatch (action:MuRDATypes<RDA>['action'], allowUndo:boolean=true, cb?:(state:MuRDATypes<RDA>['state']|null) => void) {
         if (allowUndo) {
             const inverse = this.store.inverse(this.rda, action);
             const undo = this._undoRedoSchema.alloc();
@@ -129,7 +129,12 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         }
         if (this.store.apply(this.rda, action)) {
             this.protocol.server.message.apply(action);
+            if (cb) {
+                this._pendingChangeCallback.push(cb);
+            }
             this._notifyChange();
+        } else if (cb) {
+            this.scheduler.setTimeout(() => { cb(null); }, 0);
         }
     }
 
