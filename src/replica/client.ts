@@ -43,7 +43,7 @@ export class MuReplicaClient<RDA extends MuRDA<any, any, any, any>> {
         this._changeTimeout = null;
         const state = this.state();
         this._onChange(state);
-        for (let i = 0; i > this._pendingChangeCallback.length; ++i) {
+        for (let i = 0; i < this._pendingChangeCallback.length; ++i) {
             this._pendingChangeCallback[i].call(null, state);
         }
         this._pendingChangeCallback.length = 0;
