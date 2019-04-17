@@ -104,13 +104,13 @@ if (typeof process !== 'undefined' && typeof process.nextTick === 'function') {
 }
 
 export const MuSystemScheduler:MuScheduler = {
-    setTimeout: setTimeout,
-    clearTimeout: clearTimeout,
-    setInterval: setInterval,
-    clearInterval: clearInterval,
-    requestAnimationFrame: rAF,
-    cancelAnimationFrame: cAF,
-    requestIdleCallback: rIC,
-    cancelIdleCallback: cIC,
-    nextTick: nextTick,
+    setTimeout: (cb, ms) => setTimeout(cb, ms),
+    clearTimeout: (handle) => clearTimeout(handle),
+    setInterval: (cb, ms) => setInterval(cb, ms),
+    clearInterval: (handle) => clearInterval(handle),
+    requestAnimationFrame: (cb) => rAF(cb),
+    cancelAnimationFrame: (handle) => cAF(handle),
+    requestIdleCallback: (cb, options?) => rIC(cb, options),
+    cancelIdleCallback: (handle) => cIC(handle),
+    nextTick: (cb) => nextTick(cb),
 };
