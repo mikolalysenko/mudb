@@ -24,6 +24,7 @@ export class MuDeltaClient<Schema extends MuSchema<any>> {
             message: {
                 reset: (state) => {
                     this._schema.assign(this._state, state);
+                    spec.change(state);
                 },
             },
             raw: (bytes) => {
