@@ -33,51 +33,51 @@ test('apply - list', (t) => {
     const dispatchers = L.action(store);
     let action;
 
-    function checkState (expected:number[]) {
+    function assertState (expected:number[]) {
         t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
     t.true(store.apply(L, action = dispatchers.push([1, 2, 3, 4, 5])), 'push');
-    checkState([1, 2, 3, 4, 5]);
+    assertState([1, 2, 3, 4, 5]);
     t.true(store.apply(L, action = dispatchers.pop()), 'pop 1');
-    checkState([1, 2, 3, 4]);
+    assertState([1, 2, 3, 4]);
     t.true(store.apply(L, action = dispatchers.pop(2)), 'pop 2');
-    checkState([1, 2]);
+    assertState([1, 2]);
     t.true(store.apply(L, action = dispatchers.pop(3)), 'pop 3');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.unshift([1, 3, 5])), 'unshift')
-    checkState([1, 3, 5]);
+    assertState([]);
+    t.true(store.apply(L, action = dispatchers.unshift([1, 3, 5])), 'unshift');
+    assertState([1, 3, 5]);
     t.throws(() => store.apply(L, action = dispatchers.update(3)(6)), TypeError, 'update [3]');
     t.true(store.apply(L, action = dispatchers.update(2)(6)), 'update [2]');
-    checkState([1, 3, 6]);
+    assertState([1, 3, 6]);
     t.true(store.apply(L, action = dispatchers.insert(0, [0])), 'insert at [0]');
-    checkState([0, 1, 3, 6]);
+    assertState([0, 1, 3, 6]);
     t.true(store.apply(L, action = dispatchers.insert(2, [2])), 'insert at [2]');
-    checkState([0, 1, 2, 3, 6]);
+    assertState([0, 1, 2, 3, 6]);
     t.true(store.apply(L, action = dispatchers.insert(4, [4, 5])), 'insert at [4]');
-    checkState([0, 1, 2, 3, 4, 5, 6]);
+    assertState([0, 1, 2, 3, 4, 5, 6]);
     t.true(store.apply(L, action = dispatchers.remove(7)), 'remove [7]');
-    checkState([0, 1, 2, 3, 4, 5, 6]);
+    assertState([0, 1, 2, 3, 4, 5, 6]);
     t.true(store.apply(L, action = dispatchers.remove(2, 2)), 'remove [2]');
-    checkState([0, 1, 4, 5, 6]);
+    assertState([0, 1, 4, 5, 6]);
     t.true(store.apply(L, action = dispatchers.shift()), 'shift 1');
-    checkState([1, 4, 5, 6]);
+    assertState([1, 4, 5, 6]);
     t.true(store.apply(L, action = dispatchers.shift(2)), 'shift 2');
-    checkState([5, 6]);
+    assertState([5, 6]);
     t.true(store.apply(L, action = dispatchers.shift(3)), 'shift 3');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.insert(-1, [7, 7, 7])), 'insert at [7]');
-    checkState([7, 7, 7]);
+    assertState([7, 7, 7]);
     t.true(store.apply(L, action = dispatchers.clear()), 'clear');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.insert(1, [7, 7, 7])), 'insert at [7]');
-    checkState([7, 7, 7]);
+    assertState([7, 7, 7]);
     t.true(store.apply(L, action = dispatchers.reset([1, 2, 3])), 'reset');
-    checkState([1, 2, 3]);
+    assertState([1, 2, 3]);
     t.true(store.apply(L, action = dispatchers.reset([4, 5, 6])), 'reset again');
-    checkState([4, 5, 6]);
+    assertState([4, 5, 6]);
     t.true(store.apply(L, action = dispatchers.clear()), 'clear');
-    checkState([]);
+    assertState([]);
     t.end();
 });
 
@@ -87,7 +87,7 @@ test('apply - map', (t) => {
     const dispatchers = M.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(M, M.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
@@ -97,27 +97,27 @@ test('apply - map', (t) => {
     const log10e = Math.LOG10E;
 
     t.true(store.apply(M, action = dispatchers.clear()), 'clear when empty');
-    checkState({});
+    assertState({});
     t.true(store.apply(M, action = dispatchers.set('--non-existent', Infinity)), 'set entry');
-    checkState({'--non-existent': Infinity});
+    assertState({'--non-existent': Infinity});
     t.true(store.apply(M, action = dispatchers.set('--non-existent', -Infinity)), 'set existent entry');
-    checkState({'--non-existent': -Infinity});
+    assertState({'--non-existent': -Infinity});
     t.true(store.apply(M, action = dispatchers.remove('--non-existent')), 'remove entry');
-    checkState({});
+    assertState({});
     t.false(store.apply(M, action = dispatchers.remove('--non-existent')), 'remove non-existent entry');
-    checkState({});
+    assertState({});
     t.true(store.apply(M, action = dispatchers.set('e', e)), 'set e');
-    checkState({e});
+    assertState({e});
     t.true(store.apply(M, action = dispatchers.set('pi', pi)), 'set pi');
-    checkState({e, pi});
+    assertState({e, pi});
     t.true(store.apply(M, action = <any>{type: 'noop', data: 'whatever'}), 'noop');
-    checkState({e, pi});
+    assertState({e, pi});
     t.true(store.apply(M, action = dispatchers.reset({log2e, log10e})), 'reset');
-    checkState({log2e, log10e});
+    assertState({log2e, log10e});
     t.true(store.apply(M, action = dispatchers.clear()), 'clear');
-    checkState({});
+    assertState({});
     t.true(store.apply(M, action = dispatchers.set('Iñtërnâtiônàlizætiøn☃💩', 0)), 'key with emoji');
-    checkState({'Iñtërnâtiônàlizætiøn☃💩': 0});
+    assertState({'Iñtërnâtiônàlizætiøn☃💩': 0});
     t.end();
 });
 
@@ -188,22 +188,22 @@ test('apply - map of structs', (t) => {
     const dispatchers = M.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(M, M.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
     t.true(store.apply(M, action = dispatchers.set('first', {r: 11.11, s: {r: '11.22'}})), 'set entry');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}});
     t.true(store.apply(M, action = dispatchers.set('second', M.valueRDA.stateSchema.alloc())), 'set another');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 0, s: {r: ''}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 0, s: {r: ''}}});
     t.true(store.apply(M, action = dispatchers.update('second').r(22.11)), 'set inner entry');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: ''}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: ''}}});
     t.true(store.apply(M, action = dispatchers.update('second').s.r('22.22')), 'set innermost entry');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
     t.true(store.apply(M, action = dispatchers.update('vanished').s.r('22.22')), 'update non-existent entry');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
     t.false(store.apply(M, action = <any>{type: 'update', data: {id: 'imaginary', action: {type: 'r', data: 0}}}), 'update non-existent entry');
-    checkState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
+    assertState({first: {r: 11.11, s: {r: '11.22'}}, second: {r: 22.11, s: {r: '22.22'}}});
 
     const defaultMap = {
         x: {r: 0, s: {r: ''}},
@@ -211,10 +211,10 @@ test('apply - map of structs', (t) => {
         z: {r: 0, s: {r: ''}},
     };
     t.true(store.apply(M, action = dispatchers.reset(defaultMap)), 'reset');
-    checkState(defaultMap);
+    assertState(defaultMap);
 
     t.true(store.apply(M, action = dispatchers.clear()), 'clear');
-    checkState({});
+    assertState({});
     t.end();
 });
 
@@ -227,7 +227,7 @@ test('apply - map of maps', (t) => {
     const dispatchers = M.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(M, M.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
@@ -237,25 +237,25 @@ test('apply - map of maps', (t) => {
     const log10e = Math.LOG10E;
 
     t.true(store.apply(M, action = dispatchers.set('constants', {})), 'set outer entry');
-    checkState({constants: {}});
+    assertState({constants: {}});
     t.true(store.apply(M, action = dispatchers.update('constants').clear()), 'clear when empty');
-    checkState({constants: {}});
+    assertState({constants: {}});
     t.true(store.apply(M, action = dispatchers.update('constants').set('--non-existent', Infinity)), 'set entry');
-    checkState({constants: {'--non-existent': Infinity}});
+    assertState({constants: {'--non-existent': Infinity}});
     t.true(store.apply(M, action = dispatchers.update('constants').set('--non-existent', -Infinity)), 'set entry again');
-    checkState({constants: {'--non-existent': -Infinity}});
+    assertState({constants: {'--non-existent': -Infinity}});
     t.true(store.apply(M, action = dispatchers.update('constants').remove('--non-existent')), 'remove entry');
-    checkState({constants: {}});
+    assertState({constants: {}});
     t.false(store.apply(M, action = dispatchers.update('constants').remove('--non-existent')), 'remove non-existent entry');
-    checkState({constants: {}});
+    assertState({constants: {}});
     t.true(store.apply(M, action = dispatchers.update('constants').set('e', e)), 'set e');
-    checkState({constants: {e}});
+    assertState({constants: {e}});
     t.true(store.apply(M, action = dispatchers.update('constants').set('pi', pi)), 'set pi');
-    checkState({constants: {e, pi}});
+    assertState({constants: {e, pi}});
     t.true(store.apply(M, action = dispatchers.update('constants').reset({log2e, log10e})), 'reset');
-    checkState({constants: {log2e, log10e}});
+    assertState({constants: {log2e, log10e}});
     t.true(store.apply(M, action = dispatchers.update('constants').clear()), 'clear');
-    checkState({constants: {}});
+    assertState({constants: {}});
     t.end();
 });
 
@@ -270,22 +270,22 @@ test('apply - map of structs of map of structs', (t) => {
     const dispatchers = M.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(M, M.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
     t.true(store.apply(M, action = dispatchers.set('outer', M.valueRDA.stateSchema.alloc())));
-    checkState({outer: {m: {}}});
+    assertState({outer: {m: {}}});
     t.true(store.apply(M, action = dispatchers.update('outer').m.set('inner', M.valueRDA.rdas.m.valueRDA.stateSchema.alloc())));
-    checkState({outer: {m: {inner: {rf: 0, ru: ''}}}});
+    assertState({outer: {m: {inner: {rf: 0, ru: ''}}}});
     t.true(store.apply(M, action = dispatchers.update('outer').m.update('inner').rf(111.111)), 'update inner prop');
-    checkState({outer: {m: {inner: {rf: 111.111, ru: ''}}}});
+    assertState({outer: {m: {inner: {rf: 111.111, ru: ''}}}});
     t.true(store.apply(M, action = dispatchers.update('outer').m.update('inner').ru('111.222')), 'update another inner prop');
-    checkState({outer: {m: {inner: {rf: 111.111, ru: '111.222'}}}});
+    assertState({outer: {m: {inner: {rf: 111.111, ru: '111.222'}}}});
     t.true(store.apply(M, action = dispatchers.update('outer').m.reset({inner: {rf: 222.111, ru: '222.222'}})), 'reset');
-    checkState({outer: {m: {inner: {rf: 222.111, ru: '222.222'}}}});
+    assertState({outer: {m: {inner: {rf: 222.111, ru: '222.222'}}}});
     t.true(store.apply(M, action = dispatchers.update('outer').m.clear()), 'clear');
-    checkState({outer: {m: {}}});
+    assertState({outer: {m: {}}});
     t.end();
 });
 
@@ -295,48 +295,48 @@ test('apply - list of lists', (t) => {
     const dispatchers = L.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
     t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.push([[0], [], [1, 2], [3, 4, 5]])), 'outer push');
-    checkState([[0], [], [1, 2], [3, 4, 5]]);
+    assertState([[0], [], [1, 2], [3, 4, 5]]);
     t.true(store.apply(L, action = dispatchers.pop(2)), 'outer pop');
-    checkState([[0], []]);
+    assertState([[0], []]);
     t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop when empty');
-    checkState([[0], []]);
+    assertState([[0], []]);
     t.true(store.apply(L, action = dispatchers.update(1).shift(2)), 'shift when empty');
-    checkState([[0], []]);
+    assertState([[0], []]);
     t.true(store.apply(L, action = dispatchers.update(1).push([0, 1, 2, 3, 4, 5, 6])), 'push when empty');
-    checkState([[0], [0, 1, 2, 3, 4, 5, 6]]);
+    assertState([[0], [0, 1, 2, 3, 4, 5, 6]]);
     t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    assertState([[0], [0, 1, 2, 3, 4, 5]]);
     t.true(store.apply(L, action = dispatchers.update(1).pop(2)), 'pop 2');
-    checkState([[0], [0, 1, 2, 3]]);
+    assertState([[0], [0, 1, 2, 3]]);
     t.true(store.apply(L, action = dispatchers.update(1).shift()), 'shift');
-    checkState([[0], [1, 2, 3]]);
+    assertState([[0], [1, 2, 3]]);
     t.true(store.apply(L, action = dispatchers.update(1).shift(3)), 'shift 3');
-    checkState([[0], []]);
+    assertState([[0], []]);
     t.true(store.apply(L, action = dispatchers.update(1).unshift([0, 1, 2])), 'unshift when empty');
-    checkState([[0], [0, 1, 2]]);
+    assertState([[0], [0, 1, 2]]);
     t.true(store.apply(L, action = dispatchers.update(1).insert(1, [1, 2])), 'insert');
-    checkState([[0], [0, 1, 2, 1, 2]]);
+    assertState([[0], [0, 1, 2, 1, 2]]);
     t.true(store.apply(L, action = dispatchers.update(1).insert(3, [1, 2])), 'insert');
-    checkState([[0], [0, 1, 2, 1, 2, 1, 2]]);
+    assertState([[0], [0, 1, 2, 1, 2, 1, 2]]);
     t.true(store.apply(L, action = dispatchers.update(1).remove(2, 4)), 'remove');
-    checkState([[0], [0, 1, 2]]);
+    assertState([[0], [0, 1, 2]]);
     t.true(store.apply(L, action = dispatchers.update(1).push([3, 4, 5])), 'push');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    assertState([[0], [0, 1, 2, 3, 4, 5]]);
     t.true(store.apply(L, action = dispatchers.update(1).unshift([3, 4, 5])), 'unshift');
-    checkState([[0], [3, 4, 5, 0, 1, 2, 3, 4, 5]]);
+    assertState([[0], [3, 4, 5, 0, 1, 2, 3, 4, 5]]);
     t.true(store.apply(L, action = dispatchers.update(1).clear()), 'clear');
-    checkState([[0], []]);
+    assertState([[0], []]);
     t.true(store.apply(L, action = dispatchers.update(1).reset([0, 1, 2, 6, 4, 5])), 'reset');
-    checkState([[0], [0, 1, 2, 6, 4, 5]]);
+    assertState([[0], [0, 1, 2, 6, 4, 5]]);
     t.true(store.apply(L, action = dispatchers.update(1).update(3)(3)), 'update');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    assertState([[0], [0, 1, 2, 3, 4, 5]]);
     t.end();
 });
 
@@ -355,49 +355,49 @@ test('apply - list of structs of list of structs', (t) => {
     const dispatchers = L.action(store);
     let action;
 
-    function checkState (expected) {
+    function assertState (expected) {
         t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
     }
 
     t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.pop()), 'outer pop when empty');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.shift()), 'outer shift when empty');
-    checkState([]);
+    assertState([]);
     t.true(store.apply(L, action = dispatchers.push([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}])), 'outer push');
-    checkState([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    assertState([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).s.f(11.22)), 'update [0].s.f');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    assertState([{s: {f: 11.22}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
     t.true(store.apply(L, action = dispatchers.update(1).s.f(22.22)), 'update [1].s.f');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.11'}]}]);
+    assertState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.11'}]}]);
     t.true(store.apply(L, action = dispatchers.update(1).l.update(0).u('22.22')), 'update [1].l[0].u');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.22'}]}]);
+    assertState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.22'}]}]);
     t.true(store.apply(L, action = dispatchers.pop()), 'outer pop');
-    checkState([{s: {f: 11.22}, l: []}]);
+    assertState([{s: {f: 11.22}, l: []}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop when empty');
-    checkState([{s: {f: 11.22}, l: []}]);
+    assertState([{s: {f: 11.22}, l: []}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift when empty');
-    checkState([{s: {f: 11.22}, l: []}]);
+    assertState([{s: {f: 11.22}, l: []}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.push([{u: '11.11'}, {u: '11.22'}, {u: '11.33'}])), 'push');
-    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}, {u: '11.33'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}, {u: '11.33'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop');
-    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift');
-    checkState([{s: {f: 11.22}, l: [{u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.unshift([{u: '11.00'}, {u: '11.11'}])), 'unshift');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.insert(1, [{u: '11.33'}])), 'insert');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.insert(1, [{u: '11.11'}, {u: '11.22'}])), 'insert 2');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.remove(1)), 'remove');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.remove(1, 2)), 'remove 2');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.clear()), 'clear');
-    checkState([{s: {f: 11.22}, l: []}]);
+    assertState([{s: {f: 11.22}, l: []}]);
     t.true(store.apply(L, action = dispatchers.update(0).l.reset([{u: '11.33'}, {u: '11.44'}, {u: '11.55'}])), 'reset');
-    checkState([{s: {f: 11.22}, l: [{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]}]);
+    assertState([{s: {f: 11.22}, l: [{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]}]);
     t.end();
 });

@@ -68,7 +68,7 @@ test('action - list', (t) => {
 
     action = dispatchers.update(0)(0);
     t.equal(action.type, 'update', 'update type');
-    t.equal(action.data.action, 0, 'update content')
+    t.equal(action.data.action, 0, 'update content');
     t.end();
 });
 
@@ -101,7 +101,7 @@ test('action - map', (t) => {
     }, 'update nonexistent');
     t.deepEqual(dispatchers.update('foo')('qux'), {
         type: 'update',
-        data: { id: 'foo', action: 'qux' }
+        data: { id: 'foo', action: 'qux' },
     }, 'update foo');
 
     t.deepEqual(dispatchers.reset({ bar: 'foo' }), {
@@ -161,8 +161,8 @@ test('action - nested struct', (t) => {
             data: {
                 type: 'bar',
                 data: 'qux',
-            }
-        }
+            },
+        },
     }, 'three level deep action constructor');
     t.end();
 });
@@ -220,7 +220,6 @@ test('action - map of maps', (t) => {
             action: { type: 'noop', data: undefined },
         },
     }, 'update foo.nonexistent');
-
 
     t.deepEqual(dispatchers.update('foo').set('bar', 'quux'), {
         type: 'update',
