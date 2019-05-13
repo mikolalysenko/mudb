@@ -1,4 +1,4 @@
-export type MuNumericType =
+export type MuNumberType =
     'float32'   |
     'float64'   |
     'int8'      |

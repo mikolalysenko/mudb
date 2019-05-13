@@ -1,9 +1,9 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-import { MuNumericType } from './type';
+import { MuNumberType } from './type';
 import { range } from './constant/range';
 
-export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
+export abstract class MuNumber<T extends MuNumberType> implements MuSchema<number> {
     public readonly muType:T;
     public readonly identity:number;
     public readonly json:object;
