@@ -91,10 +91,13 @@ test('inverse - map', (t) => {
     const log2e = Math.LOG2E;
     const log10e = Math.LOG10E;
 
-    const store = M.createStore({e, pi});
+    const store = M.createStore({e, pi, foo: 1, bar: 2});
     const dispatchers = M.action(store);
 
     const actions:any[] = [];
+    actions.push(dispatchers.move('e', 'e'));
+    actions.push(dispatchers.move('pi', 'PI'));
+    actions.push(dispatchers.move('foo', 'bar'));
     actions.push(dispatchers.clear());
     actions.push(dispatchers.remove('e'));
     actions.push(dispatchers.reset({}));
@@ -104,13 +107,8 @@ test('inverse - map', (t) => {
     const inverses:any[] = [];
     for (let i = 0; i < actions.length; ++i) {
         inverses.push(store.inverse(M, actions[i]));
+        testInverse(t, store, M, actions[i], JSON.stringify(actions[i]));
     }
-
-    testInverse(t, store, M, actions[0], 'clear');
-    testInverse(t, store, M, actions[1], 'remove entry');
-    testInverse(t, store, M, actions[2], 'reset');
-    testInverse(t, store, M, actions[3], 'set log2e');
-    testInverse(t, store, M, actions[4], 'set log10e');
 
     for (let i = 0; i < actions.length; ++i) {
         store.apply(M, actions[i]);
@@ -118,7 +116,7 @@ test('inverse - map', (t) => {
     for (let i = 0; i < inverses.length; ++i) {
         store.apply(M, inverses[i]);
     }
-    t.deepEqual(store.state(M, {}), {e, pi});
+    t.deepEqual(store.state(M, {}), {e, pi, foo: 1, bar: 2});
     t.end();
 });
 

@@ -98,13 +98,13 @@ test('apply - map', (t) => {
 
     t.true(store.apply(M, action = dispatchers.clear()), 'clear when empty');
     assertState({});
-    t.true(store.apply(M, action = dispatchers.set('--non-existent', Infinity)), 'set entry');
-    assertState({'--non-existent': Infinity});
-    t.true(store.apply(M, action = dispatchers.set('--non-existent', -Infinity)), 'set existent entry');
-    assertState({'--non-existent': -Infinity});
-    t.true(store.apply(M, action = dispatchers.remove('--non-existent')), 'remove entry');
+    t.true(store.apply(M, action = dispatchers.set('--unstable', Infinity)), 'set entry');
+    assertState({'--unstable': Infinity});
+    t.true(store.apply(M, action = dispatchers.set('--unstable', -Infinity)), 'set existent entry');
+    assertState({'--unstable': -Infinity});
+    t.true(store.apply(M, action = dispatchers.remove('--unstable')), 'remove entry');
     assertState({});
-    t.false(store.apply(M, action = dispatchers.remove('--non-existent')), 'remove non-existent entry');
+    t.false(store.apply(M, action = dispatchers.remove('--unstable')), 'remove nonexistent entry');
     assertState({});
     t.true(store.apply(M, action = dispatchers.set('e', e)), 'set e');
     assertState({e});
@@ -114,6 +114,17 @@ test('apply - map', (t) => {
     assertState({e, pi});
     t.true(store.apply(M, action = dispatchers.reset({log2e, log10e})), 'reset');
     assertState({log2e, log10e});
+    t.false(store.apply(M, action = dispatchers.move('nonexistent', '--non-existent')), 'move nonexistent');
+    assertState({log2e, log10e});
+    t.false(store.apply(M, action = dispatchers.move('log2e', 'log2e')), 'move log2e to log2e');
+    assertState({log2e, log10e});
+    t.true(store.apply(M, action = dispatchers.move('log10e', 'logE')), 'move log10e to logE');
+    assertState({log2e, logE: log10e});
+    t.true(store.apply(M, action = dispatchers.set('foo', 1)), 'set foo');
+    t.true(store.apply(M, action = dispatchers.set('bar', 2)), 'set bar');
+    assertState({log2e, logE: log10e, foo: 1, bar: 2});
+    t.true(store.apply(M, action = dispatchers.move('foo', 'bar')), 'move foo to bar');
+    assertState({log2e, logE: log10e, bar: 1});
     t.true(store.apply(M, action = dispatchers.clear()), 'clear');
     assertState({});
     t.true(store.apply(M, action = dispatchers.set('Iñtërnâtiônàlizætiøn☃💩', 0)), 'key with emoji');
