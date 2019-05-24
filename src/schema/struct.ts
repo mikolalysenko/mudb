@@ -328,7 +328,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     methods.assign.append(`d[${propRef}]=s[${propRef}];`);
                     break;
                 default:
-                    methods.assign.append(`${typeRefs[i]}.assign(d[${propRef}],s[${propRef}]);`);
+                    methods.assign.append(`d[${propRef}]=${typeRefs[i]}.assign(d[${propRef}],s[${propRef}]);`);
             }
         });
         methods.assign.append('return d');

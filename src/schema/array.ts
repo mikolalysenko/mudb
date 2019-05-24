@@ -2,6 +2,36 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 import { isMuPrimitiveType } from './type';
 
+function assignPrimitive<T> (dst:T[], src:T[]) : T[] {
+    dst.length = src.length;
+    for (let i = 0; i < src.length; ++i) {
+        dst[i] = src[i];
+    }
+    return dst;
+}
+
+function assignGeneric<T> (schema:MuSchema<T>) {
+    return (dst:T[], src:T[]) => {
+        const dLeng = dst.length;
+        const sLeng = src.length;
+
+        for (let i = sLeng; i < dLeng; ++i) {
+            schema.free(dst[i]);
+        }
+
+        dst.length = src.length;
+
+        for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
+            dst[i] = schema.assign(dst[i], src[i]);
+        }
+        for (let i = dLeng; i < sLeng; ++i) {
+            dst[i] = schema.clone(src[i]);
+        }
+
+        return dst;
+    };
+}
+
 export class MuArray<ValueSchema extends MuSchema<any>>
         implements MuSchema<ValueSchema['identity'][]> {
     public readonly muType = 'array';
@@ -30,6 +60,12 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             valueType: schema.json,
             identity: JSON.stringify(this.identity),
         };
+
+        if (isMuPrimitiveType(schema.muType)) {
+            this.assign = assignPrimitive;
+        } else {
+            this.assign = assignGeneric(schema);
+        }
     }
 
     public alloc () : ValueSchema['identity'][] {
@@ -73,33 +109,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (
-        dst:ValueSchema['identity'][],
-        src:ValueSchema['identity'][],
-    ) : ValueSchema['identity'][] {
-        const dLeng = dst.length;
-        const sLeng = src.length;
-        const schema = this.muData;
-        for (let i = sLeng; i < dLeng; ++i) {
-            schema.free(dst[i]);
-        }
-
-        dst.length = sLeng;
-        if (isMuPrimitiveType(schema.muType)) {
-            for (let i = 0; i < sLeng; ++i) {
-                dst[i] = src[i];
-            }
-            return dst;
-        }
-
-        for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
-            schema.assign(dst[i], src[i]);
-        }
-        for (let i = dLeng; i < sLeng; ++i) {
-            dst[i] = schema.clone(src[i]);
-        }
-        return dst;
-    }
+    public assign:(dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) => ValueSchema['identity'][];
 
     public diff (
         base:ValueSchema['identity'][],

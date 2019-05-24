@@ -7,6 +7,46 @@ export interface Dictionary<Schema extends MuSchema<any>> {
     [key:string]:Schema['identity'];
 }
 
+function assignPrimitive<T> (dst:{ [key:string]:T }, src:{ [key:string]:T }) : { [key:string]:T } {
+    const dKeys = Object.keys(dst);
+    const sKeys = Object.keys(src);
+    for (let i = 0; i < dKeys.length; ++i) {
+        const k = dKeys[i];
+        if (!(k in src)) {
+            delete dst[k];
+        }
+    }
+    for (let i = 0; i < sKeys.length; ++i) {
+        const k = sKeys[i];
+        dst[k] = src[k];
+    }
+    return dst;
+}
+
+function assignGeneric<T> (schema:MuSchema<T>) {
+    return (dst:{ [key:string]:T }, src:{ [key:string]:T }) : { [key:string]:T } => {
+        const dKeys = Object.keys(dst);
+        const sKeys = Object.keys(src);
+        for (let i = 0; i < dKeys.length; ++i) {
+            const k = dKeys[i];
+            if (!(k in src)) {
+                schema.free(dst[k]);
+                delete dst[k];
+            }
+        }
+
+        for (let i = 0; i < sKeys.length; ++i) {
+            const k = sKeys[i];
+            if (k in dst) {
+                dst[k] = schema.assign(dst[k], src[k]);
+            } else {
+                dst[k] = schema.clone(src[k]);
+            }
+        }
+        return dst;
+    };
+}
+
 export class MuDictionary<ValueSchema extends MuSchema<any>>
         implements MuSchema<Dictionary<ValueSchema>> {
     public readonly muType = 'dictionary';
@@ -36,6 +76,12 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             valueType: schema.json,
             identity: JSON.stringify(this.identity),
         };
+
+        if (isMuPrimitiveType(schema.muType)) {
+            this.assign = assignPrimitive;
+        } else {
+            this.assign = assignGeneric(schema);
+        }
     }
 
     public alloc () : Dictionary<ValueSchema> {
@@ -87,39 +133,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return copy;
     }
 
-    public assign (
-        dst:Dictionary<ValueSchema>,
-        src:Dictionary<ValueSchema>,
-    ) : Dictionary<ValueSchema> {
-        const dKeys = Object.keys(dst);
-        const sKeys = Object.keys(src);
-        const schema = this.muData;
-        for (let i = 0; i < dKeys.length; ++i) {
-            const k = dKeys[i];
-            if (!(k in src)) {
-                schema.free(dst[k]);
-                delete dst[k];
-            }
-        }
-
-        if (isMuPrimitiveType(schema.muType)) {
-            for (let i = 0; i < sKeys.length; ++i) {
-                const k = sKeys[i];
-                dst[k] = src[k];
-            }
-            return dst;
-        }
-
-        for (let i = 0; i < sKeys.length; ++i) {
-            const k = sKeys[i];
-            if (k in dst) {
-                schema.assign(dst[k], src[k]);
-            } else {
-                dst[k] = schema.clone(src[k]);
-            }
-        }
-        return dst;
-    }
+    public assign:(dst:Dictionary<ValueSchema>, src:Dictionary<ValueSchema>) => Dictionary<ValueSchema>;
 
     public diff (
         base:Dictionary<ValueSchema>,
