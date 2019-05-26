@@ -39,12 +39,12 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         compare?:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number,
         identity?:ValueSchema['identity'][],
     ) {
-        const arraySchema = new MuArray(schema, capacity, identity);
-
         this.muData = schema;
         this.capacity = capacity;
         this.compare = compare || defaultCompare;
-        this.identity = arraySchema.identity;
+
+        const arraySchema = new MuArray(schema, capacity, identity);
+        this.identity = arraySchema.identity.sort(this.compare);
         this.json = {
             type: 'sorted-array',
             valueType: schema.json,
