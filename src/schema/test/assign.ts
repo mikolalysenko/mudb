@@ -12,6 +12,7 @@ import {
     MuVector,
     MuDate,
     MuJSON,
+    MuSchema,
 } from '../index';
 
 test('primitive.assign()', (t) => {
@@ -235,5 +236,49 @@ test('json.assign', (t) => {
     t.is(json.assign(q, r), q);
     t.deepEqual(q, [{}, {}]);
     t.isNot(q[0], r[0]);
+    t.end();
+});
+
+class MuMaybe<T> implements MuSchema<T|null> {
+    public muType = 'maybe';
+    public identity:T|null = null;
+    public muData = { type: 'maybe' };
+    public json = { type: 'maybe' };
+
+    constructor () { }
+
+    public alloc () : T|null { return null; }
+    public assign (dst:T|null, src:T|null) : T|null { return src; }
+
+    public free () { }
+    public clone () { return null; }
+    public equal () { return false; }
+    public diff () { return false; }
+    public patch () { return null; }
+    public toJSON () { }
+    public fromJSON () { return null; }
+}
+
+test('when dst is not reference', (t) => {
+    const Human = new MuStruct({
+        name: new MuUTF8(),
+        power: new MuMaybe<{
+            name:string,
+            description:string,
+        }>(),
+    });
+
+    const mortal = Human.alloc();
+    mortal.name = 'Logan';
+    const mutant = Human.alloc();
+    mutant.name = 'Wolverine';
+    mutant.power = {
+        name: 'regenerative healing factor',
+        description: 'ability to regenerate damaged tissue insanely fast',
+    };
+    Human.assign(mortal, mutant);
+    t.deepEqual(mortal, mutant);
+    t.equal(mortal.power, mutant.power);
+
     t.end();
 });
