@@ -4,6 +4,8 @@ import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
 import { MuSortedArray } from '../schema/sorted-array';
 import { MuVoid } from '../schema/void';
+import { MuASCII } from '../schema/ascii';
+import { MuBoolean } from '../schema/boolean';
 import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
 
 type StripBindMeta<Meta extends MuRDABindableActionMeta> =
@@ -22,64 +24,99 @@ export interface MuRDAMapTypes<
     state:MuRDAMapTypes<KeySchema, ValueRDA>['stateSchema']['identity'];
 
     setActionSchema:MuStruct<{
-        id:KeySchema;
+        key:KeySchema;
         value:ValueRDA['stateSchema'];
     }>;
     updateActionSchema:MuStruct<{
-        id:KeySchema;
+        id:MuASCII;
         action:ValueRDA['actionSchema'];
     }>;
+    moveActionSchema:MuStruct<{
+        src:KeySchema;
+        dst:KeySchema;
+    }>;
+    unmoveActionSchema:MuStruct<{
+        dst:KeySchema;
+        src:KeySchema;
+        dstId:MuASCII;
+    }>;
     restoreActionSchema:MuStruct<{
-        id:KeySchema;
-        store:ValueRDA['storeSchema'];
+        key:KeySchema;
+        id:MuASCII;
     }>;
     actionSchema:MuUnion<{
-        reset:MuRDAMapTypes<KeySchema, ValueRDA>['storeSchema']
         set:MuRDAMapTypes<KeySchema, ValueRDA>['setActionSchema'];
         update:MuRDAMapTypes<KeySchema, ValueRDA>['updateActionSchema'];
-        restore:MuRDAMapTypes<KeySchema, ValueRDA>['restoreActionSchema'];
+        move:MuRDAMapTypes<KeySchema, ValueRDA>['moveActionSchema'];
+        unmove:MuRDAMapTypes<KeySchema, ValueRDA>['unmoveActionSchema'];
         remove:KeySchema;
+        unremove:KeySchema;
+        reset:MuRDAMapTypes<KeySchema, ValueRDA>['storeSchema']
+        restore:MuRDAMapTypes<KeySchema, ValueRDA>['restoreActionSchema'];
         noop:MuVoid;
     }>;
     action:MuRDAMapTypes<KeySchema, ValueRDA>['actionSchema']['identity'];
     setAction:{
         type:'set';
         data:{
-            id:KeySchema['identity'];
+            key:KeySchema['identity'];
             value:ValueRDA['stateSchema']['identity'];
         };
     };
     updateAction:{
         type:'update';
         data:{
-            id:KeySchema['identity'];
+            id:string;
             action:ValueRDA['actionSchema']['identity'];
+        };
+    };
+    moveAction:{
+        type:'move';
+        data:{
+            src:KeySchema['identity'];
+            dst:KeySchema['identity'];
+        };
+    };
+    unmoveAction:{
+        type:'unmove';
+        data:{
+            dst:KeySchema['identity'];
+            src:KeySchema['identity'];
+            dstId:string;
         };
     };
     removeAction:{
         type:'remove';
         data:KeySchema['identity'];
     };
-    noopAction:{
-        type:'noop';
-        data:undefined;
+    unremoveAction:{
+        type:'unremove';
+        data:KeySchema['identity'];
     };
     restoreAction:{
         type:'restore';
         data:{
-            id:KeySchema['identity'];
-            store:ValueRDA['storeSchema']['identity'];
+            key:KeySchema['identity'];
+            id:string;
         };
     };
     resetAction:{
         type:'reset';
         data:{
-            id:KeySchema['identity'];
+            key:KeySchema['identity'];
             store:ValueRDA['storeSchema']['identity'];
         }[];
     };
+    noopAction:{
+        type:'noop';
+        data:undefined;
+    };
 
-    storeSchema:MuSortedArray<MuRDAMapTypes<KeySchema, ValueRDA>['restoreActionSchema']>;
+    valueStoreSchema:MuStruct<{
+        key:KeySchema;
+        store:ValueRDA['storeSchema'];
+    }>;
+    storeSchema:MuSortedArray<MuRDAMapTypes<KeySchema, ValueRDA>['valueStoreSchema']>;
     store:MuRDAMapTypes<KeySchema, ValueRDA>['storeSchema']['identity'];
 
     actionMeta:{
@@ -88,6 +125,9 @@ export interface MuRDAMapTypes<
             type:'table';
             table:{
                 set:{
+                    type:'unit';
+                };
+                move:{
                     type:'unit';
                 };
                 remove:{
@@ -106,34 +146,68 @@ export interface MuRDAMapTypes<
             };
         };
     };
+
+    storeNodeSchema:MuStruct<{
+        id:MuASCII;
+        key:KeySchema;
+        value:ValueRDA['storeSchema'];
+        deleted:MuBoolean;
+    }>;
+    storeNode:{
+        id:string;
+        key:KeySchema['identity'];
+        value:ValueRDA['storeSchema']['identity'];
+        deleted:boolean;
+    };
 }
 
 function compareKey (a:string, b:string) {
     return a < b ? -1 : (b < a ? 1 : 0);
 }
 
+const uniqueId = (() => {
+    let counter = 0;
+    return () => {
+        ++counter;
+        return Date.now().toString(36).substring(2) + counter.toString(36);
+    };
+})();
+
 export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDAStore<MapRDA> {
-    public stores:{
-        [id:string]:MuRDATypes<MapRDA['valueRDA']>['store'];
+    public idToNode:{
+        [id:string]:MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['storeNode'];
+    };
+    public keyToNode:{
+        [key:string]:MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['storeNode'];
     };
 
-    constructor (initial:{ [id:string]:MuRDATypes<MapRDA['valueRDA']>['store']; }) {
-        this.stores = initial;
+    constructor (initial:{ [id:string]:MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['storeNode']; }) {
+        this.idToNode = initial;
+        this.keyToNode = {};
+        const ids = Object.keys(initial);
+        for (let i = 0; i < ids.length; ++i) {
+            const node = initial[ids[i]];
+            this.keyToNode[<any>node['key']] = node;
+        }
     }
 
     public state(rda:MapRDA, out:MuRDATypes<MapRDA>['state']) : MuRDATypes<MapRDA>['state'] {
         const outKeys = Object.keys(out);
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
-            if (key in this.stores) {
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
                 rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
         }
-        const keys = Object.keys(this.stores);
+        const keys = Object.keys(this.keyToNode);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.stateSchema.alloc());
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
+                out[key] = node.value.state(rda.valueRDA, rda.valueRDA.stateSchema.alloc());
+            }
         }
         return out;
     }
@@ -141,46 +215,89 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
     public apply(rda:MapRDA, action:MuRDATypes<MapRDA>['action']) : boolean {
         const { type, data } = action;
         if (type === 'set') {
-            const key = data.id;
-            const store = this.stores[key];
-            if (store) {
-                store.free(rda.valueRDA);
-            }
-            this.stores[key] = rda.valueRDA.createStore(data.value);
+            const { key, value } = data;
+            const id = uniqueId();
+            const node = rda.storeNodeSchema.alloc();
+            node.id = id;
+            node.key = key;
+            node.value = rda.valueRDA.createStore(value);
+            node.deleted = false;
+            this.keyToNode[key] = this.idToNode[id] = node;
             return true;
-        } else if (action.type === 'update') {
-            const key = data.id;
-            const store = this.stores[key];
-            if (store) {
-                return store.apply(rda.valueRDA, data.action);
+        } else if (type === 'update') {
+            const id = data.id;
+            const node = this.idToNode[id];
+            if (node && !node.deleted) {
+                return node.value.apply(rda.valueRDA, data.action);
             }
             return false;
-        } else if (action.type === 'remove') {
+        } else if (type === 'remove') {
             const key = data;
-            const store = this.stores[key];
-            if (store) {
-                store.free(rda.valueRDA);
-                delete this.stores[key];
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
+                node.deleted = true;
                 return true;
-            } else {
+            }
+        } else if (type === 'unremove') {
+            const key = data;
+            const node = this.keyToNode[key];
+            if (node && node.deleted) {
+                node.deleted = false;
+                return true;
+            }
+        } else if (type === 'restore') {
+            const { key, id } = data;
+            const node = this.idToNode[id];
+            if (node) {
+                this.keyToNode[key] = node;
+                return true;
+            }
+        } else if (type === 'move') {
+            const { src, dst } = data;
+            if (src === dst) {
                 return false;
             }
-        } else if (action.type === 'restore') {
-            const key = data.id;
-            const store = this.stores[key];
-            if (store) {
-                store.free(rda.valueRDA);
+            const srcNode = this.keyToNode[src];
+            if (srcNode && !srcNode.deleted) {
+                srcNode.deleted = true;
+                const id = uniqueId();
+                const valueRDA = rda.valueRDA;
+                const state = srcNode.value.state(valueRDA, valueRDA.stateSchema.alloc());
+                const storeNode = rda.storeNodeSchema.alloc();
+                storeNode.id = id;
+                storeNode.key = dst;
+                storeNode.value = valueRDA.createStore(state);
+                storeNode.deleted = false;
+                this.keyToNode[dst] = this.idToNode[id] = storeNode;
+                return true;
             }
-            this.stores[key] = rda.valueRDA.parse(data.store);
-            return true;
+        } else if (type === 'unmove') {
+            const { dst, src, dstId } = data;
+            const dstNode = this.keyToNode[dst];
+            if (dstNode && !dstNode.deleted) {
+                this.keyToNode[dst] = this.idToNode[dstId];
+                const srcNode = this.keyToNode[src];
+                if (srcNode && srcNode.deleted) {
+                    srcNode.deleted = false;
+                }
+                return true;
+            }
         } else if (action.type === 'reset') {
-            const keys = Object.keys(this.stores);
-            for (let i = 0; i < keys.length; ++i) {
-                this.stores[keys[i]].free(rda.valueRDA);
+            const ids = Object.keys(this.idToNode);
+            for (let i = 0; i < ids.length; ++i) {
+                rda.storeNodeSchema.free(this.idToNode[ids[i]]);
             }
-            this.stores = {};
+            this.idToNode = {};
+            this.keyToNode = {};
             for (let i = 0; i < data.length; ++i) {
-                this.stores[data[i].id] = rda.valueRDA.parse(data[i].store);
+                const node = rda.storeNodeSchema.alloc();
+                const id = uniqueId();
+                const key = data[i].key;
+                node.id = id;
+                node.key = key;
+                node.value = rda.valueRDA.parse(data[i].store);
+                node.deleted = false;
+                this.keyToNode[key] = this.idToNode[id] = node;
             }
             return true;
         } else if (action.type === 'noop') {
@@ -193,47 +310,75 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         const { type, data } = action;
         const result = rda.actionSchema.alloc();
         if (type === 'set' || type === 'restore') {
-            const key = data.id;
-            const store = this.stores[key];
-            if (store) {
+            const { key } = data;
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
                 result.type = 'restore';
-                result.data = rda.setActionSchema.alloc();
-                result.data.id = rda.keySchema.assign(result.data.id, key);
-                result.data.store = store.serialize(rda.valueRDA, result.data.value);
+                result.data = rda.restoreActionSchema.alloc();
+                result.data.key = key;
+                result.data.id = node.id;
                 return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
             } else {
                 result.type = 'remove';
-                result.data = rda.keySchema.assign(result.data, key);
+                result.data = key;
                 return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['removeAction']>result;
             }
         } else if (type === 'update') {
-            const key = data.id;
-            const store = this.stores[key];
-            if (store) {
+            const id = data.id;
+            const node = this.idToNode[id];
+            if (node) {
                 result.type = 'update';
                 result.data = rda.updateActionSchema.alloc();
-                result.data.id = rda.keySchema.assign(result.data.id, key);
+                result.data.id = rda.keySchema.assign(result.data.id, id);
                 rda.valueRDA.actionSchema.free(result.data.action);
-                result.data.action = store.inverse(rda.valueRDA, data.action);
-                return <{
-                    type:'update';
-                    data:{
-                        id:MapRDA['keySchema']['identity'];
-                        action:(typeof store)['inverse'] extends (rda:MapRDA['valueRDA'], action:(typeof data.action)) => infer RetType
-                            ? RetType
-                            : MapRDA['valueRDA']['actionSchema']['identity'];
-                    };
-                }>result;
+                result.data.action = node.value.inverse(rda.valueRDA, data.action);
+                return result;
             }
         } else if (type === 'remove') {
             const key = data;
-            const store = this.stores[key];
-            if (store) {
-                result.type = 'restore';
-                result.data = rda.setActionSchema.alloc();
-                result.data.id = rda.keySchema.assign(result.data.id, key);
-                result.data.store = store.serialize(rda.valueRDA, result.data.value);
-                return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
+                result.type = 'unremove';
+                result.data = key;
+                return result;
+            }
+        } else if (type === 'unremove') {
+            const key = data;
+            const node = this.keyToNode[key];
+            if (node && node.deleted) {
+                result.type = 'remove';
+                result.data = key;
+                return result;
+            }
+        } else if (type === 'move') {
+            const { src, dst } = data;
+            if (src !== dst) {
+                const srcNode = this.keyToNode[src];
+                if (srcNode && !srcNode.deleted) {
+                    result.type = 'unmove';
+                    result.data = {};
+                    result.data.dst = dst;
+                    result.data.src = src;
+                    result.data.dstId = '';
+                    const dstNode = this.keyToNode[dst];
+                    if (dstNode) {
+                        result.data.dstId = dstNode.id;
+                    }
+                    return result;
+                }
+            }
+        } else if (type === 'unmove') {
+            const { dst, src } = data;
+            const dstNode = this.keyToNode[dst];
+            const srcNode = this.keyToNode[src];
+            if (dstNode && !dstNode.deleted) {
+                if (srcNode && srcNode.deleted) {
+                    result.type = 'move';
+                    result.data = rda.moveActionSchema.alloc();
+                    result.data.src = src;
+                    result.data.dst = dst;
+                    return result;
+                }
             }
         } else if (type === 'reset') {
             result.type = 'reset';
@@ -245,31 +390,39 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
     }
 
     public serialize (rda:MapRDA, result:MuRDATypes<MapRDA>['serializedStore']) : MuRDATypes<MapRDA>['serializedStore'] {
-        const ids = Object.keys(this.stores);
-        ids.sort(compareKey);
-        while (result.length > ids.length) {
-            const element = result.pop();
-            if (element) {
-                rda.restoreActionSchema.free(element);
+        const keys = Object.keys(this.keyToNode);
+        const validKeys:MapRDA['keySchema'][] = [];
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            const node = this.keyToNode[key];
+            if (node && !node.deleted) {
+                validKeys.push(key);
             }
         }
-        while (result.length < ids.length) {
-            result.push(rda.restoreActionSchema.alloc());
+        validKeys.sort(compareKey);
+        while (result.length > validKeys.length) {
+            const element = result.pop();
+            if (element) {
+                rda.valueStoreSchema.free(element);
+            }
         }
-        for (let i = 0; i < ids.length; ++i) {
-            const id = ids[i];
+        while (result.length < validKeys.length) {
+            result.push(rda.valueStoreSchema.alloc());
+        }
+        for (let i = 0; i < validKeys.length; ++i) {
+            const key = validKeys[i];
             const element = result[i];
-            const store = this.stores[id];
-            element.id = id;
+            const store = this.keyToNode[key].value;
+            element.key = key;
             element.store = store.serialize(rda.valueRDA, rda.valueRDA.storeSchema.alloc());
         }
         return result;
     }
 
     public free (rda:MapRDA) {
-        const ids = Object.keys(this.stores);
+        const ids = Object.keys(this.idToNode);
         for (let i = 0; i < ids.length; ++i) {
-            this.stores[ids[i]].free(rda.valueRDA);
+            this.idToNode[ids[i]].value.free(rda.valueRDA);
         }
     }
 }
@@ -283,7 +436,7 @@ type WrapAction<Key, Meta, Dispatch> =
                 } | {
                     type:'update';
                     data:{
-                        id:Key;
+                        id:string;
                         action:RetType;
                     };
                 }
@@ -318,11 +471,16 @@ export class MuRDAMap<
 
     public readonly setActionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['setActionSchema'];
     public readonly updateActionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['updateActionSchema'];
+    public readonly moveActionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['moveActionSchema'];
+    public readonly unmoveActionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['unmoveActionSchema'];
     public readonly restoreActionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['restoreActionSchema'];
 
     public readonly stateSchema:MuRDAMapTypes<KeySchema, ValueRDA>['stateSchema'];
     public readonly actionSchema:MuRDAMapTypes<KeySchema, ValueRDA>['actionSchema'];
     public readonly storeSchema:MuRDAMapTypes<KeySchema, ValueRDA>['storeSchema'];
+    public readonly valueStoreSchema:MuRDAMapTypes<KeySchema, ValueRDA>['valueStoreSchema'];
+
+    public readonly storeNodeSchema:MuRDAMapTypes<KeySchema, ValueRDA>['storeNodeSchema'];
 
     public readonly actionMeta:MuRDAMapTypes<KeySchema, ValueRDA>['actionMeta'];
 
@@ -338,8 +496,16 @@ export class MuRDAMap<
             const result = this.actionSchema.alloc();
             result.type = 'set';
             result.data = this.setActionSchema.alloc();
-            result.data.id = this.keySchema.assign(result.data.id, key);
+            result.data.key = this.keySchema.assign(result.data.key, key);
             result.data.value = this.valueRDA.stateSchema.assign(result.data.value, state);
+            return result;
+        },
+        move: (src:KeySchema['identity'], dst:KeySchema['identity']) => {
+            const result = this.actionSchema.alloc();
+            result.type = 'move';
+            result.data = this.moveActionSchema.alloc();
+            result.data.src = src;
+            result.data.dst = dst;
             return result;
         },
         remove: (key:KeySchema['identity']) => {
@@ -360,13 +526,13 @@ export class MuRDAMap<
             result.type = 'reset';
             result.data = this.storeSchema.alloc();
             result.data.length = 0;
-            const ids = Object.keys(state);
-            ids.sort(compareKey);
-            for (let i = 0; i < ids.length; ++i) {
-                const key = ids[i];
-                const entry = this.restoreActionSchema.alloc();
-                entry.id = this.keySchema.assign(entry.id, key);
-                const temp = this.valueRDA.parse(state[key]);
+            const keys = Object.keys(state);
+            keys.sort(compareKey);
+            for (let i = 0; i < keys.length; ++i) {
+                const key = keys[i];
+                const entry = this.valueStoreSchema.alloc();
+                entry.key = this.keySchema.assign(entry.key, key);
+                const temp = this.valueRDA.createStore(state[key]);
                 entry.store = temp.serialize(this.valueRDA, entry.store);
                 temp.free(this.valueRDA);
                 result.data.push(entry);
@@ -374,12 +540,12 @@ export class MuRDAMap<
             return result;
         },
         update: (key:KeySchema['identity']) => {
-            this._savedElement = this._savedStore.stores[key];
+            this._savedElement = this._savedStore.keyToNode[key];
             this._savedAction = this.actionSchema.alloc();
-            if (this._savedElement) {
+            if (this._savedElement && !this._savedElement.deleted) {
                 this._savedAction.type = 'update';
                 this._savedUpdate = this._savedAction.data = this.updateActionSchema.alloc();
-                this._savedAction.data.id = this.keySchema.assign(this._savedAction.data.id, key);
+                this._savedAction.data.id = this._savedElement.id;
                 this.valueRDA.actionSchema.free(this._savedUpdate.action);
                 return this._updateDispatcher;
             } else {
@@ -391,13 +557,14 @@ export class MuRDAMap<
 
     public readonly action:(store:MuRDAMapStore<MuRDAMap<KeySchema, ValueRDA>>) => {
         set:(key:KeySchema['identity'], value:ValueRDA['stateSchema']['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['setAction'];
-        remove:(key:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['removeAction'];
         update:(key:KeySchema['identity']) => StripBindAndWrap<KeySchema['identity'], ValueRDA>;
+        move:(src:KeySchema['identity'], dst:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['moveAction'];
+        remove:(key:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['removeAction'];
+        reset:(state:MuRDAMapTypes<KeySchema, ValueRDA>['state']) => MuRDAMapTypes<KeySchema, ValueRDA>['resetAction'];
         clear:() => {
             type:'reset';
             data:[];
         };
-        reset:(state:MuRDAMapTypes<KeySchema, ValueRDA>['state']) => MuRDAMapTypes<KeySchema, ValueRDA>['resetAction'];
     } = (store) => {
         this._savedStore = store;
         return this._actionDispatchers;
@@ -446,7 +613,7 @@ export class MuRDAMap<
                 return (new Function(
                     'rda',
                     'dispatch',
-                    `return function () { rda._savedUpdate.action = dispatch(rda._savedElement)${index}.apply(null, arguments); return rda._savedAction; }`,
+                    `return function () { rda._savedUpdate.action = dispatch(rda._savedElement.value)${index}.apply(null, arguments); return rda._savedAction; }`,
                 ))(self, dispatcher);
             } else if (meta.type === 'table') {
                 const result:any = {};
@@ -462,7 +629,7 @@ export class MuRDAMap<
                     (new Function(
                         'rda',
                         'dispatch',
-                        `return function () { return dispatch(rda._savedElement)${index}.apply(null, arguments); }`,
+                        `return function () { return dispatch(rda._savedElement.value)${index}.apply(null, arguments); }`,
                     ))(self, dispatcher));
             }
             return {};
@@ -528,30 +695,53 @@ export class MuRDAMap<
         this.stateSchema = new MuDictionary(valueRDA.stateSchema, Infinity);
 
         this.setActionSchema = new MuStruct({
-            id: keySchema,
+            key: keySchema,
             value: valueRDA.stateSchema,
         });
         this.updateActionSchema = new MuStruct({
-            id: keySchema,
+            id: new MuASCII(),
             action: valueRDA.actionSchema,
         });
+        this.moveActionSchema = new MuStruct({
+            src: keySchema,
+            dst: keySchema,
+        });
+        this.unmoveActionSchema = new MuStruct({
+            dst: keySchema,
+            src: keySchema,
+            dstId: new MuASCII(),
+        });
         this.restoreActionSchema = new MuStruct({
-            id: keySchema,
-            store: valueRDA.storeSchema,
+            key: keySchema,
+            id: new MuASCII(),
         });
 
-        this.storeSchema = new MuSortedArray(this.restoreActionSchema, Infinity,
+        this.valueStoreSchema = new MuStruct({
+            key: keySchema,
+            store: valueRDA.storeSchema,
+        });
+        this.storeSchema = new MuSortedArray(this.valueStoreSchema, Infinity,
             function (a, b) {
-                return compareKey(a.id, b.id);
+                return compareKey(a.key, b.key);
             });
 
         this.actionSchema = new MuUnion({
             set: this.setActionSchema,
             update: this.updateActionSchema,
-            restore: this.restoreActionSchema,
+            move: this.moveActionSchema,
+            unmove: this.unmoveActionSchema,
             remove: keySchema,
+            unremove: keySchema,
+            restore: this.restoreActionSchema,
             reset: this.storeSchema,
             noop: new MuVoid(),
+        });
+
+        this.storeNodeSchema = new MuStruct({
+            id: new MuASCII(),
+            key: this.keySchema,
+            value: this.valueRDA.storeSchema,
+            deleted: new MuBoolean(false),
         });
 
         this.actionMeta = {
@@ -560,6 +750,7 @@ export class MuRDAMap<
                 type: 'table',
                 table: {
                     set: { type: 'unit' },
+                    move: { type: 'unit' },
                     remove: { type: 'unit' },
                     clear: { type: 'unit' },
                     reset: { type: 'unit' },
@@ -578,20 +769,32 @@ export class MuRDAMap<
     }
 
     public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
-        const result:any = {};
-        const ids = Object.keys(initialState);
-        for (let i = 0; i < ids.length; ++i) {
-            const id = ids[i];
-            result[id] = this.valueRDA.createStore(initialState[id]);
+        const result:{ [id:string]:MuRDAMapTypes<KeySchema, ValueRDA>['storeNode'] } = {};
+        const keys = Object.keys(initialState);
+        for (let i = 0; i < keys.length; ++i) {
+            const id = uniqueId();
+            const key = keys[i];
+            const storeNode = this.storeNodeSchema.alloc();
+            storeNode.id = id;
+            storeNode.key = key;
+            storeNode.value = this.valueRDA.createStore(initialState[key]);
+            storeNode.deleted = false;
+            result[id] = storeNode;
         }
         return new MuRDAMapStore<this>(result);
     }
 
     public parse (store:MuRDAMapTypes<KeySchema, ValueRDA>['store']) : MuRDAMapStore<this> {
-        const result:any = {};
+        const result:{ [id:string]:MuRDAMapTypes<KeySchema, ValueRDA>['storeNode'] } = {};
         for (let i = 0; i < store.length; ++i) {
-            const element = store[i];
-            result[element.id] = this.valueRDA.parse(element.store);
+            const entry = store[i];
+            const id = uniqueId();
+            const storeNode = this.storeNodeSchema.alloc();
+            storeNode.id = id;
+            storeNode.key = entry.key;
+            storeNode.value = this.valueRDA.parse(entry.store);
+            storeNode.deleted = false;
+            result[id] = storeNode;
         }
         return new MuRDAMapStore<this>(result);
     }
