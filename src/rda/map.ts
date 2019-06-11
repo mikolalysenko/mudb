@@ -150,7 +150,7 @@ export interface MuRDAMapTypes<
         id:string;
         key:string;
         value:MuRDAStore<ValueRDA>;
-        deleted:boolean;
+        live:boolean;
     };
 }
 
@@ -189,7 +189,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
@@ -198,7 +198,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 out[key] = node.value.state(rda.valueRDA, rda.valueRDA.stateSchema.alloc());
             }
         }
@@ -214,28 +214,28 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             node.id = id;
             node.key = key;
             node.value = rda.valueRDA.createStore(value);
-            node.deleted = false;
+            node.live = true;
             this.keyToNode[key] = this.idToNode[id] = node;
             return true;
         } else if (type === 'update') {
             const id = data.id;
             const node = this.idToNode[id];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 return node.value.apply(rda.valueRDA, data.action);
             }
             return false;
         } else if (type === 'remove') {
             const key = data;
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
-                node.deleted = true;
+            if (node && node.live) {
+                node.live = false;
                 return true;
             }
         } else if (type === 'unremove') {
             const key = data;
             const node = this.keyToNode[key];
-            if (node && node.deleted) {
-                node.deleted = false;
+            if (node && !node.live) {
+                node.live = true;
                 return true;
             }
         } else if (type === 'restore') {
@@ -251,8 +251,8 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 return false;
             }
             const srcNode = this.keyToNode[src];
-            if (srcNode && !srcNode.deleted) {
-                srcNode.deleted = true;
+            if (srcNode && srcNode.live) {
+                srcNode.live = false;
                 const id = uniqueId();
                 const valueRDA = rda.valueRDA;
                 const state = srcNode.value.state(valueRDA, valueRDA.stateSchema.alloc());
@@ -260,18 +260,18 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 node.id = id;
                 node.key = dst;
                 node.value = valueRDA.createStore(state);
-                node.deleted = false;
+                node.live = true;
                 this.keyToNode[dst] = this.idToNode[id] = node;
                 return true;
             }
         } else if (type === 'unmove') {
             const { dst, src, dstId } = data;
             const dstNode = this.keyToNode[dst];
-            if (dstNode && !dstNode.deleted) {
+            if (dstNode && dstNode.live) {
                 this.keyToNode[dst] = this.idToNode[dstId];
                 const srcNode = this.keyToNode[src];
-                if (srcNode && srcNode.deleted) {
-                    srcNode.deleted = false;
+                if (srcNode && !srcNode.live) {
+                    srcNode.live = true;
                 }
                 return true;
             }
@@ -289,7 +289,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 node.id = id;
                 node.key = key;
                 node.value = rda.valueRDA.parse(data[i].store);
-                node.deleted = false;
+                node.live = true;
                 this.keyToNode[key] = this.idToNode[id] = node;
             }
             return true;
@@ -305,7 +305,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         if (type === 'set' || type === 'restore') {
             const { key } = data;
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 result.type = 'restore';
                 result.data = rda.restoreActionSchema.alloc();
                 result.data.key = key;
@@ -330,7 +330,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         } else if (type === 'remove') {
             const key = data;
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 result.type = 'unremove';
                 result.data = key;
                 return result;
@@ -338,7 +338,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         } else if (type === 'unremove') {
             const key = data;
             const node = this.keyToNode[key];
-            if (node && node.deleted) {
+            if (node && !node.live) {
                 result.type = 'remove';
                 result.data = key;
                 return result;
@@ -347,7 +347,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             const { src, dst } = data;
             if (src !== dst) {
                 const srcNode = this.keyToNode[src];
-                if (srcNode && !srcNode.deleted) {
+                if (srcNode && srcNode.live) {
                     result.type = 'unmove';
                     result.data = {};
                     result.data.dst = dst;
@@ -364,8 +364,8 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             const { dst, src } = data;
             const dstNode = this.keyToNode[dst];
             const srcNode = this.keyToNode[src];
-            if (dstNode && !dstNode.deleted) {
-                if (srcNode && srcNode.deleted) {
+            if (dstNode && dstNode.live) {
+                if (srcNode && !srcNode.live) {
                     result.type = 'move';
                     result.data = rda.moveActionSchema.alloc();
                     result.data.src = src;
@@ -388,7 +388,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const node = this.keyToNode[key];
-            if (node && !node.deleted) {
+            if (node && node.live) {
                 validKeys.push(key);
             }
         }
@@ -534,7 +534,7 @@ export class MuRDAMap<
         update: (key:KeySchema['identity']) => {
             this._savedElement = this._savedStore.keyToNode[key];
             this._savedAction = this.actionSchema.alloc();
-            if (this._savedElement && !this._savedElement.deleted) {
+            if (this._savedElement && this._savedElement.live) {
                 this._savedAction.type = 'update';
                 this._savedUpdate = this._savedAction.data = this.updateActionSchema.alloc();
                 this._savedAction.data.id = this._savedElement.id;
@@ -764,7 +764,7 @@ export class MuRDAMap<
             node.id = id;
             node.key = key;
             node.value = this.valueRDA.createStore(initialState[key]);
-            node.deleted = false;
+            node.live = true;
             result[id] = node;
         }
         return new MuRDAMapStore<this>(result);
@@ -779,7 +779,7 @@ export class MuRDAMap<
             node.id = id;
             node.key = entry.key;
             node.value = this.valueRDA.parse(entry.store);
-            node.deleted = false;
+            node.live = true;
             result[id] = node;
         }
         return new MuRDAMapStore<this>(result);
