@@ -50,7 +50,6 @@ export interface MuRDAMapTypes<
         move:MuRDAMapTypes<IdSchema, KeySchema, ValueRDA>['moveActionSchema'];
         unmove:MuRDAMapTypes<IdSchema, KeySchema, ValueRDA>['unmoveActionSchema'];
         remove:KeySchema;
-        unremove:KeySchema;
         reset:MuRDAMapTypes<IdSchema, KeySchema, ValueRDA>['storeSchema']
         restore:MuRDAMapTypes<IdSchema, KeySchema, ValueRDA>['restoreActionSchema'];
         noop:MuVoid;
@@ -87,10 +86,6 @@ export interface MuRDAMapTypes<
     };
     removeAction:{
         type:'remove';
-        data:KeySchema['identity'];
-    };
-    unremoveAction:{
-        type:'unremove';
         data:KeySchema['identity'];
     };
     restoreAction:{
@@ -232,17 +227,11 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any, any>> implements Mu
                 node.live = false;
                 return true;
             }
-        } else if (type === 'unremove') {
-            const key = data;
-            const node = this.keyToNode[key];
-            if (node && !node.live) {
-                node.live = true;
-                return true;
-            }
         } else if (type === 'restore') {
-            const { key, id } = data;
+            const { id, key } = data;
             const node = this.idToNode[id];
             if (node) {
+                node.live = true;
                 this.keyToNode[key] = node;
                 return true;
             }
@@ -309,8 +298,8 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any, any>> implements Mu
             if (node && node.live) {
                 result.type = 'restore';
                 result.data = rda.restoreActionSchema.alloc();
-                result.data.key = key;
                 result.data.id = node.id;
+                result.data.key = key;
                 return <MuRDAMapTypes<MapRDA['idSchema'], MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
             } else {
                 result.type = 'remove';
@@ -326,23 +315,17 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any, any>> implements Mu
                 result.data.id = rda.keySchema.assign(result.data.id, id);
                 rda.valueRDA.actionSchema.free(result.data.action);
                 result.data.action = node.value.inverse(rda.valueRDA, data.action);
-                return result;
+                return <MuRDAMapTypes<MapRDA['idSchema'], MapRDA['keySchema'], MapRDA['valueRDA']>['updateAction']>result;
             }
         } else if (type === 'remove') {
             const key = data;
             const node = this.keyToNode[key];
             if (node && node.live) {
-                result.type = 'unremove';
-                result.data = key;
-                return result;
-            }
-        } else if (type === 'unremove') {
-            const key = data;
-            const node = this.keyToNode[key];
-            if (node && !node.live) {
-                result.type = 'remove';
-                result.data = key;
-                return result;
+                result.type = 'restore';
+                result.data = rda.restoreActionSchema.alloc();
+                result.data.id = node.id;
+                result.data.key = key;
+                return <MuRDAMapTypes<MapRDA['idSchema'], MapRDA['keySchema'], MapRDA['valueRDA']>['restoreAction']>result;
             }
         } else if (type === 'move') {
             const { src, dst } = data;
@@ -358,7 +341,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any, any>> implements Mu
                     if (dstNode) {
                         result.data.dstId = dstNode.id;
                     }
-                    return result;
+                    return <MuRDAMapTypes<MapRDA['idSchema'], MapRDA['keySchema'], MapRDA['valueRDA']>['unmoveAction']>result;
                 }
             }
         } else if (type === 'unmove') {
@@ -371,7 +354,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any, any>> implements Mu
                     result.data = rda.moveActionSchema.alloc();
                     result.data.src = src;
                     result.data.dst = dst;
-                    return result;
+                    return <MuRDAMapTypes<MapRDA['idSchema'], MapRDA['keySchema'], MapRDA['valueRDA']>['moveAction']>result;
                 }
             }
         } else if (type === 'reset') {
@@ -726,7 +709,6 @@ export class MuRDAMap<
             move: this.moveActionSchema,
             unmove: this.unmoveActionSchema,
             remove: keySchema,
-            unremove: keySchema,
             restore: this.restoreActionSchema,
             reset: this.storeSchema,
             noop: new MuVoid(),
