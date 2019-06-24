@@ -121,7 +121,7 @@ export class PuzzleExample extends React.Component<PuzzleExampleProps, PuzzleExa
 
             .operationBtnList {
                 display: flex;
-                justify-content: flex-end;
+                justify-content: flex-start;
                 margin: 10px;
             }
 
@@ -334,7 +334,7 @@ export class PuzzleExample extends React.Component<PuzzleExampleProps, PuzzleExa
                     <div>rotation:</div>
                     <input
                         type='number'
-                        defaultValue={detail.rotation.toString()}
+                        value={detail.rotation.toString()}
                         onChange={(e) => this.setRotation(+e.target.value)}
                     ></input>
                 </div>
@@ -354,7 +354,7 @@ export class PuzzleExample extends React.Component<PuzzleExampleProps, PuzzleExa
                             <span>y: </span>
                             <input
                                 type='number'
-                                defaultValue={detail.position.y.toString()}
+                                value={detail.position.y.toString()}
                                 onChange={(e) => this.setY(+e.target.value)}
                             ></input>
                         </div>

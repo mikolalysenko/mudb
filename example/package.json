@@ -7,7 +7,7 @@
   "dependencies": {
     "@types/react": "^16.8.4",
     "@types/react-dom": "^16.8.2",
-    "mudb": "0.13.0",
+    "mudb": "0.17.3",
     "react": "^16.8.3",
     "react-dom": "^16.8.3"
   }
