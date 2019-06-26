@@ -15,11 +15,13 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public alloc () : boolean { return this.identity; }
+
     public free (bool:boolean) : void { }
 
     public equal (a:boolean, b:boolean) : boolean { return a === b; }
 
     public clone (bool:boolean) : boolean { return bool; }
+
     public assign (dst:boolean, src:boolean) : boolean { return src; }
 
     public diff (base:boolean, target:boolean, out:MuWriteStream) : boolean {
@@ -40,5 +42,11 @@ export class MuBoolean implements MuSchema<boolean> {
     }
 
     public toJSON (bool:boolean) : boolean { return bool; }
-    public fromJSON (json:boolean) : boolean { return json; }
+
+    public fromJSON (x:boolean) : boolean {
+        if (typeof x === 'boolean') {
+            return x;
+        }
+        return !!x;
+    }
 }

@@ -234,10 +234,12 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
         return arr;
     }
 
-    public fromJSON (json:number[]) : Vector<ValueSchema, D> {
+    public fromJSON (x:number[]) : Vector<ValueSchema, D> {
         const vec = this.alloc();
-        for (let i = 0; i < vec.length; ++i) {
-            vec[i] = json[i];
+        if (Array.isArray(x)) {
+            for (let i = 0; i < vec.length; ++i) {
+                vec[i] = x[i];
+            }
         }
         return vec;
     }

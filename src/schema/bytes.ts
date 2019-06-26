@@ -91,9 +91,12 @@ export class MuBytes implements MuSchema<Uint8Array> {
         return arr;
     }
 
-    public fromJSON (json:number[]) : Uint8Array {
-        const bytes = this._allocBytes(json.length);
-        bytes.set(json);
-        return bytes;
+    public fromJSON (x:number[]) : Uint8Array {
+        if (Array.isArray(x)) {
+            const bytes = this._allocBytes(x.length);
+            bytes.set(x);
+            return bytes;
+        }
+        return this.alloc();
     }
 }

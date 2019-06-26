@@ -159,7 +159,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
             toJSON: func('toJSON', ['s']),
-            fromJSON: func('fromJSON', ['j']),
+            fromJSON: func('fromJSON', ['x']),
             stats: func('stats', []),
         };
 
@@ -426,9 +426,11 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
 
         // fromJSON subroutine
         methods.fromJSON.append(`var s=_alloc();`);
+        methods.fromJSON.append(`if(Object.prototype.toString.call(x)==='[object Object]'){`);
         propRefs.forEach((propRef, i) => {
-            methods.fromJSON.append(`s[${propRef}]=${typeRefs[i]}.fromJSON(j[${propRef}]);`);
+            methods.fromJSON.append(`s[${propRef}]=${typeRefs[i]}.fromJSON(x[${propRef}]);`);
         });
+        methods.fromJSON.append(`}`);
         methods.fromJSON.append(`return s`);
 
         // stats subroutine

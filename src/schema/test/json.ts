@@ -45,6 +45,35 @@ test('primitive.fromJSON()', (t) => {
     t.end();
 });
 
+test('primitive.fromJSON() with bad input', (t) => {
+    const bool = new MuBoolean();
+    t.equal(bool.fromJSON(<any>undefined), false);
+    t.equal(bool.fromJSON(<any>null), false);
+    t.equal(bool.fromJSON(<any>0), false);
+    t.equal(bool.fromJSON(<any>1), true);
+    t.equal(bool.fromJSON(<any>''), false);
+    t.equal(bool.fromJSON(<any>'false'), true);
+    t.equal(bool.fromJSON(<any>[]), true);
+
+    const float32 = new MuFloat32();
+    t.equal(float32.fromJSON(<any>undefined), 0);
+    t.equal(float32.fromJSON(<any>null), 0);
+    t.equal(float32.fromJSON(<any>false), 0);
+    t.equal(float32.fromJSON(<any>true), 1);
+    t.equal(float32.fromJSON(<any>'1e3'), 1000);
+    t.equal(float32.fromJSON(<any>'1.1.1'), 0);
+    t.equal(float32.fromJSON(<any>{}), 0);
+
+    const utf8 = new MuUTF8();
+    t.equal(utf8.fromJSON(<any>undefined), 'undefined');
+    t.equal(utf8.fromJSON(<any>null), 'null');
+    t.equal(utf8.fromJSON(<any>false), 'false');
+    t.equal(utf8.fromJSON(<any>123), '123');
+    t.equal(utf8.fromJSON(<any>{}), '[object Object]');
+
+    t.end();
+});
+
 test('array.toJSON()', (t) => {
     const array = new MuArray(new MuFloat32(), Infinity);
 
@@ -345,5 +374,88 @@ test('json.fromJSON()', (t) => {
     const json = new MuJSON();
     const o = {};
     t.equal(json.fromJSON(json.toJSON(o)), o);
+    t.end();
+});
+
+test('nonPrimitive.fromJSON() with bad inpu', (t) => {
+    const array = new MuArray(new MuFloat32(), Infinity);
+    const bytes = new MuBytes();
+    const date = new MuDate();
+    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+
+    const jsonId = { foo: 'bar' };
+    const json = new MuJSON(jsonId);
+
+    const sorted = new MuSortedArray(new MuFloat32(), Infinity);
+    const struct = new MuStruct({
+        foo: new MuFloat32(),
+        bar: new MuUTF8(),
+    });
+    const union = new MuUnion({});
+    const vector = new MuVector(new MuFloat32(), 10);
+
+    t.deepEqual(array.fromJSON(<any>undefined), []);
+    t.deepEqual(array.fromJSON(<any>null), []);
+    t.deepEqual(array.fromJSON(<any>false), []);
+    t.deepEqual(array.fromJSON(<any>0), []);
+    t.deepEqual(array.fromJSON(<any>'foo'), []);
+    t.deepEqual(array.fromJSON(<any>{}), []);
+
+    t.true(bytes.fromJSON(<any>undefined) instanceof Uint8Array);
+    t.true(bytes.fromJSON(<any>null) instanceof Uint8Array);
+    t.true(bytes.fromJSON(<any>false) instanceof Uint8Array);
+    t.true(bytes.fromJSON(<any>0) instanceof Uint8Array);
+    t.true(bytes.fromJSON(<any>'bar') instanceof Uint8Array);
+    t.true(bytes.fromJSON(<any>{}) instanceof Uint8Array);
+
+    t.deepEqual(date.fromJSON(<any>undefined), new Date(0));
+    t.deepEqual(date.fromJSON(<any>null), new Date(0));
+    t.deepEqual(date.fromJSON(<any>false), new Date(0));
+    t.deepEqual(date.fromJSON(<any>'baz'), new Date(0));
+    t.deepEqual(date.fromJSON(<any>[]), new Date(0));
+    t.deepEqual(date.fromJSON(<any>{}), new Date(0));
+
+    t.deepEqual(dictionary.fromJSON(<any>undefined), {});
+    t.deepEqual(dictionary.fromJSON(<any>null), {});
+    t.deepEqual(dictionary.fromJSON(<any>false), {});
+    t.deepEqual(dictionary.fromJSON(<any>0), {});
+    t.deepEqual(dictionary.fromJSON(<any>'qux'), {});
+    t.deepEqual(dictionary.fromJSON(<any>[]), {});
+
+    t.deepEqual(json.fromJSON(<any>undefined), jsonId);
+    t.deepEqual(json.fromJSON(<any>null), jsonId);
+    t.deepEqual(json.fromJSON(<any>false), jsonId);
+    t.deepEqual(json.fromJSON(<any>0), jsonId);
+    t.deepEqual(json.fromJSON(<any>'quux'), jsonId);
+
+    t.deepEqual(sorted.fromJSON(<any>undefined), []);
+    t.deepEqual(sorted.fromJSON(<any>null), []);
+    t.deepEqual(sorted.fromJSON(<any>false), []);
+    t.deepEqual(sorted.fromJSON(<any>0), []);
+    t.deepEqual(sorted.fromJSON(<any>'foo'), []);
+    t.deepEqual(sorted.fromJSON(<any>{}), []);
+
+    t.deepEqual(struct.fromJSON(<any>undefined), struct.identity);
+    t.deepEqual(struct.fromJSON(<any>null), struct.identity);
+    t.deepEqual(struct.fromJSON(<any>false), struct.identity);
+    t.deepEqual(struct.fromJSON(<any>0), struct.identity);
+    t.deepEqual(struct.fromJSON(<any>'bar'), struct.identity);
+    t.deepEqual(struct.fromJSON(<any>[]), struct.identity);
+
+    t.deepEqual(union.fromJSON(<any>undefined), union.identity);
+    t.deepEqual(union.fromJSON(<any>null), union.identity);
+    t.deepEqual(union.fromJSON(<any>false), union.identity);
+    t.deepEqual(union.fromJSON(<any>0), union.identity);
+    t.deepEqual(union.fromJSON(<any>'baz'), union.identity);
+    t.deepEqual(union.fromJSON(<any>{}), union.identity);
+    t.deepEqual(union.fromJSON(<any>[]), union.identity);
+
+    t.true(vector.fromJSON(<any>undefined) instanceof Float32Array);
+    t.true(vector.fromJSON(<any>null) instanceof Float32Array);
+    t.true(vector.fromJSON(<any>false) instanceof Float32Array);
+    t.true(vector.fromJSON(<any>0) instanceof Float32Array);
+    t.true(vector.fromJSON(<any>'qux') instanceof Float32Array);
+    t.true(vector.fromJSON(<any>{}) instanceof Float32Array);
+
     t.end();
 });
