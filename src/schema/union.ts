@@ -187,6 +187,6 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
                 };
             }
         }
-        return this.alloc();
+        return this.clone(this.identity);
     }
 }
