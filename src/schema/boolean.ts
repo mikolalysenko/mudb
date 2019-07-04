@@ -47,6 +47,6 @@ export class MuBoolean implements MuSchema<boolean> {
         if (typeof x === 'boolean') {
             return x;
         }
-        return !!x;
+        return this.identity;
     }
 }

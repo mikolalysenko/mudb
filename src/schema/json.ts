@@ -126,7 +126,7 @@ export class MuJSON implements MuSchema<object> {
     public toJSON (obj:object) : object { return obj; }
 
     public fromJSON (x:object) : object {
-        if (x && typeof x === 'object') {
+        if (typeof x === 'object' && x) {
             return x;
         }
         return this.clone(this.identity);

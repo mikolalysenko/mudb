@@ -32,7 +32,7 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
         if (typeof x === 'string') {
             return x;
         }
-        return String(x);
+        return this.identity;
     }
 
     public abstract diff (base:string, target:string, out:MuWriteStream) : boolean;

@@ -178,11 +178,14 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
     }
 
     public fromJSON (x:UnionTypes<SubTypes>['json']) : UnionTypes<SubTypes>['instance'] {
-        if (x && typeof x.type === 'string' && 'data' in x) {
-            return {
-                type: x.type,
-                data: this.muData[x.type].fromJSON(x.data),
-            };
+        if (typeof x === 'object' && x) {
+            const type = x.type;
+            if (typeof type === 'string' && type in this.muData) {
+                return {
+                    type,
+                    data: this.muData[type].fromJSON(x.data),
+                };
+            }
         }
         return this.alloc();
     }

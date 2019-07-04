@@ -97,6 +97,6 @@ export class MuBytes implements MuSchema<Uint8Array> {
             bytes.set(x);
             return bytes;
         }
-        return this.alloc();
+        return this.clone(this.identity);
     }
 }

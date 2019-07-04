@@ -46,30 +46,29 @@ test('primitive.fromJSON()', (t) => {
 });
 
 test('primitive.fromJSON() with bad input', (t) => {
-    const bool = new MuBoolean();
-    t.equal(bool.fromJSON(<any>undefined), false);
-    t.equal(bool.fromJSON(<any>null), false);
-    t.equal(bool.fromJSON(<any>0), false);
-    t.equal(bool.fromJSON(<any>1), true);
-    t.equal(bool.fromJSON(<any>''), false);
+    const bool = new MuBoolean(true);
+    t.equal(bool.fromJSON(<any>undefined), true);
+    t.equal(bool.fromJSON(<any>null), true);
+    t.equal(bool.fromJSON(<any>0), true);
+    t.equal(bool.fromJSON(<any>''), true);
     t.equal(bool.fromJSON(<any>'false'), true);
     t.equal(bool.fromJSON(<any>[]), true);
 
-    const float32 = new MuFloat32();
-    t.equal(float32.fromJSON(<any>undefined), 0);
-    t.equal(float32.fromJSON(<any>null), 0);
-    t.equal(float32.fromJSON(<any>false), 0);
-    t.equal(float32.fromJSON(<any>true), 1);
-    t.equal(float32.fromJSON(<any>'1e3'), 1000);
-    t.equal(float32.fromJSON(<any>'1.1.1'), 0);
-    t.equal(float32.fromJSON(<any>{}), 0);
+    const float32 = new MuFloat32(0.5);
+    t.equal(float32.fromJSON(<any>undefined), 0.5);
+    t.equal(float32.fromJSON(<any>null), 0.5);
+    t.equal(float32.fromJSON(<any>false), 0.5);
+    t.equal(float32.fromJSON(<any>true), 0.5);
+    t.equal(float32.fromJSON(<any>'1e3'), 0.5);
+    t.equal(float32.fromJSON(<any>'1.1.1'), 0.5);
+    t.equal(float32.fromJSON(<any>{}), 0.5);
 
-    const utf8 = new MuUTF8();
-    t.equal(utf8.fromJSON(<any>undefined), 'undefined');
-    t.equal(utf8.fromJSON(<any>null), 'null');
-    t.equal(utf8.fromJSON(<any>false), 'false');
-    t.equal(utf8.fromJSON(<any>123), '123');
-    t.equal(utf8.fromJSON(<any>{}), '[object Object]');
+    const utf8 = new MuUTF8('Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.fromJSON(<any>undefined), 'Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.fromJSON(<any>null), 'Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.fromJSON(<any>false), 'Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.fromJSON(<any>123), 'Iñtërnâtiônàlizætiøn☃💩');
+    t.equal(utf8.fromJSON(<any>{}), 'Iñtërnâtiônàlizætiøn☃💩');
 
     t.end();
 });
@@ -377,71 +376,86 @@ test('json.fromJSON()', (t) => {
     t.end();
 });
 
-test('nonPrimitive.fromJSON() with bad inpu', (t) => {
-    const array = new MuArray(new MuFloat32(), Infinity);
-    const bytes = new MuBytes();
+test('nonPrimitive.fromJSON() with bad input', (t) => {
+    const array = new MuArray(new MuFloat32(1), Infinity, [1, 2, 3]);
+    const bytes = new MuBytes(new Uint8Array([1, 2, 3]));
     const date = new MuDate();
-    const dictionary = new MuDictionary(new MuFloat32(), Infinity);
+    const dictionary = new MuDictionary(new MuFloat32(1), Infinity, { e: Math.E });
 
-    const jsonId = { foo: 'bar' };
-    const json = new MuJSON(jsonId);
+    const json = new MuJSON({ foo: 'bar' });
 
-    const sorted = new MuSortedArray(new MuFloat32(), Infinity);
+    const sorted = new MuSortedArray(new MuFloat32(1), Infinity, undefined, [0.5, 1, 1.5]);
     const struct = new MuStruct({
-        foo: new MuFloat32(),
-        bar: new MuUTF8(),
+        foo: new MuFloat32(1),
+        bar: new MuUTF8('bar'),
     });
-    const union = new MuUnion({});
-    const vector = new MuVector(new MuFloat32(), 10);
+    const union = new MuUnion({
+        f: new MuFloat32(1),
+        u: new MuUTF8('foo'),
+    }, 'u');
+    const vector = new MuVector(new MuFloat32(1), 2);
 
-    t.deepEqual(array.fromJSON(<any>undefined), []);
-    t.deepEqual(array.fromJSON(<any>null), []);
-    t.deepEqual(array.fromJSON(<any>false), []);
-    t.deepEqual(array.fromJSON(<any>0), []);
-    t.deepEqual(array.fromJSON(<any>'foo'), []);
-    t.deepEqual(array.fromJSON(<any>{}), []);
+    t.notEqual(array.fromJSON(<any>undefined), array.identity);
+    t.deepEqual(array.fromJSON(<any>undefined), array.identity);
+    t.deepEqual(array.fromJSON(<any>null), array.identity);
+    t.deepEqual(array.fromJSON(<any>false), array.identity);
+    t.deepEqual(array.fromJSON(<any>0), array.identity);
+    t.deepEqual(array.fromJSON(<any>'foo'), array.identity);
+    t.deepEqual(array.fromJSON(<any>{}), array.identity);
+    t.deepEqual(array.fromJSON([ '', {} ]), [1, 1]);
 
-    t.true(bytes.fromJSON(<any>undefined) instanceof Uint8Array);
-    t.true(bytes.fromJSON(<any>null) instanceof Uint8Array);
-    t.true(bytes.fromJSON(<any>false) instanceof Uint8Array);
-    t.true(bytes.fromJSON(<any>0) instanceof Uint8Array);
-    t.true(bytes.fromJSON(<any>'bar') instanceof Uint8Array);
-    t.true(bytes.fromJSON(<any>{}) instanceof Uint8Array);
+    t.notEqual(bytes.fromJSON(<any>undefined), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>undefined), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>null), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>false), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>0), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>'bar'), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>{}), bytes.identity);
+    t.deepEqual(bytes.fromJSON(<any>[ '', {} ]), new Uint8Array([ 0, 0 ]));
 
-    t.deepEqual(date.fromJSON(<any>undefined), new Date(0));
-    t.deepEqual(date.fromJSON(<any>null), new Date(0));
-    t.deepEqual(date.fromJSON(<any>false), new Date(0));
-    t.deepEqual(date.fromJSON(<any>'baz'), new Date(0));
-    t.deepEqual(date.fromJSON(<any>[]), new Date(0));
-    t.deepEqual(date.fromJSON(<any>{}), new Date(0));
+    t.notEqual(date.fromJSON(<any>undefined), date.identity);
+    t.deepEqual(date.fromJSON(<any>undefined), date.identity);
+    t.deepEqual(date.fromJSON(<any>null), date.identity);
+    t.deepEqual(date.fromJSON(<any>false), date.identity);
+    t.deepEqual(date.fromJSON(<any>'baz'), date.identity);
+    t.deepEqual(date.fromJSON(<any>[]), date.identity);
+    t.deepEqual(date.fromJSON(<any>{}), date.identity);
 
-    t.deepEqual(dictionary.fromJSON(<any>undefined), {});
-    t.deepEqual(dictionary.fromJSON(<any>null), {});
-    t.deepEqual(dictionary.fromJSON(<any>false), {});
-    t.deepEqual(dictionary.fromJSON(<any>0), {});
-    t.deepEqual(dictionary.fromJSON(<any>'qux'), {});
-    t.deepEqual(dictionary.fromJSON(<any>[]), {});
+    t.notEqual(dictionary.fromJSON(<any>undefined), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>undefined), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>null), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>false), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>0), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>'qux'), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>[]), dictionary.identity);
+    t.deepEqual(dictionary.fromJSON(<any>{ a: '', b: {} }), { a: 1, b: 1 });
 
-    t.deepEqual(json.fromJSON(<any>undefined), jsonId);
-    t.deepEqual(json.fromJSON(<any>null), jsonId);
-    t.deepEqual(json.fromJSON(<any>false), jsonId);
-    t.deepEqual(json.fromJSON(<any>0), jsonId);
-    t.deepEqual(json.fromJSON(<any>'quux'), jsonId);
+    t.notEqual(json.fromJSON(<any>undefined), json.identity);
+    t.deepEqual(json.fromJSON(<any>undefined), json.identity);
+    t.deepEqual(json.fromJSON(<any>null), json.identity);
+    t.deepEqual(json.fromJSON(<any>false), json.identity);
+    t.deepEqual(json.fromJSON(<any>0), json.identity);
+    t.deepEqual(json.fromJSON(<any>'quux'), json.identity);
 
-    t.deepEqual(sorted.fromJSON(<any>undefined), []);
-    t.deepEqual(sorted.fromJSON(<any>null), []);
-    t.deepEqual(sorted.fromJSON(<any>false), []);
-    t.deepEqual(sorted.fromJSON(<any>0), []);
-    t.deepEqual(sorted.fromJSON(<any>'foo'), []);
-    t.deepEqual(sorted.fromJSON(<any>{}), []);
+    t.notEqual(sorted.fromJSON(<any>undefined), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>undefined), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>null), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>false), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>0), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>'foo'), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>{}), sorted.identity);
+    t.deepEqual(sorted.fromJSON(<any>[ '', {} ]), [ 1, 1 ]);
 
+    t.notEqual(struct.fromJSON(<any>undefined), struct.identity);
     t.deepEqual(struct.fromJSON(<any>undefined), struct.identity);
     t.deepEqual(struct.fromJSON(<any>null), struct.identity);
     t.deepEqual(struct.fromJSON(<any>false), struct.identity);
     t.deepEqual(struct.fromJSON(<any>0), struct.identity);
     t.deepEqual(struct.fromJSON(<any>'bar'), struct.identity);
     t.deepEqual(struct.fromJSON(<any>[]), struct.identity);
+    t.deepEqual(struct.fromJSON({ qux: 'foo', quux: {} }), { foo: 1, bar: 'bar' });
 
+    t.notEqual(union.fromJSON(<any>undefined), union.identity);
     t.deepEqual(union.fromJSON(<any>undefined), union.identity);
     t.deepEqual(union.fromJSON(<any>null), union.identity);
     t.deepEqual(union.fromJSON(<any>false), union.identity);
@@ -449,13 +463,17 @@ test('nonPrimitive.fromJSON() with bad inpu', (t) => {
     t.deepEqual(union.fromJSON(<any>'baz'), union.identity);
     t.deepEqual(union.fromJSON(<any>{}), union.identity);
     t.deepEqual(union.fromJSON(<any>[]), union.identity);
+    t.deepEqual(union.fromJSON(<any>{ type: 'x' }), union.identity);
+    t.deepEqual(union.fromJSON(<any>{ type: 'u', data: {} }), { type: 'u', data: 'foo' });
 
-    t.true(vector.fromJSON(<any>undefined) instanceof Float32Array);
-    t.true(vector.fromJSON(<any>null) instanceof Float32Array);
-    t.true(vector.fromJSON(<any>false) instanceof Float32Array);
-    t.true(vector.fromJSON(<any>0) instanceof Float32Array);
-    t.true(vector.fromJSON(<any>'qux') instanceof Float32Array);
-    t.true(vector.fromJSON(<any>{}) instanceof Float32Array);
+    t.notEqual(vector.fromJSON(<any>undefined), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>undefined), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>null), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>false), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>0), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>'qux'), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>{}), vector.identity);
+    t.deepEqual(vector.fromJSON(<any>[ '', {} ]), new Float32Array([ 1, 1 ]));
 
     t.end();
 });

@@ -38,7 +38,7 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
         if (typeof x === 'number') {
             return x;
         }
-        return +x || 0;
+        return this.identity;
     }
 
     public abstract diff (base:number, target:number, out:MuWriteStream) : boolean;
