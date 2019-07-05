@@ -19,6 +19,7 @@ export type MuCancelIdleCallback = (handle:any) => void;
 export type MuProcessNextTick = (callback:(...args:any[]) => void) => void;
 
 export interface MuScheduler {
+    now:() => number;
     setTimeout:(callback:(...args:any[]) => void, ms:number, ...args:any[]) => MuTimer;
     clearTimeout:(handle:any) => void;
     setInterval:(callback:(...args:any[]) => void, ms:number, ...args:any[]) => MuTimer;
