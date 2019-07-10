@@ -5,11 +5,12 @@
   "scripts": {
     "build": "tsc",
     "clean": "ls -F src | grep / | xargs rm -rf *.d.ts *.js *.js.map",
-    "coverage": "nyc npm run test",
+    "coverage": "nyc npm run test-all",
     "link": "npm link && npm run clean && npm run build",
-    "release": "npm run test \\* \\* && npm run clean && npm run build && npm publish",
+    "release": "npm run test-all && npm run clean && npm run build && npm publish",
     "report": "nyc report --reporter=text",
     "test": "f(){ tape -r ts-node/register src/${1:-\\*}/test/${2:-\\*}.ts; }; f",
+    "test-all": "npm test && npm test socket/\\*",
     "watch": "tsc -w"
   },
   "main": "index.js",
