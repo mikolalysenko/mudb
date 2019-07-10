@@ -37,6 +37,9 @@
     "udp"
   ],
   "author": "Mikola Lysenko",
+  "contributors": [
+    "He Diyi <esdoppio@gamil.com> (https://github.com/hediyi/)"
+  ],
   "license": "MIT",
   "dependencies": {
     "hash.js": "^1.1.5",
