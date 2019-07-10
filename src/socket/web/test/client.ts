@@ -1,15 +1,6 @@
-import tcp = require('net');
 import { spawn } from 'child_process';
 
-function getFreePort (cb:(port:number) => void) {
-    const server = tcp.createServer();
-    server.on('error', (e) => console.error(e));
-    server.unref();
-    server.listen(() => {
-        const port = server.address().port;
-        server.close(() => cb(port));
-    });
-}
+import getFreePort = require('../../util/get-free-port');
 
 getFreePort((port) => {
     const cwd = __dirname;
