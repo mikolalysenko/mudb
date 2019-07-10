@@ -1,9 +1,11 @@
 import test = require('tape');
 import {
+    MuSchema,
     MuBoolean,
     MuUTF8,
     MuFloat32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -209,6 +211,65 @@ test('vector.assign()', (t) => {
     src[1] = 1.5;
     t.is(vector.assign(dst, src), dst);
     t.deepEqual(dst, new Float32Array([0.5, 1.5]));
+    t.end();
+});
+
+test('option.assign()', (t) => {
+
+    function doTest<T>(
+        opt:MuOption<any>,
+        modify:(x:T) => T,
+    ) {
+        // value to value
+        let src = opt.alloc();
+        let dst = opt.alloc();
+        src = modify(src);
+        dst = opt.assign(dst, src);
+        t.deepEqual(dst, src);
+
+        // value to undefined
+        src = opt.alloc();
+        dst = opt.alloc();
+        src = undefined;
+        dst = opt.assign(dst, src);
+        t.deepEqual(dst, src);
+
+        // undefined to value
+        src = opt.alloc();
+        dst = undefined;
+        dst = opt.assign(dst, src);
+        t.deepEqual(dst, src);
+
+        // undefined to undefined
+        src = undefined;
+        dst = undefined;
+        dst = opt.assign(dst, src);
+        t.deepEqual(dst, src);
+    }
+
+    const innerPrimitive = new MuFloat32();
+    const optPrimitive = new MuOption(innerPrimitive);
+    doTest(optPrimitive, (x) => 20);
+
+    const innerFunctor = new MuVector(innerPrimitive, 2);
+    const optFunctor = new MuOption(innerFunctor);
+
+    doTest(optFunctor, (x) => {
+        x[0] = 0.5;
+        x[1] = 1.5;
+        return x;
+    });
+
+    // Ensure functor identity is preserved
+    const idSrc = optFunctor.alloc();
+    let idDst = optFunctor.alloc();
+    idSrc[0] = 0.5;
+    idSrc[1] = 1.5;
+    const idDstOld = idDst;
+    idDst = optFunctor.assign(idDst, idSrc);
+    t.is(idDst, idDstOld);
+    t.deepEqual(idDst, idDstOld);
+
     t.end();
 });
 

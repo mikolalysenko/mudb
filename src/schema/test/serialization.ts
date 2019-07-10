@@ -18,6 +18,7 @@ import {
     MuUint16,
     MuUint32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -580,5 +581,28 @@ tape('de/serializing json', (t) => {
     const testPair = createTestPair(t, json);
     testPair({}, {a:0.5, b:false, c:'', d:[]});
     testPair([], [1e9, true, 'Iñtërnâtiônàlizætiøn☃💩', {}]);
+    t.end();
+});
+
+tape('de/serializing option', (t) => {
+    const op = new MuOption(new MuFloat32()); // optional primitive
+    const of = new MuOption(new MuStruct({op: op})); // optional functor
+
+    const testPrimitive = createTest(t, op);
+    testPrimitive(undefined, undefined);
+    testPrimitive(undefined, 4);
+    testPrimitive(4, undefined);
+    testPrimitive(4, 4);
+    testPrimitive(3, 4);
+
+    const testFunctor = createTest(t, of);
+    testFunctor(undefined, undefined);
+    testFunctor({op: undefined}, undefined);
+    testFunctor(undefined, {op: undefined});
+    testFunctor({op: 4}, undefined);
+    testFunctor(undefined, {op: 4});
+    testFunctor({op: 4}, {op: 3});
+    testFunctor({op: 4}, {op: 4});
+
     t.end();
 });

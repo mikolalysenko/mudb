@@ -24,6 +24,7 @@ import { MuUint32 } from './uint32';
 
 // functors
 import { MuArray } from './array';
+import { MuOption } from './option';
 import { MuSortedArray } from './sorted-array';
 import { MuStruct } from './struct';
 import { MuUnion } from './union';
@@ -55,6 +56,7 @@ export {
     MuUint32,
 
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
