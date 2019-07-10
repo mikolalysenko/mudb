@@ -57,4 +57,6 @@ test('client socket will always be open first', (t) => {
             }),
         });
     });
+
+    t.end();
 });

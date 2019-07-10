@@ -130,6 +130,8 @@ tape('de/serializing string', (t) => {
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', bigText);
         st.end();
     });
+
+    t.end();
 });
 
 tape('de/serializing number', (t) => {
@@ -216,6 +218,8 @@ tape('de/serializing array', (t) => {
         }
         st.end();
     });
+
+    t.end();
 });
 
 tape('de/serializing sorted array', (t) => {
@@ -390,7 +394,7 @@ tape('de/serializing bytes', (t) => {
         return (a, b) => {
             test(a, b);
             test(b, a);
-        }
+        };
     }
 
     function randUint8Array () {
@@ -479,6 +483,8 @@ tape('de/serializing dictionary', (t) => {
         }
         st.end();
     });
+
+    t.end();
 });
 
 function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['identity'] {
@@ -549,6 +555,8 @@ tape('de/serializing vector', (t) => {
         }
         st.end();
     });
+
+    t.end();
 });
 
 tape('de/serializing date', (t) => {

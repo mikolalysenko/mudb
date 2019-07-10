@@ -77,4 +77,6 @@ test('struct.stats()', (t) => {
         st.equal(stats.poolSize, 0);
         st.end();
     });
+
+    t.end();
 });
