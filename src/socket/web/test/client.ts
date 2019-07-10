@@ -21,7 +21,7 @@ getFreePort((port) => {
     );
     server.stdout.once('data', (data) => console.log(`${data}`));
 
-    const test = spawn(`browserify ${cwd}/_/client.ts -p [ tsify ] -t [ envify --PORT ${port} ] | tape-run`, [], {
+    const test = spawn(`browserify _/client.ts -p [ tsify ] -t [ envify --PORT ${port} ] | tape-run`, [], {
         cwd,
         shell: true,
         stdio: 'inherit',
