@@ -4,7 +4,7 @@
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
-    "clean": "ls -F src | grep / | xargs rm -rf *.d.ts *.js *.js.map",
+    "clean": "ls -F src | grep / | xargs rm -rf coverage *.d.ts *.js *.js.map",
     "coverage": "nyc npm run test-all",
     "link": "npm link && npm run clean && npm run build",
     "release": "npm run test-all && npm run clean && npm run build && npm publish",
