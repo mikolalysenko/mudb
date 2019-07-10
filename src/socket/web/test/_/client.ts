@@ -1,5 +1,4 @@
 import test = require('tape');
-import ip = require('ip');
 
 import { MuSocketState } from '../../../../socket';
 import { MuWebSocket } from '../../client';
@@ -10,7 +9,7 @@ function id () {
     return Math.random().toString(36).substr(2);
 }
 
-const url = `ws://${ip.address()}:${process.env.PORT}`;
+const url = `ws://127.0.0.1:${process.env.PORT}`;
 
 test('socket initial state', (t) => {
     const socket = new MuWebSocket({

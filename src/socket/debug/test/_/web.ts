@@ -1,12 +1,11 @@
 import test = require('tape');
-import ip = require('ip');
 
 import { MuWebSocket } from '../../../web/client';
 import { MuDebugSocket } from '../../index';
 import { MuClient } from '../../../../client';
 import { protocolSchema } from './schema';
 
-const url = `ws://${ip.address()}:${process.env.PORT}`;
+const url = `ws://127.0.0.1:${process.env.PORT}`;
 
 const PING_OPCODE = 0x9;
 const PONG_OPCODE = 0xA;

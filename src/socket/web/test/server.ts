@@ -1,5 +1,4 @@
 import test = require('tape');
-import ip = require('ip');
 import WebSocket = require('uws');
 
 import http = require('http');
@@ -130,7 +129,7 @@ test('when a client connects', (t) => {
     });
 
     server.listen(() => {
-        url = `ws://${ip.address()}:${server.address().port}`;
+        url = `ws://127.0.0.1:${server.address().port}`;
     });
 });
 
