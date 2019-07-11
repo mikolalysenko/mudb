@@ -23,16 +23,25 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
     }
 
     public alloc () : number { return this.identity; }
+
     public free (num:number) : void { }
 
     public equal (a:number, b:number) : boolean { return a === b; }
 
     public clone (num:number) : number { return num; }
+
     public assign (dst:number, src:number) : number { return src; }
 
     public toJSON (num:number) : number { return num; }
-    public fromJSON (json:number) : number { return json; }
+
+    public fromJSON (x:number) : number {
+        if (typeof x === 'number') {
+            return x;
+        }
+        return this.identity;
+    }
 
     public abstract diff (base:number, target:number, out:MuWriteStream) : boolean;
+
     public abstract patch (base:number, inp:MuReadStream) : number;
 }

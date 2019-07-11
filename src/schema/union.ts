@@ -177,10 +177,16 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         };
     }
 
-    public fromJSON (json:UnionTypes<SubTypes>['json']) : UnionTypes<SubTypes>['instance'] {
-        return {
-            type: json.type,
-            data: this.muData[json.type].fromJSON(json.data),
-        };
+    public fromJSON (x:UnionTypes<SubTypes>['json']) : UnionTypes<SubTypes>['instance'] {
+        if (typeof x === 'object' && x) {
+            const type = x.type;
+            if (typeof type === 'string' && type in this.muData) {
+                return {
+                    type,
+                    data: this.muData[type].fromJSON(x.data),
+                };
+            }
+        }
+        return this.clone(this.identity);
     }
 }

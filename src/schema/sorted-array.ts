@@ -366,14 +366,16 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         return set.map((v) => schema.toJSON(v));
     }
 
-    public fromJSON (json:any[]) : ValueSchema['identity'][] {
-        const set = this.alloc();
-        set.length = json.length;
-
-        const schema = this.muData;
-        for (let i = 0; i < json.length; ++i) {
-            set[i] = schema.fromJSON(json[i]);
+    public fromJSON (x:any[]) : ValueSchema['identity'][] {
+        if (Array.isArray(x)) {
+            const set = this.alloc();
+            set.length = x.length;
+            const schema = this.muData;
+            for (let i = 0; i < x.length; ++i) {
+                set[i] = schema.fromJSON(x[i]);
+            }
+            return set;
         }
-        return set;
+        return this.clone(this.identity);
     }
 }

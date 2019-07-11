@@ -275,15 +275,17 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         return json;
     }
 
-    public fromJSON (json:Dictionary<any>) : Dictionary<ValueSchema> {
-        const dict = {};
-        const keys = Object.keys(json);
-
-        const schema = this.muData;
-        for (let i = 0; i < keys.length; ++i) {
-            const k = keys[i];
-            dict[k] = schema.fromJSON(json[k]);
+    public fromJSON (x:Dictionary<any>) : Dictionary<ValueSchema> {
+        if (Object.prototype.toString.call(x) === '[object Object]') {
+            const dict = {};
+            const keys = Object.keys(x);
+            const schema = this.muData;
+            for (let i = 0; i < keys.length; ++i) {
+                const k = keys[i];
+                dict[k] = schema.fromJSON(x[k]);
+            }
+            return dict;
         }
-        return dict;
+        return this.clone(this.identity);
     }
 }
