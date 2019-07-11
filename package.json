@@ -10,7 +10,7 @@
     "release": "npm run test-all && npm run clean && npm run build && npm publish",
     "report": "nyc report --reporter=text",
     "test": "f(){ tape -r ts-node/register src/${1:-\\*}/test/${2:-\\*}.ts; }; f",
-    "test-all": "npm test && npm test socket/\\*",
+    "test-all": "npm test socket/\\* && npm test",
     "watch": "tsc -w"
   },
   "main": "index.js",
