@@ -1,4 +1,4 @@
-import { MuUint32 } from '../../../schema';
+import { MuUint32 } from '../../../../schema';
 
 export const protocolSchema = {
     client: {

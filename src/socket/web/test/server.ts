@@ -1,8 +1,7 @@
-import http = require('http');
-
 import test = require('tape');
-import ip = require('ip');
 import WebSocket = require('uws');
+
+import http = require('http');
 
 import { MuSocketServerState } from '../../../socket';
 import { MuWebSocketServer } from '../server';
@@ -15,7 +14,7 @@ test.onFinish(() => process.exit(0));
 
 test('server initial state', (t) => {
     const socketServer = new MuWebSocketServer({ server });
-    t.equals(socketServer.state, MuSocketServerState.INIT, 'should be INIT');
+    t.equal(socketServer.state, MuSocketServerState.INIT, 'should be INIT');
     t.end();
 });
 
@@ -26,7 +25,7 @@ test('socketServer.start() - when INIT', (t) => {
     socketServer.start({
         ready: () => {
             t.pass('should invoke ready handler');
-            t.equals(socketServer.state, MuSocketServerState.RUNNING, 'should change server state to RUNNING');
+            t.equal(socketServer.state, MuSocketServerState.RUNNING, 'should change server state to RUNNING');
         },
         connection: noop,
         close: noop,
@@ -130,7 +129,7 @@ test('when a client connects', (t) => {
     });
 
     server.listen(() => {
-        url = `ws://${ip.address()}:${server.address().port}`;
+        url = `ws://127.0.0.1:${server.address().port}`;
     });
 });
 
@@ -138,21 +137,20 @@ test('socketServer.close() - when INIT', (t) => {
     const socketServer = new MuWebSocketServer({ server });
     socketServer.close();
 
-    t.equals(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+    t.equal(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
     t.end();
 });
 
 test('socketServer.close() - when RUNNING', (t) => {
+    t.plan(1);
+
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
             socketServer.close();
-            t.equals(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+            t.equal(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
         },
         connection: noop,
-        close: (error) => {
-            t.equals(error, undefined, 'should invoke close handler without error message');
-            t.end();
-        },
+        close: noop,
     });
 });

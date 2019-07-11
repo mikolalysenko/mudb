@@ -4,12 +4,13 @@
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
-    "clean": "ls -F src | grep / | xargs rm -rf *.d.ts *.js *.js.map",
-    "coverage": "nyc npm run test",
+    "clean": "ls -F src | grep / | xargs rm -rf coverage *.d.ts *.js *.js.map",
+    "coverage": "nyc npm run test-all",
     "link": "npm link && npm run clean && npm run build",
-    "release": "npm run test \\* \\* && npm run clean && npm run build && npm publish",
+    "release": "npm run test-all && npm run clean && npm run build && npm publish",
     "report": "nyc report --reporter=text",
-    "test": "f(){ tape -r ts-node/register src/$1/test/$2.ts; }; f",
+    "test": "f(){ tape -r ts-node/register src/${1:-\\*}/test/${2:-\\*}.ts; }; f",
+    "test-all": "npm test socket/\\* && npm test",
     "watch": "tsc -w"
   },
   "main": "index.js",
@@ -36,6 +37,9 @@
     "udp"
   ],
   "author": "Mikola Lysenko",
+  "contributors": [
+    "He Diyi <esdoppio@gamil.com> (https://github.com/hediyi/)"
+  ],
   "license": "MIT",
   "dependencies": {
     "hash.js": "^1.1.5",
@@ -47,11 +51,11 @@
     "@types/tape": "^4.2.32",
     "browserify": "^16.2.3",
     "envify": "^4.1.0",
-    "ip": "^1.1.5",
     "nyc": "^13.1.0",
     "tape": "^4.9.1",
     "tape-run": "^4.0.0",
     "ts-node": "^7.0.1",
+    "tsify": "^4.0.1",
     "tslint": "^5.11.0",
     "typescript": "^3.0.3",
     "typescript-tslint-plugin": "^0.1.0",

@@ -1,10 +1,8 @@
 import { createServer } from 'http';
 
-import ip = require('ip');
-
-import { MuWebSocketServer } from '../../web/server';
-import { MuDebugServer } from '../index';
-import { MuServer } from '../../../server';
+import { MuWebSocketServer } from '../../../web/server';
+import { MuDebugServer } from '../../index';
+import { MuServer } from '../../../../server';
 import { protocolSchema } from './schema';
 
 const PING_OPCODE = 0x9;
@@ -28,6 +26,6 @@ const port = process.argv[2];
 server.listen(port);
 muServer.start({
     ready: () => {
-        console.log(`listening on ${ip.address()}:${server.address().port}...`);
+        console.log(`server listening on port ${server.address().port}...`);
     },
 });
