@@ -107,10 +107,7 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
 
         // same type
         if (schema[dType]) {
-            schema[dType].assign(dst.data, src.data);
-            if (isMuPrimitiveType(schema[dType].muType)) {
-                dst.data = src.data;
-            }
+            dst.data = schema[dType].assign(dst.data, src.data);
         }
         return dst;
     }

@@ -298,3 +298,47 @@ test('json.assign', (t) => {
     t.isNot(q[0], r[0]);
     t.end();
 });
+
+class MuReference<T> implements MuSchema<T|null> {
+    public muType = 'reference';
+    public identity:T|null = null;
+    public muData = { type: 'reference' };
+    public json = { type: 'reference' };
+
+    constructor () { }
+
+    public alloc () : T|null { return null; }
+    public free () { }
+    public assign (dst:T|null, src:T|null) : T|null { return src; }
+    public clone (x) { return x; }
+    public equal (a, b) { return a === b; }
+
+    public diff () : never { throw new TypeError('cannot serialize reference'); }
+    public patch () : never { throw new TypeError('cannot serialize reference'); }
+    public toJSON () : never { throw new TypeError('cannot serialize reference'); }
+    public fromJSON () : never { throw new TypeError('cannot serialize reference'); }
+}
+
+test('when dst is not reference', (t) => {
+    const Human = new MuStruct({
+        name: new MuUTF8(),
+        power: new MuReference<{
+            name:string,
+            description:string,
+        }>(),
+    });
+
+    const mortal = Human.alloc();
+    mortal.name = 'Logan';
+    const mutant = Human.alloc();
+    mutant.name = 'Wolverine';
+    mutant.power = {
+        name: 'regenerative healing factor',
+        description: 'ability to regenerate damaged tissue insanely fast',
+    };
+    Human.assign(mortal, mutant);
+    t.deepEqual(mortal, mutant);
+    t.equal(mortal.power, mutant.power);
+
+    t.end();
+});

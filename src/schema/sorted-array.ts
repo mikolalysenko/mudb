@@ -1,7 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../stream';
-
 import { MuSchema } from './schema';
-import { isMuPrimitiveType } from './type';
+import { MuArray } from './array';
 
 function defaultCompare<T> (a:T, b:T) {
     if (a < b) {
@@ -32,7 +31,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public readonly compare:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number;
     public readonly capacity:number;
 
-    public pool:ValueSchema['identity'][][] = [];
+    public pool:ValueSchema['identity'][][];
 
     constructor (
         schema:ValueSchema,
@@ -43,89 +42,33 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.muData = schema;
         this.capacity = capacity;
         this.compare = compare || defaultCompare;
-        this.identity = [];
-        if (identity) {
-            for (let i = 0; i < identity.length; ++i) {
-                this.identity[i] = schema.clone(identity[i]);
-            }
-            this.identity.sort(this.compare);
-        }
+
+        const arraySchema = new MuArray(schema, capacity, identity);
+        this.identity = arraySchema.identity.sort(this.compare);
         this.json = {
             type: 'sorted-array',
             valueType: schema.json,
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
         };
+        this.pool = arraySchema.pool;
+
+        this.alloc = arraySchema.alloc;
+        this.free = arraySchema.free;
+        this.equal = arraySchema.equal;
+        this.clone = arraySchema.clone;
+        this.assign = arraySchema.assign;
+        this.toJSON = arraySchema.toJSON;
+        this.fromJSON = arraySchema.fromJSON;
     }
 
-    public alloc() : ValueSchema['identity'][] {
-        return this.pool.pop() || [];
-    }
-
-    public free (set:ValueSchema['identity'][]) : void {
-        const schema = this.muData;
-        for (let i = 0; i < set.length; ++i) {
-            schema.free(set[i]);
-        }
-        set.length = 0;
-        this.pool.push(set);
-    }
-
-    public equal (
-        a:ValueSchema['identity'][],
-        b:ValueSchema['identity'][],
-    ) : boolean {
-        if (a.length !== b.length) {
-            return false;
-        }
-
-        const schema = this.muData;
-        for (let i = a.length - 1; i >= 0 ; --i) {
-            if (!schema.equal(a[i], b[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public clone (set:ValueSchema['identity'][]) : ValueSchema['identity'][] {
-        const copy = this.alloc();
-        copy.length = set.length;
-
-        const schema = this.muData;
-        for (let i = 0; i < set.length; ++i) {
-            copy[i] = schema.clone(set[i]);
-        }
-        return copy;
-    }
-
-    public assign (
-        dst:ValueSchema['identity'][],
-        src:ValueSchema['identity'][],
-    ) : ValueSchema['identity'][] {
-        const dLeng = dst.length;
-        const sLeng = src.length;
-        const schema = this.muData;
-        for (let i = sLeng; i < dLeng; ++i) {
-            schema.free(dst[i]);
-        }
-
-        dst.length = sLeng;
-        if (isMuPrimitiveType(schema.muType)) {
-            for (let i = 0; i < sLeng; ++i) {
-                dst[i] = src[i];
-            }
-            return dst;
-        }
-
-        for (let i = 0; i < Math.min(dLeng, sLeng); ++i) {
-            schema.assign(dst[i], src[i]);
-        }
-        for (let i = dLeng; i < sLeng; ++i) {
-            dst[i] = schema.clone(src[i]);
-        }
-        return dst;
-    }
+    public alloc:() => ValueSchema['identity'][];
+    public free:(set:ValueSchema['identity'][]) => void;
+    public equal:(a:ValueSchema['identity'][], b:ValueSchema['identity'][]) => boolean;
+    public clone:(set:ValueSchema['identity'][]) => ValueSchema['identity'][];
+    public assign:(dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) => ValueSchema['identity'][];
+    public toJSON:(set:ValueSchema['identity'][]) => any[];
+    public fromJSON:(json:any[]) => ValueSchema['identity'][];
 
     public diff (
         base:ValueSchema['identity'][],
@@ -359,23 +302,5 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             }
         }
         return result;
-    }
-
-    public toJSON (set:ValueSchema['identity'][]) : any[] {
-        const schema = this.muData;
-        return set.map((v) => schema.toJSON(v));
-    }
-
-    public fromJSON (x:any[]) : ValueSchema['identity'][] {
-        if (Array.isArray(x)) {
-            const set = this.alloc();
-            set.length = x.length;
-            const schema = this.muData;
-            for (let i = 0; i < x.length; ++i) {
-                set[i] = schema.fromJSON(x[i]);
-            }
-            return set;
-        }
-        return this.clone(this.identity);
     }
 }
