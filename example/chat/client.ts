@@ -1,68 +1,70 @@
-import { ChatSchema } from './schema';
+import readline = require('readline');
+
+import { MuNetSocket } from 'mudb/socket/net/client';
 import { MuClient } from 'mudb/client';
+import { ChatSchema } from './schema';
 
-export = function (client:MuClient) {
-    const protocol = client.protocol(ChatSchema);
+const socket = new MuNetSocket({
+    sessionId: Math.random().toString(36).substring(2),
+    // for TCP connection
+    connectOpts: {
+        host: '127.0.0.1',
+        port: 9977,
+    },
+    // for UDP binding
+    bindOpts: {
+        address: '127.0.0.1',
+        port: 9989,
+    },
+});
+const client = new MuClient(socket);
 
-    const messageDiv = document.createElement('div');
-    const messageStyle = messageDiv.style;
-    messageStyle.overflow = 'auto';
-    messageStyle.width = '400px';
-    messageStyle.height = '300px';
+let nickname:string;
 
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    const textStyle = textInput.style;
-    textStyle.width = '300px';
-    textStyle.padding = '0px';
-    textStyle.margin = '0px';
+// protocols should be defined and configured before
+// client is started
+const protocol = client.protocol(ChatSchema);
+protocol.configure({
+    ready: () => {
+        protocol.server.message.join(nickname);
 
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.style.width = '300px';
-    nameInput.style.padding = textStyle.padding;
-    nameInput.style.margin = textStyle.margin;
+        readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            prompt: '',
+        }).on('line', (msg) => {
+            process.stdout.write('\x1b[1A\x1b[K');
 
-    const nameLabel = document.createElement('label');
-    nameLabel.textContent = 'Your name: ';
-    const textLabel = document.createElement('label');
-    textLabel.textContent = 'message:  ';
-
-    document.body.appendChild(messageDiv);
-    document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(nameLabel);
-    document.body.appendChild(nameInput);
-    document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(textLabel);
-    document.body.appendChild(textInput);
-
-    protocol.configure({
-        ready: () => {
-            console.log('ready!');
-            textInput.addEventListener('keydown', (ev) => {
-                if (ev.keyCode === 13) {
-                    protocol.server.message.say(textInput.value); //MuRemoteServer
-                    textInput.value = '';
+            // change nickname
+            if (/^\/nick /.test(msg)) {
+                const m = msg.match(/^\/nick (.+)/);
+                if (m) {
+                    const nick = m[1];
+                    protocol.server.message.nick(nick);
+                    return;
                 }
-            });
+            }
+            // say something
+            protocol.server.message.say(msg);
+        });
+    },
+    message: {
+        chat: ({ name, msg }) => {
+            console.log(`${name}: ${msg}`);
+        },
+        notice: (n) => {
+            console.log(n);
+        },
+    },
+    close: () => { },
+});
 
-            nameInput.addEventListener('keydown', (ev) => {
-                if (ev.keyCode === 13) {
-                    protocol.server.message.setName(nameInput.value);
-                }
-            });
-        },
-        message: {
-            chat: ({name, text}) => {
-                const textNode = document.createTextNode(`${name}: ${text}`);
-                messageDiv.appendChild(textNode);
-                messageDiv.appendChild(document.createElement('br'));
-            },
-        },
-        close: () => {
-            console.log('client closed');
-        },
-    });
-
+const prompt = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+prompt.question('Nickname: ', (n) => {
+    nickname = n;
+    prompt.close();
     client.start();
-};
+});

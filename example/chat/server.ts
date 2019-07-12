@@ -1,44 +1,52 @@
-import { ChatSchema } from './schema';
+import tcp = require('net');
+import udp = require('dgram');
+
+import { MuNetSocketServer } from 'mudb/socket/net/server';
 import { MuServer } from 'mudb/server';
+import { ChatSchema } from './schema';
 
-export = function (server:MuServer) {
-    const protocol = server.protocol(ChatSchema);
+const tcpServer = tcp.createServer();
+const udpServer = udp.createSocket({ type: 'udp4' });
+const socketServer = new MuNetSocketServer({
+    tcpServer,
+    udpServer,
+});
+const server = new MuServer(socketServer);
 
-    const clientNames:{[id:string]:string} = {};
+const idToNick:{ [sessionId:string]:string } = {};
 
-    protocol.configure({
-        message: {
-            say: (client, text) => {
-                protocol.broadcast.chat({
-                    name: clientNames[client.sessionId],
-                    text,
-                });
-            },
-            setName: (client, name) => {
-                protocol.broadcast.chat({
-                    name: 'server',
-                    text: `${clientNames[client.sessionId]} changed name to ${name}`,
-                });
-                clientNames[client.sessionId] = name;
-            },
+const protocol = server.protocol(ChatSchema);
+protocol.configure({
+    connect: () => { },
+    disconnect: (client) => {
+        const sessionId = client.sessionId;
+        protocol.broadcast.notice(`${idToNick[sessionId]} has left`);
+        delete idToNick[sessionId];
+    },
+    message: {
+        join: (client, nickname) => {
+            idToNick[client.sessionId] = nickname;
+            protocol.broadcast.notice(`${nickname} has joined`);
         },
-        connect: (client) => {
-            clientNames[client.sessionId] = client.sessionId;
+        say: (client, msg) => {
             protocol.broadcast.chat({
-                name: 'server',
-                text: `${clientNames[client.sessionId]} joined`,
+                name: idToNick[client.sessionId],
+                msg,
             });
         },
-        disconnect: (client) => {
-            protocol.broadcast.chat({
-                name: 'server',
-                text: `${clientNames[client.sessionId]} left`,
-            });
+        nick: (client, nickname) => {
+            const sessionId = client.sessionId;
+            protocol.broadcast.notice(`${idToNick[sessionId]} is now known as ${nickname}`);
+            idToNick[sessionId] = nickname;
         },
-        close: () => {
-            console.log('server closed');
-        },
-    });
+    },
+    close: () => {
+        console.log('server closed');
+    },
+});
 
-    server.start();
-};
+tcpServer.listen(9977, '127.0.0.1', () => {
+    console.log(`server listening on port ${tcpServer.address().port}...`);
+});
+udpServer.bind(9988, '127.0.0.1');
+server.start();
