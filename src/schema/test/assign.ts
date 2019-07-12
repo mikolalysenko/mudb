@@ -299,30 +299,30 @@ test('json.assign', (t) => {
     t.end();
 });
 
-class MuMaybe<T> implements MuSchema<T|null> {
-    public muType = 'maybe';
+class MuReference<T> implements MuSchema<T|null> {
+    public muType = 'reference';
     public identity:T|null = null;
-    public muData = { type: 'maybe' };
-    public json = { type: 'maybe' };
+    public muData = { type: 'reference' };
+    public json = { type: 'reference' };
 
     constructor () { }
 
     public alloc () : T|null { return null; }
-    public assign (dst:T|null, src:T|null) : T|null { return src; }
-
     public free () { }
-    public clone () { return null; }
-    public equal () { return false; }
-    public diff () { return false; }
-    public patch () { return null; }
-    public toJSON () { }
-    public fromJSON () { return null; }
+    public assign (dst:T|null, src:T|null) : T|null { return src; }
+    public clone (x) { return x; }
+    public equal (a, b) { return a === b; }
+
+    public diff () : never { throw new TypeError('cannot serialize reference'); }
+    public patch () : never { throw new TypeError('cannot serialize reference'); }
+    public toJSON () : never { throw new TypeError('cannot serialize reference'); }
+    public fromJSON () : never { throw new TypeError('cannot serialize reference'); }
 }
 
 test('when dst is not reference', (t) => {
     const Human = new MuStruct({
         name: new MuUTF8(),
-        power: new MuMaybe<{
+        power: new MuReference<{
             name:string,
             description:string,
         }>(),
