@@ -14,6 +14,7 @@ import {
     MuUint16,
     MuUint32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -45,6 +46,7 @@ test('schema.identity default', (t) => {
     t.deepEqual(new MuDictionary(new MuFloat32(), 0).identity,  {});
     t.deepEqual(new MuVector(new MuFloat32(), 3).identity,      new Float32Array(3));
     t.true(new MuDate().identity instanceof Date);
+    t.equal(new MuOption(new MuFloat32()).identity, 0);
     t.end();
 });
 
@@ -77,6 +79,10 @@ test('schema.identity', (t) => {
 
     const union = new MuUnion({ f: new MuFloat32() }, 'f');
     t.deepEqual(union.identity, { type: 'f', data: 0 });
+
+    t.equal(new MuOption(new MuFloat32(), 666).identity,             666);
+    t.equal(new MuOption(new MuFloat32(), undefined).identity,       0);
+    t.equal(new MuOption(new MuFloat32(), undefined, true).identity, undefined);
 
     const b = new Uint8Array([0, 1, 2]);
     const bytes = new MuBytes(b);

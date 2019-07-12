@@ -1,29 +1,6 @@
 import test = require('tape');
 import { MuSystemScheduler  } from '../system';
 
-test('rAF', (t) => {
-    t.plan(10);
-
-    const start = Date.now();
-    let last = 0;
-    let counter = 0;
-
-    MuSystemScheduler.requestAnimationFrame(function tick (timestamp) {
-        if (last > 0) {
-            t.equal(Math.round((timestamp - last) / 16), 1, `timestamp: ${timestamp}`);
-        }
-        last = timestamp;
-
-        if (++counter < 10) {
-            MuSystemScheduler.requestAnimationFrame(tick);
-        } else {
-            const elapsed = Date.now() - start;
-            t.ok(elapsed >= 150 && elapsed < 160, `${elapsed}`);
-            t.end();
-        }
-    });
-});
-
 test('cAF', (t) => {
     t.plan(3);
 

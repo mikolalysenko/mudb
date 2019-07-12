@@ -1,21 +1,12 @@
+import test = require('tape');
+
 import tcp = require('net');
 import udp = require('dgram');
 
-import test = require('tape');
-
+import getFreePort = require('../../util/get-free-port');
 import { MuNetSocketServer } from '../server';
 import { MuNetSocket } from '../client';
 import { MuSocketState } from '../../../socket';
-
-function getFreePort (cb) {
-    const server = tcp.createServer();
-    server.on('error', (err) => console.error(err));
-    server.unref();
-    server.listen(() => {
-        const port = server.address().port;
-        server.close(() => cb(port));
-    });
-}
 
 function noop () { }
 

@@ -4,6 +4,7 @@ import {
     MuUTF8,
     MuFloat32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -62,24 +63,29 @@ test('alloc, free, alloc', (t) => {
     const struct = new MuStruct({ f: new MuFloat32() });
     const vector = new MuVector(new MuFloat32(), 5);
     const date = new MuDate();
+    const optInnerVector = new MuVector(new MuFloat32(), 5);
+    const optNum = new MuOption(optInnerVector);
 
     const a = array.alloc();
     const sa = sortedArray.alloc();
     const s = struct.alloc();
     const v = vector.alloc();
     const d = date.alloc();
+    const o = optNum.alloc();
 
     array.free(a);
     sortedArray.free(sa);
     struct.free(s);
     vector.free(v);
     date.free(d);
+    optNum.free(o);
 
     t.is(array.alloc(), a, `should get the pooled array`);
     t.is(sortedArray.alloc(), sa, `should get the pooled sorted array`);
     t.is(struct.alloc(), s, `should get the pooled struct`);
     t.is(vector.alloc(), v, `should get the pooled vector`);
     t.is(date.alloc(), d, 'should get the pool Date object');
+    t.is(optNum.alloc(), o, 'should get the pool Option vector object');
 
     const bytes = new MuBytes();
     const b = bytes.alloc();

@@ -90,6 +90,7 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
         implements MuSchema<Vector<ValueSchema, D>> {
     public readonly identity:Vector<ValueSchema, D>;
     public readonly muType = 'vector';
+    public readonly muData:ValueSchema;
     public readonly json:object;
 
     private _constructor:typeof ConstructorTable[ValueSchema['muType']];
@@ -98,6 +99,7 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
     public pool:Vector<ValueSchema, D>[] = [];
 
     constructor (schema:ValueSchema, dimension:D) {
+        this.muData = schema;
         this._constructor = ConstructorTable[schema.muType];
         this.dimension = dimension;
         this.identity = new this._constructor(dimension);
@@ -234,11 +236,14 @@ export class MuVector<ValueSchema extends MuNumber<MuNumericType>, D extends num
         return arr;
     }
 
-    public fromJSON (json:number[]) : Vector<ValueSchema, D> {
-        const vec = this.alloc();
-        for (let i = 0; i < vec.length; ++i) {
-            vec[i] = json[i];
+    public fromJSON (x:number[]) : Vector<ValueSchema, D> {
+        if (Array.isArray(x)) {
+            const vec = this.alloc();
+            for (let i = 0; i < vec.length; ++i) {
+                vec[i] = this.muData.fromJSON(x[i]);
+            }
+            return vec;
         }
-        return vec;
+        return this.clone(this.identity);
     }
 }

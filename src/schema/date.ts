@@ -63,9 +63,15 @@ export class MuDate implements MuSchema<Date> {
         return date.toISOString();
     }
 
-    public fromJSON (json:string) : Date {
-        const date = this.alloc();
-        date.setTime(Date.parse(json));
-        return date;
+    public fromJSON (x:string) : Date {
+        if (typeof x === 'string') {
+            const ms = Date.parse(x);
+            if (ms) {
+                const date = this.alloc();
+                date.setTime(ms);
+                return date;
+            }
+        }
+        return this.clone(this.identity);
     }
 }

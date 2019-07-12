@@ -209,14 +209,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         return arr.map((v) => schema.toJSON(v));
     }
 
-    public fromJSON (json:any[]) : ValueSchema['identity'][] {
-        const arr = this.alloc();
-        arr.length = json.length;
-
-        const schema = this.muData;
-        for (let i = 0; i < json.length; ++i) {
-            arr[i] = schema.fromJSON(json[i]);
+    public fromJSON (x:any[]) : ValueSchema['identity'][] {
+        if (Array.isArray(x)) {
+            const arr = this.alloc();
+            arr.length = x.length;
+            const schema = this.muData;
+            for (let i = 0; i < x.length; ++i) {
+                arr[i] = schema.fromJSON(x[i]);
+            }
+            return arr;
         }
-        return arr;
+        return this.clone(this.identity);
     }
 }

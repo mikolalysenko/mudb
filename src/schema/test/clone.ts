@@ -1,9 +1,11 @@
 import test = require('tape');
 import {
+    MuSchema,
     MuBoolean,
     MuUTF8,
     MuFloat32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -163,7 +165,7 @@ test('bytes.clone()', (t) => {
     const bytes = new MuBytes();
     const b = new Uint8Array([0, 0, 0]);
     t.deepEqual(bytes.clone(b), b);
-    t.isNot(bytes.clone(b) ,b);
+    t.isNot(bytes.clone(b), b);
     b[1] = 1;
     b[2] = 255;
     t.deepEqual(bytes.clone(b), b);
@@ -222,5 +224,33 @@ test('json.clone()', (t) => {
     const p = [{a: [{b: [{c: ''}]}]}];
     t.deepEqual(json.clone(p), p);
     t.isNot(json.clone(p), p);
+    t.end();
+});
+
+test('option.clone()', (t) => {
+    function assertPrimitive(mu:MuSchema<any>, value:any) {
+        t.deepEqual(value, mu.clone(value));
+    }
+    function assertFunctor(mu:MuSchema<any>, value:any) {
+        const clone = mu.clone(value);
+        t.deepEqual(value, clone);
+        if (value === undefined && clone === undefined) { return; }
+        t.isNot(value, clone);
+    }
+
+    const innerPrimitive = new MuFloat32();
+    const optPrimitive = new MuOption(innerPrimitive);
+    assertPrimitive(optPrimitive, 20);
+    assertPrimitive(optPrimitive, undefined);
+
+    const innerStruct = new MuStruct({f: optPrimitive});
+    assertFunctor(innerStruct, {f: undefined});
+    assertFunctor(innerStruct, {f: 0.5});
+
+    const optStruct = new MuOption(innerStruct);
+    assertFunctor(optStruct, {f: undefined});
+    assertFunctor(optStruct, {f: 0.5});
+    assertFunctor(optStruct, undefined);
+
     t.end();
 });

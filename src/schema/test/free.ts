@@ -2,6 +2,7 @@ import test = require('tape');
 import {
     MuFloat32,
     MuArray,
+    MuOption,
     MuSortedArray,
     MuStruct,
     MuUnion,
@@ -47,6 +48,18 @@ test('schema.free()', (t) => {
     const u = union.alloc();
     union.free(u);
     t.equal(vectorTrace.freeCount, 1, 'union schema should call free() on subtype');
+
+    const vectorTrace2 = new MuSchemaTrace(
+        new MuVector(new MuFloat32(), 3),
+    );
+    const option = new MuOption(vectorTrace2);
+    const o = option.alloc();
+    option.free(o);
+    t.equal(vectorTrace2.freeCount, 1, 'option schema should call free() on subtype');
+    t.doesNotThrow(
+        () => { option.free(undefined); },
+        'option schema can call free on undefined',
+    );
 
     const dictionaryTrace = new MuSchemaTrace(
         new MuDictionary(new MuFloat32(), Infinity),
