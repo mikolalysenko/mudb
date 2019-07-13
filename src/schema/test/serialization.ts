@@ -600,6 +600,8 @@ tape('de/serializing option', (t) => {
     testPrimitive(undefined, undefined);
     testPrimitive(undefined, 4);
     testPrimitive(4, undefined);
+    testPrimitive(undefined, 0);
+    testPrimitive(0, undefined);
     testPrimitive(4, 4);
     testPrimitive(3, 4);
 
@@ -611,6 +613,12 @@ tape('de/serializing option', (t) => {
     testFunctor(undefined, {op: 4});
     testFunctor({op: 4}, {op: 3});
     testFunctor({op: 4}, {op: 4});
+    testFunctor({op: 0}, {op: 4});
+    testFunctor({op: 4}, {op: 0});
+    testFunctor({op: undefined}, {op: 0});
+    testFunctor({op: 0}, {op: undefined});
+    testFunctor(undefined, {op: 0});
+    testFunctor({op: 0}, undefined);
 
     t.end();
 });

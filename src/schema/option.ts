@@ -2,9 +2,10 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
 enum TypeDiff {
-    became_undefined = 0,
-    became_defined = 1,
-    stayed_defined = 2,
+    BECAME_UNDEFINED = 0,
+    BECAME_IDENTITY = 1,
+    BECAME_DEFINED = 2,
+    STAYED_DEFINED = 3,
 }
 
 export class MuOption<ValueSchema extends MuSchema<any>>
@@ -23,10 +24,10 @@ export class MuOption<ValueSchema extends MuSchema<any>>
     constructor (
         schema:ValueSchema,
         identity?:ValueSchema['identity'],
-        identity_is_undefined=false,
+        identityIsUndefined=false,
     ) {
         this.muData = schema;
-        if (identity_is_undefined) {
+        if (identityIsUndefined) {
             this.identity = undefined;
         } else {
             this.identity = identity !== undefined ? schema.clone(identity) : schema.clone(schema.identity);
@@ -80,20 +81,31 @@ export class MuOption<ValueSchema extends MuSchema<any>>
         if (base === undefined && target === undefined) { return false; }
         if (base === undefined && target !== undefined) {
             out.grow(1);
-            out.writeUint8(TypeDiff.became_defined);
+            if (this.muData.equal(this.muData.identity, target)) {
+                // If value went from undefined to identity, muData.diff will
+                // return false and will have written nothing to the stream. So
+                // we must remember not to call muData.patch in our patch
+                // function since that would make it read from the stream.
+                out.writeUint8(TypeDiff.BECAME_IDENTITY);
+                return true;
+            }
+            out.writeUint8(TypeDiff.BECAME_DEFINED);
             this.muData.diff(this.muData.identity, target, out);
             return true;
         }
         if (base !== undefined && target === undefined) {
             out.grow(1);
-            out.writeUint8(TypeDiff.became_undefined);
+            out.writeUint8(TypeDiff.BECAME_UNDEFINED);
             return true;
         }
         // Both are defined
         // Making a tradoff here. These invariants are maintained:
-        // * If there is no difference, nothing is written to the stream
-        // * If there is a difference, the information about whether the type
-        //   has changed is written first.
+        // * If there is no difference in muData
+        //   then nothing is written to the stream
+        // * If there is a difference in muData
+        //   the information about whether the type has changed is written first.
+        //   This is because we wrap/hijack the diff return value, and must know
+        //   if the indicated difference is ours or muData's.
         //
         //   This causes us to need to do both .equal and .diff instead of only
         //   .diff. Maybe there's a smart way to avoid this, like constructing
@@ -102,7 +114,7 @@ export class MuOption<ValueSchema extends MuSchema<any>>
         //   undefined types
         if (this.muData.equal(base, target)) { return false; }
         out.grow(1);
-        out.writeUint8(TypeDiff.stayed_defined);
+        out.writeUint8(TypeDiff.STAYED_DEFINED);
         this.muData.diff(base, target, out);
         return true;
     }
@@ -115,11 +127,14 @@ export class MuOption<ValueSchema extends MuSchema<any>>
         if (TypeDiff[typeDiff] === undefined) {
             throw new Error('Panic in muOption, invalid TypeDiff');
         }
-        if (typeDiff == TypeDiff.became_undefined) { return undefined; }
-        if (typeDiff == TypeDiff.became_defined) {
+        if (typeDiff == TypeDiff.BECAME_UNDEFINED) { return undefined; }
+        if (typeDiff == TypeDiff.BECAME_DEFINED) {
             return this.muData.patch(this.muData.identity, inp);
         }
-        if (typeDiff !== TypeDiff.stayed_defined || base === undefined) {
+        if (typeDiff === TypeDiff.BECAME_IDENTITY) {
+            return this.muData.clone(this.muData.identity);
+        }
+        if (typeDiff !== TypeDiff.STAYED_DEFINED || base === undefined) {
             throw new Error('Panic in muOption, invariants broken');
         }
         return this.muData.patch(base, inp);
