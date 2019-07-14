@@ -2,8 +2,9 @@ A minimal CLI chatroom as an example of defining protocols in `mudb` and using `
 
 ## Setup
 If you haven't done this,
-1. `cd mudb/example`
-2. `npm i`
+1. `npm i -g tsc`
+2. `cd mudb/example`
+3. `npm i && tsc`
 
 ## Run
 1. `cd chatroom`
