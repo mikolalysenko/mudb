@@ -1,6 +1,6 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-import { isMuPrimitiveType } from './type';
+import { isMuPrimitiveType } from './is-primitive';
 
 function assignPrimitive<T> (dst:T[], src:T[]) : T[] {
     dst.length = src.length;
