@@ -1,7 +1,16 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-import { MuNumericType } from './type';
 import { range } from './constant/range';
+
+export type MuNumericType =
+    'float32'   |
+    'float64'   |
+    'int8'      |
+    'int16'     |
+    'int32'     |
+    'uint8'     |
+    'uint16'    |
+    'uint32';
 
 export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
     public readonly muType:T;
