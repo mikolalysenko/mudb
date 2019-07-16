@@ -1,6 +1,10 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
-import { MuStringType } from './type';
+
+export type MuStringType =
+    'ascii'         |
+    'fixed-ascii'   |
+    'utf8';
 
 export abstract class MuString<T extends MuStringType> implements MuSchema<string> {
     public readonly muType:T;

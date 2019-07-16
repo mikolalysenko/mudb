@@ -28,9 +28,8 @@ import {
     MuDate,
     MuJSON,
 } from '../index';
-import { MuString } from '../_string';
+import { MuString, MuStringType } from '../_string';
 import { MuNumber } from '../_number';
-import { MuStringType } from '../type';
 import {
     randBool,
     randFloat32,

@@ -1,8 +1,3 @@
-export type MuStringType =
-    'ascii'         |
-    'fixed-ascii'   |
-    'utf8';
-
 const muPrimitiveTypes = [
     'ascii',
     'boolean',
