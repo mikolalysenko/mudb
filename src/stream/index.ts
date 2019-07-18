@@ -133,37 +133,35 @@ export class MuWriteStream {
         this.offset += 8;
     }
 
-    public writeVarint (x_:number) {
-        const x = x_ >>> 0;
+    // little-endian
+    // set MSB in each byte except the last
+    public writeVarint (x:number) {
+        const x_ = x >>> 0;
         const bytes = this.buffer.uint8;
-        const offset = this.offset;
 
-        if (x < (1 << 7)) {
-            bytes[offset] = x;
-            this.offset += 1;
-        } else if (x < (1 << 14)) {
-            bytes[offset] = 0x80 | (x & 0x7f);
-            bytes[offset + 1] = x >>> 7;
-            this.offset += 2;
-        } else if (x < (1 << 21)) {
-            bytes[offset] = 0x80 | (x & 0x7f);
-            bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
-            bytes[offset + 2] = x >>> 14;
-            this.offset += 3;
-        } else if (x < (1 << 28)) {
-            bytes[offset] = 0x80 | (x & 0x7f);
-            bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
-            bytes[offset + 2] = 0x80 | ((x >> 14) & 0x7f);
-            bytes[offset + 3] = x >>> 21;
-            this.offset += 4;
+        let offset = this.offset;
+        if (x_ < 1 << 7) {
+            bytes[offset++] = x_;
+        } else if (x_ < 1 << 14) {
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 7;
+        } else if (x_ < 1 << 21) {
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 14;
+        } else if (x_ < 1 << 28) {
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 21;
         } else {
-            bytes[offset] = 0x80 | (x & 0x7f);
-            bytes[offset + 1] = 0x80 | ((x >> 7) & 0x7f);
-            bytes[offset + 2] = 0x80 | ((x >> 14) & 0x7f);
-            bytes[offset + 3] = 0x80 | ((x >> 21) & 0x7f);
-            bytes[offset + 4] = x >>> 28;
-            this.offset += 5;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 21 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 28;
         }
+        this.offset = offset;
     }
 
     public writeASCII (str:string) {
@@ -246,6 +244,7 @@ export class MuReadStream {
     public readVarint () : number {
         const bytes = this.buffer.uint8;
         let offset = this.offset;
+
         const x0 = bytes[offset++];
         if (x0 < 0x80) {
             this.offset = offset;
