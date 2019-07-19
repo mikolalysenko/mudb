@@ -11,6 +11,7 @@ export const ranges = {
     uint8:      pair(0,             255),
     uint16:     pair(0,             65535),
     uint32:     pair(0,             4294967295),
+    varint:     pair(0,             4294967295),
 };
 
 export type MuNumericType =
@@ -21,7 +22,8 @@ export type MuNumericType =
     'int32'     |
     'uint8'     |
     'uint16'    |
-    'uint32';
+    'uint32'    |
+    'varint';
 
 export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
     public readonly muType:T;
