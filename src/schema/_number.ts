@@ -3,15 +3,19 @@ import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
 export const ranges = {
-    float32:    pair(-3.4028234663852886e+38,   3.4028234663852886e+38),
-    float64:    pair(-1.7976931348623157e+308,  1.7976931348623157e+308),
-    int8:       pair(-128,          127),
-    int16:      pair(-32768,        32767),
-    int32:      pair(-2147483648,   2147483647),
-    uint8:      pair(0,             255),
-    uint16:     pair(0,             65535),
-    uint32:     pair(0,             4294967295),
-    varint:     pair(0,             4294967295),
+    float32:    pair(-3.4028234663852886e+38, 3.4028234663852886e+38),
+    float64:    pair(-1.7976931348623157e+308, 1.7976931348623157e+308),
+
+    int8:       pair(-0x80,         0x7f),
+    int16:      pair(-0x8000,       0x7fff),
+    int32:      pair(-0x80000000,   0x7fffffff),
+
+    uint8:      pair(0, 0xff),
+    uint16:     pair(0, 0xffff),
+    uint32:     pair(0, 0xffffffff),
+
+    varint:     pair(0, 0xffffffff),
+    rvarint:    pair(0, 0x7fffffff),
 };
 
 export type MuNumericType =
@@ -23,7 +27,8 @@ export type MuNumericType =
     'uint8'     |
     'uint16'    |
     'uint32'    |
-    'varint';
+    'varint'    |
+    'rvarint';
 
 export abstract class MuNumber<T extends MuNumericType> implements MuSchema<number> {
     public readonly muType:T;

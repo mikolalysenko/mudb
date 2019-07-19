@@ -18,6 +18,7 @@ import {
     MuUint16,
     MuUint32,
     MuVarint,
+    MuRelativeVarint,
     MuArray,
     MuOption,
     MuSortedArray,
@@ -183,6 +184,27 @@ tape('de/serializing varint', (t) => {
     for (let i = 0; i < sample.length; ++i) {
         const x = sample[i];
         test(0, x);
+        test(x, x);
+    }
+
+    t.end();
+});
+
+tape('de/serializing relative varint', (t) => {
+    const sample = [ 1, 64, 128, 256, 1 << 14, 1 << 21, 1 << 28, 1 << 30 ];
+    for (let i = sample.length - 1; i >= 0; --i) {
+        const x = sample[i];
+        sample.push(x - 1);
+        sample.push(x + 1);
+        sample.push((x + x * Math.random() | 0) >>> 0);
+    }
+    sample.push(0x7fffffff);
+
+    const test = createTest(t, new MuRelativeVarint());
+    for (let i = 0; i < sample.length; ++i) {
+        const x = sample[i];
+        test(0, x);
+        test(x, 0);
         test(x, x);
     }
 

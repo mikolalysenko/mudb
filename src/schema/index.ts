@@ -22,6 +22,7 @@ import { MuUint8 } from './uint8';
 import { MuUint16 } from './uint16';
 import { MuUint32 } from './uint32';
 import { MuVarint } from './varint';
+import { MuRelativeVarint } from './rvarint';
 
 // functors
 import { MuArray } from './array';
@@ -56,6 +57,7 @@ export {
     MuUint16,
     MuUint32,
     MuVarint,
+    MuRelativeVarint,
 
     MuArray,
     MuOption,
