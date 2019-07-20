@@ -15,7 +15,7 @@ export const ranges = {
     uint32:     pair(0, 0xffffffff),
 
     varint:     pair(0, 0xffffffff),
-    rvarint:    pair(0, 0x7fffffff),
+    rvarint:    pair(0, 0xffffffff),
 };
 
 export type MuNumericType =

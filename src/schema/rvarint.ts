@@ -21,6 +21,6 @@ export class MuRelativeVarint extends MuNumber<'rvarint'> {
     public patch (base:number, inp:MuReadStream) : number {
         const x = inp.readVarint();
         const d = (SCHROEPPEL2 ^ x) - SCHROEPPEL2 >> 0;
-        return base + d;
+        return base + d >>> 0;
     }
 }
