@@ -17,6 +17,8 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuVarint,
+    MuRelativeVarint,
     MuArray,
     MuOption,
     MuSortedArray,
@@ -28,9 +30,8 @@ import {
     MuDate,
     MuJSON,
 } from '../index';
-import { MuString } from '../_string';
+import { MuString, MuStringType } from '../_string';
 import { MuNumber } from '../_number';
-import { MuStringType } from '../type';
 import {
     randBool,
     randFloat32,
@@ -76,10 +77,10 @@ tape('de/serializing boolean', (t) => {
 
 tape('de/serializing string', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuString<MuStringType>,
     ) : (a:string, b:string) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -125,7 +126,7 @@ tape('de/serializing string', (t) => {
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', '💩💩💩💩💩💩💩💩💩💩💩💩💩💩💩');
 
         let bigText = '啊啊啊';
-        for (let i = 0; i <= 0xF; ++i) {
+        for (let i = 0; i < 16; ++i) {
             bigText += bigText;
         }
         testPair('<a href="https://github.com/mikolalysenko/mudb/">mudb</a>', bigText);
@@ -137,10 +138,10 @@ tape('de/serializing string', (t) => {
 
 tape('de/serializing number', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuNumber<any>,
     ) : (a:number, b:number) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -154,26 +155,55 @@ tape('de/serializing number', (t) => {
     const testFloat64 = createTestPair(t, new MuFloat64());
     testFloat64(-1.7976931348623157e+308, 1.7976931348623157e+308);
     const testInt8 = createTestPair(t, new MuInt8());
-    testInt8(-0x80, 0x7F);
+    testInt8(-0x80, 0x7f);
     const testInt16 = createTestPair(t, new MuInt16());
-    testInt16(-0x8000, 0x7FFF);
+    testInt16(-0x8000, 0x7fff);
     const testInt32 = createTestPair(t, new MuInt32());
-    testInt32(-0x80000000, 0x7FFFFFFF);
+    testInt32(-0x80000000, 0x7fffffff);
     const testUint8 = createTestPair(t, new MuUint8());
-    testUint8(0, 0xFF);
+    testUint8(0, 0xff);
     const testUint16 = createTestPair(t, new MuUint16());
-    testUint16(0, 0xFFFF);
+    testUint16(0, 0xffff);
     const testUint32 = createTestPair(t, new MuUint32());
-    testUint32(0, 0xFFFFFFFF);
+    testUint32(0, 0xffffffff);
+
+    t.end();
+});
+
+tape('de/serializing varint', (t) => {
+    const sample = [ 1, 64, 128, 256, 1 << 14, 1 << 21, 1 << 28, 1 << 31 >>> 0 ];
+    for (let i = sample.length - 1; i >= 0; --i) {
+        const x = sample[i];
+        sample.push(x - 1);
+        sample.push(x + 1);
+        sample.push((x + x * Math.random() | 0) >>> 0);
+    }
+    sample.push(0xffffffff);
+
+    const testVarint = createTest(t, new MuVarint());
+    for (let i = 0; i < sample.length; ++i) {
+        const x = sample[i];
+        testVarint(0, x);
+        testVarint(x, x);
+    }
+
+    const testRelativeVarint = createTest(t, new MuRelativeVarint());
+    for (let i = 0; i < sample.length; ++i) {
+        const x = sample[i];
+        testRelativeVarint(0, x);
+        testRelativeVarint(x, 0);
+        testRelativeVarint(x, x);
+    }
+
     t.end();
 });
 
 tape('de/serializing array', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuArray<any>,
     ) : (a:any[], b:any[]) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -225,10 +255,10 @@ tape('de/serializing array', (t) => {
 
 tape('de/serializing sorted array', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuSortedArray<any>,
     ) : (a:any[], b:any[]) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             a.sort(compare);
             b.sort(compare);
@@ -257,10 +287,10 @@ tape('de/serializing sorted array', (t) => {
 
 tape('de/serializing struct', (t) => {
     function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuStruct<T>,
     ) : (a:MuStruct<T>['identity'], b:MuStruct<T>['identity']) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -316,10 +346,10 @@ tape('de/serializing struct', (t) => {
 
 tape('de/serializing union', (t) => {
     function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuUnion<T>,
     ) : (a:MuUnion<T>['identity'], b:MuUnion<T>['identity']) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -388,10 +418,10 @@ tape('de/serializing union', (t) => {
 
 tape('de/serializing bytes', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuBytes,
     ) : (a:Uint8Array, b:Uint8Array) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, b);
             test(b, a);
@@ -421,10 +451,10 @@ tape('de/serializing bytes', (t) => {
 
 tape('de/serializing dictionary', (t) => {
     function createTestPair<T extends MuSchema<any>> (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuDictionary<T>,
     ) : (a:MuDictionary<T>['identity'], b:MuDictionary<T>['identity']) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -498,10 +528,10 @@ function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['i
 
 tape('de/serializing vector', (t) => {
     function createTestPair<Schema extends MuVector<any, number>> (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:Schema,
     ) : (a:Schema['identity'], b:Schema['identity']) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, a);
             test(b, b);
@@ -575,10 +605,10 @@ tape('de/serializing date', (t) => {
 
 tape('de/serializing json', (t) => {
     function createTestPair (
-        _t:tape.Test,
+        t_:tape.Test,
         schema:MuJSON,
     ) : (a:object, b:object) => void {
-        const test = createTest(_t, schema);
+        const test = createTest(t_, schema);
         return (a, b) => {
             test(a, b);
             test(b, a);
