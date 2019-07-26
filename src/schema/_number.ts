@@ -1,21 +1,24 @@
-import { pair } from '../type';
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
+function tuple<T extends any[]> (...args:T) : T {
+    return args;
+}
+
 export const ranges = {
-    float32:    pair(-3.4028234663852886e+38, 3.4028234663852886e+38),
-    float64:    pair(-1.7976931348623157e+308, 1.7976931348623157e+308),
+    float32:    tuple(-3.4028234663852886e+38, 3.4028234663852886e+38),
+    float64:    tuple(-1.7976931348623157e+308, 1.7976931348623157e+308),
 
-    int8:       pair(-0x80,         0x7f),
-    int16:      pair(-0x8000,       0x7fff),
-    int32:      pair(-0x80000000,   0x7fffffff),
+    int8:       tuple(-0x80,        0x7f),
+    int16:      tuple(-0x8000,      0x7fff),
+    int32:      tuple(-0x80000000,  0x7fffffff),
 
-    uint8:      pair(0, 0xff),
-    uint16:     pair(0, 0xffff),
-    uint32:     pair(0, 0xffffffff),
+    uint8:      tuple(0, 0xff),
+    uint16:     tuple(0, 0xffff),
+    uint32:     tuple(0, 0xffffffff),
 
-    varint:     pair(0, 0xffffffff),
-    rvarint:    pair(0, 0xffffffff),
+    varint:     tuple(0, 0xffffffff),
+    rvarint:    tuple(0, 0xffffffff),
 };
 
 export type MuNumericType =

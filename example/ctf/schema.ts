@@ -5,9 +5,11 @@ import {
   MuFloat64,
   MuInt8,
   MuArray,
-  MuBoolean,
 } from 'mudb/schema';
-import { pair } from 'mudb/type';
+
+function tuple<T extends any[]> (...args:T) : T {
+  return args;
+}
 
 export const PlayerSchema = new MuStruct({
   team: new MuInt8(),
@@ -41,9 +43,9 @@ export const MsgSchema = {
 
 export const RpcSchema = {
   client: {
-    joinTeam: pair(new MuUTF8(), new MuInt8()),
+    joinTeam: tuple(new MuUTF8(), new MuInt8()),
   },
   server: {
-    joinTeam: pair(new MuUTF8(), new MuInt8()),
+    joinTeam: tuple(new MuUTF8(), new MuInt8()),
   },
 };
