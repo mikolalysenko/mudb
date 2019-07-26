@@ -9,7 +9,7 @@ import {
     MuData,
     MuConnectionHandler,
     MuCloseHandler,
-} from '../../socket';
+} from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 

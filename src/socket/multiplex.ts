@@ -4,7 +4,7 @@ import {
     MuSocketServerSpec,
     MuSocket,
     MuCloseHandler,
-} from '../socket';
+} from './socket';
 
 export class MuMultiSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;

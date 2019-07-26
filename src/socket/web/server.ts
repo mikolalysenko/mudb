@@ -7,7 +7,7 @@ import {
     MuSocketSpec,
     MuSocketServer,
     MuSocketServerSpec,
-} from '../../socket';
+} from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 

@@ -1,7 +1,7 @@
 import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
 
-import { MuSocket, MuData } from './socket';
+import { MuSocket, MuData } from './socket/socket';
 import { MuTrace } from './trace';
 
 import stableStringify = require('./util/stringify');

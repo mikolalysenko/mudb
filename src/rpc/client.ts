@@ -1,5 +1,5 @@
 import { MuClient, MuClientProtocol } from '../client';
-import { MuSessionId } from '../socket';
+import { MuSessionId } from '../socket/socket';
 import { MuRPC } from './protocol';
 
 const uniqueId = (() => {

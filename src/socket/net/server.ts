@@ -12,7 +12,7 @@ import {
     MuData,
     MuMessageHandler,
     MuCloseHandler,
-} from '../../socket';
+} from '../socket';
 
 import { messagify, isJSON } from './util';
 import { MuScheduler } from '../../scheduler/scheduler';

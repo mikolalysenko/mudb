@@ -1,7 +1,7 @@
 import { MuRDA, MuRDATypes, MuRDAActionMeta } from '../rda/rda';
 import { MuServer, MuServerProtocol } from '../server';
 import { rdaProtocol, RDAProtocol } from './schema';
-import { MuSessionId } from '../socket';
+import { MuSessionId } from '../socket/socket';
 import { MuScheduler } from '../scheduler/scheduler';
 import { MuSystemScheduler } from '../scheduler/system';
 

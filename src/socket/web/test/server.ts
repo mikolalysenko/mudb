@@ -3,7 +3,7 @@ import WebSocket = require('uws');
 
 import http = require('http');
 
-import { MuSocketServerState } from '../../../socket';
+import { MuSocketServerState } from '../../socket';
 import { MuWebSocketServer } from '../server';
 
 function noop () { }

@@ -1,6 +1,6 @@
 import test = require('tape');
 
-import { MuSocketState } from '../../../../socket';
+import { MuSocketState } from '../../../socket';
 import { MuWebSocket } from '../../client';
 
 function noop () { }

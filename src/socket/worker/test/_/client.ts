@@ -1,7 +1,7 @@
 import work = require('webworkify');
 import test = require('tape');
 import { MuWorkerSocket } from '../../client';
-import { MuSocketState } from '../../../../socket';
+import { MuSocketState } from '../../../socket';
 
 function noop () { }
 
