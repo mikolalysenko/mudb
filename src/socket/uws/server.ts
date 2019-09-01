@@ -1,7 +1,7 @@
 import querystring = require('querystring');
 import { Buffer } from 'buffer';
 
-import { TemplatedApp, WebSocket, us_listen_socket, us_listen_socket_close } from 'uWebSockets.js';
+import uWS = require('uWebSockets.js');
 
 import {
     MuData, MuMessageHandler, MuCloseHandler,
@@ -18,8 +18,8 @@ export class MuUWSSocketClient implements MuSocket {
 
     public readonly sessionId:string;
 
-    public _reliableSocket:WebSocket;
-    public _unreliableSockets:WebSocket[] = [];
+    public _reliableSocket:uWS.WebSocket;
+    public _unreliableSockets:uWS.WebSocket[] = [];
     private _nextUnreliable = 0;
     public _pendingMessages:MuData[] = [];
 
@@ -29,7 +29,7 @@ export class MuUWSSocketClient implements MuSocket {
 
     constructor (
         sessionId:string,
-        reliableSocket:WebSocket,
+        reliableSocket:uWS.WebSocket,
         scheduler:MuScheduler,
         onclientclose:() => void,
     ) {
@@ -51,7 +51,7 @@ export class MuUWSSocketClient implements MuSocket {
         };
     }
 
-    public _addUnreliable (socket:WebSocket) {
+    public _addUnreliable (socket:uWS.WebSocket) {
         if (this.state === MuSocketState.CLOSED) {
             return;
         }
@@ -122,26 +122,17 @@ export class MuUWSSocketServer implements MuSocketServer {
 
     public clients:MuUWSSocketClient[] = [];
 
-    private _server:TemplatedApp;
-    private _port:number;
-    private _host:string;
-    private _listenSocket:us_listen_socket|null = null;
-    private _onlisten:() => void;
+    private _server:uWS.TemplatedApp;
+    private _listenSocket:uWS.us_listen_socket|null = null;
     private _onclose:MuCloseHandler = noop;
 
     private _scheduler:MuScheduler;
 
     constructor (spec:{
-        server:TemplatedApp,
-        port:number,
-        host?:string,
-        listen?:() => void,
+        server:uWS.TemplatedApp,
         scheduler?:MuScheduler,
     }) {
         this._server = spec.server;
-        this._port = spec.port;
-        this._host = spec.host || '';
-        this._onlisten = spec.listen || noop;
         this._scheduler = spec.scheduler || MuSystemScheduler;
     }
 
@@ -205,25 +196,34 @@ export class MuUWSSocketServer implements MuSocketServer {
                 },
             });
 
-            const onlisten = (listenSocket) => {
-                if (listenSocket) {
-                    this._listenSocket = listenSocket;
-                    this._onlisten();
-                } else {
-                    throw new Error(`failed to listen to ${this._host}:${this._port}`);
-                }
-            };
-
-            if (this._host) {
-                this._server.listen(this._host, this._port, onlisten);
-            } else {
-                this._server.listen(this._port, onlisten);
-            }
-
             this._onclose = spec.close;
             this.state = MuSocketServerState.RUNNING;
             spec.ready();
         }, 0);
+    }
+
+    public listen (spec:{
+        port:number,
+        host?:string,
+        listening?:(listenSocket:uWS.us_listen_socket) => void,
+    }) {
+        const onlistening = (ls:uWS.us_listen_socket) => {
+            if (ls) {
+                console.log(`server listening to port ${spec.port}`);
+                this._listenSocket = ls;
+                if (spec.listening) {
+                    spec.listening(ls);
+                }
+            } else {
+                console.error(`server failed to listen to port ${spec.port}`);
+            }
+        };
+
+        if (spec.host) {
+            this._server.listen(spec.host, spec.port, onlistening);
+        } else {
+            this._server.listen(spec.port, onlistening);
+        }
     }
 
     public close () {
@@ -234,7 +234,7 @@ export class MuUWSSocketServer implements MuSocketServer {
         this.state = MuSocketServerState.SHUTDOWN;
 
         if (this._listenSocket) {
-            us_listen_socket_close(this._listenSocket);
+            uWS.us_listen_socket_close(this._listenSocket);
         }
         for (let i = 0; i < this.clients.length; ++i) {
             this.clients[i].close();
