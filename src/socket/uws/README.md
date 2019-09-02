@@ -1,5 +1,5 @@
 # uWS Socket
-Use this only when you use [`uWebSocket.js`](https://github.com/uNetworking/uWebSockets.js) for your backend.
+For [`uWebSocket.js`](https://github.com/uNetworking/uWebSockets.js) backend.
 
 ## Example
 
@@ -15,12 +15,13 @@ const httpsServer = uWS.SSLApp({
 });
 const socketServer = new MuUWSSocketServer({
     server: httpsServer,
-    port: 9966,
 });
 const server = new MuServer(socketServer);
 
-// do not call httpsServer.listen()
 server.start();
+socketServer.listen({
+    port: 9966,
+});
 ```
 
 **client**
@@ -40,9 +41,13 @@ client.start();
 ## new MuUWSSocketServer(spec)
 * `spec` {object}
     * `server` {uWS.TemplatedApp}
+    * `scheduler?` {MuScheduler}
+
+## socketServer.listen(spec)
+* `spec` {object}
     * `port` {number}
-    * `host?` {string}
-    * `listen?` {() => void} is called when the server starts to listen
+    * `host?:`{string}
+    * `listening?` {(listenSocket) => void} `listening` event handler
 
 ## new MuUWSSocket(spec)
 * `spec` {object}
