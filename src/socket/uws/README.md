@@ -46,7 +46,7 @@ client.start();
 ## socketServer.listen(spec)
 * `spec` {object}
     * `port` {number}
-    * `host?:`{string}
+    * `host?`{string}
     * `listening?` {(listenSocket) => void} 'listening' event handler
 
 ## new MuUWSSocket(spec)
