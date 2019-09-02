@@ -1,4 +1,4 @@
-import ws = require('uws');
+import ws = require('ws');
 import {
     MuSessionId,
     MuSocketState,

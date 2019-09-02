@@ -6,7 +6,7 @@ import {
 } from '../socket';
 
 const hasWindow = typeof window === 'object' && 'addEventListener' in window;
-const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'uws');
+const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'ws');
 
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
