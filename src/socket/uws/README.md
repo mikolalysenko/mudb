@@ -1,11 +1,11 @@
 # uWS Socket
-For [`uWebSocket.js`](https://github.com/uNetworking/uWebSockets.js) backend.
+For [`uWebSockets.js`](https://github.com/uNetworking/uWebSockets.js) backends.
 
 ## Example
 
 **server**
 ```ts
-import uWS = require('uWebSockets.js')
+import uWS = require('uWebSockets.js');
 import { MuUWSSocketServer } from 'mudb/socket/uws/server';
 import { MuServer } from 'mudb/server';
 
@@ -41,16 +41,16 @@ client.start();
 ## new MuUWSSocketServer(spec)
 * `spec` {object}
     * `server` {uWS.TemplatedApp}
-    * `scheduler?` {MuScheduler}
+    * `scheduler?` {MuScheduler} mock scheduler for testing/debugging
 
 ## socketServer.listen(spec)
 * `spec` {object}
     * `port` {number}
     * `host?:`{string}
-    * `listening?` {(listenSocket) => void} `listening` event handler
+    * `listening?` {(listenSocket) => void} 'listening' event handler
 
 ## new MuUWSSocket(spec)
 * `spec` {object}
-    * `sessionId` {string} the client's unique identifier
-    * `url` {string} a [WebSocket URL](https://tools.ietf.org/html/rfc6455#page-14)
-    * `maxSockets?` {number} the maximum amount of concurrent WebSockets the client can have, defaults to 5
+    * `sessionId` {string} client's unique identifier
+    * `url` {string} [WebSocket URL](https://tools.ietf.org/html/rfc6455#page-14) to server
+    * `maxSockets?` {number} maximum amount of concurrent WebSockets client can have, defaults to 5
