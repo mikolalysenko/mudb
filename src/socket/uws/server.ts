@@ -209,7 +209,7 @@ export class MuUWSSocketServer implements MuSocketServer {
     }) {
         const onlistening = (ls:uWS.us_listen_socket) => {
             if (ls) {
-                console.log(`server listening to port ${spec.port}`);
+                console.log(`server listening to port ${spec.port}...`);
                 this._listenSocket = ls;
                 if (spec.listening) {
                     spec.listening(ls);
