@@ -54,3 +54,4 @@ client.start();
     * `sessionId` {string} client's unique identifier
     * `url` {string} [WebSocket URL](https://tools.ietf.org/html/rfc6455#page-14) to server
     * `maxSockets?` {number} maximum amount of concurrent WebSockets client can have, defaults to 5
+    * `ws?` {WebSocket} `WebSocket` binding for non-browser environment
