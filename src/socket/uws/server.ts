@@ -231,7 +231,7 @@ export class MuUWSSocketServer implements MuSocketServer {
             return;
         }
         if (this.state === MuSocketServerState.INIT) {
-            console.warn(`trying to shut down server when not fully started...`);
+            console.warn(`shutting down socket server before fully started [mudb/socket/uws/server]`);
         }
 
         this.state = MuSocketServerState.SHUTDOWN;

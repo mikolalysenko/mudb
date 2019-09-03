@@ -150,6 +150,9 @@ export class MuUWSSocket implements MuSocket {
         if (this.state === MuSocketState.CLOSED) {
             return;
         }
+        if (this.state === MuSocketState.INIT) {
+            console.warn(`closing socket before fully open [mudb/socket/uws/client]`);
+        }
 
         this.state = MuSocketState.CLOSED;
 
