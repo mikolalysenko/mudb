@@ -1,18 +1,17 @@
 import test = require('tape');
-import WebSocket = require('uws');
+import WebSocket = require('ws');
 
 import http = require('http');
 
-import { MuSocketServerState } from '../../../socket';
+import { MuSocketServerState } from '../../socket';
 import { MuWebSocketServer } from '../server';
 
 function noop () { }
 
-const server = http.createServer();
-
 test.onFinish(() => process.exit(0));
 
 test('server initial state', (t) => {
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     t.equal(socketServer.state, MuSocketServerState.INIT, 'should be INIT');
     t.end();
@@ -21,6 +20,7 @@ test('server initial state', (t) => {
 test('socketServer.start() - when INIT', (t) => {
     t.plan(2);
 
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -35,6 +35,7 @@ test('socketServer.start() - when INIT', (t) => {
 test('socketServer.start() - when RUNNING', (t) => {
     t.plan(1);
 
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -54,6 +55,7 @@ test('socketServer.start() - when RUNNING', (t) => {
 test('socketServer.start() - when SHUTDOWN', (t) => {
     t.plan(1);
 
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -80,6 +82,7 @@ test('when a client connects', (t) => {
 
     let url = '';
 
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {
@@ -134,6 +137,7 @@ test('when a client connects', (t) => {
 });
 
 test('socketServer.close() - when INIT', (t) => {
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.close();
 
@@ -144,6 +148,7 @@ test('socketServer.close() - when INIT', (t) => {
 test('socketServer.close() - when RUNNING', (t) => {
     t.plan(1);
 
+    const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
     socketServer.start({
         ready: () => {

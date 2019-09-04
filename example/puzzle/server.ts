@@ -1,7 +1,6 @@
 import { MuServer } from 'mudb/server';
 import { MuReplicaServer } from 'mudb/replica/server';
 import { PuzzleList } from './schema';
-import { MuSessionId } from '../../socket';
 
 export = function (server:MuServer) {
     const replica = new MuReplicaServer({
@@ -31,7 +30,7 @@ export = function (server:MuServer) {
         ],
     });
     replica.configure({
-        connect:(sessionId:MuSessionId) => {
+        connect:(sessionId) => {
             console.log(sessionId, ' connected');
         },
     });

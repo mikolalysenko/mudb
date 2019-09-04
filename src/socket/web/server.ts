@@ -1,4 +1,4 @@
-import ws = require('uws');
+import ws = require('ws');
 import {
     MuSessionId,
     MuSocketState,
@@ -7,7 +7,7 @@ import {
     MuSocketSpec,
     MuSocketServer,
     MuSocketServerSpec,
-} from '../../socket';
+} from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 

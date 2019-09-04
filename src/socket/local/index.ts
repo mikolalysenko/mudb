@@ -11,7 +11,7 @@ import {
     MuMessageHandler,
     MuCloseHandler,
     MuConnectionHandler,
-} from '../../socket';
+} from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 

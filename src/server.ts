@@ -1,4 +1,4 @@
-import { MuSocket, MuSocketServer } from './socket';
+import { MuSocket, MuSocketServer } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 import { MuTrace } from './trace';
 

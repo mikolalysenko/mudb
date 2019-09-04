@@ -3,7 +3,7 @@ import test = require('tape');
 import { createLocalSocketServer, createLocalSocket } from '../index';
 import { MuServer } from '../../../server';
 import { MuClient } from '../../../client';
-import { MuSocketState } from '../../../socket';
+import { MuSocketState } from '../../socket';
 
 function randomId () {
     return Math.random().toString(36).substring(2);

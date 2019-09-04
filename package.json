@@ -38,19 +38,19 @@
   ],
   "author": "Mikola Lysenko",
   "contributors": [
-    "He Diyi <esdoppio@gamil.com> (https://github.com/hediyi/)"
+    "He Diyi <esdoppio@gmail.com> (https://github.com/hediyi/)"
   ],
   "license": "MIT",
   "dependencies": {
     "hash.js": "^1.1.5",
     "right-now": "^1.0.0",
-    "uws": "10.148.0"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v15.11.0",
+    "ws": "^7.1.2"
   },
   "devDependencies": {
     "@types/node": "^8.10.38",
     "@types/tape": "^4.2.32",
     "browserify": "^16.2.3",
-    "envify": "^4.1.0",
     "nyc": "^13.1.0",
     "tape": "^4.9.1",
     "tape-run": "^4.0.0",
