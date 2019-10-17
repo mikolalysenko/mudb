@@ -1,9 +1,4 @@
-import {
-    MuSessionId,
-    MuSocketState,
-    MuSocket,
-    MuSocketSpec,
-} from '../socket';
+import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
 const hasWindow = typeof window === 'object' && 'addEventListener' in window;
 const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'ws');
@@ -67,16 +62,16 @@ export class MuWebSocket implements MuSocket {
 
             // when connection is ready
             socket.onopen = () => {
-                socket.onmessage = (ev) => {
+                socket.onmessage = (event) => {
                     if (this.state === MuSocketState.CLOSED) {
                         socket.close();
                         return;
                     }
 
-                    if (typeof ev.data === 'string') {
+                    if (typeof event.data === 'string') {
                         // on receiving the first message from server,
                         // determine whether this should be a reliable socket
-                        if (JSON.parse(ev.data).reliable) {
+                        if (JSON.parse(event.data).reliable) {
                             this.state = MuSocketState.OPEN;
 
                             // reset message handler
@@ -91,7 +86,7 @@ export class MuWebSocket implements MuSocket {
                                     spec.message(new Uint8Array(data), false);
                                 }
                             };
-                            socket.onclose = () => {
+                            socket.onclose = (ev) => {
                                 this.state = MuSocketState.CLOSED;
 
                                 // remove the socket beforehand so that it will not be closed more than once
@@ -101,7 +96,7 @@ export class MuWebSocket implements MuSocket {
                                     sockets[i].close();
                                 }
 
-                                spec.close();
+                                spec.close(ev);
                             };
                             this._reliableSocket = socket;
 
@@ -119,7 +114,7 @@ export class MuWebSocket implements MuSocket {
                                     spec.message(new Uint8Array(data), true);
                                 }
                             };
-                            socket.onclose = () => {
+                            socket.onclose = (ev) => {
                                 // to avoid closing the socket more than once
                                 removeSocket(socket);
 
