@@ -59,51 +59,52 @@ export class MuWebSocket implements MuSocket {
                         socket.close();
                         return;
                     }
+                    if (typeof event.data !== 'string') {
+                        throw error('first message should be a string');
+                    }
 
-                    if (typeof event.data === 'string') {
-                        // first message indicates whether socket is reliable
-                        if (JSON.parse(event.data).reliable) {
-                            socket.onmessage = ({ data }) => {
-                                if (this.state !== MuSocketState.OPEN) {
-                                    return;
-                                }
+                    // first message indicates whether socket is reliable
+                    if (JSON.parse(event.data).reliable) {
+                        socket.onmessage = ({ data }) => {
+                            if (this.state !== MuSocketState.OPEN) {
+                                return;
+                            }
 
-                                if (typeof data === 'string') {
-                                    spec.message(data, false);
-                                } else {
-                                    spec.message(new Uint8Array(data), false);
-                                }
-                            };
-                            socket.onclose = (ev) => {
-                                this._reliableSocket = null;
-                                this.close();
-                                spec.close(ev);
-                            };
-                            this._reliableSocket = socket;
+                            if (typeof data === 'string') {
+                                spec.message(data, false);
+                            } else {
+                                spec.message(new Uint8Array(data), false);
+                            }
+                        };
+                        socket.onclose = (ev) => {
+                            this._reliableSocket = null;
+                            this.close();
+                            spec.close(ev);
+                        };
+                        this._reliableSocket = socket;
 
-                            this.state = MuSocketState.OPEN;
-                            spec.ready();
-                        } else {
-                            socket.onmessage = ({ data }) => {
-                                if (this.state !== MuSocketState.OPEN) {
-                                    return;
-                                }
+                        this.state = MuSocketState.OPEN;
+                        spec.ready();
+                    } else {
+                        socket.onmessage = ({ data }) => {
+                            if (this.state !== MuSocketState.OPEN) {
+                                return;
+                            }
 
-                                if (typeof data === 'string') {
-                                    spec.message(data, true);
-                                } else {
-                                    spec.message(new Uint8Array(data), true);
+                            if (typeof data === 'string') {
+                                spec.message(data, true);
+                            } else {
+                                spec.message(new Uint8Array(data), true);
+                            }
+                        };
+                        socket.onclose = (ev) => {
+                            for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
+                                if (this._unreliableSockets[i] === socket) {
+                                    this._unreliableSockets.splice(i, 1);
                                 }
-                            };
-                            socket.onclose = (ev) => {
-                                for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
-                                    if (this._unreliableSockets[i] === socket) {
-                                        this._unreliableSockets.splice(i, 1);
-                                    }
-                                }
-                            };
-                            this._unreliableSockets.push(socket);
-                        }
+                            }
+                        };
+                        this._unreliableSockets.push(socket);
                     }
                 };
 
@@ -118,7 +119,7 @@ export class MuWebSocket implements MuSocket {
         }
     }
 
-    public send (data:Uint8Array, unreliable?:boolean) {
+    public send (data:MuData, unreliable?:boolean) {
         if (this.state !== MuSocketState.OPEN) {
             return;
         }
