@@ -1,6 +1,6 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
-const hasWindow = typeof window === 'object' && 'addEventListener' in window;
+const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
 const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'ws');
 
 export class MuWebSocket implements MuSocket {
@@ -47,12 +47,12 @@ export class MuWebSocket implements MuSocket {
             }
         }
 
-        if (hasWindow) {
-            window.addEventListener('beforeunload', () => {
+        if (isBrowser) {
+            window.onbeforeunload = () => {
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].close();
                 }
-            });
+            };
         }
 
         const openSocket = () => {
