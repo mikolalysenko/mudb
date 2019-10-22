@@ -43,28 +43,15 @@ export class MuWebSocket implements MuSocket {
             throw error(`socket had already been opened`);
         }
 
-        const sockets:WebSocket[] = [];
-
-        function removeSocket (socket) {
-            for (let i = 0; i < sockets.length; ++i) {
-                if (sockets[i] === socket) {
-                    sockets.splice(i, 1);
-                }
-            }
-        }
-
         if (isBrowser) {
             window.onbeforeunload = () => {
-                for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].close();
-                }
+                this.close();
             };
         }
 
         const openSocket = () => {
             const socket = new WS(this._url);
             socket.binaryType = 'arraybuffer';
-            sockets.push(socket);
 
             socket.onopen = () => {
                 socket.onmessage = (event) => {
@@ -88,13 +75,8 @@ export class MuWebSocket implements MuSocket {
                                 }
                             };
                             socket.onclose = (ev) => {
-                                this.state = MuSocketState.CLOSED;
-
-                                removeSocket(socket);
-                                for (let i = 0; i < sockets.length; ++i) {
-                                    sockets[i].close();
-                                }
-
+                                this._reliableSocket = null;
+                                this.close();
                                 spec.close(ev);
                             };
                             this._reliableSocket = socket;
@@ -114,7 +96,6 @@ export class MuWebSocket implements MuSocket {
                                 }
                             };
                             socket.onclose = (ev) => {
-                                removeSocket(socket);
                                 for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
                                     if (this._unreliableSockets[i] === socket) {
                                         this._unreliableSockets.splice(i, 1);
@@ -159,9 +140,11 @@ export class MuWebSocket implements MuSocket {
 
         if (this._reliableSocket) {
             this._reliableSocket.close();
+            this._reliableSocket = null;
         }
         for (let i = 0; i < this._unreliableSockets.length; ++i) {
             this._unreliableSockets[i].close();
         }
+        this._unreliableSockets.length = 0;
     }
 }
