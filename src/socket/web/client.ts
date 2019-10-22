@@ -56,6 +56,7 @@ export class MuWebSocket implements MuSocket {
             socket.onopen = () => {
                 socket.onmessage = (event) => {
                     if (this.state === MuSocketState.CLOSED) {
+                        socket.onmessage = null;
                         socket.close();
                         return;
                     }
@@ -67,6 +68,7 @@ export class MuWebSocket implements MuSocket {
                         }
                         reliable = JSON.parse(event.data).reliable;
                     } catch (e) {
+                        socket.onmessage = null;
                         this.close();
                         console.error(e);
                         return;
@@ -149,10 +151,12 @@ export class MuWebSocket implements MuSocket {
         this.state = MuSocketState.CLOSED;
 
         if (this._reliableSocket) {
+            this._reliableSocket.onmessage = null;
             this._reliableSocket.close();
             this._reliableSocket = null;
         }
         for (let i = 0; i < this._unreliableSockets.length; ++i) {
+            this._unreliableSockets[i].onmessage = null;
             this._unreliableSockets[i].close();
         }
         this._unreliableSockets.length = 0;
