@@ -1,7 +1,21 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
+function error (msgOrErr:string|Error) : Error {
+    const msg = typeof msgOrErr === 'string' ? msgOrErr : msgOrErr.message;
+    return new Error(`${msg} [mudb/socket/web/client]`);
+}
+
 const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
-const WS:typeof WebSocket = typeof WebSocket !== 'undefined' ? WebSocket : require.call(null, 'ws');
+
+let WS:typeof WebSocket;
+if (isBrowser) {
+    WS = window['WebSocket'] || window['MozWebSocket'];
+    if (!WS) {
+        throw error(`no WebSocket support in browser`);
+    }
+} else {
+    WS = require.call(null, 'ws');
+}
 
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
@@ -29,11 +43,8 @@ export class MuWebSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state === MuSocketState.OPEN) {
-            throw new Error('mudb/web-socket: socket already open');
-        }
-        if (this.state === MuSocketState.CLOSED) {
-            throw new Error('mudb/web-socket: cannot reopen closed socket');
+        if (this.state !== MuSocketState.INIT) {
+            throw error(`socket had already been opened`);
         }
 
         // used to reliably close sockets
