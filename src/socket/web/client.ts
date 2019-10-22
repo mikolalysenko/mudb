@@ -19,15 +19,13 @@ if (isBrowser) {
 
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
-
     public state = MuSocketState.INIT;
 
     private _url:string;
 
     private _reliableSocket:WebSocket|null = null;
     private _unreliableSockets:WebSocket[] = [];
-    private _maxSockets = 5;
-
+    private _maxSockets:number;
     private _nextSocketSend = 0;
 
     constructor (spec:{
@@ -37,9 +35,7 @@ export class MuWebSocket implements MuSocket {
     }) {
         this.sessionId = spec.sessionId;
         this._url = spec.url;
-        if (spec.maxSockets) {
-            this._maxSockets = Math.max(1, spec.maxSockets | 0);
-        }
+        this._maxSockets = Math.max(1, spec.maxSockets || 5) | 0;
     }
 
     public open (spec:MuSocketSpec) {
