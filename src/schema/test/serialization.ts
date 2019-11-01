@@ -323,6 +323,8 @@ tape('de/serializing sorted array', (t) => {
         const x = randomArray();
         const y = randomArray();
         testStruct(x, y);
+        arraySchema.assign(x, []);
+        arraySchema.free(y);
     }
 
     t.end();
