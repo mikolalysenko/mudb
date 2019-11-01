@@ -254,10 +254,10 @@ tape('de/serializing array', (t) => {
 });
 
 tape('de/serializing sorted array', (t) => {
-    function createTestPair (
+    function createTestPair<T, Schema extends MuSchema<T>> (
         t_:tape.Test,
-        schema:MuSortedArray<any>,
-    ) : (a:any[], b:any[]) => void {
+        schema:MuSortedArray<Schema>,
+    ) : (a:T[], b:T[]) => void {
         const test = createTest(t_, schema);
         return (a, b) => {
             a.sort(compare);
@@ -268,11 +268,14 @@ tape('de/serializing sorted array', (t) => {
             test(b, a);
             test([], a);
             test([], b);
+            test(a, []);
+            test(b, []);
         };
     }
 
     const sortedArray = new MuSortedArray(new MuFloat32(), Infinity);
     const testPair = createTestPair(t, sortedArray);
+    testPair([], []);
     testPair([0], [1]);
     testPair([0, 1], [1, 1]);
     testPair([0, 1], [0, 2]);
@@ -282,6 +285,46 @@ tape('de/serializing sorted array', (t) => {
     for (let i = 0; i < 1000; ++i) {
         testPair(randArray(), randArray());
     }
+
+    const structSchema = new MuStruct({
+        id: new MuUint32(0),
+        garbage: new MuArray(new MuFloat64(10), Infinity),
+        poop: new MuFloat32(0),
+    });
+
+    function randomStruct () {
+        const s = structSchema.alloc();
+        s.id = (Math.random() * 1000) | 0;
+        s.garbage.length = 0;
+        const ngarbage = Math.random() * 10;
+        for (let i = 0; i < ngarbage; ++i) {
+            s.garbage.push(Math.random());
+        }
+        s.poop = (Math.random() * 10) | 0;
+        return s;
+    }
+
+    const arraySchema = new MuSortedArray(structSchema, Infinity, (a, b) => a.id - b.id);
+
+    function randomArray () {
+        const x = arraySchema.alloc();
+        const n = (Math.random() * 100) | 0;
+        for (let i = 0; i < n; ++i) {
+            x.push(randomStruct());
+        }
+        x.sort(arraySchema.compare);
+        return x;
+    }
+
+    const testStruct = createTestPair(t, arraySchema);
+
+    testStruct([], []);
+    for (let i = 0; i < 100; ++i) {
+        const x = randomArray();
+        const y = randomArray();
+        testStruct(x, y);
+    }
+
     t.end();
 });
 
