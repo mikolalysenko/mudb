@@ -7,7 +7,7 @@ import { MuTrace } from './trace';
 import stableStringify = require('./util/stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
 
-const RAW_MESSAGE = 0xffffffff;
+const RAW_MESSAGE = 0;
 
 export type MuAnySchema = MuSchema<any>;
 export type MuMessageType = MuAnySchema;
@@ -65,10 +65,10 @@ export class MuMessageFactory {
         this.messageNames.forEach((name, messageId) => {
             const schema = this.schemas[messageId];
             result[name] = (data, unreliable?:boolean) => {
-                const stream = new MuWriteStream(32);
+                const stream = new MuWriteStream(128);
 
-                stream.writeUint32(this.protocolId);
-                stream.writeUint32(messageId);
+                stream.writeVarint(this.protocolId);
+                stream.writeVarint(messageId + 1);
                 schema.diff(schema.identity, data, stream);
 
                 const contentBytes = stream.bytes();
@@ -96,15 +96,16 @@ export class MuMessageFactory {
                     sockets[i].send(packet, unreliable);
                 }
             } else {
-                const size = 8 + data.length;
+                const size = 10 + data.length;
                 const stream = new MuWriteStream(size);
 
-                stream.writeUint32(p);
-                stream.writeUint32(RAW_MESSAGE);
+                stream.writeVarint(p);
+                stream.writeVarint(RAW_MESSAGE);
                 const { uint8 } = stream.buffer;
-                uint8.set(data, 8);
+                uint8.set(data, stream.offset);
+                stream.offset += data.length;
 
-                const bytes = uint8.subarray(0, size);
+                const bytes = stream.bytes();
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(bytes, unreliable);
                 }
@@ -160,17 +161,18 @@ export class MuProtocolFactory {
             } else {
                 const stream = new MuReadStream(data);
 
-                const protocolId = stream.readUint32();
+                const protocolId = stream.readVarint();
                 const protocol = this.protocolFactories[protocolId];
                 if (!protocol) {
                     throw new Error(`invalid protocol id ${protocolId}`);
                 }
 
-                const messageId = stream.readUint32();
+                let messageId = stream.readVarint();
                 if (messageId === RAW_MESSAGE) {
                     raw[protocolId](data.subarray(stream.offset), unreliable);
                     return;
                 }
+                messageId -= 1;
 
                 const messageSchema = protocol.schemas[messageId];
                 if (!messageSchema) {
