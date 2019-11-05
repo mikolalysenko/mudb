@@ -1,17 +1,16 @@
 import ws = require('ws');
+
+import http = require('http');
+import https = require('https');
+
 import {
-    MuSessionId,
-    MuSocketState,
-    MuSocketServerState,
-    MuSocket,
-    MuSocketSpec,
-    MuSocketServer,
-    MuSocketServerSpec,
+    MuSessionId, MuSocket, MuSocketState, MuSocketSpec,
+    MuSocketServer, MuSocketServerState, MuSocketServerSpec,
 } from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
-export interface UWSSocketInterface {
+export interface WSSocket {
     onmessage:(message:{ data:Uint8Array|string }) => void;
     onclose:() => void;
     send:(data:Uint8Array|string) => void;
@@ -27,8 +26,8 @@ export class MuWebSocketConnection {
     public closed = false;
 
     // every client communicates through one reliable and several unreliable sockets
-    public reliableSocket:UWSSocketInterface;
-    public unreliableSockets:UWSSocketInterface[] = [];
+    public reliableSocket:WSSocket;
+    public unreliableSockets:WSSocket[] = [];
 
     private _nextSocketSend = 0;
 
@@ -41,7 +40,7 @@ export class MuWebSocketConnection {
     public onClose:() => void = noop;
     public serverClose:() => void;
 
-    constructor (sessionId:string, reliableSocket:UWSSocketInterface, serverClose:() => void) {
+    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void) {
         this.sessionId = sessionId;
         this.reliableSocket = reliableSocket;
         this.serverClose = serverClose;
@@ -74,7 +73,7 @@ export class MuWebSocketConnection {
         };
     }
 
-    public addUnreliableSocket (socket:UWSSocketInterface) {
+    public addUnreliableSocket (socket:WSSocket) {
         if (this.closed) {
             return;
         }
@@ -174,23 +173,35 @@ export class MuWebSocketClient implements MuSocket {
 }
 
 export class MuWebSocketServer implements MuSocketServer {
+    public state = MuSocketServerState.INIT;
+
     private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
 
-    public state = MuSocketServerState.INIT;
-
-    private _httpServer;
-    private _websocketServer:ws.Server;
+    private _options:object;
+    private _wsServer:ws.Server;
 
     private _onClose;
 
     public scheduler:MuScheduler;
 
     constructor (spec:{
-        server:object,
+        server:http.Server|https.Server,
+        backlog?:number,
+        handleProtocols?:(protocols:any[], request:http.IncomingMessage) => any,
+        path?:string,
+        perMessageDeflate?:boolean|object,
+        maxPayload?:number,
         scheduler?:MuScheduler,
     }) {
-        this._httpServer = spec.server;
+        this._options = {
+            server: spec.server,
+        };
+        spec.backlog && (this._options['backlog'] = spec.backlog);
+        spec.handleProtocols && (this._options['handleProtocols'] = spec.handleProtocols);
+        spec.path && (this._options['path'] = spec.path);
+        spec.perMessageDeflate && (this._options['perMessageDeflate'] = spec.perMessageDeflate);
+        spec.maxPayload && (this._options['maxPayload'] = spec.maxPayload);
         this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
@@ -213,10 +224,7 @@ export class MuWebSocketServer implements MuSocketServer {
 
         this.scheduler.setTimeout(
             () => {
-                this._websocketServer = new ws.Server({
-                    server: this._httpServer,
-                })
-                // called when connection is ready
+                this._wsServer = new ws.Server(this._options)
                 .on('connection', (socket) => {
                     socket.onmessage = ({ data }) => {
                         try {
@@ -286,8 +294,8 @@ export class MuWebSocketServer implements MuSocketServer {
 
         this.state = MuSocketServerState.SHUTDOWN;
 
-        if (this._websocketServer) {
-            this._websocketServer.close(this._onClose);
+        if (this._wsServer) {
+            this._wsServer.close(this._onClose);
         }
     }
 }
