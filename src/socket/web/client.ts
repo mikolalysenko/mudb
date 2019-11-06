@@ -1,9 +1,6 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
-function error (msgOrErr:string|Error) : Error {
-    const msg = typeof msgOrErr === 'string' ? msgOrErr : msgOrErr.message;
-    return new Error(`${msg} [mudb/socket/web/client]`);
-}
+const error = require('../../util/error')('socket/web/client');
 
 const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
 
@@ -40,7 +37,7 @@ export class MuWebSocket implements MuSocket {
 
     public open (spec:MuSocketSpec) {
         if (this.state !== MuSocketState.INIT) {
-            throw error(`socket had already been opened`);
+            throw error(`socket had been opened`);
         }
 
         if (isBrowser) {

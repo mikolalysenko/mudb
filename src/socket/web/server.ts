@@ -10,6 +10,8 @@ import {
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
+const error = require('../../util/error')('socket/web/server');
+
 export interface WSSocket {
     onmessage:(message:{ data:Uint8Array|string }) => void;
     onclose:() => void;
@@ -17,7 +19,7 @@ export interface WSSocket {
     close:() => void;
 }
 
-function noop () {}
+function noop () { }
 
 export class MuWebSocketConnection {
     public readonly sessionId:string;
@@ -126,11 +128,8 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state === MuSocketState.OPEN) {
-            throw new Error('mudb/web-socket: socket already open');
-        }
-        if (this.state === MuSocketState.CLOSED) {
-            throw new Error('mudb/web-socket: cannot reopen closed socket');
+        if (this.state !== MuSocketState.INIT) {
+            throw error(`socket had been opened`);
         }
 
         this.scheduler.setTimeout(
@@ -215,11 +214,8 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state === MuSocketServerState.RUNNING) {
-            throw new Error('mudb/web-socket: server already running');
-        }
-        if (this.state === MuSocketServerState.SHUTDOWN) {
-            throw new Error('mudb/web-socket: server already shut down, cannot restart');
+        if (this.state !== MuSocketServerState.INIT) {
+            throw error(`server had been started`);
         }
 
         this.scheduler.setTimeout(
@@ -230,7 +226,7 @@ export class MuWebSocketServer implements MuSocketServer {
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
-                                throw new Error('bad session ID');
+                                throw error(`bad session id`);
                             }
 
                             let connection = this._findConnection(sessionId);
