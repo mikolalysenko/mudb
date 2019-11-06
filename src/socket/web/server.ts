@@ -113,12 +113,10 @@ export class MuWebSocketConnection {
 }
 
 export class MuWebSocketClient implements MuSocket {
+    public state = MuSocketState.INIT;
     public readonly sessionId:MuSessionId;
 
     private _connection:MuWebSocketConnection;
-
-    public state = MuSocketState.INIT;
-
     public scheduler:MuScheduler;
 
     constructor (connection:MuWebSocketConnection, scheduler:MuScheduler) {
@@ -163,10 +161,22 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public send (data:Uint8Array, unreliable?:boolean) {
-        this._connection.send(data, !!unreliable);
+        if (this.state !== MuSocketState.OPEN) {
+            return;
+        }
+
+        try {
+            this._connection.send(data, !!unreliable);
+        } catch (e) {
+            console.error(error(e));
+        }
     }
 
     public close () {
+        if (this.state === MuSocketState.CLOSED) {
+            return;
+        }
+        this.state = MuSocketState.CLOSED;
         this._connection.close();
     }
 }
@@ -231,25 +241,15 @@ export class MuWebSocketServer implements MuSocketServer {
 
                             let connection = this._findConnection(sessionId);
                             if (connection) {
-                                // tell client to use this socket as an unreliable one
                                 socket.send(JSON.stringify({
                                     reliable: false,
                                 }));
-
-                                // all sockets except the first one opened are used as unreliable ones
-                                // reset socket message handler
                                 connection.addUnreliableSocket(socket);
                                 return;
                             } else {
-                                // this is client's first connection since no related connection object is found
-
-                                // tell client to use this socket as a reliable one
                                 socket.send(JSON.stringify({
                                     reliable: true,
                                 }));
-
-                                // one connection object per client
-                                // reset socket message handler
                                 connection = new MuWebSocketConnection(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
@@ -269,7 +269,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                 return;
                             }
                         } catch (e) {
-                            console.error(`mudb/web-socket: terminating socket due to ${e}`);
+                            console.error(error(e));
                             socket.terminate();
                         }
                     };
@@ -287,7 +287,6 @@ export class MuWebSocketServer implements MuSocketServer {
         if (this.state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-
         this.state = MuSocketServerState.SHUTDOWN;
 
         if (this._wsServer) {
