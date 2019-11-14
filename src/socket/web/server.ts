@@ -10,7 +10,7 @@ import {
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
-const error = require('../../util/error')('socket/web/server');
+const error = require('../../../util/error')('socket/web/server');
 
 export interface WSSocket {
     onmessage:(message:{ data:Uint8Array|string }) => void;

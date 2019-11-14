@@ -1,6 +1,6 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
-const error = require('../../util/error')('socket/web/client');
+const error = require('../../../util/error')('socket/web/client');
 
 const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
 
