@@ -1,24 +1,25 @@
 import ws = require('ws');
+
+import http = require('http');
+import https = require('https');
+
 import {
-    MuSessionId,
-    MuSocketState,
-    MuSocketServerState,
-    MuSocket,
-    MuSocketSpec,
-    MuSocketServer,
-    MuSocketServerSpec,
+    MuSessionId, MuSocket, MuSocketState, MuSocketSpec,
+    MuSocketServer, MuSocketServerState, MuSocketServerSpec,
 } from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
-export interface UWSSocketInterface {
+const error = require('../../util/error')('socket/web/server');
+
+export interface WSSocket {
     onmessage:(message:{ data:Uint8Array|string }) => void;
     onclose:() => void;
     send:(data:Uint8Array|string) => void;
     close:() => void;
 }
 
-function noop () {}
+function noop () { }
 
 export class MuWebSocketConnection {
     public readonly sessionId:string;
@@ -27,8 +28,8 @@ export class MuWebSocketConnection {
     public closed = false;
 
     // every client communicates through one reliable and several unreliable sockets
-    public reliableSocket:UWSSocketInterface;
-    public unreliableSockets:UWSSocketInterface[] = [];
+    public reliableSocket:WSSocket;
+    public unreliableSockets:WSSocket[] = [];
 
     private _nextSocketSend = 0;
 
@@ -41,7 +42,7 @@ export class MuWebSocketConnection {
     public onClose:() => void = noop;
     public serverClose:() => void;
 
-    constructor (sessionId:string, reliableSocket:UWSSocketInterface, serverClose:() => void) {
+    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void) {
         this.sessionId = sessionId;
         this.reliableSocket = reliableSocket;
         this.serverClose = serverClose;
@@ -74,7 +75,7 @@ export class MuWebSocketConnection {
         };
     }
 
-    public addUnreliableSocket (socket:UWSSocketInterface) {
+    public addUnreliableSocket (socket:WSSocket) {
         if (this.closed) {
             return;
         }
@@ -112,12 +113,10 @@ export class MuWebSocketConnection {
 }
 
 export class MuWebSocketClient implements MuSocket {
+    public state = MuSocketState.INIT;
     public readonly sessionId:MuSessionId;
 
     private _connection:MuWebSocketConnection;
-
-    public state = MuSocketState.INIT;
-
     public scheduler:MuScheduler;
 
     constructor (connection:MuWebSocketConnection, scheduler:MuScheduler) {
@@ -127,11 +126,8 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state === MuSocketState.OPEN) {
-            throw new Error('mudb/web-socket: socket already open');
-        }
-        if (this.state === MuSocketState.CLOSED) {
-            throw new Error('mudb/web-socket: cannot reopen closed socket');
+        if (this.state !== MuSocketState.INIT) {
+            throw error(`socket had been opened`);
         }
 
         this.scheduler.setTimeout(
@@ -165,32 +161,56 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public send (data:Uint8Array, unreliable?:boolean) {
-        this._connection.send(data, !!unreliable);
+        if (this.state !== MuSocketState.OPEN) {
+            return;
+        }
+
+        try {
+            this._connection.send(data, !!unreliable);
+        } catch (e) {
+            console.error(error(e));
+        }
     }
 
     public close () {
+        if (this.state === MuSocketState.CLOSED) {
+            return;
+        }
+        this.state = MuSocketState.CLOSED;
         this._connection.close();
     }
 }
 
 export class MuWebSocketServer implements MuSocketServer {
+    public state = MuSocketServerState.INIT;
+
     private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
 
-    public state = MuSocketServerState.INIT;
-
-    private _httpServer;
-    private _websocketServer:ws.Server;
+    private _options:object;
+    private _wsServer:ws.Server;
 
     private _onClose;
 
     public scheduler:MuScheduler;
 
     constructor (spec:{
-        server:object,
+        server:http.Server|https.Server,
+        backlog?:number,
+        handleProtocols?:(protocols:any[], request:http.IncomingMessage) => any,
+        path?:string,
+        perMessageDeflate?:boolean|object,
+        maxPayload?:number,
         scheduler?:MuScheduler,
     }) {
-        this._httpServer = spec.server;
+        this._options = {
+            server: spec.server,
+        };
+        spec.backlog && (this._options['backlog'] = spec.backlog);
+        spec.handleProtocols && (this._options['handleProtocols'] = spec.handleProtocols);
+        spec.path && (this._options['path'] = spec.path);
+        spec.perMessageDeflate && (this._options['perMessageDeflate'] = spec.perMessageDeflate);
+        spec.maxPayload && (this._options['maxPayload'] = spec.maxPayload);
         this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
@@ -204,48 +224,32 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state === MuSocketServerState.RUNNING) {
-            throw new Error('mudb/web-socket: server already running');
-        }
-        if (this.state === MuSocketServerState.SHUTDOWN) {
-            throw new Error('mudb/web-socket: server already shut down, cannot restart');
+        if (this.state !== MuSocketServerState.INIT) {
+            throw error(`server had been started`);
         }
 
         this.scheduler.setTimeout(
             () => {
-                this._websocketServer = new ws.Server({
-                    server: this._httpServer,
-                })
-                // called when connection is ready
+                this._wsServer = new ws.Server(this._options)
                 .on('connection', (socket) => {
                     socket.onmessage = ({ data }) => {
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
-                                throw new Error('bad session ID');
+                                throw error(`bad session id`);
                             }
 
                             let connection = this._findConnection(sessionId);
                             if (connection) {
-                                // tell client to use this socket as an unreliable one
                                 socket.send(JSON.stringify({
                                     reliable: false,
                                 }));
-
-                                // all sockets except the first one opened are used as unreliable ones
-                                // reset socket message handler
                                 connection.addUnreliableSocket(socket);
                                 return;
                             } else {
-                                // this is client's first connection since no related connection object is found
-
-                                // tell client to use this socket as a reliable one
                                 socket.send(JSON.stringify({
                                     reliable: true,
                                 }));
-
-                                // one connection object per client
-                                // reset socket message handler
                                 connection = new MuWebSocketConnection(sessionId, socket, () => {
                                     if (connection) {
                                         this._connections.splice(this._connections.indexOf(connection), 1);
@@ -265,7 +269,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                 return;
                             }
                         } catch (e) {
-                            console.error(`mudb/web-socket: terminating socket due to ${e}`);
+                            console.error(error(e));
                             socket.terminate();
                         }
                     };
@@ -283,11 +287,10 @@ export class MuWebSocketServer implements MuSocketServer {
         if (this.state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-
         this.state = MuSocketServerState.SHUTDOWN;
 
-        if (this._websocketServer) {
-            this._websocketServer.close(this._onClose);
+        if (this._wsServer) {
+            this._wsServer.close(this._onClose);
         }
     }
 }
