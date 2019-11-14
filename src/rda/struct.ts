@@ -105,7 +105,7 @@ export class MuRDAStructStore<
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            out[id] = this.stores[id].state(rda.rdas[id], out[id]);
+            (<any>out)[id] = this.stores[id].state(rda.rdas[id], out[id]);
         }
         return out;
     }
@@ -128,7 +128,7 @@ export class MuRDAStructStore<
         const ids = Object.keys(this.stores);
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i];
-            out[id] = this.stores[id].serialize(rda.rdas[id], out[id]);
+            (<any>out)[id] = this.stores[id].serialize(rda.rdas[id], out[id]);
         }
         return out;
     }
@@ -286,7 +286,7 @@ export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> 
         const storeDispatch:any = {};
         for (let i = 0; i < props.length; ++i) {
             const prop = props[i];
-            storeDispatch[prop] = this._wrapDispatch(prop, spec[prop]);
+            storeDispatch[prop] = this._wrapDispatch(prop, <any>spec[prop]);
         }
         this.action = <any>((store) => {
             this._saveStore = store;
