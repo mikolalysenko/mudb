@@ -60,10 +60,6 @@ export interface MuRDAMapTypes<
         type:'remove';
         data:KeySchema['identity'];
     };
-    noopAction:{
-        type:'noop';
-        data:undefined;
-    };
     restoreAction:{
         type:'restore';
         data:{
@@ -77,6 +73,10 @@ export interface MuRDAMapTypes<
             id:KeySchema['identity'];
             store:ValueRDA['storeSchema']['identity'];
         }[];
+    };
+    noopAction:{
+        type:'noop';
+        data:undefined;
     };
 
     storeSchema:MuSortedArray<MuRDAMapTypes<KeySchema, ValueRDA>['restoreActionSchema']>;
@@ -125,7 +125,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         const outKeys = Object.keys(out);
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
-            if (key in this.stores) {
+            if (!(key in this.stores)) {
                 rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
@@ -133,7 +133,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         const keys = Object.keys(this.stores);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            out[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.stateSchema.alloc());
+            (<any>out)[key] = this.stores[key].state(rda.valueRDA, out[key] || rda.valueRDA.stateSchema.alloc());
         }
         return out;
     }
@@ -241,7 +241,8 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['resetAction']>result;
         }
         result.type = 'noop';
-        return <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['noopAction']>result;
+        result.data = undefined;
+        return <any>result;
     }
 
     public serialize (rda:MapRDA, result:MuRDATypes<MapRDA>['serializedStore']) : MuRDATypes<MapRDA>['serializedStore'] {
@@ -337,7 +338,7 @@ export class MuRDAMap<
         set: (key:KeySchema['identity'], state:ValueRDA['stateSchema']['identity']) => {
             const result = this.actionSchema.alloc();
             result.type = 'set';
-            result.data = this.setActionSchema.alloc();
+            result.data = <any>this.setActionSchema.alloc();
             result.data.id = this.keySchema.assign(result.data.id, key);
             result.data.value = this.valueRDA.stateSchema.assign(result.data.value, state);
             return result;
@@ -351,14 +352,14 @@ export class MuRDAMap<
         clear: () => {
             const result = this.actionSchema.alloc();
             result.type = 'reset';
-            result.data = this.storeSchema.alloc();
+            result.data = <any>this.storeSchema.alloc();
             result.data.length = 0;
             return result;
         },
         reset: (state:MuRDAMapTypes<KeySchema, ValueRDA>['state']) => {
             const result = this.actionSchema.alloc();
             result.type = 'reset';
-            result.data = this.storeSchema.alloc();
+            result.data = <any>this.storeSchema.alloc();
             result.data.length = 0;
             const ids = Object.keys(state);
             ids.sort(compareKey);
@@ -577,7 +578,7 @@ export class MuRDAMap<
         this._noopDispatcher = this._constructNoopDispatcher();
     }
 
-    public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) : MuRDAMapStore<this> {
+    public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) {
         const result:any = {};
         const ids = Object.keys(initialState);
         for (let i = 0; i < ids.length; ++i) {
@@ -587,7 +588,7 @@ export class MuRDAMap<
         return new MuRDAMapStore<this>(result);
     }
 
-    public parse (store:MuRDAMapTypes<KeySchema, ValueRDA>['store']) : MuRDAMapStore<this> {
+    public parse (store:MuRDAMapTypes<KeySchema, ValueRDA>['store']) {
         const result:any = {};
         for (let i = 0; i < store.length; ++i) {
             const element = store[i];
