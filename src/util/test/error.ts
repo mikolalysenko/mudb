@@ -1,5 +1,5 @@
 import test = require('tape');
-const makeError = require('../error');
+import makeError = require('../error');
 
 test('makeError()(string)', (t) => {
     const path = 'util/test/error';
