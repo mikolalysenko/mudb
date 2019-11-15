@@ -103,22 +103,8 @@ if (typeof process === 'object' && process && process.nextTick) {
     };
 }
 
-let now:() => number;
-if (typeof performance === 'object' && performance && performance.now) {
-    now = performance.now;
-} else if (typeof process === 'object' && process && process.hrtime) {
-    now = () => {
-        const time = process.hrtime();
-        return time[0] * 1e3 + time[1] / 1e6;
-    };
-} else if (Date.now) {
-    now = Date.now;
-} else {
-    now = () => +new Date();
-}
-
 export const MuSystemScheduler:MuScheduler = {
-    now: () => now(),
+    now: () => +new Date(),
     setTimeout: (cb, ms) => setTimeout(cb, ms),
     clearTimeout: (handle) => clearTimeout(handle),
     setInterval: (cb, ms) => setInterval(cb, ms),
@@ -129,3 +115,14 @@ export const MuSystemScheduler:MuScheduler = {
     cancelIdleCallback: (handle) => cIC(handle),
     nextTick: (cb) => nextTick(cb),
 };
+
+if (typeof performance === 'object' && performance && performance.now) {
+    MuSystemScheduler.now = () => performance.now();
+} else if (typeof process === 'object' && process && process.hrtime) {
+    MuSystemScheduler.now = () => {
+        const time = process.hrtime();
+        return time[0] * 1e3 + time[1] / 1e6;
+    };
+} else if (Date.now) {
+    MuSystemScheduler.now = () => Date.now();
+}
