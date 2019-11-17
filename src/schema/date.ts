@@ -8,7 +8,7 @@ export class MuDate implements MuSchema<Date> {
     public pool:Date[] = [];
 
     constructor (identity?:Date) {
-        this.identity = new Date();
+        this.identity = new Date(0);
         if (identity) {
             this.identity.setTime(identity.getTime());
         }
