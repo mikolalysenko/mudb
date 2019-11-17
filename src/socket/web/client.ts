@@ -1,6 +1,7 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
 import makeError = require('../../util/error');
+import { MuLogger, MuDefaultLogger } from '../../logger';
 const error = makeError('socket/web/client');
 
 const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
@@ -25,15 +26,18 @@ export class MuWebSocket implements MuSocket {
     private _unreliableSockets:WebSocket[] = [];
     private _maxSockets:number;
     private _nextUnreliableSend = 0;
+    private _logger:MuLogger;
 
     constructor (spec:{
         sessionId:MuSessionId,
         url:string,
         maxSockets?:number,
+        logger?:MuLogger,
     }) {
         this.sessionId = spec.sessionId;
         this._url = spec.url;
         this._maxSockets = Math.max(1, spec.maxSockets || 5) | 0;
+        this._logger = spec.logger || MuDefaultLogger;
     }
 
     public open (spec:MuSocketSpec) {
@@ -68,7 +72,7 @@ export class MuWebSocket implements MuSocket {
                     } catch (e) {
                         socket.onmessage = null;
                         this.close();
-                        console.error(e);
+                        this._logger.error(e);
                         return;
                     }
 
@@ -78,7 +82,6 @@ export class MuWebSocket implements MuSocket {
                             if (this.state !== MuSocketState.OPEN) {
                                 return;
                             }
-
                             if (typeof data === 'string') {
                                 spec.message(data, false);
                             } else {
