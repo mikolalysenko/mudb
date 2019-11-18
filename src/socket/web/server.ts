@@ -23,6 +23,7 @@ export interface WSSocket {
     onerror:(e:any) => void;
     send:(data:Uint8Array|string) => void;
     close:() => void;
+    ping:(() => void);
 }
 
 function noop () { }
@@ -51,6 +52,9 @@ export class MuWebSocketConnection {
     public reliableSocket:WSSocket;
     public unreliableSockets:WSSocket[] = [];
 
+    public lastReliablePing:number = 0;
+    public lastUnreliablePing:number[] = [];
+
     private _logger:MuLogger;
 
     private _nextSocketSend = 0;
@@ -69,6 +73,8 @@ export class MuWebSocketConnection {
         this.reliableSocket = reliableSocket;
         this.serverClose = serverClose;
         this._logger = logger;
+
+        this.lastReliablePing = Date.now();
 
         this.reliableSocket.onmessage = ({ data }) => {
             if (this.closed) {
@@ -123,6 +129,8 @@ export class MuWebSocketConnection {
         }
 
         this.unreliableSockets.push(socket);
+        this.lastUnreliablePing.push(Date.now());
+
         socket.onmessage = ({ data }) => {
             if (this.closed) {
                 return;
@@ -150,7 +158,9 @@ export class MuWebSocketConnection {
             }
         };
         socket.onclose = () => {
-            this.unreliableSockets.splice(this.unreliableSockets.indexOf(socket), 1);
+            const idx = this.unreliableSockets.indexOf(socket);
+            this.unreliableSockets.splice(idx, 1);
+            this.lastUnreliablePing.splice(idx, 1);
             if (!this.closed) {
                 this._logger.error(`unreliable socket closed unexpectedly: ${this.sessionId}`);
             }
@@ -163,15 +173,34 @@ export class MuWebSocketConnection {
         }
         if (unreliable) {
             if (this.unreliableSockets.length > 0) {
-                this.unreliableSockets[this._nextSocketSend++ % this.unreliableSockets.length].send(data);
+                const idx = this._nextSocketSend++ % this.unreliableSockets.length;
+                this.lastUnreliablePing[idx] = Date.now();
+                this.unreliableSockets[idx].send(data);
             }
         } else {
+            this.lastReliablePing = Date.now();
             this.reliableSocket.send(data);
         }
     }
 
     public close () {
         this.reliableSocket.close();
+    }
+
+    public doPing (now:number, pingCutoff:number) {
+        if (this.closed) {
+            return;
+        }
+        if (this.lastReliablePing < pingCutoff) {
+            this.lastReliablePing = now;
+            this.reliableSocket.ping();
+        }
+        for (let i = 0; i < this.unreliableSockets.length; ++i) {
+            if (this.lastUnreliablePing[i] < pingCutoff) {
+                this.lastUnreliablePing[i] = now;
+                this.unreliableSockets[i].ping();
+            }
+        }
     }
 }
 
@@ -266,6 +295,9 @@ export class MuWebSocketServer implements MuSocketServer {
 
     private _onClose:() => void;
 
+    private _pingInterval:number = 10000;
+    private _pingIntervalId:any;
+
     public scheduler:MuScheduler;
 
     constructor (spec:{
@@ -277,6 +309,7 @@ export class MuWebSocketServer implements MuSocketServer {
         maxPayload?:number,
         scheduler?:MuScheduler,
         logger?:MuLogger;
+        pingInterval?:number,
     }) {
         this._logger = spec.logger || MuDefaultLogger;
         this._options = {
@@ -289,6 +322,10 @@ export class MuWebSocketServer implements MuSocketServer {
         spec.path && (this._options['path'] = spec.path);
         spec.perMessageDeflate && (this._options['perMessageDeflate'] = spec.perMessageDeflate);
         this.scheduler = spec.scheduler || MuSystemScheduler;
+
+        if ('pingInterval' in spec) {
+            this._pingInterval = spec.pingInterval || 0;
+        }
     }
 
     private _findConnection (sessionId:string) : MuWebSocketConnection | null {
@@ -303,6 +340,16 @@ export class MuWebSocketServer implements MuSocketServer {
     public start (spec:MuSocketServerSpec) {
         if (this.state !== MuSocketServerState.INIT) {
             throw error(`server had been started`);
+        }
+
+        if (this._pingInterval) {
+            this._pingIntervalId = this.scheduler.setInterval(() => {
+                const now = Date.now();
+                const pingCutoff = now - this._pingInterval;
+                for (let i = 0; i < this._connections.length; ++i) {
+                    this._connections[i].doPing(now, pingCutoff);
+                }
+            }, this._pingInterval * 0.5);
         }
 
         this.scheduler.setTimeout(
@@ -320,10 +367,7 @@ export class MuWebSocketServer implements MuSocketServer {
                     socket.binaryType = 'fragments';
                     socket.onerror = (e) => this._logger.exception(e);
                     socket.onopen = () => this._logger.log('socket opened');
-
                     socket.onmessage = ({ data }) => {
-                        console.log(data);
-
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
@@ -368,7 +412,12 @@ export class MuWebSocketServer implements MuSocketServer {
                 })
                 .on('error', (e) => this._logger.exception(e))
                 .on('listening', () => this._logger.log(`muwebsocket server listening: ${JSON.stringify(this._wsServer.address())}`))
-                .on('close', () => this._logger.log('muwebsocket server closing'))
+                .on('close', () => {
+                    if (this._pingIntervalId) {
+                        this.scheduler.clearInterval(this._pingIntervalId);
+                    }
+                    this._logger.log('muwebsocket server closing');
+                })
                 .on('headers', (headers) => this._logger.log(`muwebsocket: headers ${headers}`));
 
                 this._onClose = spec.close;
