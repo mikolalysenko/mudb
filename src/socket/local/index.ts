@@ -14,6 +14,7 @@ import {
 } from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
+import { MuLogger } from '../../logger';
 
 function noop () {}
 
@@ -260,6 +261,7 @@ export class MuLocalSocketServer implements MuSocketServer {
 
 export function createLocalSocketServer (spec?:{
     scheduler?:MuScheduler,
+    logger?:MuLogger,
 }) : MuLocalSocketServer {
     return new MuLocalSocketServer(spec && spec.scheduler || MuSystemScheduler);
 }
@@ -268,6 +270,7 @@ export function createLocalSocket (spec:{
     sessionId:MuSessionId;
     server:MuLocalSocketServer;
     scheduler?:MuScheduler;
+    logger?:MuLogger;
 }) : MuLocalSocket {
     const scheduler = spec.scheduler || MuSystemScheduler;
 
