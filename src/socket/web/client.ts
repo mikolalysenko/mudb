@@ -55,7 +55,13 @@ export class MuWebSocket implements MuSocket {
             const socket = new WS(this._url);
             socket.binaryType = 'arraybuffer';
 
+            socket.onerror = (e) => {
+                this._logger.error(`error in websocket: ${e}`);
+            };
+
             socket.onopen = () => {
+                this._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
+
                 socket.onmessage = (event) => {
                     if (this.state === MuSocketState.CLOSED) {
                         socket.onmessage = null;
@@ -89,6 +95,7 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
+                            this._logger.log('closing socket');
                             this._reliableSocket = null;
                             this.close();
                             spec.close(ev);
@@ -110,6 +117,7 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
+                            this._logger.log('closing unreliable socket');
                             for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
                                 if (this._unreliableSockets[i] === socket) {
                                     this._unreliableSockets.splice(i, 1);
