@@ -164,8 +164,9 @@ export class MuProtocolFactory {
                 }
 
                 let messageId = stream.readVarint();
+
                 if (messageId === RAW_MESSAGE) {
-                    raw[protocolId](data.subarray(stream.offset), unreliable);
+                    raw[protocolId](stream.bytes(), unreliable);
                     return;
                 }
                 messageId -= 1;
