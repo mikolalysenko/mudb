@@ -245,6 +245,8 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public close () {
+        this._logger.log(`close called on websocket ${this.sessionId}`);
+
         if (this.state !== MuSocketState.CLOSED) {
             this.state = MuSocketState.CLOSED;
             this._connection.close();
