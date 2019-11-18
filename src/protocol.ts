@@ -2,7 +2,7 @@ import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
 
 import { MuSocket, MuData } from './socket/socket';
-import { MuTrace } from './trace';
+import { MuLogger } from './logger';
 
 import stableStringify = require('./util/stringify');
 import sha512 = require('hash.js/lib/hash/sha/512');
@@ -118,7 +118,6 @@ export class MuMessageFactory {
 
 export class MuProtocolFactory {
     public protocolFactories:MuMessageFactory[];
-
     public hash:string;
 
     constructor (protocolSchemas:MuAnyMessageTable[]) {
@@ -133,7 +132,7 @@ export class MuProtocolFactory {
             messageHandlers:{ [name:string]:(data, unreliable) => void },
             rawHandler:(data, unreliable) => void,
         }[],
-        trace:MuTrace | null,
+        logger:MuLogger,
     ) {
         const raw = spec.map((h) => h.rawHandler);
         const message = spec.map(({messageHandlers}, id) =>
@@ -154,9 +153,6 @@ export class MuProtocolFactory {
 
                 if (object.s) {
                     raw[protocolId](object.s, unreliable);
-                    if (trace) {
-                        trace.logMessage(protocolId, object.s);
-                    }
                 }
             } else {
                 const stream = new MuReadStream(data);
@@ -168,8 +164,9 @@ export class MuProtocolFactory {
                 }
 
                 let messageId = stream.readVarint();
+
                 if (messageId === RAW_MESSAGE) {
-                    raw[protocolId](data.subarray(stream.offset), unreliable);
+                    raw[protocolId](stream.bytes(), unreliable);
                     return;
                 }
                 messageId -= 1;
@@ -192,10 +189,6 @@ export class MuProtocolFactory {
                 }
                 message[protocolId][messageId](m, unreliable);
                 messageSchema.free(m);
-
-                if (trace) {
-                    trace.logMessage(protocolId, m, messageSchema);
-                }
             }
         };
     }

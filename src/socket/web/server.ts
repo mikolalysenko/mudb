@@ -11,6 +11,8 @@ import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
 import makeError = require('../../util/error');
+import { MuLogger, MuDefaultLogger } from '../../logger';
+import { allocBuffer } from '../../stream';
 const error = makeError('socket/web/server');
 
 export interface WSSocket {
@@ -32,6 +34,8 @@ export class MuWebSocketConnection {
     public reliableSocket:WSSocket;
     public unreliableSockets:WSSocket[] = [];
 
+    private _logger:MuLogger;
+
     private _nextSocketSend = 0;
 
     public pendingMessages:(Uint8Array|string)[] = [];
@@ -43,23 +47,23 @@ export class MuWebSocketConnection {
     public onClose:() => void = noop;
     public serverClose:() => void;
 
-    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void) {
+    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void, logger:MuLogger) {
         this.sessionId = sessionId;
         this.reliableSocket = reliableSocket;
         this.serverClose = serverClose;
+        this._logger = logger;
 
         this.reliableSocket.onmessage = ({ data }) => {
+            if (this.closed) {
+                return;
+            }
             if (this.started) {
-                if (typeof data === 'string') {
-                    this.onMessage(data, false);
-                } else {
-                    this.onMessage(new Uint8Array(data), false);
-                }
+                this.onMessage(data, false);
             } else {
                 if (typeof data === 'string') {
                     this.pendingMessages.push(data);
                 } else {
-                    this.pendingMessages.push(new Uint8Array(data).slice(0));
+                    this.pendingMessages.push(new Uint8Array(data));
                 }
             }
         };
@@ -71,6 +75,7 @@ export class MuWebSocketConnection {
             }
 
             this.onClose();
+
             // remove connection from server
             this.serverClose();
         };
@@ -83,14 +88,18 @@ export class MuWebSocketConnection {
 
         this.unreliableSockets.push(socket);
         socket.onmessage = ({ data }) => {
-            if (typeof data === 'string') {
+            if (this.closed) {
+                return;
+            }
+            if (this.started) {
                 this.onMessage(data, true);
-            } else {
-                this.onMessage(new Uint8Array(data), true);
             }
         };
         socket.onclose = () => {
             this.unreliableSockets.splice(this.unreliableSockets.indexOf(socket), 1);
+            if (!this.closed) {
+                this._logger.error(`unreliable socket closed unexpectedly: ${this.sessionId}`);
+            }
         };
     }
 
@@ -98,7 +107,6 @@ export class MuWebSocketConnection {
         if (this.closed) {
             return;
         }
-
         if (unreliable) {
             if (this.unreliableSockets.length > 0) {
                 this.unreliableSockets[this._nextSocketSend++ % this.unreliableSockets.length].send(data);
@@ -118,11 +126,14 @@ export class MuWebSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
 
     private _connection:MuWebSocketConnection;
+    private _logger:MuLogger;
+
     public scheduler:MuScheduler;
 
-    constructor (connection:MuWebSocketConnection, scheduler:MuScheduler) {
+    constructor (connection:MuWebSocketConnection, scheduler:MuScheduler, logger:MuLogger) {
         this.sessionId = connection.sessionId;
         this._connection = connection;
+        this._logger = logger;
         this.scheduler = scheduler;
     }
 
@@ -133,22 +144,26 @@ export class MuWebSocketClient implements MuSocket {
 
         this.scheduler.setTimeout(
             () => {
-                this._connection.started = true;
+                if (this.state !== MuSocketState.INIT) {
+                    return;
+                }
 
-                // hook handlers on socket
-                this._connection.onMessage = spec.message;
-                this._connection.onClose = () => {
-                    this.state = MuSocketState.CLOSED;
-                    spec.close();
-                };
-
+                // set state to open
                 this.state = MuSocketState.OPEN;
 
+                // fire ready handler
                 spec.ready();
 
-                // process pending messages
+                // process all pending messages
                 for (let i = 0; i < this._connection.pendingMessages.length; ++i) {
-                    spec.message(this._connection.pendingMessages[i], false);
+                    if (this._connection.closed) {
+                        break;
+                    }
+                    try {
+                        spec.message(this._connection.pendingMessages[i], false);
+                    } catch (e) {
+                        this._logger.exception(e);
+                    }
                 }
                 this._connection.pendingMessages.length = 0;
 
@@ -156,29 +171,30 @@ export class MuWebSocketClient implements MuSocket {
                 if (this._connection.closed) {
                     this.state = MuSocketState.CLOSED;
                     spec.close();
+                } else {
+                    // hook started message on socket
+                    this._connection.started = true;
+                    this._connection.onMessage = spec.message;
+
+                    // hook close handler
+                    this._connection.onClose = () => {
+                        this.state = MuSocketState.CLOSED;
+                        spec.close();
+                    };
                 }
             },
             0);
     }
 
     public send (data:Uint8Array, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
-            return;
-        }
-
-        try {
-            this._connection.send(data, !!unreliable);
-        } catch (e) {
-            console.error(error(e));
-        }
+        this._connection.send(data, !!unreliable);
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
-            return;
+        if (this.state !== MuSocketState.CLOSED) {
+            this.state = MuSocketState.CLOSED;
+            this._connection.close();
         }
-        this.state = MuSocketState.CLOSED;
-        this._connection.close();
     }
 }
 
@@ -190,8 +206,9 @@ export class MuWebSocketServer implements MuSocketServer {
 
     private _options:object;
     private _wsServer:ws.Server;
+    private _logger:MuLogger;
 
-    private _onClose;
+    private _onClose:() => void;
 
     public scheduler:MuScheduler;
 
@@ -203,15 +220,18 @@ export class MuWebSocketServer implements MuSocketServer {
         perMessageDeflate?:boolean|object,
         maxPayload?:number,
         scheduler?:MuScheduler,
+        logger?:MuLogger;
     }) {
+        this._logger = spec.logger || MuDefaultLogger;
         this._options = {
             server: spec.server,
+            clientTracking: false,
         };
         spec.backlog && (this._options['backlog'] = spec.backlog);
+        spec.maxPayload && (this._options['maxPayload'] = spec.maxPayload);
         spec.handleProtocols && (this._options['handleProtocols'] = spec.handleProtocols);
         spec.path && (this._options['path'] = spec.path);
         spec.perMessageDeflate && (this._options['perMessageDeflate'] = spec.perMessageDeflate);
-        spec.maxPayload && (this._options['maxPayload'] = spec.maxPayload);
         this.scheduler = spec.scheduler || MuSystemScheduler;
     }
 
@@ -233,11 +253,20 @@ export class MuWebSocketServer implements MuSocketServer {
             () => {
                 this._wsServer = new ws.Server(this._options)
                 .on('connection', (socket) => {
+                    if (this.state === MuSocketServerState.SHUTDOWN) {
+                        this._logger.error('connection attempt from closed socket server');
+                        socket.terminate();
+                        return;
+                    }
+
+                    this._logger.log('muwebsocket connection received');
+
                     socket.onmessage = ({ data }) => {
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
-                                throw error(`bad session id`);
+                                this._logger.error('invalid session id');
+                                return;
                             }
 
                             let connection = this._findConnection(sessionId);
@@ -260,21 +289,25 @@ export class MuWebSocketServer implements MuSocketServer {
                                             }
                                         }
                                     }
-                                });
+                                }, this._logger);
                                 this._connections.push(connection);
 
-                                const client = new MuWebSocketClient(connection, this.scheduler);
+                                const client = new MuWebSocketClient(connection, this.scheduler, this._logger);
                                 this.clients.push(client);
 
                                 spec.connection(client);
                                 return;
                             }
                         } catch (e) {
-                            console.error(error(e));
+                            this._logger.exception(e);
                             socket.terminate();
                         }
                     };
-                });
+                })
+                .on('error', (e) => this._logger.exception(e))
+                .on('listening', () => this._logger.log(`muwebsocket server listening: ${JSON.stringify(this._wsServer.address())}`))
+                .on('close', () => this._logger.log('muwebsocket server closing'))
+                .on('headers', (headers) => this._logger.log(`muwebsocket: headers ${headers}`));
 
                 this._onClose = spec.close;
 

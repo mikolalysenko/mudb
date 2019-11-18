@@ -1,6 +1,6 @@
 import { MuSocket, MuSocketServer } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
-import { MuTrace } from './trace';
+import { MuLogger, MuDefaultLogger } from './logger';
 
 export class MuRemoteClient<Schema extends MuAnyMessageTable> {
     public readonly sessionId:string;
@@ -93,11 +93,11 @@ export class MuServer {
 
     private _socketServer:MuSocketServer;
 
-    public trace:MuTrace | null;
+    public logger:MuLogger;
 
-    constructor (socketServer:MuSocketServer, trace?:MuTrace) {
+    constructor (socketServer:MuSocketServer, logger?:MuLogger) {
         this._socketServer = socketServer;
-        this.trace = trace || null;
+        this.logger = logger || MuDefaultLogger;
     }
 
     public start (spec?:{
@@ -181,12 +181,7 @@ export class MuServer {
                     }
                 }
 
-                if (this.trace) {
-                    const protocolNames = this.protocols.map((protocol) => protocol.schema.name);
-                    this.trace.getIds(protocolNames);
-                }
-
-                const parser = serverFactory.createParser(protocolHandlers, this.trace);
+                const parser = serverFactory.createParser(protocolHandlers, this.logger);
                 let firstPacket = true;
 
                 socket.open({
@@ -233,9 +228,7 @@ export class MuServer {
                         sockets.splice(sockets.indexOf(socket), 1);
 
                         if (error) {
-                            if (this.trace) {
-                                this.trace.logError(`socket ${socket.sessionId} was closed due to ${error}`);
-                            }
+                            this.logger.error(`socket ${socket.sessionId} was closed due to ${error}`);
                         }
                     },
                 });
@@ -257,9 +250,7 @@ export class MuServer {
         if (this._started || this._closed) {
             throw new Error('mudb: attempt to register protocol after server has been started');
         }
-        if (this.trace && schema.name) {
-            this.trace.log(`register ${schema.name} protocol`);
-        }
+        this.logger.log(`register ${schema.name} protocol`);
 
         const spec = new MuServerProtocolSpec();
         const p = new MuServerProtocol(schema, this, spec);

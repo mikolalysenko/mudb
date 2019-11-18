@@ -1,6 +1,7 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
 import makeError = require('../../util/error');
+import { MuLogger, MuDefaultLogger } from '../../logger';
 const error = makeError('socket/web/client');
 
 const isBrowser = typeof window === 'object' && !!window && window['Object'] === Object;
@@ -25,15 +26,18 @@ export class MuWebSocket implements MuSocket {
     private _unreliableSockets:WebSocket[] = [];
     private _maxSockets:number;
     private _nextUnreliableSend = 0;
+    private _logger:MuLogger;
 
     constructor (spec:{
         sessionId:MuSessionId,
         url:string,
         maxSockets?:number,
+        logger?:MuLogger,
     }) {
         this.sessionId = spec.sessionId;
         this._url = spec.url;
         this._maxSockets = Math.max(1, spec.maxSockets || 5) | 0;
+        this._logger = spec.logger || MuDefaultLogger;
     }
 
     public open (spec:MuSocketSpec) {
@@ -51,7 +55,13 @@ export class MuWebSocket implements MuSocket {
             const socket = new WS(this._url);
             socket.binaryType = 'arraybuffer';
 
+            socket.onerror = (e) => {
+                this._logger.error(`error in websocket: ${e}`);
+            };
+
             socket.onopen = () => {
+                this._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
+
                 socket.onmessage = (event) => {
                     if (this.state === MuSocketState.CLOSED) {
                         socket.onmessage = null;
@@ -68,7 +78,7 @@ export class MuWebSocket implements MuSocket {
                     } catch (e) {
                         socket.onmessage = null;
                         this.close();
-                        console.error(e);
+                        this._logger.error(e);
                         return;
                     }
 
@@ -78,7 +88,6 @@ export class MuWebSocket implements MuSocket {
                             if (this.state !== MuSocketState.OPEN) {
                                 return;
                             }
-
                             if (typeof data === 'string') {
                                 spec.message(data, false);
                             } else {
@@ -86,6 +95,7 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
+                            this._logger.log('closing socket');
                             this._reliableSocket = null;
                             this.close();
                             spec.close(ev);
@@ -107,6 +117,7 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
+                            this._logger.log('closing unreliable socket');
                             for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
                                 if (this._unreliableSockets[i] === socket) {
                                     this._unreliableSockets.splice(i, 1);

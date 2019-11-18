@@ -1,6 +1,6 @@
 import { MuSocket } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
-import { MuTrace } from './trace';
+import { MuLogger, MuDefaultLogger } from './logger';
 
 const noop = function () {};
 
@@ -62,12 +62,12 @@ export class MuClient {
     private _closed:boolean = false;
     private _socket:MuSocket;
 
-    public trace:MuTrace | null;
+    public logger:MuLogger;
 
-    constructor (socket:MuSocket, trace?:MuTrace) {
+    constructor (socket:MuSocket, logger?:MuLogger) {
         this._socket = socket;
         this.sessionId = socket.sessionId;
-        this.trace = trace || null;
+        this.logger = MuDefaultLogger;
     }
 
     public start (spec_?:{
@@ -93,19 +93,16 @@ export class MuClient {
                 const data = JSON.parse(packet);
                 if (data.clientHash !== clientFactory.hash ||
                     data.serverHash !== serverFactory.hash) {
+                    this.logger.error('protocol mismatch');
                     this._socket.close();
                 }
             } catch (e) {
+                this.logger.exception(e);
                 this._socket.close();
             }
         };
 
-        if (this.trace) {
-            const protocolNames = this.protocols.map((protocol) => protocol.schema.name);
-            this.trace.getIds(protocolNames);
-        }
-
-        const parser = clientFactory.createParser(this._protocolSpecs, this.trace);
+        const parser = clientFactory.createParser(this._protocolSpecs, this.logger);
         let firstPacket = true;
 
         this._socket.open({
@@ -131,24 +128,36 @@ export class MuClient {
 
                 // fire ready event
                 if (spec.ready) {
-                    spec.ready();
+                    try {
+                        spec.ready();
+                    } catch (e) {
+                        this.logger.exception(e);
+                    }
                 }
             },
             message: (data, unreliable) => {
                 if (!firstPacket) {
-                    return parser(data, unreliable);
+                    try {
+                        return parser(data, unreliable);
+                    } catch (e) {
+                        this.logger.exception(e);
+                    }
+                } else {
+                    checkHashConsistency(data);
+                    firstPacket = false;
                 }
-                checkHashConsistency(data);
-                firstPacket = false;
             },
             close: (error) => {
                 this.running = false;
                 this._closed = true;
-
                 this._protocolSpecs.forEach((protoSpec) => protoSpec.closeHandler());
 
                 if (spec.close) {
-                    spec.close(error);
+                    try {
+                        spec.close(error);
+                    } catch (e) {
+                        this.logger.exception(e);
+                    }
                 }
             },
         });
@@ -165,9 +174,7 @@ export class MuClient {
         if (this._started || this._closed) {
             throw new Error('mudb: attempt to register protocol after client has been started');
         }
-        if (this.trace && schema.name) {
-            this.trace.log(`register ${schema.name} protocol`);
-        }
+        this.logger.log(`register ${schema.name} protocol`);
 
         const spec = new MuClientProtocolSpec();
         const p = new MuClientProtocol(schema, this, spec);

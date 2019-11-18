@@ -13,6 +13,7 @@ import {
     allocBuffer,
     freeBuffer,
 } from '../../stream';
+import { MuLogger, MuDefaultLogger } from '../../logger';
 
 class MuBufferWrapper {
     private _buffer:MuBuffer;
@@ -50,7 +51,9 @@ export class MuDebugSocket implements MuSocket {
     public socket:MuSocket;
 
     public readonly sessionId:MuSessionId;
-    public state = MuSocketState.INIT;
+    public get state() : MuSocketState {
+        return this.socket.state;
+    }
 
     public inLatency = 0;
     public inJitter = 0;
@@ -58,6 +61,7 @@ export class MuDebugSocket implements MuSocket {
     public outLatency = 0;
     public outJitter = 0;
     public outPacketLoss = 0;
+    public logger:MuLogger;
 
     constructor (spec:{
         socket:MuSocket,
@@ -67,6 +71,7 @@ export class MuDebugSocket implements MuSocket {
         outLatency?:number,
         outJitter?:number,
         outPacketLoss?:number,
+        logger?:MuLogger,
     }) {
         this.socket = spec.socket;
         this.sessionId = this.socket.sessionId;
@@ -89,35 +94,60 @@ export class MuDebugSocket implements MuSocket {
         if (typeof spec.outPacketLoss === 'number') {
             this.outPacketLoss = Math.min(100, Math.max(0, spec.outPacketLoss));
         }
+
+        this.logger = spec.logger || MuDefaultLogger;
     }
 
     private _inbox:(string|MuBufferWrapper)[] = [];
 
     public open (spec:MuSocketSpec) {
         this.socket.open({
-            ready: spec.ready,
+            ready: () => {
+                try {
+                    spec.ready();
+                } catch (e) {
+                    this.logger.exception(e);
+                }
+            },
             message: (data, unreliable) => {
                 if (unreliable) {
                     if (Math.random() * 100 < this.inPacketLoss) {
                         return;
                     }
                     setTimeout(
-                        () => spec.message(data, true),
+                        () => {
+                            try {
+                                spec.message(data, true);
+                            } catch (e) {
+                                this.logger.exception(e);
+                            }
+                        },
                         calcDelay(this.inLatency, this.inJitter),
                     );
                 } else {
                     const message = typeof data === 'string' ? data : new MuBufferWrapper(data);
                     this._inbox.push(message);
                     setTimeout(
-                        () => drain(
-                            this._inbox,
-                            (data_) => spec.message(data_, false),
-                        ),
+                        () => {
+                            try {
+                                drain(
+                                    this._inbox,
+                                    (data_) => spec.message(data_, false));
+                            } catch (e) {
+                                this.logger.exception(e);
+                            }
+                        },
                         calcDelay(this.inLatency, this.inJitter),
                     );
                 }
             },
-            close: spec.close,
+            close: () => {
+                try {
+                    spec.close();
+                } catch (e) {
+                    this.logger.exception(e);
+                }
+            },
         });
     }
 
@@ -137,7 +167,13 @@ export class MuDebugSocket implements MuSocket {
         setTimeout(
             () => drain(
                 this._outbox,
-                (data_) => this.socket.send(data_, unreliable_),
+                (data_) => {
+                    try {
+                        this.socket.send(data_, unreliable_);
+                    } catch (e) {
+                        this.logger.exception(e);
+                    }
+                },
             ),
             calcDelay(this.outLatency, this.outJitter),
         );
@@ -150,8 +186,10 @@ export class MuDebugSocket implements MuSocket {
 
 export class MuDebugServer implements MuSocketServer {
     public socketServer:MuSocketServer;
+    public get state () {
+        return this.socketServer.state;
+    }
 
-    public state = MuSocketServerState.INIT;
     public clients:MuDebugSocket[] = [];
 
     public inLatency:number;
@@ -161,6 +199,8 @@ export class MuDebugServer implements MuSocketServer {
     public outJitter:number;
     public outPacketLoss:number;
 
+    public logger:MuLogger;
+
     constructor (spec:{
         socketServer:MuSocketServer,
         inLatency?:number,
@@ -169,6 +209,7 @@ export class MuDebugServer implements MuSocketServer {
         outLatency?:number,
         outJitter?:number,
         outPacketLoss?:number,
+        logger?:MuLogger,
     }) {
         this.socketServer = spec.socketServer;
 
@@ -178,11 +219,19 @@ export class MuDebugServer implements MuSocketServer {
         this.outLatency = spec.outLatency || 0;
         this.outJitter = spec.outJitter || 0;
         this.outPacketLoss = spec.outPacketLoss || 0;
+
+        this.logger = spec.logger || MuDefaultLogger;
     }
 
     public start (spec:MuSocketServerSpec) {
         this.socketServer.start({
-            ready: spec.ready,
+            ready: () => {
+                try {
+                    spec.ready();
+                } catch (e) {
+                    this.logger.exception(e);
+                }
+            },
             connection: (socket) => {
                 const client = new MuDebugSocket({
                     socket,
@@ -194,10 +243,19 @@ export class MuDebugServer implements MuSocketServer {
                     outPacketLoss: this.outPacketLoss,
                 });
                 this.clients.push(client);
-
-                spec.connection(client);
+                try {
+                    spec.connection(client);
+                } catch (e) {
+                    this.logger.exception(e);
+                }
             },
-            close: spec.close,
+            close: () => {
+                try {
+                    spec.close();
+                } catch (e) {
+                    this.logger.exception(e);
+                }
+            },
         });
     }
 

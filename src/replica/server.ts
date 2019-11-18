@@ -4,6 +4,7 @@ import { rdaProtocol, RDAProtocol } from './schema';
 import { MuSessionId } from '../socket/socket';
 import { MuScheduler } from '../scheduler/scheduler';
 import { MuSystemScheduler } from '../scheduler/system';
+import { MuLogger, MuDefaultLogger } from '../logger';
 
 export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
     public protocol:MuServerProtocol<RDAProtocol<RDA>>;
@@ -12,13 +13,17 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
 
     public scheduler:MuScheduler;
 
+    private _logger:MuLogger;
+
     constructor (spec:{
         server:MuServer,
         rda:RDA,
         savedStore?:MuRDATypes<RDA>['serializedStore'],
         initialState?:MuRDATypes<RDA>['state'],
         scheduler?:MuScheduler,
+        logger?:MuLogger,
     }) {
+        this._logger = spec.logger || MuDefaultLogger;
         this.rda = spec.rda;
         if ('savedStore' in spec) {
             this.store = <MuRDATypes<RDA>['store']>this.rda.parse(spec.savedStore);
@@ -80,6 +85,7 @@ export class MuReplicaServer<RDA extends MuRDA<any, any, any, any>> {
             message: {
                 apply: (client, action) => {
                     if (spec.checkApply && !spec.checkApply(action, client.sessionId)) {
+                        this._logger.log(`invalid action ${JSON.stringify} from ${client.sessionId}`);
                         return;
                     }
                     this.dispatch(action);
