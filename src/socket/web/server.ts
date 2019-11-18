@@ -10,19 +10,36 @@ import {
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
-import makeError = require('../../util/error');
 import { MuLogger, MuDefaultLogger } from '../../logger';
-import { allocBuffer } from '../../stream';
+import makeError = require('../../util/error');
+import { allocBuffer, freeBuffer } from '../../stream';
+
 const error = makeError('socket/web/server');
 
 export interface WSSocket {
-    onmessage:(message:{ data:Uint8Array|string }) => void;
+    onmessage:(message:{ data:Buffer[]|string }) => void;
+    binaryType:string;
     onclose:() => void;
+    onerror:(e:any) => void;
     send:(data:Uint8Array|string) => void;
     close:() => void;
 }
 
 function noop () { }
+
+function coallesceFragments (frags:Buffer[]) {
+    let size = 0;
+    for (let i = 0; i < frags.length; ++i) {
+        size += frags[i].length;
+    }
+    const result = new Uint8Array(size);
+    let offset = 0;
+    for (let i = 0; i < frags.length; ++i) {
+        result.set(frags[i], offset);
+        offset += frags[i].length;
+    }
+    return result;
+}
 
 export class MuWebSocketConnection {
     public readonly sessionId:string;
@@ -58,16 +75,35 @@ export class MuWebSocketConnection {
                 return;
             }
             if (this.started) {
-                this.onMessage(data, false);
+                if (typeof data === 'string') {
+                    this.onMessage(data, false);
+                } else if (data.length === 1) {
+                    this.onMessage(data[0], false);
+                } else if (data.length > 1) {
+                    let size = 0;
+                    for (let i = 0; i < data.length; ++i) {
+                        size += data[i].length;
+                    }
+                    const buffer = allocBuffer(size);
+                    const result = buffer.uint8;
+                    let offset = 0;
+                    for (let i = 0; i < data.length; ++i) {
+                        result.set(data[i], offset);
+                        offset += data[i].length;
+                    }
+                    this.onMessage(result.subarray(0, offset), false);
+                    freeBuffer(buffer);
+                }
             } else {
                 if (typeof data === 'string') {
                     this.pendingMessages.push(data);
                 } else {
-                    this.pendingMessages.push(new Uint8Array(data));
+                    this.pendingMessages.push(coallesceFragments(data));
                 }
             }
         };
         this.reliableSocket.onclose = () => {
+            this._logger.log(`closing websocket connection for ${this.sessionId}`);
             this.closed = true;
 
             for (let i = 0; i < this.unreliableSockets.length; ++i) {
@@ -92,7 +128,25 @@ export class MuWebSocketConnection {
                 return;
             }
             if (this.started) {
-                this.onMessage(data, true);
+                if (typeof data === 'string') {
+                    this.onMessage(data, true);
+                } else if (data.length === 1) {
+                    this.onMessage(data[0], true);
+                } else if (data.length > 1) {
+                    let size = 0;
+                    for (let i = 0; i < data.length; ++i) {
+                        size += data[i].length;
+                    }
+                    const buffer = allocBuffer(size);
+                    const result = buffer.uint8;
+                    let offset = 0;
+                    for (let i = 0; i < data.length; ++i) {
+                        result.set(data[i], offset);
+                        offset += data[i].length;
+                    }
+                    this.onMessage(result.subarray(0, offset), true);
+                    freeBuffer(buffer);
+                }
             }
         };
         socket.onclose = () => {
@@ -191,6 +245,8 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public close () {
+        this._logger.log(`close called on websocket ${this.sessionId}`);
+
         if (this.state !== MuSocketState.CLOSED) {
             this.state = MuSocketState.CLOSED;
             this._connection.close();
@@ -259,9 +315,15 @@ export class MuWebSocketServer implements MuSocketServer {
                         return;
                     }
 
-                    this._logger.log('muwebsocket connection received');
+                    this._logger.log(`muwebsocket connection received: extensions ${socket.extensions} protocol ${socket.protocol}`);
+
+                    socket.binaryType = 'fragments';
+                    socket.onerror = (e) => this._logger.exception(e);
+                    socket.onopen = () => this._logger.log('socket opened');
 
                     socket.onmessage = ({ data }) => {
+                        console.log(data);
+
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
