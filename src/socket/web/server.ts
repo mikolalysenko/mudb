@@ -295,8 +295,8 @@ export class MuWebSocketServer implements MuSocketServer {
 
     private _onClose:() => void;
 
-    private _pingTime:number = 10000;
-    private _pingInterval:any;
+    private _pingInterval:number = 10000;
+    private _pingIntervalId:any;
 
     public scheduler:MuScheduler;
 
@@ -309,7 +309,7 @@ export class MuWebSocketServer implements MuSocketServer {
         maxPayload?:number,
         scheduler?:MuScheduler,
         logger?:MuLogger;
-        pingTime?:number,
+        pingInterval?:number,
     }) {
         this._logger = spec.logger || MuDefaultLogger;
         this._options = {
@@ -323,8 +323,8 @@ export class MuWebSocketServer implements MuSocketServer {
         spec.perMessageDeflate && (this._options['perMessageDeflate'] = spec.perMessageDeflate);
         this.scheduler = spec.scheduler || MuSystemScheduler;
 
-        if ('pingTime' in spec) {
-            this._pingTime = spec.pingTime || 0;
+        if ('pingInterval' in spec) {
+            this._pingInterval = spec.pingInterval || 0;
         }
     }
 
@@ -342,14 +342,14 @@ export class MuWebSocketServer implements MuSocketServer {
             throw error(`server had been started`);
         }
 
-        if (this._pingTime) {
-            this._pingInterval = this.scheduler.setInterval(() => {
+        if (this._pingInterval) {
+            this._pingIntervalId = this.scheduler.setInterval(() => {
                 const now = Date.now();
-                const pingCutoff = now - this._pingTime;
+                const pingCutoff = now - this._pingInterval;
                 for (let i = 0; i < this._connections.length; ++i) {
                     this._connections[i].doPing(now, pingCutoff);
                 }
-            }, this._pingTime * 0.5);
+            }, this._pingInterval * 0.5);
         }
 
         this.scheduler.setTimeout(
@@ -413,8 +413,8 @@ export class MuWebSocketServer implements MuSocketServer {
                 .on('error', (e) => this._logger.exception(e))
                 .on('listening', () => this._logger.log(`muwebsocket server listening: ${JSON.stringify(this._wsServer.address())}`))
                 .on('close', () => {
-                    if (this._pingInterval) {
-                        this.scheduler.clearInterval(this._pingInterval);
+                    if (this._pingIntervalId) {
+                        this.scheduler.clearInterval(this._pingIntervalId);
                     }
                     this._logger.log('muwebsocket server closing');
                 })
