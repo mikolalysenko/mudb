@@ -201,6 +201,10 @@ export class MuReadStream {
         this.length = data.byteLength + data.byteOffset;
     }
 
+    public bytes () {
+        return this.buffer.uint8.subarray(this.offset, this.length);
+    }
+
     public readInt8 () : number {
         return this.buffer.dataView.getInt8(this.offset++);
     }
