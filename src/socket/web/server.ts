@@ -91,7 +91,7 @@ export class MuWebSocketConnection {
                         result.set(data[i], offset);
                         offset += data[i].length;
                     }
-                    this.onMessage(result, false);
+                    this.onMessage(result.subarray(0, offset), false);
                     freeBuffer(buffer);
                 }
             } else {
@@ -144,7 +144,7 @@ export class MuWebSocketConnection {
                         result.set(data[i], offset);
                         offset += data[i].length;
                     }
-                    this.onMessage(result, true);
+                    this.onMessage(result.subarray(0, offset), true);
                     freeBuffer(buffer);
                 }
             }
