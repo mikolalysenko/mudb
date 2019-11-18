@@ -11,6 +11,7 @@ import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
 import makeError = require('../../util/error');
+import { MuLogger, MuDefaultLogger } from '../../logger';
 const error = makeError('socket/web/server');
 
 export interface WSSocket {
@@ -118,11 +119,14 @@ export class MuWebSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
 
     private _connection:MuWebSocketConnection;
+    private _logger:MuLogger;
+
     public scheduler:MuScheduler;
 
-    constructor (connection:MuWebSocketConnection, scheduler:MuScheduler) {
+    constructor (connection:MuWebSocketConnection, scheduler:MuScheduler, logger:MuLogger) {
         this.sessionId = connection.sessionId;
         this._connection = connection;
+        this._logger = logger;
         this.scheduler = scheduler;
     }
 
@@ -165,11 +169,10 @@ export class MuWebSocketClient implements MuSocket {
         if (this.state !== MuSocketState.OPEN) {
             return;
         }
-
         try {
             this._connection.send(data, !!unreliable);
         } catch (e) {
-            console.error(error(e));
+            this._logger.exception(e);
         }
     }
 
@@ -190,6 +193,7 @@ export class MuWebSocketServer implements MuSocketServer {
 
     private _options:object;
     private _wsServer:ws.Server;
+    private _logger:MuLogger;
 
     private _onClose;
 
@@ -203,7 +207,9 @@ export class MuWebSocketServer implements MuSocketServer {
         perMessageDeflate?:boolean|object,
         maxPayload?:number,
         scheduler?:MuScheduler,
+        logger?:MuLogger;
     }) {
+        this._logger = spec.logger || MuDefaultLogger;
         this._options = {
             server: spec.server,
         };
@@ -237,7 +243,8 @@ export class MuWebSocketServer implements MuSocketServer {
                         try {
                             const sessionId = JSON.parse(data).sessionId;
                             if (typeof sessionId !== 'string') {
-                                throw error(`bad session id`);
+                                this._logger.error('invalid session id');
+                                return;
                             }
 
                             let connection = this._findConnection(sessionId);
@@ -263,14 +270,14 @@ export class MuWebSocketServer implements MuSocketServer {
                                 });
                                 this._connections.push(connection);
 
-                                const client = new MuWebSocketClient(connection, this.scheduler);
+                                const client = new MuWebSocketClient(connection, this.scheduler, this._logger);
                                 this.clients.push(client);
 
                                 spec.connection(client);
                                 return;
                             }
                         } catch (e) {
-                            console.error(error(e));
+                            this._logger.exception(e);
                             socket.terminate();
                         }
                     };

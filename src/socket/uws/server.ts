@@ -10,6 +10,7 @@ import {
 } from '../socket';
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
+import { MuLogger, MuDefaultLogger } from '../../logger';
 
 function noop () { }
 
@@ -128,10 +129,14 @@ export class MuUWSSocketServer implements MuSocketServer {
 
     private _scheduler:MuScheduler;
 
+    private _logger:MuLogger;
+
     constructor (spec:{
         server:uWS.TemplatedApp,
         scheduler?:MuScheduler,
+        logger?:MuLogger,
     }) {
+        this._logger = spec.logger || MuDefaultLogger;
         this._server = spec.server;
         this._scheduler = spec.scheduler || MuSystemScheduler;
     }
@@ -209,13 +214,13 @@ export class MuUWSSocketServer implements MuSocketServer {
     }) {
         const onlistening = (ls:uWS.us_listen_socket) => {
             if (ls) {
-                console.log(`server listening to port ${spec.port}...`);
+                this._logger.log(`server listening to port ${spec.port}...`);
                 this._listenSocket = ls;
                 if (spec.listening) {
                     spec.listening(ls);
                 }
             } else {
-                console.error(`server failed to listen to port ${spec.port}`);
+                this._logger.error(`server failed to listen to port ${spec.port}`);
             }
         };
 
@@ -231,7 +236,7 @@ export class MuUWSSocketServer implements MuSocketServer {
             return;
         }
         if (this.state === MuSocketServerState.INIT) {
-            console.warn(`shutting down socket server before fully started [mudb/socket/uws/server]`);
+            this._logger.log(`shutting down socket server before fully started [mudb/socket/uws/server]`);
         }
 
         this.state = MuSocketServerState.SHUTDOWN;

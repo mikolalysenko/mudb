@@ -1,4 +1,5 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
+import { MuLogger, MuDefaultLogger } from '../../logger';
 
 const isBrowser = typeof window === 'object' && !!window && 'addEventListener' in window;
 
@@ -26,17 +27,22 @@ export class MuUWSSocket implements MuSocket {
     private _unreliableSockets:WebSocket[] = [];
     private _nextUnreliable = 0;
 
+    private _logger:MuLogger;
+
     constructor (spec:{
         sessionId:MuSessionId,
         url:string,
         maxSockets?:number,
         ws?:WebSocketConstructor,
+        logger?:MuLogger,
     }) {
+        this._logger = spec.logger || MuDefaultLogger;
+
         if (isBrowser) {
             if (!browserWS) {
                 throw new Error(`no WebSocket support in browser [mudb/socket/web/client]`);
             } else if (spec.ws) {
-                console.warn(`Any third-party WebSocket binding will be ignored in browser environment`);
+                this._logger.log(`Any third-party WebSocket binding will be ignored in browser environment`);
             }
         }
         if (!isBrowser && !spec.ws) {
@@ -151,7 +157,7 @@ export class MuUWSSocket implements MuSocket {
             return;
         }
         if (this.state === MuSocketState.INIT) {
-            console.warn(`closing socket before fully open [mudb/socket/uws/client]`);
+            this._logger.log(`closing socket before fully open [mudb/socket/uws/client]`);
         }
 
         this.state = MuSocketState.CLOSED;
