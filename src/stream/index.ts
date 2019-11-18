@@ -51,7 +51,7 @@ for (let i = 0; i < 32; ++i) {
     bufferPool[i] = [];
 }
 
-export function allocBuffer (size) : MuBuffer {
+export function allocBuffer (size:number) : MuBuffer {
     const b = ceilLog2(size);
     return bufferPool[b].pop() || new MuBuffer(new ArrayBuffer(1 << b));
 }
