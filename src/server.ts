@@ -206,7 +206,7 @@ export class MuServer {
                         });
                     },
                     message: (data:MuData, unreliable:boolean) => {
-                        const numBytes = typeof data !== 'string' ? data.byteLength : data.length;
+                        const numBytes = typeof data !== 'string' ? data.byteLength : data.length << 1;
                         this.recvBytes += numBytes;
 
                         if (!firstPacket) {

@@ -99,7 +99,7 @@ export class MuMessageFactory {
                     p,
                     s: data,
                 });
-                const numBytes = packet.length;
+                const numBytes = packet.length << 1;
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(packet, unreliable);
                     host.sentBytes += numBytes;
