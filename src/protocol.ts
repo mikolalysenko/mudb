@@ -36,6 +36,11 @@ export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, Serve
 }
 export type MuAnyProtocolSchema = MuProtocolSchema<MuAnyMessageTable, MuAnyMessageTable>;
 
+export interface MuHost {
+    sentBytes:number;
+    recvBytes:number;
+}
+
 export class MuMessageFactory {
     public protocolId:number;
     public hash:string;
@@ -59,7 +64,7 @@ export class MuMessageFactory {
         this.hash = sha512().update(jsonStr).digest('hex');
     }
 
-    public createDispatch (sockets:MuSocket[]) {
+    public createDispatch (sockets:MuSocket[], host:MuHost) {
         const result = {};
 
         this.messageNames.forEach((name, messageId) => {
@@ -72,8 +77,10 @@ export class MuMessageFactory {
                 schema.diff(schema.identity, data, stream);
 
                 const contentBytes = stream.bytes();
+                const numBytes = contentBytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(contentBytes, unreliable);
+                    host.sentBytes += numBytes;
                 }
 
                 stream.destroy();
@@ -83,7 +90,7 @@ export class MuMessageFactory {
         return result;
     }
 
-    public createSendRaw (sockets:MuSocket[]) {
+    public createSendRaw (sockets:MuSocket[], host:MuHost) {
         const p = this.protocolId;
 
         return function (data:MuData, unreliable?:boolean) {
@@ -92,8 +99,10 @@ export class MuMessageFactory {
                     p,
                     s: data,
                 });
+                const numBytes = packet.length;
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(packet, unreliable);
+                    host.sentBytes += numBytes;
                 }
             } else {
                 const size = 10 + data.length;
@@ -106,8 +115,10 @@ export class MuMessageFactory {
                 stream.offset += data.length;
 
                 const bytes = stream.bytes();
+                const numBytes = bytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(bytes, unreliable);
+                    host.sentBytes += numBytes;
                 }
 
                 stream.destroy();

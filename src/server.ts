@@ -1,4 +1,4 @@
-import { MuSocket, MuSocketServer } from './socket/socket';
+import { MuSocket, MuSocketServer, MuData } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
@@ -94,6 +94,8 @@ export class MuServer {
     private _socketServer:MuSocketServer;
 
     public logger:MuLogger;
+    public sentBytes = 0;
+    public recvBytes = 0;
 
     constructor (socketServer:MuSocketServer, logger?:MuLogger) {
         this._socketServer = socketServer;
@@ -123,8 +125,8 @@ export class MuServer {
                 this.running = true;
 
                 this.protocols.forEach((protocol, id) => {
-                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets);
-                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets);
+                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets, this);
+                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets, this);
                 });
 
                 this._protocolSpecs.forEach((protocolSpec) => {
@@ -149,8 +151,8 @@ export class MuServer {
 
                     const client = new MuRemoteClient(
                         socket,
-                        factory.createDispatch([socket]),
-                        factory.createSendRaw([socket]));
+                        factory.createDispatch([socket], this),
+                        factory.createSendRaw([socket], this));
                     clientObjects[id] = client;
 
                     const protocolSpec = this._protocolSpecs[id];
@@ -203,7 +205,10 @@ export class MuServer {
                             protocolSpec.connectHandler(client);
                         });
                     },
-                    message: (data, unreliable) => {
+                    message: (data:MuData, unreliable:boolean) => {
+                        const numBytes = typeof data !== 'string' ? data.byteLength : data.length;
+                        this.recvBytes += numBytes;
+
                         if (!firstPacket) {
                             try {
                                 return parser(data, unreliable);

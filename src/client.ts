@@ -1,4 +1,4 @@
-import { MuSocket } from './socket/socket';
+import { MuSocket, MuData } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
@@ -63,6 +63,8 @@ export class MuClient {
     private _socket:MuSocket;
 
     public logger:MuLogger;
+    public sentBytes = 0;
+    public recvBytes = 0;
 
     constructor (socket:MuSocket, logger?:MuLogger) {
         this._socket = socket;
@@ -117,8 +119,8 @@ export class MuClient {
                 // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
                     const protocol = this.protocols[protocolId];
-                    protocol.server.message = factory.createDispatch([this._socket]);
-                    protocol.server.sendRaw = factory.createSendRaw([this._socket]);
+                    protocol.server.message = factory.createDispatch([this._socket], this);
+                    protocol.server.sendRaw = factory.createSendRaw([this._socket], this);
                 });
 
                 // initialize all protocols
@@ -135,7 +137,10 @@ export class MuClient {
                     }
                 }
             },
-            message: (data, unreliable) => {
+            message: (data:MuData, unreliable:boolean) => {
+                const numBytes = typeof data !== 'string' ? data.byteLength : data.length;
+                this.recvBytes += numBytes;
+
                 if (!firstPacket) {
                     try {
                         return parser(data, unreliable);
