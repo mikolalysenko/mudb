@@ -94,8 +94,8 @@ export class MuServer {
     private _socketServer:MuSocketServer;
 
     public logger:MuLogger;
-    public sentBytes = 0;
-    public recvBytes = 0;
+    public recvBytes:{ [sessionId:string]:number } = {};
+    public sentBytes:{ [sessionId:string]:number } = {};
 
     constructor (socketServer:MuSocketServer, logger?:MuLogger) {
         this._socketServer = socketServer;
@@ -125,8 +125,8 @@ export class MuServer {
                 this.running = true;
 
                 this.protocols.forEach((protocol, id) => {
-                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets, this);
-                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets, this);
+                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets, this.sentBytes);
+                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets, this.sentBytes);
                 });
 
                 this._protocolSpecs.forEach((protocolSpec) => {
@@ -151,8 +151,8 @@ export class MuServer {
 
                     const client = new MuRemoteClient(
                         socket,
-                        factory.createDispatch([socket], this),
-                        factory.createSendRaw([socket], this));
+                        factory.createDispatch([socket], this.sentBytes),
+                        factory.createSendRaw([socket], this.sentBytes));
                     clientObjects[id] = client;
 
                     const protocolSpec = this._protocolSpecs[id];
@@ -189,11 +189,15 @@ export class MuServer {
                 socket.open({
                     ready: () => {
                         sockets.push(socket);
+                        this.recvBytes[socket.sessionId] = 0;
+                        this.sentBytes[socket.sessionId] = 0;
 
-                        socket.send(JSON.stringify({
+                        const hash = JSON.stringify({
                             clientHash: clientFactory.hash,
                             serverHash: serverFactory.hash,
-                        }));
+                        });
+                        socket.send(hash);
+                        this.sentBytes[socket.sessionId] += hash.length << 1;
 
                         this.protocols.forEach((protocol, id) => {
                             const client = clientObjects[id];
@@ -207,7 +211,7 @@ export class MuServer {
                     },
                     message: (data:MuData, unreliable:boolean) => {
                         const numBytes = typeof data !== 'string' ? data.byteLength : data.length << 1;
-                        this.recvBytes += numBytes;
+                        this.recvBytes[socket.sessionId] += numBytes;
 
                         if (!firstPacket) {
                             try {
@@ -231,6 +235,9 @@ export class MuServer {
                         });
 
                         sockets.splice(sockets.indexOf(socket), 1);
+
+                        delete this.recvBytes[socket.sessionId];
+                        delete this.sentBytes[socket.sessionId];
 
                         if (error) {
                             this.logger.error(`socket ${socket.sessionId} was closed due to ${error}`);

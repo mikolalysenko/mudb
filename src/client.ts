@@ -63,7 +63,7 @@ export class MuClient {
     private _socket:MuSocket;
 
     public logger:MuLogger;
-    public sentBytes = 0;
+    public sentBytes:{ [sessionId:string]:number } = {};
     public recvBytes = 0;
 
     constructor (socket:MuSocket, logger?:MuLogger) {
@@ -110,17 +110,20 @@ export class MuClient {
         this._socket.open({
             ready: () => {
                 this.running = true;
+                this.sentBytes[this.sessionId] = 0;
 
-                this._socket.send(JSON.stringify({
+                const hash = JSON.stringify({
                     clientHash: clientFactory.hash,
                     serverHash: serverFactory.hash,
-                }));
+                });
+                this._socket.send(hash);
+                this.sentBytes[this.sessionId] += hash.length << 1;
 
                 // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
                     const protocol = this.protocols[protocolId];
-                    protocol.server.message = factory.createDispatch([this._socket], this);
-                    protocol.server.sendRaw = factory.createSendRaw([this._socket], this);
+                    protocol.server.message = factory.createDispatch([this._socket], this.sentBytes);
+                    protocol.server.sendRaw = factory.createSendRaw([this._socket], this.sentBytes);
                 });
 
                 // initialize all protocols

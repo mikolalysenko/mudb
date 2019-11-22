@@ -36,10 +36,7 @@ export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, Serve
 }
 export type MuAnyProtocolSchema = MuProtocolSchema<MuAnyMessageTable, MuAnyMessageTable>;
 
-export interface MuHost {
-    sentBytes:number;
-    recvBytes:number;
-}
+type MuBytesAccumulator = { [sessionId:string]:number };
 
 export class MuMessageFactory {
     public protocolId:number;
@@ -64,7 +61,7 @@ export class MuMessageFactory {
         this.hash = sha512().update(jsonStr).digest('hex');
     }
 
-    public createDispatch (sockets:MuSocket[], host:MuHost) {
+    public createDispatch (sockets:MuSocket[], acc:MuBytesAccumulator) {
         const result = {};
 
         this.messageNames.forEach((name, messageId) => {
@@ -76,11 +73,12 @@ export class MuMessageFactory {
                 stream.writeVarint(messageId + 1);
                 schema.diff(schema.identity, data, stream);
 
-                const contentBytes = stream.bytes();
-                const numBytes = contentBytes.byteLength;
+                const bytes = stream.bytes();
+                const numBytes = bytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(contentBytes, unreliable);
-                    host.sentBytes += numBytes;
+                    const socket = sockets[i];
+                    socket.send(bytes, unreliable);
+                    acc[socket.sessionId] += numBytes;
                 }
 
                 stream.destroy();
@@ -90,7 +88,7 @@ export class MuMessageFactory {
         return result;
     }
 
-    public createSendRaw (sockets:MuSocket[], host:MuHost) {
+    public createSendRaw (sockets:MuSocket[], acc:MuBytesAccumulator) {
         const p = this.protocolId;
 
         return function (data:MuData, unreliable?:boolean) {
@@ -101,8 +99,9 @@ export class MuMessageFactory {
                 });
                 const numBytes = packet.length << 1;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(packet, unreliable);
-                    host.sentBytes += numBytes;
+                    const socket = sockets[i];
+                    socket.send(packet, unreliable);
+                    acc[socket.sessionId] += numBytes;
                 }
             } else {
                 const size = 10 + data.length;
@@ -117,8 +116,9 @@ export class MuMessageFactory {
                 const bytes = stream.bytes();
                 const numBytes = bytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(bytes, unreliable);
-                    host.sentBytes += numBytes;
+                    const socket = sockets[i];
+                    socket.send(bytes, unreliable);
+                    acc[socket.sessionId] += numBytes;
                 }
 
                 stream.destroy();
