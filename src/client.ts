@@ -63,8 +63,8 @@ export class MuClient {
     private _socket:MuSocket;
 
     public logger:MuLogger;
+    public recvBytes:{ [sessionId:string]:number } = {};
     public sentBytes:{ [sessionId:string]:number } = {};
-    public recvBytes = 0;
 
     constructor (socket:MuSocket, logger?:MuLogger) {
         this._socket = socket;
@@ -142,7 +142,7 @@ export class MuClient {
             },
             message: (data:MuData, unreliable:boolean) => {
                 const numBytes = typeof data !== 'string' ? data.byteLength : data.length << 1;
-                this.recvBytes += numBytes;
+                this.recvBytes[this.sessionId] += numBytes;
 
                 if (!firstPacket) {
                     try {

@@ -143,7 +143,6 @@ export class MuServer {
                 }
             },
             connection: (socket) => {
-                // one client object per protocol
                 const clientObjects = new Array(this.protocols.length);
                 const protocolHandlers = new Array(this.protocols.length);
                 this.protocols.forEach((protocol, id) => {
