@@ -4,9 +4,15 @@ MuRDA is another schema built on top of MuSchema which allows for replicated dat
 
 The basic idea in MuRDA is to turn all state transitions into a lattice of idempotent actions.  To apply an action, a client first executes it optimistically locally and sends it to the server.  The server then validates actions and broadcsts them to all clients in linearized order.  Once any pair of clients have seen the same sequence of actions from the server their states are eventually synchronized, even if they diverge temporarily. Undo and redo functions are also built into MuRDA.  These are implemented by storing a local undo buffer on each client.  A client may play back their undo buffer to rewind various local actions.
 
-# Technical overview
+## Example Usage
 
-"Optimistic eventually-consistent replicated data structures"
+```
+// TODO
+```
+
+## Technical details
+
+Optimistic eventually-consistent replicated data structures
 
 * Replicated data structure = A common data structure where all hosts in the system can see the same thing
 * Optimistic = Clients can see the effects of their interactions immediately
@@ -50,3 +56,62 @@ This can make a few things a little tricky, like we need to bind the store and p
 ## Undo/redo
 
 We often need a way to locally undo/redo user actions.
+To do this we augment the stores with the ability to calculate a psuedo-inverse, inv(S, a), for any action, $a$, relative to the current state of the store $S$.
+This has the property that:
+
+inv(S, a)(a(S)) = S
+
+We can store the psuedo-inverse actions and their original action $A$ as pairs $inv(S, a), a$ in a statck which we can use to implement the undo/redo functions.
+
+## State projections
+
+Because stores often store a bunch of extra book keeping data, it's often easier for users to work with the encoded state
+
+## Examples
+
+### Registers
+
+This is the most fundamental RDA.
+All the RDA laws are built around generalizing and extending the behavior of the register.
+
+Only one action type:  Set register to value
+Trivially obeys the move-to-front law
+
+### Tuples
+
+Can be some collection of registers.
+Updating each register can be done independently.
+Sets to either register commute, so still satisfies move-to-front rule.
+
+### Maps
+
+One step above registers are maps.
+Have to use tombstones to handle deleting an element in a map.
+Same basic idea.
+Can be thought of as something like an infinite-tuple.
+
+### Sets
+
+Similar to maps, except each client has to generate a unique id for the key.
+As along as each client generates a unique key, everything is cool.
+
+### Lists
+
+Similar to maps and list except the keys are generated as ordered elements and also unique.
+To insert an element into the list we generate a random key in the interval between the two elements we are trying to insert into.
+If we have unique client ids can do some stuff to simplify this a bit using the lower order bits to generate a range and break ties.
+
+## Recursive composition of RDA's
+
+We can recursively build RDAs out of other RDAs using the tools in the MuRDA.  It comes with a few generic RDA types:
+
+* Structs (aka tuple types)
+* Lists
+* Maps
+
+Non-recursive RDAs:
+
+* Constants
+* Registers
+
+All this stuff uses a bunch of gross template wizardry to provide a convenient user interface with nice typechecking properties.
