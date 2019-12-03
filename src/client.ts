@@ -1,8 +1,15 @@
-import { MuSocket } from './socket/socket';
+import { MuSocket, MuData } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
-const noop = function () {};
+function noop () { }
+
+function numBytes (data:MuData) : number {
+    if (typeof data !== 'string') {
+        return data.byteLength;
+    }
+    return data.length << 1;
+}
 
 export class MuRemoteServer<Schema extends MuAnyMessageTable> {
     public message = <MuMessageInterface<Schema>['userAPI']>{};
@@ -21,6 +28,11 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly server:MuRemoteServer<Schema['server']>;
     public readonly client:MuClient;
 
+    public sentBytes:{ [sessionId:string]:number } = {};
+    public recvBytes:{ [sessionId:string]:number } = {};
+    public totalSentBytes = 0;
+    public totalRecvBytes = 0;
+
     public configured:boolean = false;
 
     private _protocolSpec:MuClientProtocolSpec;
@@ -30,6 +42,8 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
         this.client = client;
         this.server = new MuRemoteServer();
         this._protocolSpec = protocolSpec;
+        this.sentBytes[this.client.sessionId] = 0;
+        this.recvBytes[this.client.sessionId] = 0;
     }
 
     public configure (spec:{
@@ -42,8 +56,22 @@ export class MuClientProtocol<Schema extends MuAnyProtocolSchema> {
             throw new Error('mudb: protocol has been configured');
         }
         this.configured = true;
-        this._protocolSpec.messageHandlers = spec.message;
-        this._protocolSpec.rawHandler = spec.raw || noop;
+
+        Object.keys(spec.message).forEach((m) => {
+            this._protocolSpec.messageHandlers[m] = (data, unreliable) => {
+                spec.message[m](data, unreliable);
+                const nb = numBytes(data);
+                this.recvBytes[this.client.sessionId] += nb;
+                this.totalRecvBytes += nb;
+            };
+        });
+        const rawHandler = spec.raw || noop;
+        this._protocolSpec.rawHandler = (data, unreliable) => {
+            rawHandler(data, unreliable);
+            const nb = numBytes(data);
+            this.recvBytes[this.client.sessionId] += nb;
+            this.totalRecvBytes += nb;
+        };
         this._protocolSpec.readyHandler = spec.ready || noop;
         this._protocolSpec.closeHandler = spec.close || noop;
     }
@@ -117,8 +145,8 @@ export class MuClient {
                 // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
                     const protocol = this.protocols[protocolId];
-                    protocol.server.message = factory.createDispatch([this._socket]);
-                    protocol.server.sendRaw = factory.createSendRaw([this._socket]);
+                    protocol.server.message = factory.createDispatch([this._socket], protocol);
+                    protocol.server.sendRaw = factory.createSendRaw([this._socket], protocol);
                 });
 
                 // initialize all protocols

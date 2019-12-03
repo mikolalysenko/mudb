@@ -36,6 +36,13 @@ export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, Serve
 }
 export type MuAnyProtocolSchema = MuProtocolSchema<MuAnyMessageTable, MuAnyMessageTable>;
 
+interface MuAccumulator {
+    sentBytes:{ [sessionId:string]:number };
+    recvBytes:{ [sessionId:string]:number };
+    totalSentBytes:number;
+    totalRecvBytes:number;
+}
+
 export class MuMessageFactory {
     public protocolId:number;
     public hash:string;
@@ -59,7 +66,7 @@ export class MuMessageFactory {
         this.hash = sha512().update(jsonStr).digest('hex');
     }
 
-    public createDispatch (sockets:MuSocket[]) {
+    public createDispatch (sockets:MuSocket[], acc:MuAccumulator) {
         const result = {};
 
         this.messageNames.forEach((name, messageId) => {
@@ -74,7 +81,9 @@ export class MuMessageFactory {
                 const contentBytes = stream.bytes();
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(contentBytes, unreliable);
+                    acc.sentBytes[sockets[i].sessionId] += contentBytes.byteLength;
                 }
+                acc.totalSentBytes += contentBytes.byteLength * sockets.length;
 
                 stream.destroy();
             };
@@ -83,7 +92,7 @@ export class MuMessageFactory {
         return result;
     }
 
-    public createSendRaw (sockets:MuSocket[]) {
+    public createSendRaw (sockets:MuSocket[], acc:MuAccumulator) {
         const p = this.protocolId;
 
         return function (data:MuData, unreliable?:boolean) {
@@ -94,7 +103,9 @@ export class MuMessageFactory {
                 });
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(packet, unreliable);
+                    acc.sentBytes[sockets[i].sessionId] += packet.length << 1;
                 }
+                acc.totalSentBytes += (packet.length << 1) * sockets.length;
             } else {
                 const size = 10 + data.length;
                 const stream = new MuWriteStream(size);
@@ -108,7 +119,9 @@ export class MuMessageFactory {
                 const bytes = stream.bytes();
                 for (let i = 0; i < sockets.length; ++i) {
                     sockets[i].send(bytes, unreliable);
+                    acc.sentBytes[sockets[i].sessionId] += bytes.byteLength;
                 }
+                acc.totalSentBytes += bytes.byteLength * sockets.length;
 
                 stream.destroy();
             }

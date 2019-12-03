@@ -1,4 +1,4 @@
-import { MuSocket, MuSocketServer } from './socket/socket';
+import { MuSocket, MuSocketServer, MuData } from './socket/socket';
 import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
@@ -31,7 +31,14 @@ export interface MuRemoteMessageInterface<Schema extends MuAnyProtocolSchema> {
     };
 }
 
-const noop = function () {};
+function noop () { }
+
+function numBytes (data:MuData) : number {
+    if (typeof data !== 'string') {
+        return data.byteLength;
+    }
+    return data.length << 1;
+}
 
 export class MuServerProtocolSpec {
     public messageHandlers = {};
@@ -46,6 +53,11 @@ export class MuServerProtocol<Schema extends MuAnyProtocolSchema> {
     public readonly schema:Schema;
     public readonly server:MuServer;
     public readonly clients:{ [sessionId:string]:MuRemoteClient<Schema['client']> } = {};
+
+    public sentBytes:{ [sessionId:string]:number } = {};
+    public recvBytes:{ [sessionId:string]:number } = {};
+    public totalSentBytes = 0;
+    public totalRecvBytes = 0;
 
     public broadcast = <MuMessageInterface<Schema['client']>['userAPI']>{};
     public broadcastRaw:(bytes:Uint8Array|string, unreliable?:boolean) => void = noop;
@@ -123,8 +135,8 @@ export class MuServer {
                 this.running = true;
 
                 this.protocols.forEach((protocol, id) => {
-                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets);
-                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets);
+                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets, protocol);
+                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets, protocol);
                 });
 
                 this._protocolSpecs.forEach((protocolSpec) => {
@@ -149,8 +161,8 @@ export class MuServer {
 
                     const client = new MuRemoteClient(
                         socket,
-                        factory.createDispatch([socket]),
-                        factory.createSendRaw([socket]));
+                        factory.createDispatch([socket], protocol),
+                        factory.createSendRaw([socket], protocol));
                     clientObjects[id] = client;
 
                     const protocolSpec = this._protocolSpecs[id];
@@ -158,12 +170,22 @@ export class MuServer {
                     const messageHandlers = {};
                     Object.keys(protocolSpec.messageHandlers).forEach((message) => {
                         const handler = protocolSpec.messageHandlers[message];
-                        messageHandlers[message] = function (data, unreliable) { handler(client, data, unreliable); };
+                        messageHandlers[message] = function (data, unreliable) {
+                            handler(client, data, unreliable);
+                            const nb = numBytes(data);
+                            protocol.recvBytes[client.sessionId] += nb;
+                            protocol.totalRecvBytes += nb;
+                        };
                     });
 
                     const rawHandler = protocolSpec.rawHandler;
                     protocolHandlers[id] = {
-                        rawHandler: function (bytes, unreliable) { rawHandler(client, bytes, unreliable); },
+                        rawHandler: function (bytes, unreliable) {
+                            rawHandler(client, bytes, unreliable);
+                            const nb = numBytes(bytes);
+                            protocol.recvBytes[client.sessionId] += nb;
+                            protocol.totalRecvBytes += nb;
+                        },
                         messageHandlers,
                     };
                 });
@@ -196,6 +218,8 @@ export class MuServer {
                         this.protocols.forEach((protocol, id) => {
                             const client = clientObjects[id];
                             protocol.clients[socket.sessionId] = client;
+                            protocol.sentBytes[socket.sessionId] = 0;
+                            protocol.recvBytes[socket.sessionId] = 0;
                         });
 
                         this._protocolSpecs.forEach((protocolSpec, id) => {
@@ -223,6 +247,8 @@ export class MuServer {
 
                         this.protocols.forEach((protocol) => {
                             delete protocol.clients[socket.sessionId];
+                            delete protocol.sentBytes[socket.sessionId];
+                            delete protocol.recvBytes[socket.sessionId];
                         });
 
                         sockets.splice(sockets.indexOf(socket), 1);
