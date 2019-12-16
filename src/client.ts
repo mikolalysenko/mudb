@@ -91,8 +91,8 @@ export class MuClient {
         const checkHashConsistency = (packet) => {
             try {
                 const data = JSON.parse(packet);
-                if (data.clientHash !== clientFactory.hash ||
-                    data.serverHash !== serverFactory.hash) {
+                if (data.clientJsonStr !== clientFactory.jsonStr ||
+                    data.serverJsonStr !== serverFactory.jsonStr) {
                     this.logger.error('protocol mismatch');
                     this._socket.close();
                 }
@@ -110,8 +110,8 @@ export class MuClient {
                 this.running = true;
 
                 this._socket.send(JSON.stringify({
-                    clientHash: clientFactory.hash,
-                    serverHash: serverFactory.hash,
+                    clientJsonStr: clientFactory.jsonStr,
+                    serverJsonStr: serverFactory.jsonStr,
                 }));
 
                 // configure all protocols

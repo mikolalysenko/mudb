@@ -171,8 +171,8 @@ export class MuServer {
                 function checkHashConsistency (packet) {
                     try {
                         const info = JSON.parse(packet);
-                        if (info.clientHash !== clientFactory.hash ||
-                            info.serverHash !== serverFactory.hash) {
+                        if (info.clientJsonStr !== clientFactory.jsonStr ||
+                            info.serverJsonStr !== serverFactory.jsonStr) {
                             throw new Error('incompatible protocols');
                         }
                     } catch (e) {
@@ -189,8 +189,8 @@ export class MuServer {
                         sockets.push(socket);
 
                         socket.send(JSON.stringify({
-                            clientHash: clientFactory.hash,
-                            serverHash: serverFactory.hash,
+                            clientJsonStr: clientFactory.jsonStr,
+                            serverJsonStr: serverFactory.jsonStr,
                         }));
 
                         this.protocols.forEach((protocol, id) => {
