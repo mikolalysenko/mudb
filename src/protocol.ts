@@ -1,11 +1,8 @@
 import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
-
 import { MuSocket, MuData } from './socket/socket';
 import { MuLogger } from './logger';
-
 import stableStringify = require('./util/stringify');
-import sha512 = require('hash.js/lib/hash/sha/512');
 
 const RAW_MESSAGE = 0;
 
@@ -38,10 +35,10 @@ export type MuAnyProtocolSchema = MuProtocolSchema<MuAnyMessageTable, MuAnyMessa
 
 export class MuMessageFactory {
     public protocolId:number;
-    public hash:string;
     public messageNames:string[];
     public schemas:MuAnySchema[];
     public message2Id:{ [name:string]:number } = {};
+    public jsonStr:string;
 
     constructor (schema:MuAnyMessageTable, protocolId:number) {
         this.protocolId = protocolId;
@@ -53,10 +50,8 @@ export class MuMessageFactory {
             this.schemas[id] = schema[name];
         });
 
-        // compute hash code for message digest
         const json = this.schemas.map((s) => s.json);
-        const jsonStr = stableStringify(json);
-        this.hash = sha512().update(jsonStr).digest('hex');
+        this.jsonStr = <string>stableStringify(json);
     }
 
     public createDispatch (sockets:MuSocket[]) {
@@ -118,13 +113,11 @@ export class MuMessageFactory {
 
 export class MuProtocolFactory {
     public protocolFactories:MuMessageFactory[];
-    public hash:string;
+    public jsonStr:string;
 
     constructor (protocolSchemas:MuAnyMessageTable[]) {
         this.protocolFactories = protocolSchemas.map((schema, id) => new MuMessageFactory(schema, id));
-
-        const hashList = this.protocolFactories.map((factory) => factory.hash).join();
-        this.hash = sha512().update(hashList).digest('hex');
+        this.jsonStr = this.protocolFactories.map((factory) => factory.jsonStr).join();
     }
 
     public createParser(

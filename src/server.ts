@@ -95,9 +95,12 @@ export class MuServer {
 
     public logger:MuLogger;
 
-    constructor (socketServer:MuSocketServer, logger?:MuLogger) {
+    private _shouldValidateProtocol:boolean;
+
+    constructor (socketServer:MuSocketServer, logger?:MuLogger, skipProtocolValidation?:boolean) {
         this._socketServer = socketServer;
         this.logger = logger || MuDefaultLogger;
+        this._shouldValidateProtocol = !skipProtocolValidation;
     }
 
     public start (spec?:{
@@ -168,11 +171,11 @@ export class MuServer {
                     };
                 });
 
-                function checkHashConsistency (packet) {
+                function checkProtocolConsistency (packet) {
                     try {
                         const info = JSON.parse(packet);
-                        if (info.clientHash !== clientFactory.hash ||
-                            info.serverHash !== serverFactory.hash) {
+                        if (info.clientJsonStr !== clientFactory.jsonStr ||
+                            info.serverJsonStr !== serverFactory.jsonStr) {
                             throw new Error('incompatible protocols');
                         }
                     } catch (e) {
@@ -182,16 +185,18 @@ export class MuServer {
                 }
 
                 const parser = serverFactory.createParser(protocolHandlers, this.logger);
-                let firstPacket = true;
+                let validationPacket = this._shouldValidateProtocol;
 
                 socket.open({
                     ready: () => {
                         sockets.push(socket);
 
-                        socket.send(JSON.stringify({
-                            clientHash: clientFactory.hash,
-                            serverHash: serverFactory.hash,
-                        }));
+                        if (this._shouldValidateProtocol) {
+                            socket.send(JSON.stringify({
+                                clientJsonStr: clientFactory.jsonStr,
+                                serverJsonStr: serverFactory.jsonStr,
+                            }));
+                        }
 
                         this.protocols.forEach((protocol, id) => {
                             const client = clientObjects[id];
@@ -204,16 +209,17 @@ export class MuServer {
                         });
                     },
                     message: (data, unreliable) => {
-                        if (!firstPacket) {
+                        if (!validationPacket) {
                             try {
-                                return parser(data, unreliable);
+                                parser(data, unreliable);
                             } catch (e) {
                                 console.error(`mudb: kill connection ${socket.sessionId}: ${e}`);
                                 socket.close();
                             }
+                        } else {
+                            checkProtocolConsistency(data);
+                            validationPacket = false;
                         }
-                        checkHashConsistency(data);
-                        firstPacket = false;
                     },
                     close: (error?:any) => {
                         this._protocolSpecs.forEach((protocolSpec, id) => {

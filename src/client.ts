@@ -57,17 +57,19 @@ export class MuClient {
     private _protocolSpecs:MuClientProtocolSpec[] = [];
 
     public running:boolean = false;
-
     private _started:boolean = false;
     private _closed:boolean = false;
     private _socket:MuSocket;
 
     public logger:MuLogger;
 
-    constructor (socket:MuSocket, logger?:MuLogger) {
+    private _shouldValidateProtocol:boolean;
+
+    constructor (socket:MuSocket, logger?:MuLogger, skipProtocolValidation?:boolean) {
         this._socket = socket;
         this.sessionId = socket.sessionId;
-        this.logger = MuDefaultLogger;
+        this.logger = logger || MuDefaultLogger;
+        this._shouldValidateProtocol = !skipProtocolValidation;
     }
 
     public start (spec_?:{
@@ -88,11 +90,11 @@ export class MuClient {
 
         const spec = spec_ || {};
 
-        const checkHashConsistency = (packet) => {
+        const checkProtocolConsistency = (packet) => {
             try {
                 const data = JSON.parse(packet);
-                if (data.clientHash !== clientFactory.hash ||
-                    data.serverHash !== serverFactory.hash) {
+                if (data.clientJsonStr !== clientFactory.jsonStr ||
+                    data.serverJsonStr !== serverFactory.jsonStr) {
                     this.logger.error('protocol mismatch');
                     this._socket.close();
                 }
@@ -103,16 +105,18 @@ export class MuClient {
         };
 
         const parser = clientFactory.createParser(this._protocolSpecs, this.logger);
-        let firstPacket = true;
+        let validationPacket = this._shouldValidateProtocol;
 
         this._socket.open({
             ready: () => {
                 this.running = true;
 
-                this._socket.send(JSON.stringify({
-                    clientHash: clientFactory.hash,
-                    serverHash: serverFactory.hash,
-                }));
+                if (this._shouldValidateProtocol) {
+                    this._socket.send(JSON.stringify({
+                        clientJsonStr: clientFactory.jsonStr,
+                        serverJsonStr: serverFactory.jsonStr,
+                    }));
+                }
 
                 // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
@@ -136,15 +140,15 @@ export class MuClient {
                 }
             },
             message: (data, unreliable) => {
-                if (!firstPacket) {
+                if (!validationPacket) {
                     try {
-                        return parser(data, unreliable);
+                        parser(data, unreliable);
                     } catch (e) {
                         this.logger.exception(e);
                     }
                 } else {
-                    checkHashConsistency(data);
-                    firstPacket = false;
+                    checkProtocolConsistency(data);
+                    validationPacket = false;
                 }
             },
             close: (error) => {
