@@ -33,11 +33,18 @@ export interface MuProtocolSchema<ClientMessage extends MuAnyMessageTable, Serve
 }
 export type MuAnyProtocolSchema = MuProtocolSchema<MuAnyMessageTable, MuAnyMessageTable>;
 
+export type MuProtocolBandwidthUsage = {
+    [sessionId:string]:{
+        sent:{ [message:string]:number },
+        received:{ [message:string]:number },
+    },
+};
+
 export class MuMessageFactory {
     public protocolId:number;
-    public messageNames:string[];
     public schemas:MuAnySchema[];
-    public message2Id:{ [name:string]:number } = {};
+    public messageNames:string[];
+    public messageIdTable:{ [name:string]:number } = {};
     public jsonStr:string;
 
     constructor (schema:MuAnyMessageTable, protocolId:number) {
@@ -46,7 +53,7 @@ export class MuMessageFactory {
         this.messageNames = Object.keys(schema).sort();
         this.schemas = new Array(this.messageNames.length);
         this.messageNames.forEach((name, id) => {
-            this.message2Id[name] = id;
+            this.messageIdTable[name] = id;
             this.schemas[id] = schema[name];
         });
 
@@ -54,7 +61,7 @@ export class MuMessageFactory {
         this.jsonStr = <string>stableStringify(json);
     }
 
-    public createDispatch (sockets:MuSocket[]) {
+    public createDispatch (sockets:MuSocket[], acc:MuProtocolBandwidthUsage) {
         const result = {};
 
         this.messageNames.forEach((name, messageId) => {
@@ -67,8 +74,11 @@ export class MuMessageFactory {
                 schema.diff(schema.identity, data, stream);
 
                 const contentBytes = stream.bytes();
+                const numBytes = contentBytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(contentBytes, unreliable);
+                    const socket = sockets[i];
+                    socket.send(contentBytes, unreliable);
+                    acc[socket.sessionId].sent[name] = (acc[socket.sessionId].sent[name] || 0) + numBytes;
                 }
 
                 stream.destroy();
@@ -78,7 +88,7 @@ export class MuMessageFactory {
         return result;
     }
 
-    public createSendRaw (sockets:MuSocket[]) {
+    public createSendRaw (sockets:MuSocket[], acc:MuProtocolBandwidthUsage) {
         const p = this.protocolId;
 
         return function (data:MuData, unreliable?:boolean) {
@@ -87,8 +97,11 @@ export class MuMessageFactory {
                     p,
                     s: data,
                 });
+                const numBytes = packet.length << 1;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(packet, unreliable);
+                    const socket = sockets[i];
+                    socket.send(packet, unreliable);
+                    acc[socket.sessionId].sent['raw'] = (acc[socket.sessionId].sent['raw'] || 0) + numBytes;
                 }
             } else {
                 const size = 10 + data.length;
@@ -101,8 +114,11 @@ export class MuMessageFactory {
                 stream.offset += data.length;
 
                 const bytes = stream.bytes();
+                const numBytes = bytes.byteLength;
                 for (let i = 0; i < sockets.length; ++i) {
-                    sockets[i].send(bytes, unreliable);
+                    const socket = sockets[i];
+                    socket.send(bytes, unreliable);
+                    acc[socket.sessionId].sent['raw'] = (acc[socket.sessionId].sent['raw'] || 0) + numBytes;
                 }
 
                 stream.destroy();
@@ -126,6 +142,8 @@ export class MuProtocolFactory {
             rawHandler:(data, unreliable) => void,
         }[],
         logger:MuLogger,
+        acc:MuProtocolBandwidthUsage[],
+        sessionId:string,
     ) {
         const raw = spec.map((h) => h.rawHandler);
         const message = spec.map(({messageHandlers}, id) =>
@@ -146,6 +164,7 @@ export class MuProtocolFactory {
 
                 if (object.s) {
                     raw[protocolId](object.s, unreliable);
+                    acc[protocolId][sessionId].received['raw'] = (acc[protocolId][sessionId].received['raw'] || 0) + (data.length << 1);
                 }
             } else {
                 const stream = new MuReadStream(data);
@@ -160,6 +179,7 @@ export class MuProtocolFactory {
 
                 if (messageId === RAW_MESSAGE) {
                     raw[protocolId](stream.bytes(), unreliable);
+                    acc[protocolId][sessionId].received['raw'] = (acc[protocolId][sessionId].received['raw'] || 0) + data.byteLength;
                     return;
                 }
                 messageId -= 1;
@@ -181,6 +201,8 @@ export class MuProtocolFactory {
                     m = messageSchema.clone(messageSchema.identity);
                 }
                 message[protocolId][messageId](m, unreliable);
+                const messageName = protocol.messageNames[messageId];
+                acc[protocolId][sessionId].received[messageName] = (acc[protocolId][sessionId].received[messageName] || 0) + data.byteLength;
                 messageSchema.free(m);
             }
         };
