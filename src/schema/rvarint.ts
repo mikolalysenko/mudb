@@ -5,7 +5,7 @@ const SCHROEPPEL2 = 0xAAAAAAAA;
 
 export class MuRelativeVarint extends MuNumber<'rvarint'> {
     constructor (identity?:number) {
-        super(identity || 0, 'rvarint');
+        super(identity, 'rvarint');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {

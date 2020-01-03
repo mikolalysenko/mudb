@@ -13,6 +13,8 @@ import {
     MuUint8,
     MuUint16,
     MuUint32,
+    MuVarint,
+    MuRelativeVarint,
     MuArray,
     MuOption,
     MuSortedArray,
@@ -25,19 +27,23 @@ import {
     MuJSON,
 } from '../index';
 
-test('schema.identity default', (t) => {
+test('default identity', (t) => {
     t.equal(new MuVoid().identity,      undefined);
     t.equal(new MuBoolean().identity,   false);
     t.equal(new MuASCII().identity,     '');
     t.equal(new MuUTF8().identity,      '');
-    t.equal(new MuFloat32().identity,   0);
-    t.equal(new MuFloat64().identity,   0);
-    t.equal(new MuInt8().identity,      0);
-    t.equal(new MuInt16().identity,     0);
-    t.equal(new MuInt32().identity,     0);
-    t.equal(new MuUint8().identity,     0);
-    t.equal(new MuUint16().identity,    0);
-    t.equal(new MuUint32().identity,    0);
+
+    t.equal(new MuFloat32().identity,           0);
+    t.equal(new MuFloat64().identity,           0);
+    t.equal(new MuInt8().identity,              0);
+    t.equal(new MuInt16().identity,             0);
+    t.equal(new MuInt32().identity,             0);
+    t.equal(new MuUint8().identity,             0);
+    t.equal(new MuUint16().identity,            0);
+    t.equal(new MuUint32().identity,            0);
+    t.equal(new MuVarint().identity,            0);
+    t.equal(new MuRelativeVarint().identity,    0);
+
     t.deepEqual(new MuArray(new MuFloat32(), 0).identity,       []);
     t.deepEqual(new MuSortedArray(new MuFloat32(), 0).identity, []);
     t.deepEqual(new MuStruct({ f: new MuFloat32() }).identity,  { f: 0 });
@@ -50,21 +56,24 @@ test('schema.identity default', (t) => {
     t.end();
 });
 
-test('schema.identity', (t) => {
+test('setting identity', (t) => {
     t.equal(new MuBoolean(true).identity,       true);
     t.equal(new MuASCII('skr').identity,        'skr');
     t.equal(new MuUTF8('Iñtërn').identity,      'Iñtërn');
     t.equal(new MuFixedASCII(1).identity,       ' ');
     t.equal(new MuFixedASCII(2).identity,       '  ');
     t.equal(new MuFixedASCII('000').identity,   '000');
-    t.equal(new MuFloat32(3).identity,          3);
-    t.equal(new MuFloat64(Math.E).identity,     Math.E);
-    t.equal(new MuInt8(-0x80).identity,         -0x80);
-    t.equal(new MuInt16(-0x8000).identity,      -0x8000);
-    t.equal(new MuInt32(-0x80000000).identity,  -0x80000000);
-    t.equal(new MuUint8(0xFF).identity,         0xFF);
-    t.equal(new MuUint16(0xFFFF).identity,      0xFFFF);
-    t.equal(new MuUint32(0xFFFFFFFF).identity,  0xFFFFFFFF);
+
+    t.equal(new MuFloat32(3).identity,                  3);
+    t.equal(new MuFloat64(Math.E).identity,             Math.E);
+    t.equal(new MuInt8(-0x80).identity,                 -0x80);
+    t.equal(new MuInt16(-0x8000).identity,              -0x8000);
+    t.equal(new MuInt32(-0x80000000).identity,          -0x80000000);
+    t.equal(new MuUint8(0xFF).identity,                 0xFF);
+    t.equal(new MuUint16(0xFFFF).identity,              0xFFFF);
+    t.equal(new MuUint32(0xFFFFFFFF).identity,          0xFFFFFFFF);
+    t.equal(new MuVarint(0xFFFFFFFF).identity,          0xFFFFFFFF);
+    t.equal(new MuRelativeVarint(0xFFFFFFFF).identity,  0xFFFFFFFF);
 
     const a = [{}, {}];
     const array = new MuArray(new MuDictionary(new MuFloat32(), Infinity), Infinity, a);
@@ -97,7 +106,6 @@ test('schema.identity', (t) => {
 
     const vector = new MuVector(new MuFloat32(1), 3);
     t.deepEqual(vector.identity, new Float32Array([1, 1, 1]));
-    t.end();
 
     const d = new Date();
     const date = new MuDate(d);
@@ -109,9 +117,10 @@ test('schema.identity', (t) => {
     t.deepEqual(json.identity, o);
     t.isNot(json.identity, o);
     t.isNot(json.identity['a'], o['a']);
+    t.end();
 });
 
-test('setting number type identity', (t) => {
+test('numeric schema identity range', (t) => {
     t.doesNotThrow(() => new MuFloat32(-3.4e+38));
     t.doesNotThrow(() => new MuFloat32(3.4e+38));
     t.doesNotThrow(() => new MuFloat64(-1.7e+308));
@@ -131,8 +140,6 @@ test('setting number type identity', (t) => {
 
     t.throws(() => new MuFloat32(-3.41e+38),    RangeError);
     t.throws(() => new MuFloat32(3.41e+38),     RangeError);
-    t.throws(() => new MuFloat64(-1.8e+308),    RangeError);
-    t.throws(() => new MuFloat64(1.8e+308),     RangeError);
     t.throws(() => new MuInt8(-0x81),           RangeError);
     t.throws(() => new MuInt8(0x80),            RangeError);
     t.throws(() => new MuInt16(-0x8001),        RangeError);
@@ -145,5 +152,54 @@ test('setting number type identity', (t) => {
     t.throws(() => new MuUint16(0x10000),       RangeError);
     t.throws(() => new MuUint32(-1),            RangeError);
     t.throws(() => new MuUint32(0x100000000),   RangeError);
+    t.end();
+});
+
+test('setting Infinity as identity', (t) => {
+    t.doesNotThrow(() => new MuFloat32(Infinity));
+    t.doesNotThrow(() => new MuFloat64(Infinity));
+    t.throws(() => new MuInt8(Infinity));
+    t.throws(() => new MuInt16(Infinity));
+    t.throws(() => new MuInt32(Infinity));
+    t.throws(() => new MuUint8(Infinity));
+    t.throws(() => new MuUint16(Infinity));
+    t.throws(() => new MuUint32(Infinity));
+    t.throws(() => new MuVarint(Infinity));
+    t.throws(() => new MuRelativeVarint(Infinity));
+
+    t.doesNotThrow(() => new MuFloat32(-Infinity));
+    t.doesNotThrow(() => new MuFloat64(-Infinity));
+    t.throws(() => new MuInt8(-Infinity));
+    t.throws(() => new MuInt16(-Infinity));
+    t.throws(() => new MuInt32(-Infinity));
+    t.throws(() => new MuUint8(-Infinity));
+    t.throws(() => new MuUint16(-Infinity));
+    t.throws(() => new MuUint32(-Infinity));
+    t.throws(() => new MuVarint(-Infinity));
+    t.throws(() => new MuRelativeVarint(-Infinity));
+
+    t.equal(new MuFloat32(Infinity).identity, Infinity);
+    t.equal(new MuFloat32(-Infinity).identity, -Infinity);
+    t.equal(new MuFloat64(Infinity).identity, Infinity);
+    t.equal(new MuFloat64(-Infinity).identity, -Infinity);
+    t.end();
+});
+
+test('setting NaN as identity', (t) => {
+    t.doesNotThrow(() => new MuFloat32(NaN));
+    t.doesNotThrow(() => new MuFloat64(NaN));
+    t.throws(() => new MuInt8(NaN));
+    t.throws(() => new MuInt16(NaN));
+    t.throws(() => new MuInt32(NaN));
+    t.throws(() => new MuUint8(NaN));
+    t.throws(() => new MuUint16(NaN));
+    t.throws(() => new MuUint32(NaN));
+    t.throws(() => new MuVarint(NaN));
+    t.throws(() => new MuRelativeVarint(NaN));
+
+    const f32 = new MuFloat32(NaN);
+    t.true(f32.identity !== f32.identity);
+    const f64 = new MuFloat64(NaN);
+    t.true(f64.identity !== f64.identity);
     t.end();
 });

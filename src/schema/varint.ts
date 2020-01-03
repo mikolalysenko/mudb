@@ -3,7 +3,7 @@ import { MuWriteStream, MuReadStream } from '../stream';
 
 export class MuVarint extends MuNumber<'varint'> {
     constructor (identity?:number) {
-        super(identity || 0, 'varint');
+        super(identity, 'varint');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {

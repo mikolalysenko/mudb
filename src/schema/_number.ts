@@ -38,9 +38,15 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
     public readonly identity:number;
     public readonly json:object;
 
-    constructor (identity:number, type:T) {
+    constructor (identity_:number|undefined, type:T) {
+        const identity = identity_ === identity_ ? identity_ || 0 : NaN;
         const range = ranges[type];
-        if (identity < range[0] || identity > range[1]) {
+
+        if (identity !== Infinity && identity !== -Infinity && identity === identity) {
+            if (identity < range[0] || identity > range[1]) {
+                throw new RangeError(`${identity} is out of range of ${type}`);
+            }
+        } else if (type !== 'float32' && type !== 'float64') {
             throw new RangeError(`${identity} is out of range of ${type}`);
         }
 

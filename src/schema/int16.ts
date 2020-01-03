@@ -3,7 +3,7 @@ import { MuNumber } from './_number';
 
 export class MuInt16 extends MuNumber<'int16'> {
     constructor(identity?:number) {
-        super(identity || 0, 'int16');
+        super(identity, 'int16');
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {
