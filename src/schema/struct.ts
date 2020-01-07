@@ -356,7 +356,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
 
             switch (muType) {
                 case 'boolean':
-                    methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.writeUint8(t[${propRef}]?1:0);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -398,7 +398,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     methods.patch.append(`s.readASCII(s.readUint32()):b[${propRef}];`);
                     break;
                 case 'boolean':
-                    methods.patch.append(`!!s.readUint8():b[${propRef}];`);
+                    methods.patch.append(`!b[${propRef}]:b[${propRef}];`);
                     break;
                 case 'float32':
                 case 'float64':
