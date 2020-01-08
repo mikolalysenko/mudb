@@ -389,6 +389,85 @@ tape('de/serializing struct', (t) => {
     t.end();
 });
 
+tape('de/serializing struct of booleans', (t) => {
+    function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
+        t_:tape.Test,
+        schema:MuStruct<T>,
+    ) : (a:MuStruct<T>['identity'], b:MuStruct<T>['identity']) => void {
+        const test = createTest(t_, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+            test(schema.alloc(), a);
+            test(schema.alloc(), b);
+        };
+    }
+
+    function createStruct (schema) {
+        const s = schema.alloc();
+        Object.keys(s).forEach((key) => {
+            s[key] = randBool();
+        });
+        return s;
+    }
+
+    const struct1 = new MuStruct({
+        a: new MuBoolean(),
+    });
+    const struct2 = new MuStruct({
+        a: new MuBoolean(),
+        b: new MuBoolean(),
+    });
+    const struct8 = new MuStruct({
+        a: new MuBoolean(),
+        b: new MuBoolean(),
+        c: new MuBoolean(),
+        d: new MuBoolean(),
+        e: new MuBoolean(),
+        f: new MuBoolean(),
+        g: new MuBoolean(),
+        h: new MuBoolean(),
+    });
+    const struct9 = new MuStruct({
+        a: new MuBoolean(),
+        b: new MuBoolean(),
+        c: new MuBoolean(),
+        d: new MuBoolean(),
+        e: new MuBoolean(),
+        f: new MuBoolean(),
+        g: new MuBoolean(),
+        h: new MuBoolean(),
+        i: new MuBoolean(),
+    });
+    const shape:{[key:string]:MuBoolean} = {};
+    for (let i = 0; i < 1000; ++i) {
+        shape[i] = new MuBoolean();
+    }
+    const struct = new MuStruct(shape);
+
+    const testPair1 = createTestPair(t, struct1);
+    testPair1({ a: true }, { a: false });
+    const testPair2 = createTestPair(t, struct2);
+    testPair2({ a: false, b: true }, { a: true, b: false });
+    testPair2({ a: false, b: true }, { a: true, b: true });
+    testPair2({ a: true, b: false }, { a: true, b: true });
+    const testPair8 = createTestPair(t, struct8);
+    for (let i = 0; i < 1000; ++i) {
+        testPair8(createStruct(struct8), createStruct(struct8));
+    }
+    const testPair9 = createTestPair(t, struct9);
+    for (let i = 0; i < 1000; ++i) {
+        testPair9(createStruct(struct9), createStruct(struct9));
+    }
+    const testPair = createTestPair(t, struct);
+    for (let i = 0; i < 1000; ++i) {
+        testPair(createStruct(struct), createStruct(struct));
+    }
+    t.end();
+});
+
 tape('de/serializing union', (t) => {
     function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
         t_:tape.Test,
