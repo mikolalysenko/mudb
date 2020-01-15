@@ -216,9 +216,9 @@ test('vector.assign()', (t) => {
 
 test('option.assign()', (t) => {
 
-    function doTest<T>(
-        opt:MuOption<any>,
-        modify:(x:T) => T,
+    function doTest<T extends MuSchema<any>>(
+        opt:MuOption<T>,
+        modify:(x:T['identity']) => T['identity'],
     ) {
         // value to value
         let src = opt.alloc();

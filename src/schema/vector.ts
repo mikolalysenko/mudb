@@ -74,15 +74,7 @@ export const ConstructorTable:MuTypedArrayConstructorTable = {
     uint32: Uint32Array,
 };
 
-export type MuVectorNumericType =
-    'float32'   |
-    'float64'   |
-    'int8'      |
-    'int16'     |
-    'int32'     |
-    'uint8'     |
-    'uint16'    |
-    'uint32';
+export type MuVectorNumericType = keyof typeof ConstructorTable;
 
 export type Vector<ValueSchema extends MuNumber<MuVectorNumericType>, D extends number> = {
     float32:MuFloat32Array<D>;
@@ -102,7 +94,7 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
     public readonly muData:ValueSchema;
     public readonly json:object;
 
-    private _constructor:typeof ConstructorTable[ValueSchema['muType']];
+    private _constructor:any;
     public readonly dimension:D;
 
     public pool:Vector<ValueSchema, D>[] = [];
