@@ -1,5 +1,5 @@
 import { MuSocket, MuSocketServer } from './socket/socket';
-import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory, MuProtocolBandwidthUsage } from './protocol';
+import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory, MuProtocolBandwidth } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
 export class MuRemoteClient<Schema extends MuAnyMessageTable> {
@@ -97,7 +97,7 @@ export class MuServer {
 
     private _shouldValidateProtocol:boolean;
 
-    public bandwidthUsage:MuProtocolBandwidthUsage[] = [];
+    public bandwidth:MuProtocolBandwidth[] = [];
 
     constructor (socketServer:MuSocketServer, logger?:MuLogger, skipProtocolValidation?:boolean) {
         this._socketServer = socketServer;
@@ -127,10 +127,10 @@ export class MuServer {
             ready: () => {
                 this.running = true;
 
-                this.protocols.forEach((protocol, id) => {
-                    this.bandwidthUsage[id] = {};
-                    protocol.broadcast = clientFactory.protocolFactories[id].createDispatch(sockets, this.bandwidthUsage[id]);
-                    protocol.broadcastRaw = clientFactory.protocolFactories[id].createSendRaw(sockets, this.bandwidthUsage[id]);
+                this.protocols.forEach((protocol, pid) => {
+                    this.bandwidth[pid] = {};
+                    protocol.broadcast = clientFactory.protocolFactories[pid].createDispatch(sockets, this.bandwidth[pid]);
+                    protocol.broadcastRaw = clientFactory.protocolFactories[pid].createSendRaw(sockets, this.bandwidth[pid]);
                 });
 
                 this._protocolSpecs.forEach((protocolSpec) => {
@@ -149,19 +149,29 @@ export class MuServer {
             connection: (socket) => {
                 const clientObjects = new Array(this.protocols.length);
                 const protocolHandlers = new Array(this.protocols.length);
-                this.protocols.forEach((protocol, id) => {
-                    const factory = clientFactory.protocolFactories[id];
-                    this.bandwidthUsage[id][socket.sessionId] = {
-                        sent: {},
-                        received: {},
+                this.protocols.forEach((protocol, pid) => {
+                    const factory = clientFactory.protocolFactories[pid];
+                    this.bandwidth[pid][socket.sessionId] = {
+                        sent: {
+                            raw: {
+                                count: 0,
+                                bytes: 0,
+                            },
+                        },
+                        received: {
+                            raw: {
+                                count: 0,
+                                bytes: 0,
+                            },
+                        },
                     };
                     const client = new MuRemoteClient(
                         socket,
-                        factory.createDispatch([socket], this.bandwidthUsage[id]),
-                        factory.createSendRaw([socket], this.bandwidthUsage[id]));
-                    clientObjects[id] = client;
+                        factory.createDispatch([socket], this.bandwidth[pid]),
+                        factory.createSendRaw([socket], this.bandwidth[pid]));
+                    clientObjects[pid] = client;
 
-                    const protocolSpec = this._protocolSpecs[id];
+                    const protocolSpec = this._protocolSpecs[pid];
 
                     const messageHandlers = {};
                     Object.keys(protocolSpec.messageHandlers).forEach((message) => {
@@ -170,7 +180,7 @@ export class MuServer {
                     });
 
                     const rawHandler = protocolSpec.rawHandler;
-                    protocolHandlers[id] = {
+                    protocolHandlers[pid] = {
                         rawHandler: function (bytes, unreliable) { rawHandler(client, bytes, unreliable); },
                         messageHandlers,
                     };
@@ -189,7 +199,7 @@ export class MuServer {
                     }
                 }
 
-                const parser = serverFactory.createParser(protocolHandlers, this.logger, this.bandwidthUsage, socket.sessionId);
+                const parser = serverFactory.createParser(protocolHandlers, this.logger, this.bandwidth, socket.sessionId);
                 let validationPacket = this._shouldValidateProtocol;
 
                 socket.open({
