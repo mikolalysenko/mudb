@@ -206,13 +206,21 @@ export class MuProtocolFactory {
                 const schema = schemaTable[id];
                 const handler = handlerTable[id];
                 const protocolId = protocolIdTable[id];
+                const messageName = messageNameTable[id];
+
+                if (!bandwidth[protocolId][sessionId].received[messageName]) {
+                    bandwidth[protocolId][sessionId].received[messageName] = {
+                        count: 0,
+                        bytes: 0,
+                    };
+                }
+                const acc = bandwidth[protocolId][sessionId].received[messageName];
+                acc.count += 1;
+                acc.bytes += data.byteLength;
 
                 // null schema implies raw handler
                 if (schema === null) {
                     handler.call(null, stream.bytes(), unreliable);
-                    const acc_ = bandwidth[protocolId][sessionId].received['raw'];
-                    acc_.count += 1;
-                    acc_.bytes += data.byteLength;
                     return;
                 }
 
@@ -224,17 +232,6 @@ export class MuProtocolFactory {
                 }
                 handler.call(null, msg, unreliable);
                 schema.free(msg);
-
-                const messageName = messageNameTable[id];
-                if (!bandwidth[protocolId][sessionId].received[messageName]) {
-                    bandwidth[protocolId][sessionId].received[messageName] = {
-                        count: 0,
-                        bytes: 0,
-                    };
-                }
-                const acc = bandwidth[protocolId][sessionId].received[messageName];
-                acc.count += 1;
-                acc.bytes += data.byteLength;
             }
         };
     }
