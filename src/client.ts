@@ -1,5 +1,5 @@
 import { MuSocket } from './socket/socket';
-import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory, MuProtocolBandwidthUsage } from './protocol';
+import { MuMessageInterface, MuAnyMessageTable, MuAnyProtocolSchema, MuProtocolFactory, MuProtocolBandwidth } from './protocol';
 import { MuLogger, MuDefaultLogger } from './logger';
 
 const noop = function () {};
@@ -65,7 +65,7 @@ export class MuClient {
 
     private _shouldValidateProtocol:boolean;
 
-    public bandwidthUsage:MuProtocolBandwidthUsage[] = [];
+    public bandwidth:MuProtocolBandwidth[] = [];
 
     constructor (socket:MuSocket, logger?:MuLogger, skipProtocolValidation?:boolean) {
         this._socket = socket;
@@ -106,7 +106,7 @@ export class MuClient {
             }
         };
 
-        const parser = clientFactory.createParser(this._protocolSpecs, this.logger, this.bandwidthUsage, this.sessionId);
+        const parser = clientFactory.createParser(this._protocolSpecs, this.logger, this.bandwidth, this.sessionId);
         let validationPacket = this._shouldValidateProtocol;
 
         this._socket.open({
@@ -122,15 +122,25 @@ export class MuClient {
 
                 // configure all protocols
                 serverFactory.protocolFactories.forEach((factory, protocolId) => {
-                    this.bandwidthUsage[protocolId] = {
+                    this.bandwidth[protocolId] = {
                         [this.sessionId]: {
-                            sent: {},
-                            received: {},
+                            sent: {
+                                raw: {
+                                    count: 0,
+                                    bytes: 0,
+                                },
+                            },
+                            received: {
+                                raw: {
+                                    count: 0,
+                                    bytes: 0,
+                                },
+                            },
                         },
                     };
                     const protocol = this.protocols[protocolId];
-                    protocol.server.message = factory.createDispatch([this._socket], this.bandwidthUsage[protocolId]);
-                    protocol.server.sendRaw = factory.createSendRaw([this._socket], this.bandwidthUsage[protocolId]);
+                    protocol.server.message = factory.createDispatch([this._socket], this.bandwidth[protocolId]);
+                    protocol.server.sendRaw = factory.createSendRaw([this._socket], this.bandwidth[protocolId]);
                 });
 
                 // initialize all protocols
