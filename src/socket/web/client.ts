@@ -51,19 +51,20 @@ export class MuWebSocket implements MuSocket {
             };
         }
 
-        const openSocket = () => {
-            const socket = new WS(this._url);
+        const self = this;
+        function openSocket () {
+            const socket = new WS(self._url);
             socket.binaryType = 'arraybuffer';
 
             socket.onerror = (e) => {
-                this._logger.error(`error in websocket: ${e}`);
+                self._logger.error(`error in websocket: ${e}`);
             };
 
             socket.onopen = () => {
-                this._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
+                self._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
 
                 socket.onmessage = (event) => {
-                    if (this.state === MuSocketState.CLOSED) {
+                    if (self.state === MuSocketState.CLOSED) {
                         socket.onmessage = null;
                         socket.close();
                         return;
@@ -77,15 +78,15 @@ export class MuWebSocket implements MuSocket {
                         reliable = JSON.parse(event.data).reliable;
                     } catch (e) {
                         socket.onmessage = null;
-                        this.close();
-                        this._logger.error(e);
+                        self.close();
+                        self._logger.error(e);
                         return;
                     }
 
                     // first message indicates whether socket is reliable
                     if (reliable) {
                         socket.onmessage = ({ data }) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                            if (self.state !== MuSocketState.OPEN) {
                                 return;
                             }
                             if (typeof data === 'string') {
@@ -95,18 +96,18 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
-                            this._logger.log('closing socket');
-                            this._reliableSocket = null;
-                            this.close();
+                            self._logger.log('closing main web socket');
+                            self._reliableSocket = null;
+                            self.close();
                             spec.close(ev);
                         };
-                        this._reliableSocket = socket;
+                        self._reliableSocket = socket;
 
-                        this.state = MuSocketState.OPEN;
+                        self.state = MuSocketState.OPEN;
                         spec.ready();
                     } else {
                         socket.onmessage = ({ data }) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                            if (self.state !== MuSocketState.OPEN) {
                                 return;
                             }
 
@@ -117,22 +118,27 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = (ev) => {
-                            this._logger.log('closing unreliable socket');
-                            for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
-                                if (this._unreliableSockets[i] === socket) {
-                                    this._unreliableSockets.splice(i, 1);
+                            self._logger.log('closing unreliable socket');
+                            const sockets = self._unreliableSockets;
+                            for (let i = sockets.length - 1; i >= 0; --i) {
+                                if (sockets[i] === socket) {
+                                    sockets.splice(i, 1);
                                 }
                             }
+                            if (self.state !== MuSocketState.CLOSED) {
+                                self._logger.log('attempt to reopen unreliable socket');
+                                openSocket();
+                            }
                         };
-                        this._unreliableSockets.push(socket);
+                        self._unreliableSockets.push(socket);
                     }
                 };
 
                 socket.send(JSON.stringify({
-                    sessionId: this.sessionId,
+                    sessionId: self.sessionId,
                 }));
             };
-        };
+        }
 
         for (let i = 0; i < this._maxSockets; ++i) {
             openSocket();
