@@ -183,7 +183,9 @@ export class MuWebSocket implements MuSocket {
         this.state = MuSocketState.CLOSED;
 
         // remove listener
-        window.removeEventListener('beforeunload', this.close);
+        if (isBrowser) {
+            window.removeEventListener('beforeunload', this.close);
+        }
 
         if (this._reliableSocket) {
             this._reliableSocket.onmessage = null;
