@@ -40,30 +40,39 @@ export class MuWebSocket implements MuSocket {
         this._logger = spec.logger || MuDefaultLogger;
     }
 
+    private _onError (e) {
+        this._logger.error(`websocket error: ${e}`);
+    }
+
     public open (spec:MuSocketSpec) {
         if (this.state !== MuSocketState.INIT) {
             throw error(`socket had been opened`);
         }
 
         if (isBrowser) {
-            window.onbeforeunload = () => {
-                this.close();
-            };
+            window.addEventListener('beforeunload', this.close);
         }
 
-        const openSocket = () => {
-            const socket = new WS(this._url);
+        const self = this;
+        function openSocket () {
+            const socket = new WS(self._url);
             socket.binaryType = 'arraybuffer';
+            socket.onerror = self._onError;
 
-            socket.onerror = (e) => {
-                this._logger.error(`error in websocket: ${e}`);
-            };
+            socket.onopen = function () {
+                self._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
 
-            socket.onopen = () => {
-                this._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
+                // remove handler
+                socket.onopen = null;
 
-                socket.onmessage = (event) => {
-                    if (this.state === MuSocketState.CLOSED) {
+                if (self.state === MuSocketState.CLOSED) {
+                    self._logger.log('socket opened after connection closed');
+                    socket.close();
+                    return;
+                }
+
+                socket.onmessage = function (event) {
+                    if (self.state === MuSocketState.CLOSED) {
                         socket.onmessage = null;
                         socket.close();
                         return;
@@ -77,15 +86,15 @@ export class MuWebSocket implements MuSocket {
                         reliable = JSON.parse(event.data).reliable;
                     } catch (e) {
                         socket.onmessage = null;
-                        this.close();
-                        this._logger.error(e);
+                        self.close();
+                        self._logger.error(e);
                         return;
                     }
 
                     // first message indicates whether socket is reliable
                     if (reliable) {
-                        socket.onmessage = ({ data }) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                        socket.onmessage = function ({ data }) {
+                            if (self.state !== MuSocketState.OPEN) {
                                 return;
                             }
                             if (typeof data === 'string') {
@@ -94,45 +103,59 @@ export class MuWebSocket implements MuSocket {
                                 spec.message(new Uint8Array(data), false);
                             }
                         };
-                        socket.onclose = (ev) => {
-                            this._logger.log('closing socket');
-                            this._reliableSocket = null;
-                            this.close();
+                        socket.onclose = function (ev) {
+                            self._logger.log('closing main web socket');
+                            self._reliableSocket = null;
+
+                            socket.onmessage = null;
+                            socket.onclose = null;
+                            socket.onerror = null;
+
+                            self.close();
                             spec.close(ev);
                         };
-                        this._reliableSocket = socket;
+                        self._reliableSocket = socket;
 
-                        this.state = MuSocketState.OPEN;
+                        self.state = MuSocketState.OPEN;
                         spec.ready();
                     } else {
-                        socket.onmessage = ({ data }) => {
-                            if (this.state !== MuSocketState.OPEN) {
+                        socket.onmessage = function ({ data }) {
+                            if (self.state !== MuSocketState.OPEN) {
                                 return;
                             }
-
                             if (typeof data === 'string') {
                                 spec.message(data, true);
                             } else {
                                 spec.message(new Uint8Array(data), true);
                             }
                         };
-                        socket.onclose = (ev) => {
-                            this._logger.log('closing unreliable socket');
-                            for (let i = this._unreliableSockets.length - 1; i >= 0; --i) {
-                                if (this._unreliableSockets[i] === socket) {
-                                    this._unreliableSockets.splice(i, 1);
+                        socket.onclose = function () {
+                            self._logger.log('closing unreliable socket');
+
+                            socket.onmessage = null;
+                            socket.onclose = null;
+                            socket.onerror = null;
+
+                            const sockets = self._unreliableSockets;
+                            for (let i = sockets.length - 1; i >= 0; --i) {
+                                if (sockets[i] === socket) {
+                                    sockets.splice(i, 1);
                                 }
                             }
+                            if (self.state !== MuSocketState.CLOSED) {
+                                self._logger.log('attempt to reopen unreliable socket');
+                                openSocket();
+                            }
                         };
-                        this._unreliableSockets.push(socket);
+                        self._unreliableSockets.push(socket);
                     }
                 };
 
                 socket.send(JSON.stringify({
-                    sessionId: this.sessionId,
+                    sessionId: self.sessionId,
                 }));
             };
-        };
+        }
 
         for (let i = 0; i < this._maxSockets; ++i) {
             openSocket();
@@ -153,20 +176,26 @@ export class MuWebSocket implements MuSocket {
         }
     }
 
-    public close () {
+    public close = () => {
         if (this.state === MuSocketState.CLOSED) {
             return;
         }
         this.state = MuSocketState.CLOSED;
+
+        // remove listener
+        window.removeEventListener('beforeunload', this.close);
 
         if (this._reliableSocket) {
             this._reliableSocket.onmessage = null;
             this._reliableSocket.close();
             this._reliableSocket = null;
         }
-        for (let i = 0; i < this._unreliableSockets.length; ++i) {
-            this._unreliableSockets[i].onmessage = null;
-            this._unreliableSockets[i].close();
+
+        // make a copy of unreliable sockets array before closing
+        const sockets = this._unreliableSockets.slice();
+        for (let i = 0; i < sockets.length; ++i) {
+            sockets[i].onmessage = null;
+            sockets[i].close();
         }
         this._unreliableSockets.length = 0;
     }
