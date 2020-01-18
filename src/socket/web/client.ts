@@ -25,19 +25,23 @@ export class MuWebSocket implements MuSocket {
     private _reliableSocket:WebSocket|null = null;
     private _unreliableSockets:WebSocket[] = [];
     private _maxSockets:number;
-    private _nextUnreliableSend = 0;
     private _logger:MuLogger;
+
+    // if more than bufferLimit bytes are buffered on a websocket, drop unreliable packet
+    public bufferLimit:number;
 
     constructor (spec:{
         sessionId:MuSessionId,
         url:string,
         maxSockets?:number,
         logger?:MuLogger,
+        bufferLimit?:number;
     }) {
         this.sessionId = spec.sessionId;
         this._url = spec.url;
         this._maxSockets = Math.max(1, spec.maxSockets || 5) | 0;
         this._logger = spec.logger || MuDefaultLogger;
+        this.bufferLimit = spec.bufferLimit || 1024;
     }
 
     private _onError (e) {
@@ -168,8 +172,24 @@ export class MuWebSocket implements MuSocket {
         }
 
         if (unreliable) {
-            if (this._unreliableSockets.length > 0) {
-                this._unreliableSockets[this._nextUnreliableSend++ % this._unreliableSockets.length].send(data);
+            // select unreliable socket with least amount buffered
+            const sockets = this._unreliableSockets;
+            if (sockets.length > 0) {
+                let socket = sockets[0];
+                let bufferedAmount = socket.bufferedAmount || 0;
+                for (let i = 1; i < sockets.length; ++i) {
+                    const s = sockets[i];
+                    const b = s.bufferedAmount || 0;
+                    if (b < bufferedAmount) {
+                        socket = s;
+                        bufferedAmount = b;
+                    }
+                }
+                // if buffered amount below cutoff, send a packet
+                // otherwise just drop it
+                if (bufferedAmount < this.bufferLimit) {
+                    socket.send(data);
+                }
             }
         } else if (this._reliableSocket) {
             this._reliableSocket.send(data);
@@ -193,7 +213,7 @@ export class MuWebSocket implements MuSocket {
             this._reliableSocket = null;
         }
 
-        // make a copy of unreliable sockets array before closing
+        // make a copy of unreliable sockets array before closing in case onlcose synchronosly modifies array
         const sockets = this._unreliableSockets.slice();
         for (let i = 0; i < sockets.length; ++i) {
             sockets[i].onmessage = null;
