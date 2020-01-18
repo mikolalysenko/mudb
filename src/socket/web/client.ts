@@ -171,7 +171,7 @@ export class MuWebSocket implements MuSocket {
             return;
         }
 
-        if (!unreliable) {
+        if (unreliable) {
             // select unreliable socket with least amount buffered
             const sockets = this._unreliableSockets;
             if (sockets.length > 0) {
