@@ -24,6 +24,7 @@ export interface WSSocket {
     send:(data:Uint8Array|string) => void;
     close:() => void;
     ping:(() => void);
+    bufferedAmount:number;
 }
 
 function noop () { }
@@ -57,8 +58,6 @@ export class MuWebSocketConnection {
 
     private _logger:MuLogger;
 
-    private _nextSocketSend = 0;
-
     public pendingMessages:(Uint8Array|string)[] = [];
 
     // for onmessage handler
@@ -68,7 +67,7 @@ export class MuWebSocketConnection {
     public onClose:() => void = noop;
     public serverClose:() => void;
 
-    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void, logger:MuLogger) {
+    constructor (sessionId:string, reliableSocket:WSSocket, serverClose:() => void, logger:MuLogger, public bufferLimit:number) {
         this.sessionId = sessionId;
         this.reliableSocket = reliableSocket;
         this.serverClose = serverClose;
@@ -172,10 +171,23 @@ export class MuWebSocketConnection {
             return;
         }
         if (unreliable) {
-            if (this.unreliableSockets.length > 0) {
-                const idx = this._nextSocketSend++ % this.unreliableSockets.length;
-                this.lastUnreliablePing[idx] = Date.now();
-                this.unreliableSockets[idx].send(data);
+            const sockets = this.unreliableSockets;
+            if (sockets.length > 0) {
+                // find socket with least buffered data
+                let socket = sockets[0];
+                let bufferedAmount = socket.bufferedAmount || 0;
+                for (let i = 1; i < sockets.length; ++i) {
+                    const s = sockets[i];
+                    const b = s.bufferedAmount || 0;
+                    if (b < bufferedAmount) {
+                        socket = s;
+                        bufferedAmount = b;
+                    }
+                }
+                // only send packet if socket is not blocked
+                if (bufferedAmount < this.bufferLimit) {
+                    socket.send(data);
+                }
             }
         } else {
             this.lastReliablePing = Date.now();
@@ -300,8 +312,11 @@ export class MuWebSocketServer implements MuSocketServer {
 
     public scheduler:MuScheduler;
 
+    public bufferLimit:number;
+
     constructor (spec:{
         server:http.Server|https.Server,
+        bufferLimit?:number,
         backlog?:number,
         handleProtocols?:(protocols:any[], request:http.IncomingMessage) => any,
         path?:string,
@@ -312,6 +327,7 @@ export class MuWebSocketServer implements MuSocketServer {
         pingInterval?:number,
     }) {
         this._logger = spec.logger || MuDefaultLogger;
+        this.bufferLimit = spec.bufferLimit || 1024;
         this._options = {
             server: spec.server,
             clientTracking: false,
@@ -395,7 +411,7 @@ export class MuWebSocketServer implements MuSocketServer {
                                             }
                                         }
                                     }
-                                }, this._logger);
+                                }, this._logger, this.bufferLimit);
                                 this._connections.push(connection);
 
                                 const client = new MuWebSocketClient(connection, this.scheduler, this._logger);
