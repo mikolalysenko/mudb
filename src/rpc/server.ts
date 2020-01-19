@@ -57,7 +57,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
     }
 
     private _createRPC (sessionId:MuSessionId) {
-        const rpc = {} as { [proc in keyof Schema['client']]:(arg, cb) => void };
+        const rpc = {};
         Object.keys(this.schema.client).forEach((proc) => {
             rpc[proc] = (arg, cb) => {
                 const id = uniqueId();
@@ -68,7 +68,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
                 });
             };
         });
-        return rpc;
+        return <{ [proc in keyof Schema['client']]:(arg, cb) => void }>rpc;
     }
 
     public configure (spec:{
@@ -80,7 +80,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
     }) {
         this._requestProtocol.configure({
             message: (() => {
-                const handlers = {} as { [proc in keyof Schema['server']]:(client, { id, base }) => void };
+                const handlers = {};
                 Object.keys(this.schema.server).forEach((proc) => {
                     handlers[proc] = (client_, { id, base }) => {
                         const idx = findClient(this.clients, client_.sessionId);
@@ -108,7 +108,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
                         );
                     };
                 });
-                return handlers;
+                return <{ [proc in keyof Schema['server']]:(client, { id, base }) => void }>handlers;
             })(),
             ready: () => {
                 if (spec && spec.ready) {
@@ -149,7 +149,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
 
         this._responseProtocol.configure({
             message: (() => {
-                const handlers = {} as { [proc in keyof Schema['client']]:(client, { base, id }) => void };
+                const handlers = {};
                 Object.keys(this.schema.client).forEach((proc) => {
                     handlers[proc] = (client, { base, id }) => {
                         const clientCallbacks = this._callbacks[client.sessionId];
@@ -160,7 +160,7 @@ export class MuRPCServer<Schema extends MuRPC.ProtocolSchema> {
                     };
                 });
 
-                return handlers;
+                return <{ [proc in keyof Schema['client']]:(client, { base, id }) => void }>handlers;
             })(),
         });
 
