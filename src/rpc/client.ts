@@ -42,7 +42,7 @@ export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
     }
 
     private _createRPC () {
-        const rpc = {} as { [proc in keyof Schema['server']]:(arg, cb) => void };
+        const rpc = {};
         Object.keys(this.schema.server).forEach((proc) => {
             rpc[proc] = (arg, cb) => {
                 const id = uniqueId();
@@ -53,7 +53,7 @@ export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
                 });
             };
         });
-        return rpc;
+        return <{ [proc in keyof Schema['server']]:(arg, cb) => void }>rpc;
     }
 
     public configure (spec:{
@@ -63,7 +63,7 @@ export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
     }) {
         this._requestProtocol.configure({
             message: (() => {
-                const handlers = {} as { [proc in keyof Schema['client']]:({id, base}) => void };
+                const handlers = {};
                 Object.keys(this.schema.client).forEach((proc) => {
                     handlers[proc] = ({ id, base }) => {
                         spec.rpc[proc](base, (err, ret) => {
@@ -81,7 +81,7 @@ export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
                         });
                     };
                 });
-                return handlers;
+                return <{ [proc in keyof Schema['client']]:({id, base}) => void }>handlers;
             })(),
             ready: () => {
                 if (spec && spec.ready) {
@@ -97,14 +97,14 @@ export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
 
         this._responseProtocol.configure({
             message: (() => {
-                const handlers = {} as { [proc in keyof Schema['server']]:({ id, base }) => void };
+                const handlers = {};
                 Object.keys(this.schema.server).forEach((proc) => {
                     handlers[proc] = ({ id, base }) => {
                         this._callbacks[id](this.schema.server[proc][1].clone(base));
                         delete this._callbacks[id];
                     };
                 });
-                return handlers;
+                return <{ [proc in keyof Schema['server']]:({ id, base }) => void }>handlers;
             })(),
         });
 

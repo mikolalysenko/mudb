@@ -71,7 +71,7 @@ export namespace MuRPC {
         const transposed = [
             { client: {}, server: {} }, // request protocol schema
             { client: {}, server: {} }, // response protocol schema
-        ] as TransposedProtocolSchema<S>;
+        ];
 
         const req:Req = 0;
         const res:Res = 1;
@@ -102,11 +102,11 @@ export namespace MuRPC {
 
         if (protocolSchema.name) {
             const name = protocolSchema.name;
-            transposed[req].name = `${name}Request`;
-            transposed[res].name = `${name}Response`;
+            (<TransposedProtocolSchema<S>>transposed)[req].name = `${name}Request`;
+            (<TransposedProtocolSchema<S>>transposed)[res].name = `${name}Response`;
         }
 
-        return transposed;
+        return <TransposedProtocolSchema<S>>transposed;
     }
 
     export const errorSchema = new MuStruct({
