@@ -118,6 +118,7 @@ export class MuVector<T extends MuVectorNumericType, D extends number> implement
         }
 
         const prolog = block();
+        const ctorName = typeToCtorName[schema.muType];
         prolog.append(`var pool=[];`);
 
         const methods = {
@@ -133,14 +134,14 @@ export class MuVector<T extends MuVectorNumericType, D extends number> implement
         };
 
         // alloc
-        methods.alloc.append(`return pool.pop()||new ${typeToCtorName[schema.muType]}(${dimension});`);
+        methods.alloc.append(`return pool.pop()||new ${ctorName}(${dimension});`);
 
         // free
         methods.free.append(`pool.push(v);`);
 
         // equal
         methods.equal.append(`if(a.length!==b.length){return false}`);
-        methods.equal.append(`if(!(a instanceof ${typeToCtorName[schema.muType]})||!(b instanceof ${typeToCtorName[schema.muType]})){return false}`);
+        methods.equal.append(`if(!(a instanceof ${ctorName})||!(b instanceof ${ctorName})){return false}`);
         for (let i = dimension - 1; i >= 0; --i) {
             methods.equal.append(`if(a[${i}]!==b[${i}]){return false}`);
         }
@@ -158,14 +159,16 @@ export class MuVector<T extends MuVectorNumericType, D extends number> implement
 
         // diff
         const numMaskBits = this.identity.byteLength;
+        prolog.append(`var _bcache=new ${ctorName}(${dimension});var bcache=new Uint8Array(_bcache.buffer);`);
+        prolog.append(`var _tcache=new ${ctorName}(${dimension});var tcache=new Uint8Array(_tcache.buffer);`);
         methods.diff.append(
-            `var bv=new Uint8Array(b.buffer);var tv=new Uint8Array(t.buffer);`,
+            `_bcache.set(b);_tcache.set(t);`,
             `o.grow(${Math.ceil(numMaskBits * 9 / 8)});`, // mask+data bytes
             `var head=o.offset;var m=0;var mos=head;var nd=0;`,
             `o.offset+=${Math.ceil(numMaskBits / 8)};`,
         );
         for (let i = 0; i < numMaskBits; ++i) {
-            methods.diff.append(`if(bv[${i}]!==tv[${i}]){++nd;m|=${1 << (i & 7)};o.writeUint8(tv[${i}])}`);
+            methods.diff.append(`if(bcache[${i}]!==tcache[${i}]){++nd;m|=${1 << (i & 7)};o.writeUint8(tcache[${i}])}`);
             if ((i & 7) === 7) {
                 methods.diff.append(`o.writeUint8At(mos++,m);m=0;`);
             }
@@ -179,16 +182,17 @@ export class MuVector<T extends MuVectorNumericType, D extends number> implement
         // patch
         const numMaskFullBytes = numMaskBits / 8 | 0;
         const numMaskBytes = Math.ceil(numMaskBits / 8);
+        prolog.append(`var _cache=new ${ctorName}(${dimension});var cache=new Uint8Array(_cache.buffer);`);
         methods.patch.append(
             `var head=i.offset;i.offset+=${numMaskBytes};`,
-            `var t=clone(b);var tv=new Uint8Array(t.buffer);`,
+            `var t=clone(b);_cache.set(t);`,
             `var m;`,
         );
         for (let i = 0; i < numMaskFullBytes; ++i) {
             const start = i * 8;
             methods.patch.append(`m=i.readUint8At(head+${i});`);
             for (let j = 0; j < 8; ++j) {
-                methods.patch.append(`if(m&${1 << j}){tv[${start + j}]=i.readUint8();}`);
+                methods.patch.append(`if(m&${1 << j}){cache[${start + j}]=i.readUint8();}`);
             }
         }
         const numPartialBits = numMaskBits & 7;
@@ -196,10 +200,10 @@ export class MuVector<T extends MuVectorNumericType, D extends number> implement
             const start = numMaskFullBytes * 8;
             methods.patch.append(`m=i.readUint8At(head+${numMaskFullBytes});`);
             for (let i = 0; i < numPartialBits; ++i) {
-                methods.patch.append(`if(m&${1 << i}){tv[${start + i}]=i.readUint8()}`);
+                methods.patch.append(`if(m&${1 << i}){cache[${start + i}]=i.readUint8()}`);
             }
         }
-        methods.patch.append(`return t;`);
+        methods.patch.append(`t.set(_cache);return t;`);
 
         // toJSON
         methods.toJSON.append(`var a=new Array(${dimension});`);
