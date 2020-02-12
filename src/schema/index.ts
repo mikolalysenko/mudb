@@ -35,6 +35,7 @@ import { MuUnion } from './union';
 import { MuBytes } from './bytes';
 import { MuDictionary } from './dictionary';
 import { MuVector } from './vector';
+import { MuQuantizedVector } from './quantized-vector';
 
 // misc. types
 import { MuDate } from './date';
@@ -67,6 +68,7 @@ export {
 
     MuBytes,
     MuVector,
+    MuQuantizedVector,
     MuDictionary,
 
     MuDate,
