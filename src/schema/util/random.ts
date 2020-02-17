@@ -1,10 +1,10 @@
-// random boolean
+// boolean
 
 export function randBool () {
     return Math.random() >= 0.5;
 }
 
-// random integer
+// integer
 
 export function randInt (min:number, max:number) : number {
     return Math.random() * (max - min + 1) + min | 0;
@@ -34,11 +34,7 @@ export function randUint32 () {
     return randInt(0, 0xFFFFFFFF);
 }
 
-// random float
-
-export function randFloat (min:number, max:number) : number {
-    return Math.random() * (max - min) + min;
-}
+// float
 
 const dv = new DataView(new ArrayBuffer(8));
 
