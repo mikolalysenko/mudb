@@ -19,12 +19,12 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
     }
 
     function patchPair (rs:MuReadStream) {
-        schema.patch(schema.identity, rs);
-        schema.patch(schema.identity, rs);
-        schema.patch(a, rs);
-        schema.patch(b, rs);
-        schema.patch(a, rs);
-        schema.patch(b, rs);
+        (rs.offset < rs.length) && schema.patch(schema.identity, rs);
+        (rs.offset < rs.length) && schema.patch(schema.identity, rs);
+        (rs.offset < rs.length) && schema.patch(a, rs);
+        (rs.offset < rs.length) && schema.patch(b, rs);
+        (rs.offset < rs.length) && schema.patch(a, rs);
+        (rs.offset < rs.length) && schema.patch(b, rs);
     }
 
     const diffSample:number[] = [];
