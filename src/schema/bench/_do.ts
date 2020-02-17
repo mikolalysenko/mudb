@@ -8,7 +8,7 @@ export function deltaByteLength<T> (schema:MuSchema<T>, a:T, b:T) {
     console.log(`${JSON.stringify(a)} -> ${JSON.stringify(b)}: ${ws.bytes().length}`);
 }
 
-export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:number, sampleSize=9) {
+export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:number, id='', sampleSize=9) {
     function diffPair (ws:MuWriteStream) {
         schema.diff(schema.identity, a, ws);
         schema.diff(schema.identity, b, ws);
@@ -36,7 +36,7 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
             if (diffSample.length === sampleSize) {
                 diffObserver.disconnect();
                 diffSample.sort((x, y) => x - y);
-                console.log(`diff ${rounds} rounds: ${diffSample[sampleSize >>> 1]}`);
+                console.log(`${id} diff ${rounds} rounds: ${diffSample[sampleSize >>> 1]}`);
             }
         }
     });
@@ -65,7 +65,7 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
             if (patchSample.length === sampleSize) {
                 patchObserver.disconnect();
                 patchSample.sort((x, y) => x - y);
-                console.log(`patch ${rounds} rounds: ${patchSample[sampleSize >>> 1]}`);
+                console.log(`${id} patch ${rounds} rounds: ${patchSample[sampleSize >>> 1]}`);
             }
         }
     });
