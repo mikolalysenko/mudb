@@ -1,93 +1,26 @@
-import {
-    MuVector,
-    MuUint32,
-} from '../';
+import { MuVector, MuFloat32 } from '../';
+import { deltaByteLength, diffPatchDuration } from './_do';
 
-import {
-    calcContentBytes,
-    createWriteStreams,
-    createReadStreams,
-    genVector,
-} from './gendata';
+const vec3 = new MuVector(new MuFloat32(), 3);
 
-console.log('---------- vector ----------');
-console.log('100Kx targets with 10 elements');
+const from = (a) => Float32Array.from(a);
 
-const schema1 = new MuVector(new MuUint32(), 10);
+deltaByteLength(vec3, from([0, 0, 0]), from([0, 0, 0]));
+deltaByteLength(vec3, from([0, 0, 0]), from([1, 0, 0]));
+deltaByteLength(vec3, from([0, 0, 0]), from([1, 1, 0]));
+deltaByteLength(vec3, from([0, 0, 0]), from([1, 1, 1]));
 
-const ten1 = genVector(new MuUint32(), 10);
-const ten2 = genVector(new MuUint32(), 10);
+const v1 = from([0, 0, 0]);
+const v2 = from([1, 2, 3]);
 
-let outs = createWriteStreams(1e5);
+diffPatchDuration(vec3, v1, v1, 1);
+diffPatchDuration(vec3, v1, v1, 10);
+diffPatchDuration(vec3, v1, v1, 100);
+diffPatchDuration(vec3, v1, v1, 1e3);
 
-console.time('diff vectors of uint32');
-for (let i = 0; i < 1e5; ) {
-    schema1.diff(ten1, ten2, outs[i++]);
-    schema1.diff(ten2, ten1, outs[i++]);
-}
-console.timeEnd('diff vectors of uint32');
-
-let meanContentBytes = calcContentBytes(outs);
-let inps = createReadStreams(outs);
-
-console.time('patch vectors of uint32');
-for (let i = 0; i < 1e5; ) {
-    schema1.patch(ten1, inps[i++]);
-    schema1.patch(ten2, inps[i++]);
-}
-console.timeEnd('patch vectors of uint32');
-console.log(`using ${meanContentBytes} bytes`);
-
-console.log('1Kx targets with 1K elements');
-
-const schema2 = new MuVector(new MuUint32(), 1e3);
-
-const k1 = genVector(new MuUint32(), 1e3);
-const k2 = genVector(new MuUint32(), 1e3);
-
-outs = createWriteStreams(1e3);
-
-console.time('diff vectors of uint32');
-for (let i = 0; i < 1e3; ) {
-    schema2.diff(k1, k2, outs[i++]);
-    schema2.diff(k2, k1, outs[i++]);
-}
-console.timeEnd('diff vectors of uint32');
-
-meanContentBytes = calcContentBytes(outs);
-inps = createReadStreams(outs);
-
-console.time('patch vectors of uint32');
-for (let i = 0; i < 1e3; ) {
-    schema2.patch(k1, inps[i++]);
-    schema2.patch(k2, inps[i++]);
-}
-console.timeEnd('patch vectors of uint32');
-console.log(`using ${meanContentBytes} bytes`);
-
-console.log('10x targets with 100K elements');
-
-const schema3 = new MuVector(new MuUint32(), 1e5);
-
-const tenK1 = genVector(new MuUint32(), 1e5);
-const tenK2 = genVector(new MuUint32(), 1e5);
-
-outs = createWriteStreams(10);
-
-console.time('diff vectors of uint32');
-for (let i = 0; i < 10; ) {
-    schema3.diff(tenK1, tenK2, outs[i++]);
-    schema3.diff(tenK2, tenK1, outs[i++]);
-}
-console.timeEnd('diff vectors of uint32');
-
-meanContentBytes = calcContentBytes(outs);
-inps = createReadStreams(outs);
-
-console.time('patch vectors of uint32');
-for (let i = 0; i < 10; ) {
-    schema3.patch(tenK1, inps[i++]);
-    schema3.patch(tenK2, inps[i++]);
-}
-console.timeEnd('patch vectors of uint32');
-console.log(`using ${meanContentBytes} bytes`);
+diffPatchDuration(vec3, v1, v2, 1);
+diffPatchDuration(vec3, v1, v2, 10);
+diffPatchDuration(vec3, v1, v2, 100);
+diffPatchDuration(vec3, v1, v2, 1e3);
+diffPatchDuration(vec3, v1, v2, 1e4);
+diffPatchDuration(vec3, v1, v2, 1e5);

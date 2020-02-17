@@ -1,90 +1,27 @@
-import {
-    MuStruct,
-    MuFloat32,
-    MuFloat64,
-    MuInt8,
-    MuInt16,
-    MuInt32,
-    MuUint8,
-    MuUint16,
-    MuUint32,
-} from '../';
+import { MuStruct, MuUint8 } from '../';
+import { deltaByteLength, diffPatchDuration } from './_do';
 
-import {
-    calcContentBytes,
-    createWriteStreams,
-    createReadStreams,
-    genStruct,
-} from './gendata';
+const struct = new MuStruct({
+    a: new MuUint8(),
+    b: new MuUint8(),
+    c: new MuUint8(),
+});
 
-console.log('---------- struct ----------');
+deltaByteLength(struct, {a: 0, b: 0, c: 0}, {a: 0, b: 0, c: 0});
+deltaByteLength(struct, {a: 0, b: 0, c: 0}, {a: 1, b: 0, c: 0});
+deltaByteLength(struct, {a: 0, b: 0, c: 0}, {a: 1, b: 1, c: 0});
+deltaByteLength(struct, {a: 0, b: 0, c: 0}, {a: 1, b: 1, c: 1});
 
-const spec1 = {
-    a: new MuUint32(),
-    b: new MuUint32(),
-    c: new MuUint32(),
-    d: new MuUint32(),
-    e: new MuUint32(),
-    f: new MuUint32(),
-    g: new MuUint32(),
-    h: new MuUint32(),
-};
-const schema1 = new MuStruct(spec1);
+const s1 = {a: 0, b: 0, c: 0};
+const s2 = {a: 1, b: 2, c: 3};
 
-const struct1 = genStruct(spec1);
-const struct2 = genStruct(spec1);
+diffPatchDuration(struct, s1, s1, 1);
+diffPatchDuration(struct, s1, s1, 10);
+diffPatchDuration(struct, s1, s1, 100);
+diffPatchDuration(struct, s1, s1, 1e3);
 
-let outs = createWriteStreams(1e5);
-
-console.time('diff structs of uint32');
-for (let i = 0; i < 1e5; ) {
-    schema1.diff(struct1, struct2, outs[i++]);
-    schema1.diff(struct2, struct1, outs[i++]);
-}
-console.timeEnd('diff structs of uint32');
-
-let meanContentBytes = calcContentBytes(outs);
-let inps = createReadStreams(outs);
-
-console.time('patch structs of uint32');
-for (let i = 0; i < 1e5; ) {
-    schema1.patch(struct1, inps[i++]);
-    schema1.patch(struct2, inps[i++]);
-}
-console.timeEnd('patch structs of uint32');
-console.log(`using ${meanContentBytes} bytes`);
-
-const spec2 = {
-    a: new MuFloat32(),
-    b: new MuFloat64(),
-    c: new MuInt8(),
-    d: new MuInt16(),
-    e: new MuInt32(),
-    f: new MuUint8(),
-    g: new MuUint16(),
-    h: new MuUint32(),
-};
-const schema2 = new MuStruct(spec2);
-
-const struct3 = genStruct(spec2);
-const struct4 = genStruct(spec2);
-
-outs = createWriteStreams(1e5);
-
-console.time('diff structs with props of various types');
-for (let i = 0; i < 1e5; ) {
-    schema2.diff(struct3, struct4, outs[i++]);
-    schema2.diff(struct4, struct3, outs[i++]);
-}
-console.timeEnd('diff structs with props of various types');
-
-meanContentBytes = calcContentBytes(outs);
-inps = createReadStreams(outs);
-
-console.time('patch structs with props of various types');
-for (let i = 0; i < 1e5; ) {
-    schema2.patch(struct3, inps[i++]);
-    schema2.patch(struct4, inps[i++]);
-}
-console.timeEnd('patch structs with props of various types');
-console.log(`using ${meanContentBytes} bytes`);
+diffPatchDuration(struct, s1, s2, 10);
+diffPatchDuration(struct, s1, s2, 100);
+diffPatchDuration(struct, s1, s2, 1e3);
+diffPatchDuration(struct, s1, s2, 1e4);
+diffPatchDuration(struct, s1, s2, 1e5);

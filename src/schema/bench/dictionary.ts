@@ -1,97 +1,42 @@
-import {
-    MuDictionary,
-    MuUint32,
-    MuFloat64,
-} from '../';
+import { MuDictionary, MuUint8 } from '../';
+import { deltaByteLength, diffPatchDuration } from './_do';
 
-import {
-    calcContentBytes,
-    createWriteStreams,
-    createReadStreams,
-    genDictionary,
-    changeValues,
-    shallowMerge,
-} from './gendata';
+const uint8Dictionary = new MuDictionary(new MuUint8(), Infinity);
 
-console.log('---------- dictionary ----------');
-console.log('1Kx targets with 1K props');
+deltaByteLength(uint8Dictionary, {}, {});
+deltaByteLength(uint8Dictionary, {a: 0}, {a: 0});
 
-const schema = new MuDictionary(new MuUint32(), Infinity);
+deltaByteLength(uint8Dictionary, {}, {a: 0});
+deltaByteLength(uint8Dictionary, {}, {a: 0, b: 1});
+deltaByteLength(uint8Dictionary, {}, {a: 0, b: 1, c: 2});
+deltaByteLength(uint8Dictionary, {a: 0}, {a: 0, b: 1});
+deltaByteLength(uint8Dictionary, {b: 1}, {a: 0, b: 1});
+deltaByteLength(uint8Dictionary, {a: 1}, {a: 0, b: 1});
+deltaByteLength(uint8Dictionary, {b: 0}, {a: 0, b: 1});
 
-const emptyDict = {};
-const dict1 = genDictionary('uint32', 1e3);
-const dict2 = changeValues(dict1, 'uint32');
+deltaByteLength(uint8Dictionary, {a: 0}, {});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1}, {});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1, c: 2}, {});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1}, {a: 0});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1}, {b: 1});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1, c: 2}, {a: 0, b: 1});
 
-let outs = createWriteStreams(1e3);
+deltaByteLength(uint8Dictionary, {a: 0}, {a: 1});
+deltaByteLength(uint8Dictionary, {a: 0, b: 1}, {a: 1, b: 2});
 
-console.time('diff more props');
-for (let i = 0; i < 1e3; ++i) {
-    schema.diff(emptyDict, dict1, outs[i]);
-}
-console.timeEnd('diff more props');
+deltaByteLength(uint8Dictionary, {a: 0}, {b: 0});
+deltaByteLength(uint8Dictionary, {a: 0, b: 0}, {c: 0, d: 0});
 
-let inps = createReadStreams(outs);
+const d1 = {a: 0, b: 0, c: 0};
+const d2 = {d: 1, e: 2, f: 3};
 
-console.time('patch more props');
-for (let i = 0; i < 1e3; ++i) {
-    schema.patch(emptyDict, inps[i]);
-}
-console.timeEnd('patch more props');
+diffPatchDuration(uint8Dictionary, d1, d1, 1);
+diffPatchDuration(uint8Dictionary, d1, d1, 10);
+diffPatchDuration(uint8Dictionary, d1, d1, 100);
+diffPatchDuration(uint8Dictionary, d1, d1, 1e3);
 
-outs = createWriteStreams(1e3);
-
-console.time('diff same set of props');
-for (let i = 0; i < 1e3; ) {
-    schema.diff(dict1, dict2, outs[i++]);
-    schema.diff(dict2, dict1, outs[i++]);
-}
-console.timeEnd('diff same set of props');
-
-let meanContentBytes = calcContentBytes(outs);
-inps = createReadStreams(outs);
-
-console.time('patch same set of props');
-for (let i = 0; i < 1e3; ) {
-    schema.patch(dict1, inps[i++]);
-    schema.patch(dict2, inps[i++]);
-}
-console.timeEnd('patch same set of props');
-
-const dict3 = genDictionary('uint32', 1e3);
-
-outs = createWriteStreams(1e3);
-
-console.time('diff all props replaced');
-for (let i = 0; i < 1e3; ) {
-    schema.diff(dict1, dict3, outs[i++]);
-    schema.diff(dict3, dict1, outs[i++]);
-}
-console.timeEnd('diff all props replaced');
-
-inps = createReadStreams(outs);
-
-console.time('patch all props replaced');
-for (let i = 0; i < 1e3; ) {
-    schema.patch(dict1, inps[i++]);
-    schema.patch(dict2, inps[i++]);
-}
-console.timeEnd('patch all props replaced');
-
-const dict4 = shallowMerge(dict1, dict3);
-
-outs = createWriteStreams(1e3);
-
-console.time('diff half of all props removed');
-for (let i = 0; i < 1e3; ++i) {
-    schema.diff(dict4, dict2, outs[i]);
-}
-console.timeEnd('diff half of all props removed');
-
-inps = createReadStreams(outs);
-
-console.time('patch half of all props removed');
-for (let i = 0; i < 1e3; ++i) {
-    schema.patch(dict4, inps[i]);
-}
-console.timeEnd('patch half of all props removed');
-console.log(`using ${meanContentBytes} bytes`);
+diffPatchDuration(uint8Dictionary, d1, d2, 10);
+diffPatchDuration(uint8Dictionary, d1, d2, 100);
+diffPatchDuration(uint8Dictionary, d1, d2, 1e3);
+diffPatchDuration(uint8Dictionary, d1, d2, 1e4);
+diffPatchDuration(uint8Dictionary, d1, d2, 1e5);

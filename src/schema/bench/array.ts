@@ -4,26 +4,30 @@ import { deltaByteLength, diffPatchDuration } from './_do';
 const uint8Array = new MuArray(new MuUint8(), Infinity);
 
 deltaByteLength(uint8Array, [], []);
-deltaByteLength(uint8Array, [1], [1]);
+deltaByteLength(uint8Array, [0], [0]);
 
-deltaByteLength(uint8Array, [], [1]);
-deltaByteLength(uint8Array, [], [1, 2]);
-deltaByteLength(uint8Array, [], [1, 2, 3]);
-deltaByteLength(uint8Array, [1], [1, 2]);
-deltaByteLength(uint8Array, [2], [1, 2]);
+deltaByteLength(uint8Array, [], [0]);
+deltaByteLength(uint8Array, [], [0, 1]);
+deltaByteLength(uint8Array, [], [0, 1, 2]);
+deltaByteLength(uint8Array, [0], [0, 1]);
+deltaByteLength(uint8Array, [1], [0, 1]);
 
-deltaByteLength(uint8Array, [1], []);
-deltaByteLength(uint8Array, [1, 2], []);
-deltaByteLength(uint8Array, [1, 2], [1]);
-deltaByteLength(uint8Array, [1, 2, 3], [1]);
+deltaByteLength(uint8Array, [0], []);
+deltaByteLength(uint8Array, [0, 1], []);
+deltaByteLength(uint8Array, [0, 1], [0]);
+deltaByteLength(uint8Array, [0, 1, 2], [0]);
 
-deltaByteLength(uint8Array, [1], [2]);
-deltaByteLength(uint8Array, [1, 2], [2, 1]);
+deltaByteLength(uint8Array, [0], [2]);
+deltaByteLength(uint8Array, [0, 1], [1, 2]);
 
-const a1 = [1, 1, 1, 1, 1];
-const a2 = [2, 2, 2, 2, 2];
+const a1 = [0, 0, 0, 0, 0];
+const a2 = [1, 2, 3, 4, 5];
 
-diffPatchDuration(uint8Array, a1, a2, 1);
+diffPatchDuration(uint8Array, a1, a1, 1);
+diffPatchDuration(uint8Array, a1, a1, 10);
+diffPatchDuration(uint8Array, a1, a1, 100);
+diffPatchDuration(uint8Array, a1, a1, 1e3);
+
 diffPatchDuration(uint8Array, a1, a2, 10);
 diffPatchDuration(uint8Array, a1, a2, 100);
 diffPatchDuration(uint8Array, a1, a2, 1000);
