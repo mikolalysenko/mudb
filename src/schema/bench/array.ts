@@ -1,141 +1,113 @@
-import {
-    MuArray,
-    MuUint32,
-} from '../';
+import { performance, PerformanceObserver } from 'perf_hooks';
+import { MuWriteStream, MuReadStream } from '../../stream';
+import { MuSchema, MuArray, MuUint8 } from '../';
 
-import {
-    calcContentBytes,
-    createWriteStreams,
-    createReadStreams,
-    genArray,
-} from './gendata';
-
-console.log('---------- array ----------');
-console.log('100Kx targets with 10 elements');
-
-const u32Schema = new MuArray(new MuUint32(), Infinity);
-
-const ten1 = genArray('uint32', 10);
-const ten2 = genArray('uint32', 10);
-let half = genArray('uint32', 5);
-let doubled = genArray('uint32', 20);
-
-let outs = createWriteStreams(1e5);
-
-console.time('diff same length');
-for (let i = 0; i < 1e5; ) {
-    u32Schema.diff(ten1, ten2, outs[i++]);
-    u32Schema.diff(ten2, ten1, outs[i++]);
+function deltaByteLength<T> (schema:MuSchema<T>, a:T, b:T) {
+    const ws = new MuWriteStream(1);
+    schema.diff(a, b, ws);
+    console.log(`${JSON.stringify(a)} -> ${JSON.stringify(b)}: ${ws.bytes().length}`);
 }
-console.timeEnd('diff same length');
 
-let meanContentBytes = calcContentBytes(outs);
-outs = createWriteStreams(1e5);
+const uint8Array = new MuArray(new MuUint8(), Infinity);
 
-console.time('diff shorter against longer');
-for (let i = 0; i < 1e5; ++i) {
-    u32Schema.diff(half, ten1, outs[i]);
+deltaByteLength(uint8Array, [], []);
+deltaByteLength(uint8Array, [1], [1]);
+
+deltaByteLength(uint8Array, [], [1]);
+deltaByteLength(uint8Array, [], [1, 2]);
+deltaByteLength(uint8Array, [], [1, 2, 3]);
+deltaByteLength(uint8Array, [1], [1, 2]);
+deltaByteLength(uint8Array, [2], [1, 2]);
+
+deltaByteLength(uint8Array, [1], []);
+deltaByteLength(uint8Array, [1, 2], []);
+deltaByteLength(uint8Array, [1, 2], [1]);
+deltaByteLength(uint8Array, [1, 2, 3], [1]);
+
+deltaByteLength(uint8Array, [1], [2]);
+deltaByteLength(uint8Array, [1, 2], [2, 1]);
+
+function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:number, sampleSize=9) {
+    function diffPair (ws:MuWriteStream) {
+        schema.diff(schema.identity, a, ws);
+        schema.diff(schema.identity, b, ws);
+        schema.diff(a, schema.identity, ws);
+        schema.diff(b, schema.identity, ws);
+        schema.diff(a, b, ws);
+        schema.diff(b, a, ws);
+    }
+
+    function patchPair (rs:MuReadStream) {
+        schema.patch(schema.identity, rs);
+        schema.patch(schema.identity, rs);
+        schema.patch(a, rs);
+        schema.patch(b, rs);
+        schema.patch(a, rs);
+        schema.patch(b, rs);
+    }
+
+    const diffSample:number[] = [];
+    const diffObserver = new PerformanceObserver((list) => {
+        const entry = list.getEntriesByName(`diff`)[0];
+        if (entry) {
+            performance.clearMarks();
+            diffSample.push(entry.duration);
+            if (diffSample.length === sampleSize) {
+                diffObserver.disconnect();
+                diffSample.sort((x, y) => x - y);
+                console.log(`diff ${rounds} rounds: ${diffSample[sampleSize >>> 1]}`);
+            }
+        }
+    });
+    diffObserver.observe({ entryTypes: ['measure'] });
+
+    const wss:MuWriteStream[] = new Array(rounds);
+    for (let i = 0; i < wss.length; ++i) {
+        wss[i] = new MuWriteStream(1);
+    }
+
+    for (let i = 0; i < sampleSize; ++i) {
+        performance.mark('A');
+        for (let j = 0; j < rounds; ++j) {
+            diffPair(wss[j]);
+        }
+        performance.mark('B');
+        performance.measure(`diff`, 'A', 'B');
+    }
+
+    const patchSample:number[] = [];
+    const patchObserver = new PerformanceObserver((list) => {
+        const entry = list.getEntriesByName(`patch`)[0];
+        if (entry) {
+            performance.clearMarks();
+            patchSample.push(entry.duration);
+            if (patchSample.length === sampleSize) {
+                patchObserver.disconnect();
+                patchSample.sort((x, y) => x - y);
+                console.log(`patch ${rounds} rounds: ${patchSample[sampleSize >>> 1]}`);
+            }
+        }
+    });
+    patchObserver.observe({ entryTypes: ['measure'] });
+
+    const rss:MuReadStream[] = wss.map((ws) => new MuReadStream(ws.bytes()));
+
+    for (let i = 0; i < sampleSize; ++i) {
+        performance.mark('C');
+        for (let j = 0; j < rounds; ++j) {
+            patchPair(rss[j]);
+        }
+        performance.mark('D');
+        performance.measure(`patch`, 'C', 'D');
+    }
 }
-console.timeEnd('diff shorter against longer');
 
-outs = createWriteStreams(1e5);
+const a1 = [1, 1, 1, 1, 1];
+const a2 = [2, 2, 2, 2, 2];
 
-console.time('diff longer against shorter');
-for (let i = 0; i < 1e5; ++i) {
-    u32Schema.diff(doubled, ten1, outs[i]);
-}
-console.timeEnd('diff longer against shorter');
-console.log(`using ${meanContentBytes} bytes`);
-
-console.log('1Kx targets with 1K elements');
-
-const k1 = genArray('uint32', 1e3);
-const k2 = genArray('uint32', 1e3);
-half = genArray('uint32', 500);
-doubled = genArray('uint32', 2e3);
-
-outs = createWriteStreams(1e3);
-
-console.time('diff same length');
-for (let i = 0; i < 1e3; ) {
-    u32Schema.diff(k1, k2, outs[i++]);
-    u32Schema.diff(k2, k1, outs[i++]);
-}
-console.timeEnd('diff same length');
-
-meanContentBytes = calcContentBytes(outs);
-let inps = createReadStreams(outs);
-
-console.time('patch same length');
-for (let i = 0; i < 1e3; ) {
-    u32Schema.patch(k1, inps[i++]);
-    u32Schema.patch(k2, inps[i++]);
-}
-console.timeEnd('patch same length');
-
-outs = createWriteStreams(1e3);
-
-console.time('diff shorter against longer');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.diff(half, k1, outs[i]);
-}
-console.timeEnd('diff shorter against longer');
-
-inps = createReadStreams(outs);
-
-console.time('patch shorter to longer');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.patch(half, inps[i++]);
-}
-console.timeEnd('patch shorter to longer');
-
-outs = createWriteStreams(1e3);
-
-console.time('diff longer against shorter');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.diff(doubled, k1, outs[i]);
-}
-console.timeEnd('diff longer against shorter');
-
-inps = createReadStreams(outs);
-
-console.time('patch longer to shorter');
-for (let i = 0; i < 1e3; ++i) {
-    u32Schema.patch(doubled, inps[i]);
-}
-console.timeEnd('patch longer to shorter');
-console.log(`using ${meanContentBytes} bytes`);
-
-console.log('10x targets with 100K elements');
-
-const tenK1 = genArray('uint32', 1e5);
-const tenK2 = genArray('uint32', 1e5);
-half = genArray('uint32', 5e4);
-doubled = genArray('uint32', 2e5);
-
-outs = createWriteStreams(10);
-
-console.time('diff same length');
-for (let i = 0; i < 10; ) {
-    u32Schema.diff(tenK1, tenK2, outs[i++]);
-    u32Schema.diff(tenK2, tenK1, outs[i++]);
-}
-console.timeEnd('diff same length');
-
-meanContentBytes = calcContentBytes(outs);
-outs = createWriteStreams(10);
-
-console.time('diff shorter against longer');
-for (let i = 0; i < 10; ++i) {
-    u32Schema.diff(half, tenK1, outs[i]);
-}
-console.timeEnd('diff shorter against longer');
-
-outs = createWriteStreams(10);
-
-console.time('diff longer against shorter');
-for (let i = 0; i < 10; ++i) {
-    u32Schema.diff(doubled, tenK1, outs[i]);
-}
-console.timeEnd('diff longer against shorter');
-console.log(`using ${meanContentBytes} bytes`);
+diffPatchDuration(uint8Array, a1, a2, 1);
+diffPatchDuration(uint8Array, a1, a2, 10);
+diffPatchDuration(uint8Array, a1, a2, 100);
+diffPatchDuration(uint8Array, a1, a2, 1000);
+diffPatchDuration(uint8Array, a1, a2, 1e4);
+diffPatchDuration(uint8Array, a1, a2, 1e5);
