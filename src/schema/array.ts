@@ -121,7 +121,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         out.grow(4 + numTrackers);
 
         const head = out.offset;
-        out.writeUint32(tLeng);
+        out.writeVarint(tLeng);
         let trackerOffset = out.offset;
         out.offset += numTrackers;
 
@@ -165,7 +165,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         base:ValueSchema['identity'][],
         inp:MuReadStream,
     ) : ValueSchema['identity'][] {
-        const tLeng = inp.readUint32();
+        const tLeng = inp.readVarint();
         if (tLeng > this.capacity) {
             throw new RangeError(`target length ${tLeng} exceeds capacity ${this.capacity}`);
         }
