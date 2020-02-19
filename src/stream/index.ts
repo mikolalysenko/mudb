@@ -140,19 +140,19 @@ export class MuWriteStream {
         const bytes = this.buffer.uint8;
         const offset = this.offset;
 
-        if (x_ < 1 << 7) {
+        if (x_ < 0x80) {
             bytes[offset] = x_;
             this.offset += 1;
-        } else if (x_ < 1 << 14) {
+        } else if (x_ < 0x4000) {
             bytes[offset] = x_ & 0x7f | 0x80;
             bytes[offset + 1] = x_ >>> 7;
             this.offset += 2;
-        } else if (x_ < 1 << 21) {
+        } else if (x_ < 0x200000) {
             bytes[offset] = x_ & 0x7f | 0x80;
             bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
             bytes[offset + 2] = x_ >>> 14;
             this.offset += 3;
-        } else if (x_ < 1 << 28) {
+        } else if (x_ < 0x10000000) {
             bytes[offset] = x_ & 0x7f | 0x80;
             bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
             bytes[offset + 2] = x_ >> 14 & 0x7f | 0x80;
