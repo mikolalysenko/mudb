@@ -42,20 +42,22 @@ export class MuDate implements MuSchema<Date> {
     }
 
     public diff (base:Date, target:Date, out:MuWriteStream) : boolean {
-        const bTime = base.getTime();
-        const tTime = target.getTime();
-        if (bTime === tTime) {
-            return false;
+        const bt = base.getTime();
+        const tt = target.getTime();
+        if (bt !== tt) {
+            out.grow(10);
+            out.writeVarint(tt % 0x10000000);
+            out.writeVarint(tt / 0x10000000 | 0);
+            return true;
         }
-
-        out.grow(32);
-        out.writeASCII(target.toISOString());
-        return true;
+        return false;
     }
 
     public patch (base:Date, inp:MuReadStream) : Date {
         const date = this.alloc();
-        date.setTime(Date.parse(inp.readASCII(24)));
+        const lo = inp.readVarint();
+        const hi = inp.readVarint();
+        date.setTime(lo + 0x10000000 * hi);
         return date;
     }
 
