@@ -176,7 +176,7 @@ tape('de/serializing varint', (t) => {
         const x = sample[i];
         sample.push(x - 1);
         sample.push(x + 1);
-        sample.push((x + x * Math.random() | 0) >>> 0);
+        sample.push(x + (x * Math.random() | 0) >>> 0);
     }
     sample.push(0xffffffff);
 
@@ -187,13 +187,32 @@ tape('de/serializing varint', (t) => {
         testVarint(x, x);
     }
 
+    t.end();
+});
+
+tape('de/serializing rvarint', (t) => {
+    const sample:number[] = [];
+    for (let i = 0; i < 30; ++i) {
+        sample.push(1 << i);
+        sample.push(-1 << i);
+    }
+    for (let i = sample.length - 1; i >= 0; --i) {
+        const x = sample[i];
+        sample.push(x - 1);
+        sample.push(x + 1);
+        sample.push(x + (x * Math.random() | 0) >> 0);
+    }
+    sample.push(1 << 31);
+
     const testRelativeVarint = createTest(t, new MuRelativeVarint());
     for (let i = 0; i < sample.length; ++i) {
         const x = sample[i];
         testRelativeVarint(0, x);
-        testRelativeVarint(x, 0);
         testRelativeVarint(x, x);
     }
+    testRelativeVarint(0x80000000, 0);
+    testRelativeVarint(0x80000001, 1);
+    testRelativeVarint(0x100000000, 0x80000000);
 
     t.end();
 });
