@@ -37,7 +37,9 @@ import {
     randFloat32,
     randArray,
     randDict,
+    randInt,
     randUint8,
+    randUint32,
 } from '../util/random';
 
 function createTest<T> (
@@ -369,6 +371,8 @@ tape('de/serializing struct', (t) => {
         b: new MuBoolean(),
         u: new MuUTF8(),
         f: new MuFloat32(),
+        i: new MuVarint(),
+        r: new MuRelativeVarint(),
         a: new MuArray(new MuFloat32(), Infinity),
         sa: new MuSortedArray(new MuFloat32(), Infinity),
         v: new MuVector(new MuFloat32(), 9),
@@ -391,6 +395,8 @@ tape('de/serializing struct', (t) => {
         s.b = randBool();
         s.u = strings[Math.random() * 3 | 0];
         s.f = randFloat32();
+        s.i = randUint32();
+        s.r = randInt(-0x40000000, 0x3fffffff),
         s.a = randArray();
         s.sa = randArray().sort(compare);
         s.v = randVec(9);
