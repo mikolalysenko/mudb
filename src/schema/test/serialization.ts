@@ -37,7 +37,9 @@ import {
     randFloat32,
     randArray,
     randDict,
+    randInt,
     randUint8,
+    randUint32,
 } from '../util/random';
 
 function createTest<T> (
@@ -176,7 +178,7 @@ tape('de/serializing varint', (t) => {
         const x = sample[i];
         sample.push(x - 1);
         sample.push(x + 1);
-        sample.push((x + x * Math.random() | 0) >>> 0);
+        sample.push(x + (x * Math.random() | 0) >>> 0);
     }
     sample.push(0xffffffff);
 
@@ -187,13 +189,32 @@ tape('de/serializing varint', (t) => {
         testVarint(x, x);
     }
 
+    t.end();
+});
+
+tape('de/serializing rvarint', (t) => {
+    const sample:number[] = [];
+    for (let i = 0; i < 30; ++i) {
+        sample.push(1 << i);
+        sample.push(-1 << i);
+    }
+    for (let i = sample.length - 1; i >= 0; --i) {
+        const x = sample[i];
+        sample.push(x - 1);
+        sample.push(x + 1);
+        sample.push(x + (x * Math.random() | 0) >> 0);
+    }
+    sample.push(1 << 31);
+
     const testRelativeVarint = createTest(t, new MuRelativeVarint());
     for (let i = 0; i < sample.length; ++i) {
         const x = sample[i];
         testRelativeVarint(0, x);
-        testRelativeVarint(x, 0);
         testRelativeVarint(x, x);
     }
+    testRelativeVarint(0x80000000, 0);
+    testRelativeVarint(0x80000001, 1);
+    testRelativeVarint(0x100000000, 0x80000000);
 
     t.end();
 });
@@ -350,6 +371,8 @@ tape('de/serializing struct', (t) => {
         b: new MuBoolean(),
         u: new MuUTF8(),
         f: new MuFloat32(),
+        i: new MuVarint(),
+        r: new MuRelativeVarint(),
         a: new MuArray(new MuFloat32(), Infinity),
         sa: new MuSortedArray(new MuFloat32(), Infinity),
         v: new MuVector(new MuFloat32(), 9),
@@ -372,6 +395,8 @@ tape('de/serializing struct', (t) => {
         s.b = randBool();
         s.u = strings[Math.random() * 3 | 0];
         s.f = randFloat32();
+        s.i = randUint32();
+        s.r = randInt(-0x40000000, 0x3fffffff),
         s.a = randArray();
         s.sa = randArray().sort(compare);
         s.v = randVec(9);

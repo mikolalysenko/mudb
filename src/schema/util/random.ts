@@ -31,7 +31,7 @@ export function randUint16 () {
 }
 
 export function randUint32 () {
-    return randInt(0, 0xFFFFFFFF);
+    return randInt(0, 0xFFFFFFFF) >>> 0;
 }
 
 // float

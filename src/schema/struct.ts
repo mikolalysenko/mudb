@@ -11,6 +11,8 @@ const muPrimitiveSize = {
     int32: 4,
     float32: 4,
     float64: 8,
+    varint: 5,
+    rvarint: 5,
 };
 
 const muType2ReadMethod = {
@@ -24,6 +26,7 @@ const muType2ReadMethod = {
     uint16: 'readUint16',
     uint32: 'readUint32',
     utf8: 'readString',
+    varint: 'readVarint',
 };
 
 const muType2WriteMethod = {
@@ -37,6 +40,7 @@ const muType2WriteMethod = {
     uint16: 'writeUint16',
     uint32: 'writeUint32',
     utf8: 'writeString',
+    varint: 'writeVarint',
 };
 
 const muPrimitiveTypes = Object.keys(muPrimitiveSize);
@@ -179,6 +183,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'varint':
+                case 'rvarint':
                     prelude.append(`this[${propRef}]=${type.identity};`);
                     break;
                 case 'ascii':
@@ -206,6 +212,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     break;
                 default:
                     prelude.append(`${identityRef}[${propRef}]=${typeRefs[i]}.clone(${inject(type.identity)});`);
@@ -229,6 +237,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     break;
                 default:
                     methods.alloc.append(`result[${propRef}]=${typeRefs[i]}.alloc();`);
@@ -253,6 +263,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     break;
                 default:
                     methods.free.append(`${typeRefs[i]}.free(x[${propRef}]);`);
@@ -276,6 +288,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     methods.equal.append(`if(a[${propRef}]!==b[${propRef}]){return false}`);
                     break;
                 default:
@@ -300,6 +314,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     methods.clone.append(`result[${propRef}]=x[${propRef}];`);
                     break;
                 default:
@@ -325,6 +341,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
+                case 'rvarint':
                     methods.assign.append(`d[${propRef}]=s[${propRef}];`);
                     break;
                 default:
@@ -366,7 +384,11 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
+                case 'varint':
                     methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.${muType2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    break;
+                case 'rvarint':
+                    methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.writeVarint(0xAAAAAAAA+(t[${propRef}]-b[${propRef}])^0xAAAAAAAA);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
                     methods.diff.append(`if(${typeRefs[i]}.diff(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
@@ -409,7 +431,11 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'utf8':
+                case 'varint':
                     methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${propRef}];`);
+                    break;
+                case 'rvaint':
+                    methods.patch.append(`b[${propRef}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${propRef}]`);
                     break;
                 default:
                     methods.patch.append(`${typeRefs[i]}.patch(b[${propRef}],s):${typeRefs[i]}.clone(b[${propRef}]);`);

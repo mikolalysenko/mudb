@@ -9,18 +9,16 @@ export class MuRelativeVarint extends MuNumber<'rvarint'> {
     }
 
     public diff (base:number, target:number, out:MuWriteStream) : boolean {
-        const d = target - base;
-        if (d) {
+        if (base !== target) {
             out.grow(5);
-            out.writeVarint(SCHROEPPEL2 + d ^ SCHROEPPEL2);
+            out.writeVarint((SCHROEPPEL2 + (target - base)) ^ SCHROEPPEL2);
             return true;
         }
         return false;
     }
 
     public patch (base:number, inp:MuReadStream) : number {
-        const x = inp.readVarint();
-        const d = (SCHROEPPEL2 ^ x) - SCHROEPPEL2 >> 0;
-        return base + d >>> 0;
+        const delta = (SCHROEPPEL2 ^ inp.readVarint()) - SCHROEPPEL2 >> 0;
+        return base + delta;
     }
 }
