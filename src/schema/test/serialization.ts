@@ -667,7 +667,7 @@ tape('de/serializing dictionary', (t) => {
     t.end();
 });
 
-function randVec<D extends number> (dimension:D) : MuVector<MuNumber<any>, D>['identity'] {
+function randVec<D extends number> (dimension:D) : MuVector<'float32', D>['identity'] {
     const v = new MuVector(new MuFloat32(), dimension).alloc();
     for (let i = 0; i < v.length; ++i) {
         v[i] = randFloat32();
