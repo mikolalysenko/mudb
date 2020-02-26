@@ -2,7 +2,7 @@ import { MuReadStream, MuWriteStream } from '../stream';
 import { MuSchema } from './schema';
 import { MuNumber } from './_number';
 
-const ConstructorTable = {
+const muTypeToTypedArray = {
     float32: Float32Array,
     float64: Float64Array,
     int8: Int8Array,
@@ -13,7 +13,7 @@ const ConstructorTable = {
     uint32: Uint32Array,
 };
 
-type MuNumericType = keyof typeof ConstructorTable;
+type MuNumericType = keyof typeof muTypeToTypedArray;
 
 interface MuFloat32Array<D extends number> extends Float32Array {
     readonly length:D;
@@ -40,7 +40,7 @@ interface MuUint32Array<D extends number> extends Uint32Array {
     readonly length:D;
 }
 
-type Vec<T extends MuNumericType, D extends number> = {
+export type Vec<T extends MuNumericType, D extends number> = {
     float32:MuFloat32Array<D>;
     float64:MuFloat64Array<D>;
     int8:MuInt8Array<D>;
@@ -51,6 +51,13 @@ type Vec<T extends MuNumericType, D extends number> = {
     uint32:MuUint32Array<D>;
 }[MuNumber<T>['muType']];
 
+export type FixedLengthArray<D extends number> = D extends 0
+    ? never[]
+    : {
+        0:number;
+        length:D;
+    } & ReadonlyArray<number>;
+
 export class MuVector<T extends MuNumericType, D extends number> implements MuSchema<Vec<T, D>> {
     public readonly identity:Vec<T, D>;
     public readonly muType = 'vector';
@@ -58,15 +65,15 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
     public readonly json:object;
 
     public readonly dimension:D;
-    private _constructor:any;
+    public readonly TypedArray:any;
 
     private _pool:Vec<T, D>[] = [];
 
     constructor (schema:MuNumber<T>, dimension:D) {
         this.muData = schema;
         this.dimension = dimension;
-        this._constructor = ConstructorTable[schema.muType];
-        this.identity = new this._constructor(dimension);
+        this.TypedArray = muTypeToTypedArray[schema.muType];
+        this.identity = new this.TypedArray(dimension);
         for (let i = 0; i < dimension; ++i) {
             this.identity[i] = schema.identity;
         }
@@ -78,7 +85,7 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
     }
 
     public alloc () : Vec<T, D> {
-        return this._pool.pop() || new this._constructor(this.dimension);
+        return this._pool.pop() || new this.TypedArray(this.dimension);
     }
 
     public free (vec:Vec<T, D>) : void {
@@ -86,7 +93,7 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
     }
 
     public equal (a:Vec<T, D>, b:Vec<T, D>) : boolean {
-        if (!(a instanceof this._constructor) || !(b instanceof this._constructor)) {
+        if (!(a instanceof this.TypedArray) || !(b instanceof this.TypedArray)) {
             return false;
         }
         if (a.length !== b.length) {
@@ -179,15 +186,15 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
         return result;
     }
 
-    public toJSON (vec:Vec<T, D>) : number[] {
+    public toJSON (vec:Vec<T, D>) : FixedLengthArray<D> {
         const arr = new Array(vec.length);
         for (let i = 0; i < arr.length; ++i) {
             arr[i] = vec[i];
         }
-        return arr;
+        return <FixedLengthArray<D>>arr;
     }
 
-    public fromJSON (x:number[]) : Vec<T, D> {
+    public fromJSON (x:FixedLengthArray<D>) : Vec<T, D> {
         if (Array.isArray(x)) {
             const vec = this.alloc();
             for (let i = 0; i < vec.length; ++i) {
