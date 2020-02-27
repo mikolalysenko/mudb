@@ -369,11 +369,12 @@ tape('de/serializing struct', (t) => {
 
     const struct = new MuStruct({
         b: new MuBoolean(),
+        a: new MuASCII(),
         u: new MuUTF8(),
         f: new MuFloat32(),
         i: new MuVarint(),
         r: new MuRelativeVarint(),
-        a: new MuArray(new MuFloat32(), Infinity),
+        arr: new MuArray(new MuFloat32(), Infinity),
         sa: new MuSortedArray(new MuFloat32(), Infinity),
         v: new MuVector(new MuFloat32(), 9),
         d: new MuDictionary(new MuFloat32(), Infinity),
@@ -384,6 +385,13 @@ tape('de/serializing struct', (t) => {
         }),
     });
 
+    const ascii = [
+        ' ',
+        'a',
+        'e42dfecf821ebdfce692c7692b18d2b1',
+        '<a href="https://github.com/mikolalysenko/mudb/">mudb</a>',
+    ];
+
     const strings = [
         '',
         '<a href="https://github.com/mikolalysenko/mudb/">mudb</a>',
@@ -393,11 +401,12 @@ tape('de/serializing struct', (t) => {
     function createStruct () {
         const s = struct.alloc();
         s.b = randBool();
+        s.a = ascii[Math.random() * ascii.length | 0];
         s.u = strings[Math.random() * 3 | 0];
         s.f = randFloat32();
         s.i = randUint32();
-        s.r = randInt(-0x40000000, 0x3fffffff),
-        s.a = randArray();
+        s.r = randInt(-0x40000000, 0x3fffffff);
+        s.arr = randArray();
         s.sa = randArray().sort(compare);
         s.v = randVec(9);
         s.d = randDict();

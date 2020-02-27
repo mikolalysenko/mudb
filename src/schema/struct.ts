@@ -364,7 +364,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             const muType = types[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){++np;tr|=${1 << (i & 7)}}`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -375,14 +375,16 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint16':
                 case 'uint32':
                 case 'varint':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.${muType2WriteMethod[muType]}(t[${pr}]);++np;tr|=${1 << (i & 7)}}`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.${muType2WriteMethod[muType]}(t[${pr}]);`);
                     break;
                 case 'rvarint':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.writeVarint(0xAAAAAAAA+(t[${pr}]-b[${pr}])^0xAAAAAAAA);++np;tr|=${1 << (i & 7)}}`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.writeVarint(0xAAAAAAAA+(t[${pr}]-b[${pr}])^0xAAAAAAAA);`);
                     break;
                 default:
-                    methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],s)){++np;tr|=${1 << (i & 7)}}`);
+                    methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],s)){`);
             }
+            methods.diff.append(`++np;tr|=${1 << (i & 7)}}`);
+
             if ((i & 7) === 7) {
                 methods.diff.append(`s.writeUint8At(head+${i >> 3},tr);tr=0;`);
             }
@@ -404,7 +406,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             methods.patch.append(`;t[${pr}]=(tr&${1 << (i & 7)})?`);
             switch (muType) {
                 case 'ascii':
-                    methods.patch.append(`s.readASCII(s.readUint32()):b[${pr}];`);
+                    methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
                     break;
                 case 'boolean':
                     methods.patch.append(`!b[${pr}]:b[${pr}];`);
