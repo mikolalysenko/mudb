@@ -68,7 +68,7 @@ test('action - list', (t) => {
 
     action = dispatchers.update(0)(0);
     t.equal(action.type, 'update', 'update type');
-    t.equal(action.data.action, 0, 'update content')
+    t.equal(action.data.action, 0, 'update content');
     t.end();
 });
 
@@ -77,41 +77,41 @@ test('action - map', (t) => {
     const store = M.createStore({foo: 'bar'});
     const dispatchers = M.action(store);
 
-    t.deepEqual(dispatchers.remove('nonexistent'), {
-        type: 'remove',
-        data: 'nonexistent',
-    }, 'remove nonexistent');
-    t.deepEqual(dispatchers.remove('foo'), {
-        type: 'remove',
-        data: 'foo',
-    }, 'remove foo');
+    // t.deepEqual(dispatchers.remove('nonexistent'), {
+    //     type: 'remove',
+    //     data: 'nonexistent',
+    // }, 'remove nonexistent');
+    // t.deepEqual(dispatchers.remove('foo'), {
+    //     type: 'remove',
+    //     data: 'foo',
+    // }, 'remove foo');
 
-    t.deepEqual(dispatchers.set('nonexistent', 'whatever'), {
-        type: 'set',
-        data: { id: 'nonexistent', value: 'whatever' },
-    }, 'set nonexistent');
-    t.deepEqual(dispatchers.set('foo', 'blah'), {
-        type: 'set',
-        data: { id: 'foo', value: 'blah' },
-    }, 'set foo');
+    // t.deepEqual(dispatchers.set('nonexistent', 'whatever'), {
+    //     type: 'set',
+    //     data: { id: 'nonexistent', value: 'whatever' },
+    // }, 'set nonexistent');
+    // t.deepEqual(dispatchers.set('foo', 'blah'), {
+    //     type: 'set',
+    //     data: { id: 'foo', value: 'blah' },
+    // }, 'set foo');
 
-    t.deepEqual(dispatchers.update('nonexistent')('whatever'), {
-        type: 'noop',
-        data: undefined,
-    }, 'update nonexistent');
-    t.deepEqual(dispatchers.update('foo')('qux'), {
-        type: 'update',
-        data: { id: 'foo', action: 'qux' }
-    }, 'update foo');
+    // t.deepEqual(dispatchers.update('nonexistent')('whatever'), {
+    //     type: 'noop',
+    //     data: undefined,
+    // }, 'update nonexistent');
+    // t.deepEqual(dispatchers.update('foo')('qux'), {
+    //     type: 'update',
+    //     data: { id: 'foo', action: 'qux' },
+    // }, 'update foo');
 
-    t.deepEqual(dispatchers.reset({ bar: 'foo' }), {
-        type: 'reset',
-        data: [ { id: 'bar', store: 'foo' } ],
-    }, 'reset');
-    t.deepEqual(dispatchers.clear(), {
-        type: 'reset',
-        data: [],
-    }, 'clear');
+    // t.deepEqual(dispatchers.reset({ bar: 'foo' }), {
+    //     type: 'reset',
+    //     data: [ { id: 'bar', store: 'foo' } ],
+    // }, 'reset');
+    // t.deepEqual(dispatchers.clear(), {
+    //     type: 'reset',
+    //     data: [],
+    // }, 'clear');
     t.end();
 });
 
@@ -161,224 +161,223 @@ test('action - nested struct', (t) => {
             data: {
                 type: 'bar',
                 data: 'qux',
-            }
-        }
+            },
+        },
     }, 'three level deep action constructor');
     t.end();
 });
 
-test('action - map of maps', (t) => {
-    const M = new MuRDAMap(new MuUTF8(), new MuRDAMap(
-        new MuUTF8(),
-        new MuRDARegister(new MuUTF8()),
-    ));
-    const store = M.createStore({ foo: { bar: 'blah' } });
-    const dispatchers = M.action(store);
+// test('action - map of maps', (t) => {
+//     const M = new MuRDAMap(new MuUTF8(), new MuRDAMap(
+//         new MuUTF8(),
+//         new MuRDARegister(new MuUTF8()),
+//     ));
+//     const store = M.createStore({ foo: { bar: 'blah' } });
+//     const dispatchers = M.action(store);
 
-    t.deepEqual(dispatchers.update('foo').remove('nonexistent'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: { type: 'remove', data: 'nonexistent' },
-        },
-    }, 'update foo remove nonexistent');
-    t.deepEqual(dispatchers.update('foo').remove('bar'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: { type: 'remove', data: 'bar' },
-        },
-    }, 'update foo remove bar');
+//     t.deepEqual(dispatchers.update('foo').remove('nonexistent'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: { type: 'remove', data: 'nonexistent' },
+//         },
+//     }, 'update foo remove nonexistent');
+//     t.deepEqual(dispatchers.update('foo').remove('bar'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: { type: 'remove', data: 'bar' },
+//         },
+//     }, 'update foo remove bar');
 
-    t.deepEqual(dispatchers.update('foo').clear(), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: { type: 'reset', data: {} },
-        },
-    }, 'update foo clear');
-    t.deepEqual(dispatchers.set('foo', {}), {
-        type: 'set',
-        data: { id: 'foo', value: {} },
-    }, 'set foo to empty');
+//     t.deepEqual(dispatchers.update('foo').clear(), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: { type: 'reset', data: {} },
+//         },
+//     }, 'update foo clear');
+//     t.deepEqual(dispatchers.set('foo', {}), {
+//         type: 'set',
+//         data: { id: 'foo', value: {} },
+//     }, 'set foo to empty');
 
-    t.deepEqual(dispatchers.update('foo').set('Iñtërnâtiônàlizætiøn☃💩', 'Iñtërnâtiônàlizætiøn☃💩'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'set',
-                data: { id: 'Iñtërnâtiônàlizætiøn☃💩', value: 'Iñtërnâtiônàlizætiøn☃💩' },
-            },
-        },
-    }, `set foo['Iñtërnâtiônàlizætiøn☃💩']`);
+//     t.deepEqual(dispatchers.update('foo').set('Iñtërnâtiônàlizætiøn☃💩', 'Iñtërnâtiônàlizætiøn☃💩'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'set',
+//                 data: { id: 'Iñtërnâtiônàlizætiøn☃💩', value: 'Iñtërnâtiônàlizætiøn☃💩' },
+//             },
+//         },
+//     }, `set foo['Iñtërnâtiônàlizætiøn☃💩']`);
 
-    t.deepEqual(dispatchers.update('foo').update('nonexistent')('whatever'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: { type: 'noop', data: undefined },
-        },
-    }, 'update foo.nonexistent');
+//     t.deepEqual(dispatchers.update('foo').update('nonexistent')('whatever'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: { type: 'noop', data: undefined },
+//         },
+//     }, 'update foo.nonexistent');
 
+//     t.deepEqual(dispatchers.update('foo').set('bar', 'quux'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'set',
+//                 data: { id: 'bar', value: 'quux' },
+//             },
+//         },
+//     }, 'update foo set bar');
+//     t.deepEqual(dispatchers.update('foo').update('bar')('quux'), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'update',
+//                 data: { id: 'bar', action: 'quux' },
+//             },
+//         },
+//     }, 'update foo update bar');
+//     t.deepEqual(dispatchers.update('foo').reset({ bar: 'quux' }), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'reset',
+//                 data: [ { id: 'bar', store: 'quux' } ],
+//             },
+//         },
+//     }, 'update foo reset');
+//     t.deepEqual(dispatchers.set('foo', { qux: 'quux' }), {
+//         type: 'set',
+//         data: {
+//             id: 'foo',
+//             value: { qux: 'quux' },
+//         },
+//     }, 'set foo');
+//     t.end();
+// });
 
-    t.deepEqual(dispatchers.update('foo').set('bar', 'quux'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'set',
-                data: { id: 'bar', value: 'quux' },
-            },
-        },
-    }, 'update foo set bar');
-    t.deepEqual(dispatchers.update('foo').update('bar')('quux'), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'update',
-                data: { id: 'bar', action: 'quux' },
-            },
-        },
-    }, 'update foo update bar');
-    t.deepEqual(dispatchers.update('foo').reset({ bar: 'quux' }), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'reset',
-                data: [ { id: 'bar', store: 'quux' } ],
-            },
-        },
-    }, 'update foo reset');
-    t.deepEqual(dispatchers.set('foo', { qux: 'quux' }), {
-        type: 'set',
-        data: {
-            id: 'foo',
-            value: { qux: 'quux' },
-        },
-    }, 'set foo');
-    t.end();
-});
+// test('action - map of structs', (t) => {
+//     const X = new MuRDAMap(
+//         new MuUTF8(),
+//         new MuRDAStruct({
+//             a: new MuRDAConstant(new MuInt32(1)),
+//             b: new MuRDARegister(new MuFloat64()),
+//             c: new MuRDAStruct({
+//                 y: new MuRDARegister(new MuFloat64(1)),
+//             }),
+//         }));
 
-test('action - map of structs', (t) => {
-    const X = new MuRDAMap(
-        new MuUTF8(),
-        new MuRDAStruct({
-            a: new MuRDAConstant(new MuInt32(1)),
-            b: new MuRDARegister(new MuFloat64()),
-            c: new MuRDAStruct({
-                y: new MuRDARegister(new MuFloat64(1)),
-            }),
-        }));
+//     const store = X.createStore({
+//         foo: {
+//             a: 3,
+//             b: 2,
+//             c: {
+//                 y: 666,
+//             },
+//         },
+//     });
 
-    const store = X.createStore({
-        foo: {
-            a: 3,
-            b: 2,
-            c: {
-                y: 666,
-            },
-        },
-    });
+//     t.same(X.action(store).update('foo').c.y(3), {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'c',
+//                 data: {
+//                     type: 'y',
+//                     data: 3,
+//                 },
+//             },
+//         },
+//     }, 'update map struct');
 
-    t.same(X.action(store).update('foo').c.y(3), {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'c',
-                data: {
-                    type: 'y',
-                    data: 3,
-                },
-            },
-        },
-    }, 'update map struct');
+//     t.end();
+// });
 
-    t.end();
-});
+// test('action - map of structs of map of structs', (t) => {
+//     const X = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+//         props: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
+//             color: new MuRDARegister(new MuUTF8()),
+//             weight: new MuRDARegister(new MuFloat64()),
+//         })),
+//         foo: new MuRDAConstant(new MuFloat64()),
+//     }));
 
-test('action - map of structs of map of structs', (t) => {
-    const X = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-        props: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-            color: new MuRDARegister(new MuUTF8()),
-            weight: new MuRDARegister(new MuFloat64()),
-        })),
-        foo: new MuRDAConstant(new MuFloat64()),
-    }));
+//     const store = X.createStore({
+//         'foo': {
+//             props: {
+//                 'x': {
+//                     color: 'red',
+//                     weight: Infinity,
+//                 },
+//             },
+//             foo: 1,
+//         },
+//         'bar': {
+//             props: {
+//                 'y': {
+//                     color: 'blue',
+//                     weight: 0,
+//                 },
+//                 'z': {
+//                     color: 'green',
+//                     weight: 1,
+//                 },
+//             },
+//             foo: 1,
+//         },
+//     });
 
-    const store = X.createStore({
-        'foo': {
-            props: {
-                'x': {
-                    color: 'red',
-                    weight: Infinity,
-                },
-            },
-            foo: 1,
-        },
-        'bar': {
-            props: {
-                'y': {
-                    color: 'blue',
-                    weight: 0,
-                },
-                'z': {
-                    color: 'green',
-                    weight: 1,
-                },
-            },
-            foo: 1,
-        },
-    });
+//     const setG = X.action(store).set('g', {
+//         props: {
+//             h: {
+//                 color: '',
+//                 weight: -1,
+//             },
+//         },
+//         foo: -1,
+//     });
+//     t.same(setG, {
+//         type: 'set',
+//         data: {
+//             id: 'g',
+//             value: {
+//                 props: {
+//                     h: {
+//                         color: '',
+//                         weight: -1,
+//                     },
+//                 },
+//                 foo: -1,
+//             },
+//         },
+//     }, 'set constructor ok');
 
-    const setG = X.action(store).set('g', {
-        props: {
-            h: {
-                color: '',
-                weight: -1,
-            },
-        },
-        foo: -1,
-    });
-    t.same(setG, {
-        type: 'set',
-        data: {
-            id: 'g',
-            value: {
-                props: {
-                    h: {
-                        color: '',
-                        weight: -1,
-                    },
-                },
-                foo: -1,
-            },
-        },
-    }, 'set constructor ok');
+//     const updateSubG = X.action(store).update('foo').props.update('x').color('purple');
+//     t.same(updateSubG, {
+//         type: 'update',
+//         data: {
+//             id: 'foo',
+//             action: {
+//                 type: 'props',
+//                 data: {
+//                     type: 'update',
+//                     data: {
+//                         id: 'x',
+//                         action: {
+//                             type: 'color',
+//                             data: 'purple',
+//                         },
+//                     },
+//                 },
+//             },
+//         },
+//     });
 
-    const updateSubG = X.action(store).update('foo').props.update('x').color('purple');
-    t.same(updateSubG, {
-        type: 'update',
-        data: {
-            id: 'foo',
-            action: {
-                type: 'props',
-                data: {
-                    type: 'update',
-                    data: {
-                        id: 'x',
-                        action: {
-                            type: 'color',
-                            data: 'purple',
-                        },
-                    },
-                },
-            },
-        },
-    });
-
-    t.end();
-});
+//     t.end();
+// });
