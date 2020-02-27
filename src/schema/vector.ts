@@ -82,6 +82,11 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
             valueType: schema.json,
             dimension,
         };
+
+        this.__b = new this.TypedArray(dimension);
+        this.__t = new this.TypedArray(dimension);
+        this._b = new Uint8Array(this.__b.buffer);
+        this._t = new Uint8Array(this.__t.buffer);
     }
 
     public alloc () : Vec<T, D> {
@@ -118,9 +123,15 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
         return dst;
     }
 
-    public diff (base_:Vec<T, D>, target_:Vec<T, D>, out:MuWriteStream) : boolean {
-        const base = new Uint8Array(base_.buffer);
-        const target = new Uint8Array(target_.buffer);
+    // caches
+    private __b:Vec<T, D>;
+    private __t:Vec<T, D>;
+    private _b:Uint8Array;
+    private _t:Uint8Array;
+
+    public diff (base:Vec<T, D>, target:Vec<T, D>, out:MuWriteStream) : boolean {
+        this.__b.set(base);
+        this.__t.set(target);
 
         const byteLength = this.identity.byteLength;
         out.grow(Math.ceil(byteLength * 9 / 8));
@@ -133,8 +144,8 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
         let numPatches = 0;
 
         for (let i = 0; i < byteLength; ++i) {
-            if (base[i] !== target[i]) {
-                out.writeUint8(target[i]);
+            if (this._b[i] !== this._t[i]) {
+                out.writeUint8(this._t[i]);
                 tracker |= 1 << (i & 7);
                 ++numPatches;
             }
@@ -162,14 +173,13 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
         const numTrackerBytes = Math.ceil(numTrackerBits / 8);
         inp.offset = head + numTrackerBytes;
 
-        const result = this.clone(base);
-        const uint8View = new Uint8Array(result.buffer);
+        this.__b.set(base);
         for (let i = 0; i < numTrackerFullBytes; ++i) {
             const start = i * 8;
             const tracker = inp.readUint8At(head + i);
             for (let j = 0; j < 8; ++j) {
                 if (tracker & (1 << j)) {
-                    uint8View[start + j] = inp.readUint8();
+                    this._b[start + j] = inp.readUint8();
                 }
             }
         }
@@ -179,11 +189,11 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
             const partialBits = numTrackerBits & 7;
             for (let j = 0; j < partialBits; ++j) {
                 if (tracker & (1 << j)) {
-                    uint8View[start + j] = inp.readUint8();
+                    this._b[start + j] = inp.readUint8();
                 }
             }
         }
-        return result;
+        return this.clone(this.__b);
     }
 
     public toJSON (vec:Vec<T, D>) : FixedLengthArray<D> {
