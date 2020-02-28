@@ -117,6 +117,9 @@ export class MuRDAMapStoreElement<MapRDA extends MuRDAMap<any, any>> {
         public key:MapRDA['keySchema']['identity'],
         public value:MuRDATypes<MapRDA['valueRDA']>['store'],
     ) {}
+
+    public next:this|null = null;
+    public prev:this|null = null;
 }
 
 function compareStoreElements<T extends MuRDAMapStoreElement<any>> (a:T, b:T) {
@@ -127,14 +130,14 @@ function compareStoreElements<T extends MuRDAMapStoreElement<any>> (a:T, b:T) {
 }
 
 export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDAStore<MapRDA> {
-    public keyIndex:{ [key:string]:MuRDAMapStoreElement<MapRDA>[]; } = {};
+    public keyIndex:{ [key:string]:MuRDAMapStoreElement<MapRDA>; } = {};
     public idIndex:{ [id:string]:MuRDAMapStoreElement<MapRDA>; } = {};
 
     constructor (elements:MuRDAMapStoreElement<MapRDA>[]) {
-        const { keyIndex, idIndex } = this;
+        const { idIndex } = this;
         for (let i = 0; i < elements.length; ++i) {
             const element = elements[i];
-            const { id, key } = element;
+            const id = element.id;
             if (id in idIndex) {
                 continue;
             }
@@ -158,9 +161,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         const valueSchema = valueRDA.stateSchema;
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            const row = keyIndex[key];
-            row.sort(compareStoreElements);
-            const final = row[row.length - 1];
+            const final = keyIndex[key];
             if (!final.deleted) {
                 (<any>out)[key] = final.value.state(valueRDA, out[key] || valueSchema.alloc());
             }
@@ -173,12 +174,22 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             return;
         }
 
-        // remove from old bucket
-        const prevBucket = this.keyIndex[element.key];
-        prevBucket.splice(prevBucket.indexOf(element), 1);
-        if (prevBucket.length === 0) {
-            delete this.keyIndex[element.key];
+        // remove from list
+        const { next, prev } = element;
+        if (this.keyIndex[element.key] === element) {
+            if (next) {
+                this.keyIndex[element.key] = next;
+            } else {
+                delete this.keyIndex[element.key];
+            }
         }
+        if (next) {
+            next.prev = prev;
+        }
+        if (prev) {
+            prev.next = next;
+        }
+        element.next = element.prev = null;
 
         // insert into new bucket
         this._insertElement(element);
@@ -186,11 +197,33 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
 
     private _insertElement (element:MuRDAMapStoreElement<MapRDA>) {
         const key = element.key;
-        const bucket = this.keyIndex[key];
-        if (bucket) {
-            bucket.push(element);
+        const head = this.keyIndex[key];
+        if (head) {
+            // insert into list
+            if (compareStoreElements(head, element) < 0) {
+                element.next = head;
+                head.prev = element;
+                this.keyIndex[key] = element;
+            } else {
+                let prev = head;
+                while (prev) {
+                    const next = prev.next;
+                    if (!next) {
+                        prev.next = element;
+                        element.prev = prev;
+                        break;
+                    } else if (compareStoreElements(next, element) < 0) {
+                        prev.next = element;
+                        next.prev = element;
+                        element.next = next;
+                        element.prev = prev;
+                        break;
+                    }
+                    prev = next;
+                }
+            }
         } else {
-            this.keyIndex[key] = [ element ];
+            this.keyIndex[key] = element;
         }
     }
 
@@ -358,20 +391,6 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         this.keyIndex = {};
     }
 
-    public getKey (key:string) {
-        const bucket = this.keyIndex[key];
-        if (!bucket) {
-            return null;
-        }
-        let result = bucket[0];
-        for (let i = 0; i < bucket.length; ++i) {
-            if (result.sequence < bucket[i].sequence) {
-                result = bucket[i];
-            }
-        }
-        return result;
-    }
-
     public genId () {
         while (true) {
             const id = (Math.random() * (1 << 31)) >>> 0;
@@ -450,7 +469,7 @@ export class MuRDAMap<
             const upsertAction = result.data = this.upsertActionSchema.alloc();
             const storeAction = this.storeElementSchema.alloc();
             upsertAction.push(storeAction);
-            const prev = this._savedStore.getKey(key);
+            const prev = this._savedStore.keyIndex[key];
             storeAction.key = key;
             storeAction.deleted = false;
             const tmp = this.valueRDA.createStore(state);
@@ -467,7 +486,7 @@ export class MuRDAMap<
         },
         remove: (key:KeySchema['identity']) => {
             const result = this.actionSchema.alloc();
-            const prev = this._savedStore.getKey(key);
+            const prev = this._savedStore.keyIndex[key];
             if (prev && !prev.deleted) {
                 result.type = 'setDeleted';
                 const action = result.data = this.setDeletedActionSchema.alloc();
@@ -481,13 +500,13 @@ export class MuRDAMap<
         },
         move: (from:KeySchema['identity'], to:KeySchema['identity']) => {
             const result = this.actionSchema.alloc();
-            const prev = this._savedStore.getKey(from);
+            const prev = this._savedStore.keyIndex[from];
             if (prev && !prev.deleted) {
                 result.type = 'move';
                 const moveAction = result.data = this.moveActionSchema.alloc();
                 moveAction.id = prev.id;
                 moveAction.key = prev.key;
-                const target = this._savedStore.getKey(to);
+                const target = this._savedStore.keyIndex[to];
                 if (target) {
                     moveAction.sequence = target.sequence + 1;
                 } else {
@@ -505,7 +524,7 @@ export class MuRDAMap<
             const upserts = result.data = this.upsertActionSchema.alloc();
             const keys = Object.keys(this._savedStore.keyIndex);
             for (let i = 0; i < keys.length; ++i) {
-                const prev = this._savedStore.getKey(keys[i]);
+                const prev = this._savedStore.keyIndex[keys[i]];
                 if (!prev || prev.deleted) {
                     continue;
                 }
@@ -527,7 +546,6 @@ export class MuRDAMap<
             const keys = Object.keys(state);
             for (let i = 0; i < keys.length; ++i) {
                 const key = keys[i];
-                const prev = this._savedStore.getKey(key);
                 const upsert = this.storeElementSchema.alloc();
                 upsertAction.push(upsert);
                 upsert.key = key;
@@ -535,6 +553,7 @@ export class MuRDAMap<
                 upsert.value = tmp.serialize(this.valueRDA, upsert.value);
                 tmp.free(this.valueRDA);
                 upsert.deleted = false;
+                const prev = this._savedStore.keyIndex[key];
                 if (prev) {
                     upsert.id = prev.id;
                     upsert.sequence = prev.sequence;
@@ -549,7 +568,7 @@ export class MuRDAMap<
                 if (key in state) {
                     continue;
                 }
-                const prev = this._savedStore.getKey(key);
+                const prev = this._savedStore.keyIndex[key];
                 if (!prev || prev.deleted) {
                     continue;
                 }
@@ -566,7 +585,7 @@ export class MuRDAMap<
             return result;
         },
         update: (key:KeySchema['identity']) => {
-            const prev = this._savedStore.getKey(key);
+            const prev = this._savedStore.keyIndex[key];
             this._savedAction = this.actionSchema.alloc();
             if (prev) {
                 this._savedElement = prev.value;
@@ -587,7 +606,7 @@ export class MuRDAMap<
         set:(key:KeySchema['identity'], value:ValueRDA['stateSchema']['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['upsertAction'];
         remove:(key:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['setDeletedAction'];
         update:(key:KeySchema['identity']) => StripBindAndWrap<KeySchema['identity'], ValueRDA>;
-        move:(key:KeySchema['identity'], rename:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['moveAction']
+        move:(from:KeySchema['identity'], to:KeySchema['identity']) => MuRDAMapTypes<KeySchema, ValueRDA>['moveAction']
         clear:() => MuRDAMapTypes<KeySchema, ValueRDA>['upsertAction'];
         reset:(state:MuRDAMapTypes<KeySchema, ValueRDA>['state']) => MuRDAMapTypes<KeySchema, ValueRDA>['upsertAction'];
     } = (store) => {
