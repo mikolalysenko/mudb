@@ -371,6 +371,15 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         }
         return result;
     }
+
+    public genId () {
+        while (true) {
+            const id = (Math.random() * (1 << 31)) >>> 0;
+            if (!(id in this.idIndex)) {
+                return id;
+            }
+        }
+    }
 }
 
 type WrapAction<Key, Meta, Dispatch> =
@@ -451,7 +460,7 @@ export class MuRDAMap<
                 storeAction.id = prev.id;
                 storeAction.sequence = prev.sequence;
             } else {
-                storeAction.id = this.uuid();
+                storeAction.id = this._savedStore.genId();
                 storeAction.sequence = 1;
             }
             return result;
@@ -530,7 +539,7 @@ export class MuRDAMap<
                     upsert.id = prev.id;
                     upsert.sequence = prev.sequence;
                 } else {
-                    upsert.id = this.uuid();
+                    upsert.id = this._savedStore.genId();
                     upsert.sequence = 1;
                 }
             }
@@ -775,11 +784,12 @@ export class MuRDAMap<
     public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) {
         const keys = Object.keys(initialState);
         const elements:MuRDAMapStoreElement<this>[] = new Array(keys.length);
+        let idCounter = 1;
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const value = initialState[key];
             elements[i] = new MuRDAMapStoreElement<this>(
-                this.uuid(),
+                idCounter++,
                 1,
                 false,
                 key,
@@ -801,11 +811,5 @@ export class MuRDAMap<
                 <any>valueRDA.parse(e.value));
         }
         return new MuRDAMapStore<this>(elements);
-    }
-
-    private _uuidBase = (Math.random() * (1 << 32)) >>> 0;
-    private _uuidCount = 0;
-    public uuid() {
-        return this._uuidBase ^ (this._uuidCount++);
     }
 }
