@@ -1,5 +1,6 @@
-import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from '../stream';
+import { MuSchema } from './schema';
+import { MuVector } from './vector';
 
 const muPrimitiveSize = {
     boolean: 1,
@@ -123,7 +124,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     const localVars = (vars.length > 0) ? `var ${vars.join()};` : '';
                     return localVars + body.join('');
                 },
-                def (value) { //vars.push('_vN'), body.push('_vN=value')
+                def (value:string) { //vars.push('_vN'), body.push('_vN=value')
                     const tok = token();
                     vars.push(tok);
                     if (value != undefined) {
@@ -155,8 +156,8 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             equal: func('equal', ['a', 'b']),
             clone: func('clone', ['s']),
             assign: func('assign', ['d', 's']),
-            diff: func('diff', ['b', 't', 's']),
-            patch: func('patch', ['b', 's']),
+            diff: func('diff', ['b', 't', 'ws']),
+            patch: func('patch', ['b', 'rs']),
             toJSON: func('toJSON', ['s']),
             fromJSON: func('fromJSON', ['j']),
             stats: func('stats', []),
@@ -359,12 +360,23 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             }
         }
 
-        methods.diff.append(`var head=s.offset;var tr=0;var np=0;s.grow(${baseSize});s.offset+=${trackerBytes};`);
+        const muTypeToTypedArray = {
+            float32: 'Float32Array',
+            float64: 'Float64Array',
+            int8: 'Int8Array',
+            int16: 'Int16Array',
+            int32: 'Int32Array',
+            uint8: 'Uint8Array',
+            uint16: 'Uint16Array',
+            uint32: 'Uint32Array',
+        };
+
+        methods.diff.append(`var head=ws.offset;var tr=0;var np=0;ws.grow(${baseSize});ws.offset+=${trackerBytes};`);
         propRefs.forEach((pr, i) => {
             const muType = types[i].muType;
             switch (muType) {
                 case 'boolean':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){++np;tr|=${1 << (i & 7)}}`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -375,41 +387,76 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint16':
                 case 'uint32':
                 case 'varint':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.${muType2WriteMethod[muType]}(t[${pr}]);`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){ws.${muType2WriteMethod[muType]}(t[${pr}]);++np;tr|=${1 << (i & 7)}}`);
                     break;
                 case 'rvarint':
-                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.writeVarint(0xAAAAAAAA+(t[${pr}]-b[${pr}])^0xAAAAAAAA);`);
+                    methods.diff.append(`if(b[${pr}]!==t[${pr}]){ws.writeVarint(0xAAAAAAAA+(t[${pr}]-b[${pr}])^0xAAAAAAAA);++np;tr|=${1 << (i & 7)}}`);
+                    break;
+                case 'vector':
                     break;
                 default:
-                    methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],s)){`);
+                    methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],ws)){++np;tr|=${1 << (i & 7)}}`);
             }
-            methods.diff.append(`++np;tr|=${1 << (i & 7)}}`);
+
+            // vector member
+            if (muType === 'vector') {
+                const vector = <MuVector<any, any>>types[i];
+                const TypedArray = muTypeToTypedArray[vector.muData.muType];
+                const dimension = vector.dimension;
+                const numTrackerBits = vector.identity.byteLength;
+
+                const baseCache_ = prolog.def(`new ${TypedArray}(${dimension})`);
+                const targetCache_ = prolog.def(`new ${TypedArray}(${dimension})`);
+                const baseCache = prolog.def(`new Uint8Array(${baseCache_}.buffer)`);
+                const targetCache = prolog.def(`new Uint8Array(${targetCache_}.buffer)`);
+
+                const head = methods.diff.def('0');
+                const offset = methods.diff.def('0');
+                const numPatches = methods.diff.def('0');
+                const tracker = methods.diff.def('0');
+
+                methods.diff.append(
+                    `${head}=${offset}=ws.offset;`,
+                    `ws.grow(${Math.ceil(numTrackerBits * 9 / 8)});`,
+                    `ws.offset+=${Math.ceil(numTrackerBits / 8)};`,
+                    `${baseCache_}.set(b[${pr}]);${targetCache_}.set(t[${pr}]);`,
+                );
+                for (let j = 0; j < numTrackerBits; ++j) {
+                    methods.diff.append(`if(${baseCache}[${j}]!==${targetCache}[${j}]){++${numPatches};${tracker}|=${1 << (j & 7)};ws.writeUint8(${targetCache}[${j}])}`);
+                    if ((j & 7) === 7) {
+                        methods.diff.append(`ws.writeUint8At(${offset}++,${tracker});${tracker}=0;`);
+                    }
+                }
+                if (numTrackerBits & 7) {
+                    methods.diff.append(`ws.writeUint8At(${offset},${tracker});`);
+                }
+                methods.diff.append(`if(${numPatches}>0){++np;tr|=${1 << (i & 7)}}else{ws.offset=${head}}`);
+            }
 
             if ((i & 7) === 7) {
-                methods.diff.append(`s.writeUint8At(head+${i >> 3},tr);tr=0;`);
+                methods.diff.append(`ws.writeUint8At(head+${i >> 3},tr);tr=0;`);
             }
         });
 
         if (numProps & 7) {
-            methods.diff.append(`s.writeUint8At(head+${trackerBytes - 1},tr);`);
+            methods.diff.append(`ws.writeUint8At(head+${trackerBytes - 1},tr);`);
         }
-        methods.diff.append(`if(np){return true}else{s.offset=head;return false}`);
+        methods.diff.append(`if(np){return true}else{ws.offset=head;return false}`);
 
         // patch
-        methods.patch.append(`var t=_alloc(b);var head=s.offset;var tr=0;s.offset+=${trackerBytes};`);
+        methods.patch.append(`var t=_alloc();var head=rs.offset;var tr=0;rs.offset+=${trackerBytes};`);
         propRefs.forEach((pr, i) => {
             if (!(i & 7)) {
-                methods.patch.append(`tr=s.readUint8At(head+${i >> 3});`);
+                methods.patch.append(`tr=rs.readUint8At(head+${i >> 3});`);
             }
 
             const muType = types[i].muType;
-            methods.patch.append(`;t[${pr}]=(tr&${1 << (i & 7)})?`);
             switch (muType) {
                 case 'ascii':
-                    methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
+                    methods.patch.append(`t[${pr}]=(tr&${1 << (i & 7)})?rs.readASCII(rs.readVarint()):b[${pr}];`);
                     break;
                 case 'boolean':
-                    methods.patch.append(`!b[${pr}]:b[${pr}];`);
+                    methods.patch.append(`t[${pr}]=(tr&${1 << (i & 7)})?!b[${pr}]:b[${pr}];`);
                     break;
                 case 'float32':
                 case 'float64':
@@ -421,13 +468,49 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint32':
                 case 'utf8':
                 case 'varint':
-                    methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${pr}];`);
+                    methods.patch.append(`t[${pr}]=(tr&${1 << (i & 7)})?rs.${muType2ReadMethod[muType]}():b[${pr}];`);
                     break;
-                case 'rvaint':
-                    methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}]`);
+                case 'rvarint':
+                    methods.patch.append(`t[${pr}]=(tr&${1 << (i & 7)})?b[${pr}]+((0xAAAAAAAA^rs.readVarint())-0xAAAAAAAA>>0):b[${pr}];`);
+                    break;
+                case 'vector':
                     break;
                 default:
-                    methods.patch.append(`${typeRefs[i]}.patch(b[${pr}],s):${typeRefs[i]}.clone(b[${pr}]);`);
+                    methods.patch.append(`t[${pr}]=(tr&${1 << (i & 7)})?${typeRefs[i]}.patch(b[${pr}],rs):${typeRefs[i]}.clone(b[${pr}]);`);
+            }
+
+            // vector member
+            if (muType === 'vector') {
+                const vector = <MuVector<any, any>>types[i];
+                const TypedArray = muTypeToTypedArray[vector.muData.muType];
+                const dimension = vector.dimension;
+                const numTrackerBits = vector.identity.byteLength;
+                const numTrackerBytes = Math.ceil(numTrackerBits / 8);
+                const numTrackerFullBytes = numTrackerBits / 8 | 0;
+                const numPartialBits = numTrackerBits & 7;
+
+                const cache_ = prolog.def(`new ${TypedArray}(${dimension})`);
+                const cache = prolog.def(`new Uint8Array(${cache_}.buffer)`);
+
+                const head = methods.patch.def('0');
+                const tracker = methods.patch.def('0');
+
+                methods.patch.append(`if(tr&${1 << (i & 7)}){${head}=rs.offset;rs.offset+=${numTrackerBytes};${cache_}.set(b[${pr}]);`);
+                for (let j = 0; j < numTrackerFullBytes; ++j) {
+                    const start = 8 * j;
+                    methods.patch.append(`${tracker}=rs.readUint8At(${head}+${j});`);
+                    for (let k = 0; k < 8; ++k) {
+                        methods.patch.append(`if(${tracker}&${1 << k}){${cache}[${start + k}]=rs.readUint8()}`);
+                    }
+                }
+                if (numPartialBits) {
+                    const start = 8 * numTrackerFullBytes;
+                    methods.patch.append(`${tracker}=rs.readUint8At(${head}+${numTrackerFullBytes});`);
+                    for (let j = 0; j < numPartialBits; ++j) {
+                        methods.patch.append(`if(${tracker}&${1 << j}){${cache}[${start + j}]=rs.readUint8()}`);
+                    }
+                }
+                methods.patch.append(`t[${pr}]=${typeRefs[i]}.clone(${cache_})}`);
             }
         });
         methods.patch.append(`return t;`);
