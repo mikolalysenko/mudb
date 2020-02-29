@@ -899,7 +899,7 @@ export class MuRDAMap<
                 1,
                 false,
                 key,
-                <any>this.valueRDA.createStore(value));
+                this.valueRDA.createStore(value));
         }
         return new MuRDAMapStore<this>(elements);
     }
@@ -914,7 +914,7 @@ export class MuRDAMap<
                 e.sequence,
                 e.deleted,
                 e.key,
-                <any>valueRDA.parse(e.value));
+                valueRDA.parse(e.value));
         }
         return new MuRDAMapStore<this>(elements);
     }

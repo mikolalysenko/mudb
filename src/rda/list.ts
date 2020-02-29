@@ -73,7 +73,7 @@ export class MuRDAListStoreElement<ListRDA extends MuRDAList<any>> {
         public id:number,
         public deleted:boolean,
         public key:string,
-        public value:MuRDATypes<ListRDA>['store'],
+        public value:MuRDATypes<ListRDA['valueRDA']>['store'],
     ) {}
 
     public index:number = -1;
@@ -90,7 +90,7 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         const idIndex = this.idIndex;
         const ids = Object.keys(idIndex);
         for (let i = 0; i < ids.length; ++i) {
-            const element = idIndex[i];
+            const element = idIndex[ids[i]];
             if (!element.deleted) {
                 list.push(element);
             } else {
@@ -137,14 +137,14 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         return out;
     }
 
-    public apply (rda:ListRDA, actions:MuRDAListTypes<ListRDA>['action']) : boolean {
+    public apply (rda:ListRDA, action:ListRDA['actionSchema']['identity']) : boolean {
         const {
             upserts,
             deletes,
             undeletes,
             moves,
             updates,
-        } = actions;
+        } = action;
         const idIndex = this.idIndex;
 
         for (let i = 0; i < upserts.length; ++i) {
@@ -189,10 +189,10 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         }
 
         for (let i = 0; i < updates.length; ++i) {
-            const { id, action } = updates[i];
-            const prev = idIndex[id];
+            const update = updates[i];
+            const prev = idIndex[update.id];
             if (prev) {
-                prev.value.apply(rda.valueRDA, action);
+                prev.value.apply(rda.valueRDA, update.action);
             }
         }
 
@@ -206,7 +206,7 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         return true;
     }
 
-    public inverse (rda:ListRDA, actions:MuRDATypes<ListRDA>['action']) : MuRDATypes<ListRDA>['action'] {
+    public inverse (rda:ListRDA, action:ListRDA['actionSchema']['identity']) : MuRDATypes<ListRDA>['action'] {
         const result = rda.actionSchema.alloc();
         const {
             upserts,
@@ -214,7 +214,7 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
             undeletes,
             moves,
             updates,
-        } = actions;
+        } = action;
         const idIndex = this.idIndex;
 
         for (let i = 0; i < upserts.length; ++i) {
@@ -263,14 +263,15 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
             }
         }
 
-        for (let i = updates.length - 1; i >= updates.length; --i) {
-            const { id, action } = updates[i];
-            const prev = idIndex[id];
+        for (let i = updates.length - 1; i >= 0; --i) {
+            const update = updates[i];
+            const prev = idIndex[update.id];
             if (prev) {
                 const inverseUpdate = rda.updateActionSchema.alloc();
-                inverseUpdate.id = id;
+                inverseUpdate.id = update.id;
                 rda.valueRDA.actionSchema.free(inverseUpdate.action);
-                inverseUpdate.action = prev.value.inverse(rda.valueRDA, action);
+                inverseUpdate.action = prev.value.inverse(rda.valueRDA, update.action);
+                result.updates.push(inverseUpdate);
             }
         }
 
@@ -307,9 +308,16 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         this.listIndex.length = 0;
     }
 
-    public genId () {
-        while (true) {
-            const id = (Math.random() * (1 << 31)) | 0;
+    public genId (upserts:ListRDA['storeSchema']['identity']) {
+        let shift = 0;
+        searchLoop: while (true) {
+            shift = Math.min(30, shift + 7);
+            const id = (Math.random() * (1 << shift)) >>> 0;
+            for (let i = 0; i < upserts.length; ++i) {
+                if (upserts[i].id === id) {
+                    continue searchLoop;
+                }
+            }
             if (!this.idIndex[id]) {
                 return id;
             }
@@ -321,10 +329,18 @@ type WrapAction<Meta, Dispatch> =
     Meta extends { type:'unit' }
         ? Dispatch extends (...args:infer ArgType) => infer RetType
             ?  (...args:ArgType) => {
-                    upserts:[];
-                    deletes:[];
-                    undeletes:[];
-                    moves:[];
+                    upserts:{
+                        id:number;
+                        key:string;
+                        deleted:boolean;
+                        value:any;
+                    }[];
+                    deletes:number[];
+                    undeletes:number[];
+                    moves:{
+                        id:number;
+                        key:string;
+                    }[];
                     updates:{
                         id:number;
                         action:RetType;
@@ -368,9 +384,8 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
 
     public readonly emptyStore:MuRDAListStore<this>;
 
-    private _savedStore:MuRDAListStore<this> = <any>null;
-
-    private _savedElement:MuRDAListStoreElement<this>;
+    private _savedStore:MuRDAListStore<this>;
+    private _savedElement:ValueRDA['emptyStore'];
     private _savedAction:MuRDAListTypes<ValueRDA>['actionSchema']['identity'];
     private _savedUpdate:MuRDAListTypes<ValueRDA>['updateActionSchema']['identity'];
     private _updateDispatcher;
@@ -394,7 +409,8 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
 
             for (let i = 0; i < items.length; ++i) {
                 const upsert = this.storeElementSchema.alloc();
-                upsert.id = this._savedStore.genId();
+
+                upsert.id = this._savedStore.genId(result.upserts);
                 upsert.key = keys[i];
                 upsert.deleted = false;
 
@@ -413,72 +429,26 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
         update: (index:number) : StripStoreThenWrapAction<ValueRDA> => {
             const list = this._savedStore.listIndex;
             if ((index === (index | 0)) && 0 <= index && index < list.length) {
-                const element = this._savedElement = list[index];
-                const action = this._savedAction = this.actionSchema.alloc();
-                const update = this._savedUpdate = this.updateActionSchema.alloc();
-                update.id = element.id;
-                action.updates.push(update);
-                return this._updateDispatcher;
+                const element = list[index];
+                if (element) {
+                    this._savedElement = element.value;
+                    const action = this._savedAction = this.actionSchema.clone(this.actionSchema.identity);
+                    const update = this._savedUpdate = this.updateActionSchema.alloc();
+                    update.id = element.id;
+                    this.valueRDA.actionSchema.free(update.action);
+                    action.updates.push(update);
+                    return this._updateDispatcher;
+                }
             }
             return this._noopDispatcher;
         },
-
         push: (...elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(this._savedStore.listIndex.length, 0, elements),
         pop: (count:number = 1) => this._dispatchSplice(Math.max(this._savedStore.listIndex.length - count), count, []),
         unshift: (...elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(0, 0, elements),
         shift: (count:number = 1) => this._dispatchSplice(0, count, []),
         splice: (start:number, deleteCount:number=0, ...elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(start, deleteCount, elements),
-        clear: () => {
-            const result = this.actionSchema.alloc();
-            const list = this._savedStore.listIndex;
-            for (let i = 0; i < list.length; ++i) {
-                result.deletes.push(list[i].id);
-            }
-            result.deletes.sort(compareNum);
-            return result;
-        },
-        reset: (elements:ValueRDA['stateSchema']['identity'][]) => {
-            const result = this.actionSchema.alloc();
-            const list = this._savedStore.listIndex;
-
-            if (elements.length < list.length) {
-                const initId = elements.length > 0 ? ID_MIN : elements[elements.length - 1].key;
-                const keys = allocIds(initId, ID_MAX, list.length - elements.length);
-                let ptr = 0;
-                for (let i = elements.length; i < list.length; ++i) {
-                    const upsert = this.storeElementSchema.alloc();
-                    upsert.id = this._savedStore.genId();
-                    upsert.deleted = false;
-                    upsert.key = keys[ptr++];
-
-                    const store = this.valueRDA.createStore(elements[i]);
-                    upsert.value = store.serialize(this.valueRDA, upsert.value);
-                    store.free(this.valueRDA);
-                }
-            } else if (list.length < elements.length) {
-                for (let i = list.length; i < elements.length; ++i) {
-                    result.deletes.push(list[i].id);
-                }
-                result.deletes.sort(compareNum);
-            }
-
-            const n = Math.min(list.length, elements.length);
-            for (let i = 0; i < n; ++i) {
-                const upsert = this.storeElementSchema.alloc();
-                const prev = list[i];
-
-                upsert.id = prev.id;
-                upsert.deleted = prev.deleted;
-                upsert.key = prev.key;
-
-                const store = this.valueRDA.createStore(elements[i]);
-                upsert.value = store.serialize(this.valueRDA, upsert.value);
-                store.free(this.valueRDA);
-            }
-            result.upserts.sort(this.storeSchema.compare);
-
-            return result;
-        },
+        clear: () => this._dispatchSplice(0, this._savedStore.listIndex.length, []),
+        reset: (elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(0, this._savedStore.listIndex.length, elements),
         swap: (from:number, to:number) => {
             const result = this.actionSchema.alloc();
             if (from !== to) {
@@ -506,7 +476,7 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
 
         this.storeElementSchema = new MuStruct({
             id: new MuVarint(),
-            deleted: new MuBoolean(),
+            deleted: new MuBoolean(true),
             key: new MuASCII(),
             value: valueRDA.storeSchema,
         });
@@ -610,9 +580,7 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
         function wrapAction (meta, dispatcher) {
             if (meta.type === 'unit') {
                 return function (...args) {
-                    const tmp = dispatcher.apply(null, args);
-                    self._savedUpdate.action = self.valueRDA.actionSchema.assign(self._savedUpdate.action, tmp);
-                    self.valueRDA.actionSchema.free(tmp);
+                    self._savedUpdate.action = dispatcher.apply(null, args);
                     return self._savedAction;
                 };
             } else if (meta.type === 'table') {
@@ -635,9 +603,7 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
                     'rda',
                     'dispatch',
                     `return function () {
-                        var tmp = dispatch(rda._savedElement)${index}.apply(null, arguments);
-                        rda._savedUpdate.action = rda.valueRDA.actionSchema.assign(rda._savedUpdate.action, tmp);
-                        rda.valueRDA.actionSchema.free(tmp);
+                        rda._savedUpdate.action = dispatch(rda._savedElement)${index}.apply(null, arguments);
                         return rda._savedAction;
                     }`,
                 ))(self, dispatcher);
@@ -683,7 +649,7 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
                 i + 1,
                 false,
                 keys[i],
-                <any>this.valueRDA.createStore(initialState[i]),
+                this.valueRDA.createStore(initialState[i]),
             );
         }
         return new MuRDAListStore<this>(nodes);
@@ -697,7 +663,7 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
                 element.id,
                 element.deleted,
                 element.key,
-                <any>this.valueRDA.parse(element.value));
+                this.valueRDA.parse(element.value));
         }
         return new MuRDAListStore<this>(nodes);
     }

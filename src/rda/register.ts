@@ -1,6 +1,5 @@
 import { MuSchema } from '../schema/schema';
 import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
-import { MuRDAConstantStore } from './constant';
 
 export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDAStore<RDA> {
     public value:MuRDATypes<RDA>['state'];
