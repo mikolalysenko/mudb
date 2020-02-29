@@ -27,7 +27,7 @@ test('apply - register', (t) => {
     t.end();
 });
 
-test('sanitizer', (t) => {
+test('constrain', (t) => {
     const R = new MuRDARegister(new MuFloat64(), (x) => Math.max(0, Math.min(1, +x || 0)));
     const store = R.createStore(0);
     store.apply(R, 0.1);

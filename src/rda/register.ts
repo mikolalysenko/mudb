@@ -13,7 +13,7 @@ export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDA
     public free (rda:RDA) { rda.stateSchema.free(this.value); }
 
     public apply (rda:RDA, action:MuRDATypes<RDA>['action']) {
-        this.value = rda.stateSchema.assign(this.value, rda.sanitize(action));
+        this.value = rda.stateSchema.assign(this.value, rda.constrain(action));
         return true;
     }
 
@@ -35,16 +35,16 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
     public readonly actionMeta:MuRDARegisterMeta = { type: 'unit' };
 
     public action = (value:StateSchema['identity']) : StateSchema['identity'] => {
-        return this.actionSchema.clone(this.sanitize(value));
+        return this.actionSchema.clone(this.constrain(value));
     }
 
-    public sanitize:(value:StateSchema['identity']) => StateSchema['identity'];
+    public constrain:(value:StateSchema['identity']) => StateSchema['identity'];
 
     constructor (
         stateSchema:StateSchema,
-        sanitize?:(value:StateSchema['identity']) => StateSchema['identity']) {
+        constrain?:(value:StateSchema['identity']) => StateSchema['identity']) {
         this.stateSchema = this.actionSchema = this.storeSchema = stateSchema;
-        this.sanitize = sanitize || identity;
+        this.constrain = constrain || identity;
     }
 
     public createStore (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {
