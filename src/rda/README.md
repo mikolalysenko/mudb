@@ -2,7 +2,7 @@
 
 MuRDA is another schema built on top of MuSchema which allows for replicated data actions across user defined documents.  It is designed to support real time collaborative editing with optimistic execution and a localized undo buffer.  It's still a work in progress so performance may not yet be optimal and APIs are all subject to change.  These modules are all designed to be used along side the MuReplica modules which implement a simple client-server protocol for synchronizing MuRDA instances.
 
-The basic idea in MuRDA is to turn all state transitions into a lattice of idempotent actions.  To apply an action, a client first executes it optimistically locally and sends it to the server.  The server then validates actions and broadcsts them to all clients in linearized order.  Once any pair of clients have seen the same sequence of actions from the server their states are eventually synchronized, even if they diverge temporarily. Undo and redo functions are also built into MuRDA.  These are implemented by storing a local undo buffer on each client.  A client may play back their undo buffer to rewind various local actions.
+The basic idea in MuRDA is to turn all state transitions into a lattice of idempotent actions.  To apply an action, a client first executes it optimistically locally and sends it to the server.  The server then validates actions and broadcasts them to all clients in linearized order.  Once any pair of clients have seen the same sequence of actions from the server their states are eventually synchronized, even if they diverge temporarily. Undo and redo functions are also built into MuRDA.  These are implemented by storing a local undo buffer on each client.  A client may play back their undo buffer to rewind various local actions.
 
 ## Example Usage
 
@@ -26,7 +26,7 @@ Each RDA defines 3 schemas:
 
 Actions can be serialized and rebroadcast, stores and states are likewise serializable and pooled.
 
-* Stores record a mutable datastructure modeling the state
+* Stores record a mutable data structure modeling the state
 * Actions change the stores.
 * State is an immutable copy/view of a store
 
@@ -35,13 +35,11 @@ Actions can be serialized and rebroadcast, stores and states are likewise serial
 Applying an action to a store is called "dispatch"-ing it.
 When an action is dispatched to the store it is immediately applied to the store, mutating its state in place.
 Actions form a semigroup under the dispatch/apply law, ie they're transitive and composable.
-The actions must obey the folll
-
-The move-to-front law:
+The actions must obey the move-to-front law:
 
     g(f(g(x))) = g(f(x))
 
-Consequence of move-to-front law: We get a simple protocol for applying actions in a way which acheives optimistic eventual consistency:
+Consequence of move-to-front law: We get a simple protocol for applying actions in a way which achieves optimistic eventual consistency:
 
 * Client 1: Apply action immediately and send to server
 * Server: Take actions from clients, apply to store, rebroadcast to all clients
@@ -56,12 +54,12 @@ This can make a few things a little tricky, like we need to bind the store and p
 ## Undo/redo
 
 We often need a way to locally undo/redo user actions.
-To do this we augment the stores with the ability to calculate a psuedo-inverse, inv(S, a), for any action, $a$, relative to the current state of the store $S$.
+To do this we augment the stores with the ability to calculate a pseudo-inverse, inv(S, a), for any action, $a$, relative to the current state of the store $S$.
 This has the property that:
 
 inv(S, a)(a(S)) = S
 
-We can store the psuedo-inverse actions and their original action $A$ as pairs $inv(S, a), a$ in a statck which we can use to implement the undo/redo functions.
+We can store the pseudo-inverse actions and their original action $A$ as pairs $inv(S, a), a$ in a stack which we can use to implement the undo/redo functions.
 
 ## State projections
 

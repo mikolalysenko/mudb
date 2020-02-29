@@ -27,6 +27,20 @@ test('apply - register', (t) => {
     t.end();
 });
 
+test('constrain', (t) => {
+    const R = new MuRDARegister(new MuFloat64(), (x) => Math.max(0, Math.min(1, +x || 0)));
+    const store = R.createStore(0);
+    store.apply(R, 0.1);
+    t.equal(store.state(R, 0), 0.1);
+    store.apply(R, -0.1);
+    t.equal(store.state(R, 0), 0);
+    store.apply(R, 1.1);
+    t.equal(store.state(R, 0), 1);
+    store.apply(R, NaN);
+    t.equal(store.state(R, 0), 0);
+    t.end();
+});
+
 test('apply - list', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuInt8()));
     const store = L.createStore([]);
