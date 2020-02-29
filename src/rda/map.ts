@@ -478,9 +478,11 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
     }
 
     public genId () {
+        let shift = 0;
         while (true) {
-            const id = (Math.random() * (1 << 31)) >>> 0;
-            if (!(id in this.idIndex)) {
+            shift = Math.max(30, shift + 7);
+            const id = (Math.random() * (1 << shift)) >>> 0;
+            if (!this.idIndex[id]) {
                 return id;
             }
         }
@@ -626,6 +628,12 @@ export class MuRDAMap<
             const resetAction = result.data = this.resetActionSchema.alloc();
             const keys = Object.keys(state);
             const upsertAction = resetAction.upserts;
+            const ids = Object.keys(this._savedStore.idIndex);
+            const idConstraint:{ [id:string]:boolean} = {};
+            for (let i = 0; i < ids.length; ++i) {
+                idConstraint[ids[i]] = true;
+            }
+
             for (let i = 0; i < keys.length; ++i) {
                 const key = keys[i];
                 const upsert = this.storeElementSchema.alloc();
@@ -639,7 +647,17 @@ export class MuRDAMap<
                     upsert.id = prev.id;
                     upsert.sequence = prev.sequence;
                 } else {
-                    upsert.id = this._savedStore.genId();
+                    let id = 0;
+                    let shift = 0;
+                    while (true) {
+                        shift = Math.max(30, shift + 7);
+                        id = (Math.random() * (1 << shift)) >>> 0;
+                        if (!idConstraint[id]) {
+                            idConstraint[id] = true;
+                            break;
+                        }
+                    }
+                    upsert.id = id;
                     upsert.sequence = 1;
                 }
                 upsertAction.push(upsert);
