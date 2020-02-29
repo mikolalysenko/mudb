@@ -38,6 +38,8 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
         return this.actionSchema.clone(this.constrain(value));
     }
 
+    public readonly emptyStore:MuRDARegisterStore<this>;
+
     public constrain:(value:StateSchema['identity']) => StateSchema['identity'];
 
     constructor (
@@ -45,6 +47,7 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
         constrain?:(value:StateSchema['identity']) => StateSchema['identity']) {
         this.stateSchema = this.actionSchema = this.storeSchema = stateSchema;
         this.constrain = constrain || identity;
+        this.emptyStore = new MuRDARegisterStore<this>(stateSchema.identity);
     }
 
     public createStore (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {
