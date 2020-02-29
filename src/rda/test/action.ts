@@ -24,6 +24,15 @@ test('action - register', (t) => {
     t.end();
 });
 
+test('constrain', (t) => {
+    const R = new MuRDARegister(new MuFloat64(), (x) => Math.max(0, Math.min(1, +x || 0)));
+    t.equal(R.action(0.1), 0.1);
+    t.equal(R.action(-0.1), 0);
+    t.equal(R.action(1.1), 1);
+    t.equal(R.action(NaN), 0);
+    t.end();
+});
+
 test('action - list', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuFloat64()));
     const store = L.createStore([]);

@@ -1,6 +1,8 @@
 import { MuSchema } from '../schema/schema';
 import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
 
+function identity<T> (x:T) : T { return x; }
+
 export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDAStore<RDA> {
     public value:MuRDATypes<RDA>['state'];
 
@@ -11,7 +13,7 @@ export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDA
     public free (rda:RDA) { rda.stateSchema.free(this.value); }
 
     public apply (rda:RDA, action:MuRDATypes<RDA>['action']) {
-        this.value = rda.stateSchema.assign(this.value, action);
+        this.value = rda.stateSchema.assign(this.value, rda.constrain(action));
         return true;
     }
 
@@ -31,12 +33,18 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
     public readonly storeSchema:StateSchema;
 
     public readonly actionMeta:MuRDARegisterMeta = { type: 'unit' };
-    public action = (value:StateSchema['identity']) : typeof value => {
-        return this.actionSchema.clone(value);
+
+    public action = (value:StateSchema['identity']) : StateSchema['identity'] => {
+        return this.actionSchema.clone(this.constrain(value));
     }
 
-    constructor (stateSchema:StateSchema) {
+    public constrain:(value:StateSchema['identity']) => StateSchema['identity'];
+
+    constructor (
+        stateSchema:StateSchema,
+        constrain?:(value:StateSchema['identity']) => StateSchema['identity']) {
         this.stateSchema = this.actionSchema = this.storeSchema = stateSchema;
+        this.constrain = constrain || identity;
     }
 
     public createStore (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {
