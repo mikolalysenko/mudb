@@ -53,9 +53,11 @@ export interface MuRDAListTypes<RDA extends MuRDA<any, any, any, any>> {
                 shift:{ type:'unit'; };
                 unshift:{ type:'unit'; };
                 splice:{ type:'unit'; };
-                swap:{ type:'unit'; };
                 clear:{ type:'unit'; };
                 reset:{ type:'unit'; };
+                swap:{ type:'unit'; };
+                reverse:{ type:'unit'; };
+                sort:{ type:'unit'; };
                 update:{
                     type:'partial';
                     action:
@@ -449,21 +451,54 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
         splice: (start:number, deleteCount:number=0, ...elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(start, deleteCount, elements),
         clear: () => this._dispatchSplice(0, this._savedStore.listIndex.length, []),
         reset: (elements:ValueRDA['stateSchema']['identity'][]) => this._dispatchSplice(0, this._savedStore.listIndex.length, elements),
-        swap: (from:number, to:number) => {
+        swap: (...cycle:number[]) => {
             const result = this.actionSchema.alloc();
-            if (from !== to) {
-                const list = this._savedStore.listIndex;
-                const a = list[from];
-                const b = list[to];
-                if (a && b) {
-                    const aMove = this.moveActionSchema.alloc();
-                    const bMove = this.moveActionSchema.alloc();
-                    aMove.id = a.id;
-                    aMove.key = b.key;
-                    bMove.id = b.id;
-                    bMove.key = a.key;
-                    result.moves.push(aMove, bMove);
+            const list = this._savedStore.listIndex;
+            for (let i = 0; i < cycle.length; ++i) {
+                if (!list[cycle[i]]) {
+                    return result;
                 }
+            }
+            for (let i = 0; i < cycle.length; ++i) {
+                const a = list[cycle[i]];
+                const b = list[cycle[(i + 1) % cycle.length]];
+                const move = this.moveActionSchema.alloc();
+                move.id = a.id;
+                move.key = b.key;
+                result.moves.push(move);
+            }
+            return result;
+        },
+        reverse: () => {
+            const list = this._savedStore.listIndex;
+            const result = this.actionSchema.alloc();
+            for (let i = 0; i < list.length; ++i) {
+                const move = this.moveActionSchema.alloc();
+                move.id = list[i].id;
+                move.key = list[list.length - 1 - i].key;
+                result.moves.push(move);
+            }
+            return result;
+        },
+        sort: (compare:(a:ValueRDA['stateSchema']['identity'], b:ValueRDA['stateSchema']['identity']) => number) => {
+            const list = this._savedStore.listIndex;
+            const tagged = list.map((element) => {
+                return {
+                    element: element,
+                    state: element.value.state(this.valueRDA, this.valueRDA.stateSchema.alloc()),
+                };
+            });
+            tagged.sort((a, b) => compare(a.state, b.state));
+            const result = this.actionSchema.alloc();
+            for (let i = 0; i < tagged.length; ++i) {
+                const a = result[i];
+                const b = tagged[i].element;
+                if (a !== b) {
+                    const move = this.moveActionSchema.alloc();
+                    move.id = b.id;
+                    move.key = a.key;
+                }
+                this.valueRDA.stateSchema.free(tagged[i].state);
             }
             return result;
         },
@@ -508,9 +543,11 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
                     shift:{ type:'unit' },
                     unshift:{ type:'unit' },
                     splice:{ type:'unit' },
-                    swap:{ type:'unit' },
                     clear:{ type:'unit' },
                     reset:{ type:'unit' },
+                    swap:{ type:'unit' },
+                    reverse:{ type:'unit' },
+                    sort:{ type:'unit' },
                     update:{
                         type:'partial',
                         action:
