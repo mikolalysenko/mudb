@@ -427,6 +427,8 @@ export class MuRDAMap<
 
     public readonly actionMeta:MuRDAMapTypes<KeySchema, ValueRDA>['actionMeta'];
 
+    public readonly emptyStore:MuRDAMapStore<this>;
+
     private _savedStore:MuRDAMapStore<this> = <any>null;
     private _savedElement:MuRDATypes<ValueRDA>['store'] = <any>null;
     private _savedAction:MuRDAMapTypes<KeySchema, ValueRDA>['action'] = <any>null;
@@ -770,6 +772,8 @@ export class MuRDAMap<
         };
         this._updateDispatcher = this._constructUpdateDispatcher();
         this._noopDispatcher = this._constructNoopDispatcher();
+
+        this.emptyStore = new MuRDAMapStore<this>([]);
     }
 
     public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) {

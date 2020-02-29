@@ -259,12 +259,12 @@ test('inverse - list', (t) => {
     const dispatchers = L.action(store);
 
     const actions:any[] = [];
-    actions.push(dispatchers.remove(1, 2));
+    actions.push(dispatchers.splice(1, 2));
     actions.push(dispatchers.shift());
     actions.push(dispatchers.pop());
-    actions.push(dispatchers.unshift([1.11, 2.22]));
-    actions.push(dispatchers.push([5.55, 6.66]));
-    actions.push(dispatchers.insert(2, [3.33]));
+    actions.push(dispatchers.unshift(1.11, 2.22));
+    actions.push(dispatchers.push(5.55, 6.66));
+    actions.push(dispatchers.splice(2, 0, 3.33));
     actions.push(dispatchers.reset([11.1, 22.2, 33.3]));
     actions.push(dispatchers.clear());
 
@@ -301,12 +301,18 @@ test('inverse - list', (t) => {
 });
 
 test('inverse - list of lists', (t) => {
-    const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
+    const x = new MuRDARegister(new MuFloat64());
+    const y = new MuRDAList(x);
+    const L = new MuRDAList<typeof y>(y);
     const store = L.createStore([[1.11, 2.22, 3.33, 4.44, 5.55]]);
     const dispatchers = L.action(store);
 
+    L.actionMeta.action.table.update;
+
+    const foo = dispatchers.update(0);
+
     const actions:any[] = [];
-    actions.push(dispatchers.update(0).remove(1, 2));
+    actions.push(dispatchers.update(0).splice(1, 2));
     actions.push(dispatchers.update(0).shift());
     actions.push(dispatchers.update(0).pop());
     actions.push(dispatchers.update(0).unshift([1.11, 2.22]));

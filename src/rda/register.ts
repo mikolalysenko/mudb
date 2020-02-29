@@ -1,5 +1,6 @@
 import { MuSchema } from '../schema/schema';
 import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
+import { MuRDAConstantStore } from './constant';
 
 export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDAStore<RDA> {
     public value:MuRDATypes<RDA>['state'];
@@ -35,8 +36,11 @@ export class MuRDARegister<StateSchema extends MuSchema<any>>
         return this.actionSchema.clone(value);
     }
 
+    public readonly emptyStore:MuRDARegisterStore<this>;
+
     constructor (stateSchema:StateSchema) {
         this.stateSchema = this.actionSchema = this.storeSchema = stateSchema;
+        this.emptyStore = new MuRDARegisterStore<this>(stateSchema.identity);
     }
 
     public createStore (initialState:StateSchema['identity']) : MuRDARegisterStore<this> {

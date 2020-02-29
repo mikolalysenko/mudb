@@ -78,7 +78,7 @@ export interface MuRDAStructTypes<Spec extends MuRDAStructSpec> {
     }>;
     store:this['storeSchema']['identity'];
     stores:{
-        [id in keyof Spec]:ReturnType<Spec[id]['createStore']>;
+        [id in keyof Spec]:Spec[id]['emptyStore'];
     };
 
     actionMeta:{
@@ -158,6 +158,8 @@ export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> 
     public readonly action:((store:MuRDAStructStore<Spec, MuRDAStruct<Spec>>) => {
         [id in keyof Spec]:StripBindAndWrap<Spec, id>;
     });
+
+    public readonly emptyStore:MuRDAStructStore<Spec, this>;
 
     private _saveStore:any = null;
     private _wrapDispatch<Id extends keyof Spec>(id:Id, rda:Spec[Id]) {
@@ -263,6 +265,7 @@ export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> 
         const stateSpec:any = {};
         const actionSpec:any = {};
         const storeSpec:any = {};
+        const emptyStores:any = {};
         const props = Object.keys(spec);
         for (let i = 0; i < props.length; ++i) {
             const prop = props[i];
@@ -270,10 +273,12 @@ export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> 
             stateSpec[prop] = rda.stateSchema;
             actionSpec[prop] = rda.actionSchema;
             storeSpec[prop] = rda.storeSchema;
+            emptyStores[prop] = rda.emptyStore;
         }
         this.stateSchema = new MuStruct(stateSpec);
         this.actionSchema = new MuUnion(actionSpec);
         this.storeSchema = new MuStruct(storeSpec);
+        this.emptyStore = new MuRDAStructStore(emptyStores);
 
         // Generate action meta data and store stuff
         this.actionMeta = <any>{

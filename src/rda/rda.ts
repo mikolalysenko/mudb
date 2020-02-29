@@ -15,7 +15,7 @@ export interface MuRDATypes<RDA extends MuRDA<any, any, any, any>> {
     serializedStore:this['serializedStoreSchema']['identity'];
 
     // Type of the store associated to an RDA
-    store:ReturnType<RDA['createStore']> & ReturnType<RDA['parse']>;
+    store:RDA['emptyStore'];
 
     meta:RDA['actionMeta'];
     dispatcher:RDA['action'];
@@ -29,10 +29,11 @@ export interface MuRDA<
     readonly stateSchema:StateSchema;
     readonly actionSchema:ActionSchema;
     readonly storeSchema:StoreSchema;
+    readonly emptyStore:MuRDAStore<this>;
 
     // store constructors
-    createStore(initialState:StateSchema['identity']) : MuRDAStore<this>;
-    parse(inp:StoreSchema['identity']) : MuRDAStore<this>;
+    createStore(initialState:StateSchema['identity']) : this['emptyStore'];
+    parse(inp:StoreSchema['identity']) : this['emptyStore'];
 
     // action constructor and reflection metadata
     actionMeta:Meta;
