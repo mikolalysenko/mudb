@@ -77,8 +77,6 @@ export class MuRDAListStoreElement<ListRDA extends MuRDAList<any>> {
         public key:string,
         public value:MuRDATypes<ListRDA['valueRDA']>['store'],
     ) {}
-
-    public index:number = -1;
 }
 
 export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStore<ListRDA> {
@@ -95,8 +93,6 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
             const element = idIndex[ids[i]];
             if (!element.deleted) {
                 list.push(element);
-            } else {
-                element.index = -1;
             }
         }
 
@@ -105,10 +101,8 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         let ptr = 0;
         for (let i = 0; i < list.length; ) {
             const node = list[i++];
-            node.index = ptr;
             list[ptr++] = node;
             while (i < list.length && list[i].key === node.key) {
-                list[i].index = -1;
                 ++i;
             }
         }
@@ -116,7 +110,7 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
     }
 
     constructor (elements:MuRDAListStoreElement<ListRDA>[]) {
-        const { idIndex, listIndex } = this;
+        const idIndex = this.idIndex;
         for (let i = 0; i < elements.length; ++i) {
             const element = elements[i];
             idIndex[element.id] = element;
