@@ -4,9 +4,9 @@ import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
 import { MuSortedArray } from '../schema/sorted-array';
 import { MuVoid } from '../schema/void';
-import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
 import { MuVarint } from '../schema/varint';
 import { MuBoolean } from '../schema/boolean';
+import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
 
 function compareKey (a:string, b:string) {
     return a < b ? -1 : (b < a ? 1 : 0);

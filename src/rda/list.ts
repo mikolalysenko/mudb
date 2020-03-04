@@ -1,8 +1,8 @@
-import { MuRDA, MuRDATypes, MuRDAStore, MuRDAActionMeta } from './rda';
 import { MuArray } from '../schema/array';
 import { MuStruct } from '../schema/struct';
 import { MuSortedArray } from '../schema/sorted-array';
 import { MuVarint, MuASCII, MuBoolean } from '../schema';
+import { MuRDA, MuRDATypes, MuRDAStore, MuRDAActionMeta } from './rda';
 import { allocIds, ID_MIN, ID_MAX } from './_id';
 
 function compareKey (a, b) {
