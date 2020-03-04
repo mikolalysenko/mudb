@@ -12,7 +12,7 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
         response.data = '';
         this.schemas.responseSchema.free(response);
         if (type === 'success') {
-            return data;
+            return data.data;
         } else {
             throw data;
         }
