@@ -1,4 +1,4 @@
-import { MuRPCProtocol, MuRPCServerTransportFactory, MuRPCTypes, MuRPCSchemas, MuRPCServerTransport } from './protocol';
+import { MuRPCProtocol, MuRPCTypes, MuRPCSchemas, MuRPCServerTransport } from './protocol';
 import { MuLogger } from '../logger';
 
 export class MuRPCServer<Protocol extends MuRPCProtocol<any>> {
@@ -7,19 +7,17 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>> {
 
     constructor (spec:{
         protocol:Protocol,
-        transport:MuRPCServerTransportFactory,
+        transport:MuRPCServerTransport<Protocol>,
         authorize:(auth:string) => Promise<boolean>,
         handlers:MuRPCTypes<Protocol>['handlers'],
         logger?:MuLogger,
     }) {
         const logger = spec.logger;
         const schemas = this.schemas = new MuRPCSchemas(spec.protocol);
-        this.transport = spec.transport.serverTransport({
+        this.transport = spec.transport;
+        this.transport.listen(
             schemas,
-            recv: async (auth, rpc, result) => {
-                result.token = rpc.token;
-                const response = result.response;
-                const arg = rpc.arg;
+            async (auth, arg, response) => {
                 try {
                     const method = <any>arg.type;
                     const handler = spec.handlers[method];
@@ -59,7 +57,6 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>> {
                     response.type = 'error';
                     response.data = `internal error: ${e}`;
                 }
-            },
-        });
+            });
     }
 }

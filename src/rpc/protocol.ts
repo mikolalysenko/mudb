@@ -1,5 +1,5 @@
 import { MuSchema } from '../schema/schema';
-import { MuUnion, MuVarint, MuStruct, MuUTF8 } from '../schema';
+import { MuUnion, MuVarint, MuStruct, MuUTF8, MuVoid } from '../schema';
 
 export type MuRPCTableEntry<
     ArgsSchema extends MuSchema<any>,
@@ -26,17 +26,16 @@ export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
     public retSchema:MuUnion<{
         [method in keyof Protocol['methods']]:Protocol['methods']['ret'];
     }>;
-    public callSchema:MuStruct<{
-        token:MuVarint;
-        arg:MuRPCSchemas<Protocol>['argSchema'];
+    public responseSchema:MuUnion<{
+        success:MuRPCSchemas<Protocol>['retSchema'];
+        error:MuRPCSchemas<Protocol>['errorSchema'];
     }>;
-    public responseSchema:MuStruct<{
-        token:MuVarint;
-        response:MuUnion<{
-            success:MuRPCSchemas<Protocol>['retSchema'];
-            error:MuRPCSchemas<Protocol>['errorSchema'];
-        }>;
-    }>;
+    public error (message:string) {
+        const result = this.responseSchema.alloc();
+        result.type = 'error';
+        result.data = message;
+        return result;
+    }
 
     constructor(
         public protocol:Protocol,
@@ -52,16 +51,9 @@ export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
         }
         this.argSchema = new MuUnion(argTable);
         this.retSchema = new MuUnion(retTable);
-        this.callSchema = new MuStruct({
-            token: this.tokenSchema,
-            arg: this.argSchema,
-        });
-        this.responseSchema = new MuStruct({
-            token: this.tokenSchema,
-            response: new MuUnion({
-                success: this.retSchema,
-                error: this.errorSchema,
-            }),
+        this.responseSchema = new MuUnion({
+            success: this.retSchema,
+            error: this.errorSchema,
         });
     }
 }
@@ -81,25 +73,17 @@ export interface MuRPCTypes<Protocol extends MuRPCProtocol<any>> {
 }
 
 export interface MuRPCClientTransport<Protocol extends MuRPCProtocol<any>> {
-    send:(rpc:MuRPCSchemas<Protocol>['callSchema']['identity']) => void;
-}
-
-export interface MuRPCClientTransportFactory {
-    clientTransport:(spec:{
-            schemas:MuRPCSchemas<any>,
-            recv:(response:MuRPCSchemas<any>['responseSchema']['identity']) => void;
-        }) => MuRPCClientTransport<any>;
+    send:(
+        schema:MuRPCSchemas<Protocol>,
+        rpc:MuRPCSchemas<Protocol>['argSchema']['identity']) =>
+            Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>;
 }
 
 export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>> {
-}
-
-export interface MuRPCServerTransportFactory {
-    serverTransport:(spec:{
-        schemas:MuRPCSchemas<any>,
+    listen:(
+        schemas:MuRPCSchemas<Protocol>,
         recv:(
             auth:string,
-            rpc:MuRPCSchemas<any>['callSchema']['identity'],
-            response:MuRPCSchemas<any>['responseSchema']['identity']) => Promise<void>;
-    }) => MuRPCServerTransport<any>;
+            rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
+            response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) => void;
 }

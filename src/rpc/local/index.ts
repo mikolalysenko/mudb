@@ -1,67 +1,47 @@
-import { MuRPCClientTransportFactory, MuRPCServerTransportFactory, MuRPCSchemas } from '../protocol';
+import { MuRPCSchemas, MuRPCClientTransport, MuRPCServerTransport, MuRPCProtocol } from '../protocol';
 
-export class MuLocalRPCTransport implements MuRPCClientTransportFactory, MuRPCServerTransportFactory {
-    private _activeAuthToken:string = '';
-    public setAuth (auth:string) {
-        this._activeAuthToken = auth;
+export class MuLocalRPCClientTransport<Protocol extends MuRPCProtocol<any>> implements MuRPCClientTransport<Protocol> {
+    constructor (
+        public auth:string,
+        private _handlers:{
+            [name:string]:(auth:string, rpc:any) => Promise<any>;
+        },
+    ) {}
+
+    public async send (
+        schemas:MuRPCSchemas<Protocol>,
+        args:MuRPCSchemas<Protocol>['argSchema']['identity']) {
+        const handler = this._handlers[schemas.protocol.name];
+        if (!handler) {
+            throw new Error('server not registered');
+        }
+        const json = await handler(this.auth, schemas.argSchema.toJSON(args));
+        return schemas.responseSchema.fromJSON(json);
     }
+}
 
+export class MuLocalRPCTransport implements MuRPCServerTransport<any> {
     private _handlers:{
         [name:string]:(auth:string, rpc:any) => Promise<any>;
     } = {};
 
-    public clientTransport (spec:{
-        schemas:MuRPCSchemas<any>,
-        recv:(response:any) => void,
-    }) {
-        const name = spec.schemas.protocol.name;
-        const schemas = spec.schemas;
-        const auth = this._activeAuthToken;
-
-        return {
-            send:(rpc:any) => {
-                const handler = this._handlers[name];
-                function error(e:string) {
-                    const resp = schemas.responseSchema.alloc();
-                    resp.token = rpc.token;
-                    resp.response.type = 'error';
-                    resp.response.data = e;
-                    Promise.resolve().then(() => {
-                        spec.recv(resp);
-                        schemas.responseSchema.free(resp);
-                    }).catch(() => {});
-                }
-                if (!handler) {
-                    error(`server not connected`);
-                } else {
-                    const json = schemas.callSchema.toJSON(rpc);
-                    Promise.resolve().then(() => {
-                        handler(auth, json)
-                            .then((response) => {
-                                const parsed = schemas.responseSchema.fromJSON(response);
-                                spec.recv(parsed);
-                                schemas.responseSchema.free(parsed);
-                            })
-                            .catch((e) => {
-                                error(e);
-                            });
-                    }).catch(() => {});
-                }
-            },
-        };
+    public client<Protocol extends MuRPCProtocol<any>> (auth:string) {
+        return new MuLocalRPCClientTransport<Protocol>(auth, this._handlers);
     }
 
-    public serverTransport (spec:{
-        schemas:MuRPCSchemas<any>,
-        recv:(auth:string, rpc:any, response:any) => Promise<any>,
-    }) {
-        this._handlers[spec.schemas.protocol.name] = async (auth, json) => {
-            const parsed = spec.schemas.callSchema.fromJSON(json);
-            const response = spec.schemas.responseSchema.alloc();
-            await spec.recv(auth, parsed, response);
-            const result = spec.schemas.responseSchema.toJSON(response);
-            spec.schemas.callSchema.free(parsed);
-            spec.schemas.responseSchema.free(response);
+    public listen<Protocol extends MuRPCProtocol<any>> (
+        schemas:MuRPCSchemas<Protocol>,
+        recv:(
+            auth:string,
+            rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
+            response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) {
+        this._handlers[schemas.protocol.name] = async (auth, json) => {
+            const parsed = schemas.argSchema.fromJSON(json);
+            const response = schemas.responseSchema.alloc();
+            await recv(auth, parsed, response);
+            const result = schemas.responseSchema.toJSON(response);
+            schemas.argSchema.free(parsed);
+            schemas.responseSchema.free(response);
             return result;
         };
         return {};
