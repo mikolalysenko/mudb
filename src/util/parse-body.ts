@@ -19,6 +19,10 @@ function decodeStream (req:http.IncomingMessage) {
 
 export function getRawBody (req:http.IncomingMessage, length:number) : Promise<Buffer> {
     return new Promise(function executor (resolve, reject) {
+        if (length === 0) {
+            return resolve(Buffer.alloc(0));
+        }
+
         let complete = false;
         let received = 0;
         const buffers:Buffer[] = [];

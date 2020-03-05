@@ -17,32 +17,35 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
         schemas:MuRPCSchemas<Protocol>,
         arg:MuRPCSchemas<Protocol>['argSchema']['identity'],
     ) {
-        const argBuffer = new Buffer(JSON.stringify(schemas.argSchema.toJSON(arg)), 'utf8');
+        const argBuffer = Buffer.from(JSON.stringify(schemas.argSchema.toJSON(arg)), 'utf8');
         return new Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>((resolve, reject) => {
             let completed = false;
-            const buffers:Buffer[] = [];
+            const chunks:string[] = [];
 
-            function done (error:any, payload?:Buffer) {
+
+            function done (error:any, payload?:string) {
                 if (completed) {
                     return;
                 }
                 completed = true;
-                buffers.length = 0;
+                chunks.length = 0;
                 if (error) {
                     return reject(error);
                 } else if (!payload) {
                     return reject('unspecified error');
                 }
                 try {
-                    return resolve(
-                        schemas.responseSchema.fromJSON(
-                            JSON.parse(payload.toString('utf8'))));
+                    let json:any = void 0;
+                    if (payload.length > 0) {
+                        json = JSON.parse(payload);
+                    }
+                    return resolve(schemas.responseSchema.fromJSON(json));
                 } catch (e) {
                     return reject(e);
                 }
             }
 
-            const url = new URL(schemas.protocol.name, this._url);
+            const url = new URL(this._url + '/' + schemas.protocol.name);
             const req = http.request({
                 hostname: url.hostname,
                 port: url.port,
@@ -66,17 +69,20 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                     }
                 }
                 res.setEncoding('utf8');
-                res.on('data', (chunk:Buffer) => {
+                res.on('data', (chunk) => {
                     if (completed) {
                         return;
+                    } else if (typeof chunk === 'string') {
+                        chunks.push(chunk);
+                    } else {
+                        chunks.push(chunk.toString('utf8'));
                     }
-                    buffers.push(chunk);
                 });
                 res.on('end', () => {
                     if (completed) {
                         return;
                     }
-                    done(void 0, Buffer.concat(buffers));
+                    done(void 0, chunks.join(''));
                 });
             });
             req.on('error', (err) => done(err));

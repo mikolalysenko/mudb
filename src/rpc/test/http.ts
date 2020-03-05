@@ -47,6 +47,7 @@ tape('http server', async (t) => {
 
     const httpServer = http.createServer(async (req, res) => {
         if (!await transport.handler(req, res)) {
+            t.fail('unhandled route');
             res.statusCode = 404;
             res.end();
         }
@@ -90,6 +91,8 @@ tape('http server', async (t) => {
     t.equals(await client.api.hello(), `hello guest`);
     await client.api.login('user');
     t.equals(await client.api.hello(), `hello user`);
+
+    httpServer.close();
 
     t.end();
 });

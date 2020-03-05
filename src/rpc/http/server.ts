@@ -166,7 +166,10 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
                         request,
                         length);
                     const bodyStr = body.toString('utf8');
-                    const bodyJSON = JSON.parse(bodyStr);
+                    let bodyJSON:any = void 0;
+                    if (bodyStr.length > 0) {
+                        bodyJSON = JSON.parse(bodyStr);
+                    }
                     const arg = handler.schemas.argSchema.fromJSON(bodyJSON);
                     await handler.recv(connection, arg, ret);
                 }
@@ -180,7 +183,8 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
             }
         }
         response.statusCode = ret.type === 'success' ? 200 : 400;
-        response.end(JSON.stringify(handler.schemas.responseSchema.toJSON(ret)));
+        const responseStr = JSON.stringify(handler.schemas.responseSchema.toJSON(ret));
+        response.end(responseStr);
         handler.schemas.responseSchema.free(ret);
         return true;
     }
