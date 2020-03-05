@@ -80,6 +80,7 @@ tape('basic rpc', async (t) => {
         await badClient.api.hello('i am a jerk');
         t.fail('should throw');
     } catch (e) {
+        console.log(e);
         t.pass('bad api throws when called');
     }
 

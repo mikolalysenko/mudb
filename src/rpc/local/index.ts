@@ -36,16 +36,29 @@ export class MuRPCLocalTransport implements MuRPCServerTransport<any, MuRPCLocal
 
     public listen<Protocol extends MuRPCProtocol<any>> (
         schemas:MuRPCSchemas<Protocol>,
+        auth:(conn:MuRPCLocalClient<Protocol>) => Promise<boolean>,
         recv:(
             conn:MuRPCLocalClient<Protocol>,
             rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
             response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) {
         this._handlers[schemas.protocol.name] = async (client, json) => {
-            const parsed = schemas.argSchema.fromJSON(json);
             const response = schemas.responseSchema.alloc();
-            await recv(client, parsed, response);
+            try {
+                if (!await auth(client)) {
+                    throw new Error('unauthorized access');
+                }
+                const parsed = schemas.argSchema.fromJSON(json);
+                await recv(client, parsed, response);
+                schemas.argSchema.free(parsed);
+            } catch (e) {
+                response.type = 'error';
+                if (e instanceof Error && e.stack) {
+                    response.data = e.stack;
+                } else {
+                    response.data = '' + e ;
+                }
+            }
             const result = schemas.responseSchema.toJSON(response);
-            schemas.argSchema.free(parsed);
             schemas.responseSchema.free(response);
             return result;
         };

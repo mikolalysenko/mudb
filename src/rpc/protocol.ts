@@ -73,6 +73,7 @@ export interface MuRPCConnection {
 export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>, Connection extends MuRPCConnection> {
     listen:(
         schemas:MuRPCSchemas<Protocol>,
+        authorize:(connection:Connection) => Promise<boolean>,
         recv:(
             connection:Connection,
             rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],

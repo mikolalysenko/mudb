@@ -21,6 +21,7 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
         this.transport = spec.transport;
         this.transport.listen(
             schemas,
+            spec.authorize,
             async (conn, arg, response) => {
                 try {
                     const method = <any>arg.type;
@@ -29,9 +30,6 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
                         logger && logger.error(`invalid rpc method: ${method}`);
                         response.type = 'error';
                         response.data = `invalid rpc method: ${method}`;
-                    } else if (!(await spec.authorize(conn))) {
-                        response.type = 'error';
-                        response.data = 'unauthorized rpc call';
                     } else {
                         const retSchema = schemas.protocol.methods[method].ret;
                         if (handler.length === 3) {
@@ -59,7 +57,11 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
                 } catch (e) {
                     logger && logger.error(e);
                     response.type = 'error';
-                    response.data = `internal error: ${e}`;
+                    if (e instanceof Error && e.stack) {
+                        response.data = `Internal error:\n${e.stack}`;
+                    } else {
+                        response.data = `internal error: ${e}`;
+                    }
                 }
             });
     }
