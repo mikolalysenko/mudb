@@ -207,6 +207,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         element.next = element.prev = null;
 
         // insert into new bucket
+        element.key = key;
         this._insertElement(element);
     }
 
@@ -594,7 +595,7 @@ export class MuRDAMap<
                 result.type = 'move';
                 const moveAction = result.data = this.moveActionSchema.alloc();
                 moveAction.id = prev.id;
-                moveAction.key = prev.key;
+                moveAction.key = to;
                 const target = this._savedStore.keyIndex[to];
                 if (target) {
                     moveAction.sequence = target.sequence + 1;
