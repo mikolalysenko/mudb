@@ -10,9 +10,9 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
         transport:MuRPCServerTransport<Protocol, Connection>,
         authorize:(conn:Connection) => Promise<boolean>,
         handlers:{
-            [method in keyof Protocol['methods']]:
-                (conn:Connection, arg:Protocol['methods'][method]['arg']['identity'], ret:Protocol['methods'][method]['ret']['identity']) =>
-                    Promise<Protocol['methods'][method]['ret']['identity']>;
+            [method in keyof Protocol['api']]:
+                (conn:Connection, arg:Protocol['api'][method]['arg']['identity'], ret:Protocol['api'][method]['ret']['identity']) =>
+                    Promise<Protocol['api'][method]['ret']['identity']>;
         },
         logger?:MuLogger,
     }) {
@@ -31,7 +31,7 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
                         response.type = 'error';
                         response.data = `invalid rpc method: ${method}`;
                     } else {
-                        const retSchema = schemas.protocol.methods[method].ret;
+                        const retSchema = schemas.protocol.api[method].ret;
                         if (handler.length === 3) {
                             const ret = retSchema.alloc();
                             const actualRet = await handler(conn, arg.data, ret);

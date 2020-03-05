@@ -2,9 +2,9 @@ import { MuRPCProtocol, MuRPCSchemas, MuRPCClientTransport } from './protocol';
 
 export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
     public api:{
-        [method in keyof Protocol['methods']]:
-            (arg:Protocol['methods'][method]['arg']['identity']) =>
-                Promise<Protocol['methods'][method]['ret']['identity']>;
+        [method in keyof Protocol['api']]:
+            (arg:Protocol['api'][method]['arg']['identity']) =>
+                Promise<Protocol['api'][method]['ret']['identity']>;
     };
 
     public schemas:MuRPCSchemas<Protocol>;
@@ -22,7 +22,7 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
         }
     }
 
-    private _createRPC (method:keyof Protocol['methods']) {
+    private _createRPC (method:keyof Protocol['api']) {
         return (arg) => {
             const rpc = this.schemas.argSchema.alloc();
             rpc.type = method;
@@ -37,7 +37,7 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
         this.schemas = new MuRPCSchemas(protocol);
         this.transport = transport;
         const api = this.api = <any>{};
-        const methods = Object.keys(protocol.methods);
+        const methods = Object.keys(protocol.api);
         for (let i = 0; i < methods.length; ++i) {
             const method = methods[i];
             api[method] = this._createRPC(method);

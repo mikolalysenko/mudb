@@ -16,7 +16,7 @@ function getPort () : Promise<number> {
 tape('http server', async (t) => {
     const protocol = {
         name: 'test',
-        methods: {
+        api: {
             login:{
                 arg: new MuUTF8(),
                 ret: new MuVoid(),

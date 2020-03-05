@@ -14,17 +14,17 @@ export type MuRPCTable = {
 
 export type MuRPCProtocol<RPCTable extends MuRPCTable> = {
     name:string;
-    methods:RPCTable;
+    api:RPCTable;
 };
 
 export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
     public errorSchema = new MuUTF8();
     public tokenSchema = new MuVarint();
     public argSchema:MuUnion<{
-        [method in keyof Protocol['methods']]:Protocol['methods']['arg'];
+        [method in keyof Protocol['api']]:Protocol['api']['arg'];
     }>;
     public retSchema:MuUnion<{
-        [method in keyof Protocol['methods']]:Protocol['methods']['ret'];
+        [method in keyof Protocol['api']]:Protocol['api']['ret'];
     }>;
     public responseSchema:MuUnion<{
         success:MuRPCSchemas<Protocol>['retSchema'];
@@ -42,10 +42,10 @@ export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
     ) {
         const argTable:any = {};
         const retTable:any = {};
-        const methods = Object.keys(protocol.methods);
+        const methods = Object.keys(protocol.api);
         for (let i = 0; i < methods.length; ++i) {
             const m = methods[i];
-            const s = protocol.methods[m];
+            const s = protocol.api[m];
             argTable[m] = s.arg;
             retTable[m] = s.ret;
         }

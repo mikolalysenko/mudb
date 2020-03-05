@@ -7,7 +7,7 @@ import { MuRPCClient } from '../client';
 tape('basic rpc', async (t) => {
     const protocol = {
         name: 'test rpc',
-        methods: {
+        api: {
             hello:{
                 arg: new MuUTF8(),
                 ret: new MuUTF8(),
