@@ -1,5 +1,5 @@
 import tape = require('tape');
-import { MuLocalRPCTransport } from '../local';
+import { MuRPCLocalTransport } from '../local';
 import { MuUTF8, MuStruct, MuVarint, MuVoid } from '../../schema';
 import { MuRPCServer } from '../server';
 import { MuRPCClient } from '../client';
@@ -29,20 +29,20 @@ tape('basic rpc', async (t) => {
         },
     };
 
-    const transport = new MuLocalRPCTransport();
+    const transport = new MuRPCLocalTransport();
 
     const server = new MuRPCServer({
         protocol,
         transport,
-        authorize: async (auth) => auth !== 'bad guy',
+        authorize: async ({ auth }) => auth !== 'bad guy',
         handlers: {
-            hello: async (auth, arg) => {
+            hello: async ({ auth }, arg) => {
                 if (auth === 'admin') {
                     return 'administrator';
                 }
                 return 'hello ' + arg;
             },
-            fib: async (auth, { a, b }, ret) => {
+            fib: async (conn, { a, b }, ret) => {
                 ret.a = a + b;
                 ret.b = a;
                 return ret;

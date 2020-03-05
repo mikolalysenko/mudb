@@ -1,5 +1,5 @@
 import { MuSchema } from '../schema/schema';
-import { MuUnion, MuVarint, MuStruct, MuUTF8, MuVoid } from '../schema';
+import { MuUnion, MuVarint, MuUTF8 } from '../schema';
 
 export type MuRPCTableEntry<
     ArgsSchema extends MuSchema<any>,
@@ -58,20 +58,6 @@ export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
     }
 }
 
-export interface MuRPCTypes<Protocol extends MuRPCProtocol<any>> {
-    authorize:(token:string) => Promise<boolean>;
-    api:{
-        [method in keyof Protocol['methods']]:
-            (arg:Protocol['methods'][method]['arg']['identity']) =>
-                Promise<Protocol['methods'][method]['ret']['identity']>;
-    };
-    handlers:{
-        [method in keyof Protocol['methods']]:
-            (auth:string, arg:Protocol['methods'][method]['arg']['identity'], ret:Protocol['methods'][method]['ret']['identity']) =>
-                Promise<Protocol['methods'][method]['ret']['identity']>;
-    };
-}
-
 export interface MuRPCClientTransport<Protocol extends MuRPCProtocol<any>> {
     send:(
         schema:MuRPCSchemas<Protocol>,
@@ -79,11 +65,15 @@ export interface MuRPCClientTransport<Protocol extends MuRPCProtocol<any>> {
             Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>;
 }
 
-export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>> {
+export interface MuRPCConnection {
+    auth:string;
+}
+
+export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>, Connection extends MuRPCConnection> {
     listen:(
         schemas:MuRPCSchemas<Protocol>,
         recv:(
-            auth:string,
+            connection:Connection,
             rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
             response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) => void;
 }

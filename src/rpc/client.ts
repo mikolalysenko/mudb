@@ -1,7 +1,11 @@
-import { MuRPCProtocol, MuRPCSchemas, MuRPCTypes, MuRPCClientTransport } from './protocol';
+import { MuRPCProtocol, MuRPCSchemas, MuRPCClientTransport } from './protocol';
 
 export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
-    public api:MuRPCTypes<Protocol>['api'];
+    public api:{
+        [method in keyof Protocol['methods']]:
+            (arg:Protocol['methods'][method]['arg']['identity']) =>
+                Promise<Protocol['methods'][method]['ret']['identity']>;
+    };
 
     public schemas:MuRPCSchemas<Protocol>;
     public transport:MuRPCClientTransport<Protocol>;

@@ -1,6 +1,6 @@
-import { MuRPCSchemas, MuRPCClientTransport, MuRPCServerTransport, MuRPCProtocol } from '../protocol';
+import { MuRPCSchemas, MuRPCClientTransport, MuRPCServerTransport, MuRPCProtocol, MuRPCConnection } from '../protocol';
 
-export class MuLocalRPCClientTransport<Protocol extends MuRPCProtocol<any>> implements MuRPCClientTransport<Protocol> {
+export class MuRPCLocalClientTransport<Protocol extends MuRPCProtocol<any>> implements MuRPCClientTransport<Protocol> {
     constructor (
         public auth:string,
         private _handlers:{
@@ -20,25 +20,29 @@ export class MuLocalRPCClientTransport<Protocol extends MuRPCProtocol<any>> impl
     }
 }
 
-export class MuLocalRPCTransport implements MuRPCServerTransport<any> {
+export class MuRPCLocalConnection implements MuRPCConnection {
+    constructor (public auth:string) {}
+}
+
+export class MuRPCLocalTransport implements MuRPCServerTransport<any, MuRPCLocalConnection> {
     private _handlers:{
         [name:string]:(auth:string, rpc:any) => Promise<any>;
     } = {};
 
     public client<Protocol extends MuRPCProtocol<any>> (auth:string) {
-        return new MuLocalRPCClientTransport<Protocol>(auth, this._handlers);
+        return new MuRPCLocalClientTransport<Protocol>(auth, this._handlers);
     }
 
     public listen<Protocol extends MuRPCProtocol<any>> (
         schemas:MuRPCSchemas<Protocol>,
         recv:(
-            auth:string,
+            conn:MuRPCLocalConnection,
             rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
             response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) {
         this._handlers[schemas.protocol.name] = async (auth, json) => {
             const parsed = schemas.argSchema.fromJSON(json);
             const response = schemas.responseSchema.alloc();
-            await recv(auth, parsed, response);
+            await recv(new MuRPCLocalConnection(auth), parsed, response);
             const result = schemas.responseSchema.toJSON(response);
             schemas.argSchema.free(parsed);
             schemas.responseSchema.free(response);
