@@ -1,13 +1,28 @@
-/**
- * Adapted from https://github.com/stream-utils/raw-body
- */
 import http = require('http');
+import zlib = require('zlib');
 
-export function getRawBody (stream:http.IncomingMessage, length:number) : Promise<Buffer> {
+function decodeStream (req:http.IncomingMessage) {
+    const encoding = req.headers['content-encoding'];
+    if (encoding === 'deflate') {
+        const stream = zlib.createInflate();
+        req.pipe(stream);
+        return stream;
+    } else if (encoding === 'gzip') {
+        const stream = zlib.createGunzip();
+        req.pipe(stream);
+        return stream;
+    } else if (!encoding || encoding === 'identity') {
+        return req;
+    }
+    throw new Error(`unknown encoding: ${encoding}`);
+}
+
+export function getRawBody (req:http.IncomingMessage, length:number) : Promise<Buffer> {
     return new Promise(function executor (resolve, reject) {
         let complete = false;
         let received = 0;
         const buffers:Buffer[] = [];
+        const stream = decodeStream(req);
 
         stream.on('aborted', onAborted);
         stream.on('close', cleanup);
@@ -29,7 +44,7 @@ export function getRawBody (stream:http.IncomingMessage, length:number) : Promis
             setImmediate(() => {
                 cleanup();
                 if (error) {
-                    stream.unpipe();
+                    req.unpipe();
                     stream.pause();
                     reject(error);
                 } else {

@@ -33,9 +33,25 @@ export class MuRPCHttpConnection implements MuRPCConnection {
     public setAuth (auth:string, options?:Partial<MuRPCHttpCookieOptions>) {
         if (this.useCookie) {
             const tokens = [ `${this.cookie}=${encodeURIComponent(auth)}` ];
-            const maxAge = opt('maxAge', options, 0);
-            if (maxAge) {
-                tokens.push(`Max-Age=${Math.ceil(maxAge)}`);
+            if (auth === '') {
+                tokens.push('Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+            } else {
+                const maxAge = opt('maxAge', options, 0);
+                if (maxAge) {
+                    tokens.push(`Max-Age=${Math.ceil(maxAge)}`);
+                }
+                const httpOnly = opt('httpOnly', options, false);
+                if (httpOnly) {
+                    tokens.push('HttpOnly');
+                }
+                const secure = opt('secure', options, false);
+                if (secure) {
+                    tokens.push('Secure');
+                }
+                const sameSite = opt('sameSite', options, '');
+                if (sameSite) {
+                    tokens.push(`SameSite=${sameSite}`);
+                }
             }
             const domain = opt('domain', options, '');
             if (domain) {
@@ -44,18 +60,6 @@ export class MuRPCHttpConnection implements MuRPCConnection {
             const path = opt('path', options, '');
             if (path) {
                 tokens.push(`Path=${path}`);
-            }
-            const httpOnly = opt('httpOnly', options, false);
-            if (httpOnly) {
-                tokens.push('HttpOnly');
-            }
-            const secure = opt('secure', options, false);
-            if (secure) {
-                tokens.push('Secure');
-            }
-            const sameSite = opt('sameSite', options, '');
-            if (sameSite) {
-                tokens.push(`SameSite=${sameSite}`);
             }
             this.response.setHeader('Set-Cookie', tokens.join('; '));
         }
@@ -175,6 +179,7 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
                 }
             }
         }
+        response.statusCode = ret.type === 'success' ? 200 : 400;
         response.end(JSON.stringify(handler.schemas.responseSchema.toJSON(ret)));
         handler.schemas.responseSchema.free(ret);
         return true;
