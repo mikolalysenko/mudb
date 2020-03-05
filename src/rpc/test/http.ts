@@ -86,6 +86,7 @@ tape('http server', async (t) => {
 
     const client = new MuRPCClient(protocol, new MuRPCHttpClientTransport({
         url: `http://127.0.0.1:${port}/api`,
+        timeout: Infinity,
     }));
 
     t.equals(await client.api.hello(), `hello guest`);

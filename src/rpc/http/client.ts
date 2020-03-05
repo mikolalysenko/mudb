@@ -9,6 +9,7 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
 
     constructor (spec:{
         url:string;
+        timeout:number;
     }) {
         this._url = spec.url;
     }
@@ -21,7 +22,6 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
         return new Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>((resolve, reject) => {
             let completed = false;
             const chunks:string[] = [];
-
 
             function done (error:any, payload?:string) {
                 if (completed) {
