@@ -26,6 +26,10 @@ tape('basic rpc', async (t) => {
                 arg: new MuVoid(),
                 ret: new MuVoid(),
             },
+            logout: {
+                arg: new MuVoid(),
+                ret: new MuVoid(),
+            },
         },
     };
 
@@ -49,6 +53,9 @@ tape('basic rpc', async (t) => {
             },
             brokenRoute: async () => {
                 throw new Error('not implemented');
+            },
+            logout: async (conn) => {
+                conn.setAuth('');
             },
         },
     });
@@ -79,7 +86,9 @@ tape('basic rpc', async (t) => {
     const adminClient = new MuRPCClient(
         protocol,
         transport.client('admin'));
-    t.equals(await adminClient.api.hello(''), 'administrator', 'admin auth ok');
+    t.equals(await adminClient.api.hello('guest'), 'administrator', 'admin auth ok');
+    await adminClient.api.logout();
+    t.equals(await adminClient.api.hello('guest'), 'hello guest', 'log out ok');
 
     t.end();
 });

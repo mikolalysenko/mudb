@@ -67,6 +67,7 @@ export interface MuRPCClientTransport<Protocol extends MuRPCProtocol<any>> {
 
 export interface MuRPCConnection {
     auth:string;
+    setAuth:(auth:string) => void;
 }
 
 export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>, Connection extends MuRPCConnection> {
