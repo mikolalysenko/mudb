@@ -14,6 +14,9 @@
     "watch": "tsc -w"
   },
   "main": "index.js",
+  "browser": {
+    "rpc/http/client": "rpc/http/client-browser"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mikolalysenko/mudb.git"
@@ -41,6 +44,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "content-type": "^1.0.4",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v15.11.0",
     "ws": "^7.1.2"
   },
