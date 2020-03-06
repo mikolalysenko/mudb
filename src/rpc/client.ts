@@ -1,4 +1,5 @@
 import { MuRPCProtocol, MuRPCSchemas, MuRPCClientTransport } from './protocol';
+import { MuLogger, MuDefaultLogger } from '../logger';
 
 export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
     public api:{
@@ -9,6 +10,7 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
 
     public schemas:MuRPCSchemas<Protocol>;
     public transport:MuRPCClientTransport<Protocol>;
+    public logger:MuLogger;
 
     private _handleResponse = (response) => {
         const { type, data } = response;
@@ -18,6 +20,7 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
         if (type === 'success') {
             return data.data;
         } else {
+            this.logger.exception(data);
             throw data;
         }
     }
@@ -33,9 +36,12 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
 
     constructor (
         protocol:Protocol,
-        transport:MuRPCClientTransport<Protocol>) {
+        transport:MuRPCClientTransport<Protocol>,
+        logger?:MuLogger,
+    ) {
         this.schemas = new MuRPCSchemas(protocol);
         this.transport = transport;
+        this.logger = logger || MuDefaultLogger;
         const api = this.api = <any>{};
         const methods = Object.keys(protocol.api);
         for (let i = 0; i < methods.length; ++i) {
