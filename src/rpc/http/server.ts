@@ -89,6 +89,7 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
         cookie?:string,
     }) {
         this._route = spec.route;
+        this._byteLimit = spec.byteLimit;
         if (this._route.charAt(0) !== '/') {
             this._route = '/' + this._route;
         }
