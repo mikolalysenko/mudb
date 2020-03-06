@@ -1,7 +1,8 @@
 import { MuRPCClientTransport, MuRPCProtocol, MuRPCSchemas } from '../protocol';
 import http = require('http');
 
-export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
+export class MuRPCHttpClientTransport<Protocol extends MuRPCProtocol<any>>
+    implements MuRPCClientTransport<Protocol> {
     private _url:string;
     private _cookies:{
         [cookie:string]:string;
@@ -14,7 +15,7 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
         this._url = spec.url;
     }
 
-    public send<Protocol extends MuRPCProtocol<any>> (
+    public send (
         schemas:MuRPCSchemas<Protocol>,
         arg:MuRPCSchemas<Protocol>['argSchema']['identity'],
     ) {
