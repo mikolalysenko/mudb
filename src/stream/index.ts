@@ -207,8 +207,8 @@ export class MuReadStream {
     }
 
     public checkBounds () {
-        if (this.offset > this.buffer.uint8.length) {
-            throw new Error('out of bounds read');
+        if (this.offset > this.length) {
+            throw new Error('out of bounds');
         }
     }
 
@@ -323,8 +323,8 @@ export class MuReadStream {
     }
 
     public readString () : string {
-        const head = this.offset;
         const byteLength = this.readVarint();
+        const head = this.offset;
         this.offset += byteLength;
         this.checkBounds();
         const bytes = this.buffer.uint8.subarray(head, this.offset);
