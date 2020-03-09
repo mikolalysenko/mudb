@@ -376,8 +376,7 @@ tape('de/serializing struct', (t) => {
         r: new MuRelativeVarint(),
         arr: new MuArray(new MuFloat32(), Infinity),
         sa: new MuSortedArray(new MuFloat32(), Infinity),
-        vec3: new MuVector(new MuFloat32(), 3),
-        mat4: new MuVector(new MuFloat32(), 16),
+        v: new MuVector(new MuFloat32(), 9),
         d: new MuDictionary(new MuFloat32(), Infinity),
         s: new MuStruct({
             b: new MuBoolean(),
@@ -409,8 +408,7 @@ tape('de/serializing struct', (t) => {
         s.r = randInt(-0x40000000, 0x3fffffff);
         s.arr = randArray();
         s.sa = randArray().sort(compare);
-        s.vec3 = randVec(3);
-        s.mat4 = randVec(16);
+        s.v = randVec(9);
         s.d = randDict();
         s.s.b = randBool();
         s.s.u = strings[Math.random() * 3 | 0];
