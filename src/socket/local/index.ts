@@ -50,7 +50,8 @@ export class MuLocalSocket implements MuSocket {
     private _onClose:MuCloseHandler = noop;
 
     private _isClientSocket:boolean;
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () { return this._state; }
 
     public scheduler:MuScheduler;
 
@@ -69,16 +70,16 @@ export class MuLocalSocket implements MuSocket {
     public open (spec:MuSocketSpec) {
         this.scheduler.setTimeout(
             () => {
-                if (this.state === MuSocketState.OPEN) {
+                if (this._state === MuSocketState.OPEN) {
                     this._onClose('socket already open');
                     return;
                 }
-                if (this.state === MuSocketState.CLOSED) {
+                if (this._state === MuSocketState.CLOSED) {
                     this._onClose('cannot reopen closed socket');
                     return;
                 }
 
-                this.state = MuSocketState.OPEN;
+                this._state = MuSocketState.OPEN;
 
                 this._onMessage = spec.message;
                 this._onClose = spec.close;
@@ -99,7 +100,7 @@ export class MuLocalSocket implements MuSocket {
 
     private _pendingUnreliableMessages:PendingMessage[] = [];
     private _drainUnreliable = () => {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -119,7 +120,7 @@ export class MuLocalSocket implements MuSocket {
         // indicate the draining task has been carried out
         this._drainTimeout = 0;
 
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -140,7 +141,7 @@ export class MuLocalSocket implements MuSocket {
     // while scheduling of draining unreliable message happen whenever one is "sent"
     // and they are "drained" one at a time, no handling order guaranteed
     public send (data_:MuData, unreliable?:boolean) {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
@@ -158,11 +159,11 @@ export class MuLocalSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
 
         this._server._removeSocket(this);
         this._onClose();
@@ -182,7 +183,8 @@ export class MuLocalSocketServer implements MuSocketServer {
     public clients:MuSocket[] = [];
     public _pendingSockets:MuSocket[] = [];
 
-    public state = MuSocketServerState.INIT;
+    private _state = MuSocketServerState.INIT;
+    public state () { return this._state; }
 
     private _onConnection:MuConnectionHandler;
     private _onClose:MuCloseHandler;
@@ -195,7 +197,7 @@ export class MuLocalSocketServer implements MuSocketServer {
 
     // should only be used inside the module
     public _handleConnection (socket) {
-        switch (this.state) {
+        switch (this._state) {
             case MuSocketServerState.RUNNING:
                 this.clients.push(socket);
                 this._onConnection(socket);
@@ -217,16 +219,16 @@ export class MuLocalSocketServer implements MuSocketServer {
     public start (spec:MuSocketServerSpec) {
         this.scheduler.setTimeout(
             () => {
-                if (this.state === MuSocketServerState.RUNNING) {
+                if (this._state === MuSocketServerState.RUNNING) {
                     this._onClose('local socket server already running');
                     return;
                 }
-                if (this.state === MuSocketServerState.SHUTDOWN) {
+                if (this._state === MuSocketServerState.SHUTDOWN) {
                     this._onClose('local socket server already shut down, cannot restart');
                     return;
                 }
 
-                this.state = MuSocketServerState.RUNNING;
+                this._state = MuSocketServerState.RUNNING;
 
                 this._onConnection = spec.connection;
                 this._onClose = spec.close;
@@ -242,15 +244,15 @@ export class MuLocalSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state === MuSocketServerState.SHUTDOWN) {
+        if (this._state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-        if (this.state === MuSocketServerState.INIT) {
-            this.state = MuSocketServerState.SHUTDOWN;
+        if (this._state === MuSocketServerState.INIT) {
+            this._state = MuSocketServerState.SHUTDOWN;
             return;
         }
 
-        this.state = MuSocketServerState.SHUTDOWN;
+        this._state = MuSocketServerState.SHUTDOWN;
 
         for (let i = this.clients.length - 1; i >= 0; --i) {
             this.clients[i].close();

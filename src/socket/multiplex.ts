@@ -9,7 +9,7 @@ import {
 export class MuMultiSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;
 
-    get state () : MuSocketServerState {
+    public state () : MuSocketServerState {
         return this._state;
     }
 

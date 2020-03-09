@@ -13,7 +13,7 @@ test.onFinish(() => process.exit(0));
 test('server initial state', (t) => {
     const server = http.createServer();
     const socketServer = new MuWebSocketServer({ server });
-    t.equal(socketServer.state, MuSocketServerState.INIT, 'should be INIT');
+    t.equal(socketServer.state(), MuSocketServerState.INIT, 'should be INIT');
     t.end();
 });
 
@@ -25,7 +25,7 @@ test('socketServer.start() - when INIT', (t) => {
     socketServer.start({
         ready: () => {
             t.pass('should invoke ready handler');
-            t.equal(socketServer.state, MuSocketServerState.RUNNING, 'should change server state to RUNNING');
+            t.equal(socketServer.state(), MuSocketServerState.RUNNING, 'should change server state to RUNNING');
         },
         connection: noop,
         close: noop,
@@ -141,7 +141,7 @@ test('socketServer.close() - when INIT', (t) => {
     const socketServer = new MuWebSocketServer({ server });
     socketServer.close();
 
-    t.equal(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+    t.equal(socketServer.state(), MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
     t.end();
 });
 
@@ -153,7 +153,7 @@ test('socketServer.close() - when RUNNING', (t) => {
     socketServer.start({
         ready: () => {
             socketServer.close();
-            t.equal(socketServer.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+            t.equal(socketServer.state(), MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
         },
         connection: noop,
         close: noop,

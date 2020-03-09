@@ -15,7 +15,7 @@ function serverWorker () : Worker {
 
 test('workerSocket initial state', (t) => {
     const socket = new MuWorkerSocket(sessionId(), serverWorker());
-    t.equal(socket.state, MuSocketState.INIT, 'should be MuSocketState.INIT');
+    t.equal(socket.state(), MuSocketState.INIT, 'should be MuSocketState.INIT');
     t.end();
 });
 
@@ -26,7 +26,7 @@ test('workerSocket.open() - when INIT', (t) => {
     socket.open({
         ready: () => {
             t.ok(true, 'should invoke ready handler');
-            t.equal(socket.state, MuSocketState.OPEN, 'should change state to MuSocketState.OPEN');
+            t.equal(socket.state(), MuSocketState.OPEN, 'should change state to MuSocketState.OPEN');
         },
         message: noop,
         close: noop,
@@ -80,7 +80,7 @@ test('workerSocket.close() - when OPEN', (t) => {
         message: noop,
         close: (error) => {
             t.equal(error, undefined, 'should invoke close handler without error message');
-            t.equal(socket.state, MuSocketState.CLOSED, 'should change state to MuSocketState.CLOSED');
+            t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to MuSocketState.CLOSED');
         },
     });
 });
@@ -89,7 +89,7 @@ test('workerSocket.close() - when INIT', (t) => {
     const socket = new MuWorkerSocket(sessionId(), serverWorker());
     // close socket when init
     socket.close();
-    t.equal(socket.state, MuSocketState.CLOSED, 'should change state to MuSocketState.CLOSED');
+    t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to MuSocketState.CLOSED');
     t.end();
 });
 

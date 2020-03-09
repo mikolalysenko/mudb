@@ -24,7 +24,7 @@ class MuNetSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
 
     private _state = MuSocketState.INIT;
-    get state () : MuSocketState {
+    public state () : MuSocketState {
         return this._state;
     }
 
@@ -136,7 +136,7 @@ class MuNetSocketClient implements MuSocket {
 
 export class MuNetSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;
-    get state () : MuSocketServerState {
+    public state () : MuSocketServerState {
         return this._state;
     }
 
@@ -204,7 +204,7 @@ export class MuNetSocketServer implements MuSocketServer {
                     this.clients.push(client);
 
                     this._unreliableMsgHandlers[url] = function (msg) {
-                        if (client.state !== MuSocketState.OPEN) {
+                        if (client.state() !== MuSocketState.OPEN) {
                             return;
                         }
 

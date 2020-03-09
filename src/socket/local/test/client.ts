@@ -14,7 +14,7 @@ test('socket initial state', (t) => {
         sessionId: id(),
         server: createLocalSocketServer(),
     });
-    t.equal(socket.state, MuSocketState.INIT, 'should be INIT');
+    t.equal(socket.state(), MuSocketState.INIT, 'should be INIT');
     t.end();
 });
 
@@ -32,12 +32,12 @@ test('socket.open() - when INIT', (t) => {
         ready: noop,
         connection: (serverSocket) => {
             t.equal(clientSocket._duplex, serverSocket);
-            t.equal(clientSocket.state, MuSocketState.OPEN);
-            t.equal(serverSocket.state, MuSocketState.INIT);
+            t.equal(clientSocket.state(), MuSocketState.OPEN);
+            t.equal(serverSocket.state(), MuSocketState.INIT);
 
             serverSocket.open({
                 ready: () => {
-                    t.equal(serverSocket.state, MuSocketState.OPEN);
+                    t.equal(serverSocket.state(), MuSocketState.OPEN);
 
                     clientSocket.send('unreliable message from client', true);
                     clientSocket.send('another unreliable message from client', true);
@@ -199,7 +199,7 @@ test('socket.close() - when OPEN', (t) => {
                 close: (error) => {
                     t.equal(error, undefined, 'should invoke close handler without error messages');
                     t.equal(server.clients.length, 0, 'should remove connection from server');
-                    t.equal(serverSocket.state, MuSocketState.CLOSED, 'should also close server socket');
+                    t.equal(serverSocket.state(), MuSocketState.CLOSED, 'should also close server socket');
                 },
             });
         },
@@ -211,7 +211,7 @@ test('socket.close() - when OPEN', (t) => {
         message: noop,
         close: (error) => {
             t.equal(error, undefined, 'should invoke close handler without error messages');
-            t.equal(clientSocket.state, MuSocketState.CLOSED, 'should change socket state to CLOSED');
+            t.equal(clientSocket.state(), MuSocketState.CLOSED, 'should change socket state to CLOSED');
         },
     });
 });
@@ -223,7 +223,7 @@ test('socket.close() - when INIT', (t) => {
     });
     socket.close();
 
-    t.equal(socket.state, MuSocketState.CLOSED, 'should change socket state to CLOSED');
+    t.equal(socket.state(), MuSocketState.CLOSED, 'should change socket state to CLOSED');
     t.end();
 });
 

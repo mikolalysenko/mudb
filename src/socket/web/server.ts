@@ -217,8 +217,9 @@ export class MuWebSocketConnection {
 }
 
 export class MuWebSocketClient implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
     public readonly sessionId:MuSessionId;
+    public state () { return this._state; }
 
     private _connection:MuWebSocketConnection;
     private _logger:MuLogger;
@@ -233,18 +234,18 @@ export class MuWebSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw error(`socket had been opened`);
         }
 
         this.scheduler.setTimeout(
             () => {
-                if (this.state !== MuSocketState.INIT) {
+                if (this._state !== MuSocketState.INIT) {
                     return;
                 }
 
                 // set state to open
-                this.state = MuSocketState.OPEN;
+                this._state = MuSocketState.OPEN;
 
                 // fire ready handler
                 spec.ready();
@@ -264,7 +265,7 @@ export class MuWebSocketClient implements MuSocket {
 
                 // if socket already closed, then fire close event immediately
                 if (this._connection.closed) {
-                    this.state = MuSocketState.CLOSED;
+                    this._state = MuSocketState.CLOSED;
                     spec.close();
                 } else {
                     // hook started message on socket
@@ -273,7 +274,7 @@ export class MuWebSocketClient implements MuSocket {
 
                     // hook close handler
                     this._connection.onClose = () => {
-                        this.state = MuSocketState.CLOSED;
+                        this._state = MuSocketState.CLOSED;
                         spec.close();
                     };
                 }
@@ -288,15 +289,16 @@ export class MuWebSocketClient implements MuSocket {
     public close () {
         this._logger.log(`close called on websocket ${this.sessionId}`);
 
-        if (this.state !== MuSocketState.CLOSED) {
-            this.state = MuSocketState.CLOSED;
+        if (this._state !== MuSocketState.CLOSED) {
+            this._state = MuSocketState.CLOSED;
             this._connection.close();
         }
     }
 }
 
 export class MuWebSocketServer implements MuSocketServer {
-    public state = MuSocketServerState.INIT;
+    private _state = MuSocketServerState.INIT;
+    public state () { return this._state; }
 
     private _connections:MuWebSocketConnection[] = [];
     public clients:MuWebSocketClient[] = [];
@@ -354,7 +356,7 @@ export class MuWebSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state !== MuSocketServerState.INIT) {
+        if (this._state !== MuSocketServerState.INIT) {
             throw error(`server had been started`);
         }
 
@@ -372,7 +374,7 @@ export class MuWebSocketServer implements MuSocketServer {
             () => {
                 this._wsServer = new ws.Server(this._options)
                 .on('connection', (socket) => {
-                    if (this.state === MuSocketServerState.SHUTDOWN) {
+                    if (this._state === MuSocketServerState.SHUTDOWN) {
                         this._logger.error('connection attempt from closed socket server');
                         socket.terminate();
                         return;
@@ -438,17 +440,17 @@ export class MuWebSocketServer implements MuSocketServer {
 
                 this._onClose = spec.close;
 
-                this.state = MuSocketServerState.RUNNING;
+                this._state = MuSocketServerState.RUNNING;
                 spec.ready();
             },
             0);
     }
 
     public close () {
-        if (this.state === MuSocketServerState.SHUTDOWN) {
+        if (this._state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-        this.state = MuSocketServerState.SHUTDOWN;
+        this._state = MuSocketServerState.SHUTDOWN;
 
         if (this._wsServer) {
             this._wsServer.close(this._onClose);
