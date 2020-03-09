@@ -58,7 +58,7 @@ socketServer.start({
                     },
                 });
 
-                t.equal(socket.state, MuSocketState.INIT, 'should be INIT');
+                t.equal(socket.state(), MuSocketState.INIT, 'should be INIT');
                 t.end();
             });
         });
@@ -80,7 +80,7 @@ socketServer.start({
                 socket.open({
                     ready: () => {
                         t.ok(true, 'should invoke ready handler');
-                        t.equal(socket.state, MuSocketState.OPEN, 'should change state to OPEN');
+                        t.equal(socket.state(), MuSocketState.OPEN, 'should change state to OPEN');
                     },
                     message: noop,
                     close: noop,
@@ -162,7 +162,7 @@ socketServer.start({
                 });
 
                 socket.close();
-                t.equal(socket.state, MuSocketState.CLOSED, 'should change state to CLOSED');
+                t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to CLOSED');
                 t.end();
             });
 
@@ -188,7 +188,7 @@ socketServer.start({
                     message: noop,
                     close: () => {
                         t.ok(true, 'should invoke close handler');
-                        t.equal(socket.state, MuSocketState.CLOSED, 'should change state to CLOSED');
+                        t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to CLOSED');
                     },
                 });
             });

@@ -12,7 +12,8 @@ const isBrowser = typeof self !== undefined && !!self && self['Object'] === Obje
 function noop () { }
 
 export class MuRTCSocketClient implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () { return this._state; }
     public readonly sessionId:MuSessionId;
     private _pc:RTCPeerConnection;
     private _answerOpts:RTCOfferAnswerOptions;
@@ -46,14 +47,14 @@ export class MuRTCSocketClient implements MuSocket {
         this._logger = logger;
 
         pc.onicecandidate = ({ candidate }) => {
-            if (this.state === MuSocketState.INIT) {
+            if (this._state === MuSocketState.INIT) {
                 if (candidate) {
                     this._signal(candidate.toJSON());
                 }
             }
         };
         pc.oniceconnectionstatechange = () => {
-            if (this.state === MuSocketState.INIT) {
+            if (this._state === MuSocketState.INIT) {
                 if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
                     logger.error(`ICE connection ${pc.iceConnectionState}`);
                     this.close();
@@ -63,7 +64,7 @@ export class MuRTCSocketClient implements MuSocket {
             }
         };
         pc.onconnectionstatechange = () => {
-            if (this.state !== MuSocketState.CLOSED) {
+            if (this._state !== MuSocketState.CLOSED) {
                 if (pc.connectionState === 'failed') {
                     logger.error(`connection failed`);
                     this.close();
@@ -71,7 +72,7 @@ export class MuRTCSocketClient implements MuSocket {
             }
         };
         pc.ondatachannel = ({ channel }) => {
-            if (this.state !== MuSocketState.INIT) {
+            if (this._state !== MuSocketState.INIT) {
                 return;
             }
             if (!channel) {
@@ -81,7 +82,7 @@ export class MuRTCSocketClient implements MuSocket {
             }
 
             channel.onopen = () => {
-                if (this.state === MuSocketState.CLOSED) {
+                if (this._state === MuSocketState.CLOSED) {
                     return;
                 }
                 this._logger.log(`${channel.label} channel is open`);
@@ -93,12 +94,12 @@ export class MuRTCSocketClient implements MuSocket {
                 }
             };
             channel.onerror = (e) => {
-                if (this.state !== MuSocketState.CLOSED) {
+                if (this._state !== MuSocketState.CLOSED) {
                     this.close(e);
                 }
             };
             channel.onclose = () => {
-                if (this.state !== MuSocketState.CLOSED) {
+                if (this._state !== MuSocketState.CLOSED) {
                     this.close(`${channel.label} channel closed unexpectedly`);
                 }
             };
@@ -127,7 +128,7 @@ export class MuRTCSocketClient implements MuSocket {
     }
 
     public handleSignal (data:RTCIceCandidateInit|RTCSessionDescriptionInit) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             return;
         }
         if ('sdp' in data) {
@@ -149,18 +150,18 @@ export class MuRTCSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw error(`socket had been opened`);
         }
 
-        this.state = MuSocketState.OPEN;
+        this._state = MuSocketState.OPEN;
         this._onMessage = spec.message;
         this._onClose = spec.close;
         spec.ready();
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
         if (unreliable && this._unreliableChannel) {
@@ -171,13 +172,13 @@ export class MuRTCSocketClient implements MuSocket {
     }
 
     public close (e?:any) {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
         if (e) {
             this._logger.exception(e);
         }
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._pc.close();
         this._pc.onicecandidate = null;
         this._pc.oniceconnectionstatechange = null;
@@ -204,7 +205,8 @@ export class MuRTCSocketClient implements MuSocket {
 }
 
 export class MuRTCSocketServer implements MuSocketServer {
-    public state = MuSocketServerState.INIT;
+    private _state = MuSocketServerState.INIT;
+    public state () { return this._state; }
     public clients:MuRTCSocketClient[] = [];
 
     public readonly wrtc:MuRTCBinding;
@@ -247,15 +249,15 @@ export class MuRTCSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state !== MuSocketServerState.INIT) {
-            throw error(`attempt to start when server is ${this.state === MuSocketServerState.RUNNING ? 'running' : 'shut down'}`);
+        if (this._state !== MuSocketServerState.INIT) {
+            throw error(`attempt to start when server is ${this._state === MuSocketServerState.RUNNING ? 'running' : 'shut down'}`);
         }
 
         this._scheduler.setTimeout(() => {
-            if (this.state !== MuSocketServerState.INIT) {
+            if (this._state !== MuSocketServerState.INIT) {
                 return;
             }
-            this.state = MuSocketServerState.RUNNING;
+            this._state = MuSocketServerState.RUNNING;
             this._onConnection = spec.connection;
             this._onClose = spec.close;
             spec.ready();
@@ -264,7 +266,7 @@ export class MuRTCSocketServer implements MuSocketServer {
 
     private _pendingClients:MuRTCSocketClient[] = [];
     public handleSignal (packet:string) {
-        if (this.state !== MuSocketServerState.RUNNING) {
+        if (this._state !== MuSocketServerState.RUNNING) {
             return;
         }
 
@@ -317,10 +319,10 @@ export class MuRTCSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state === MuSocketServerState.SHUTDOWN) {
+        if (this._state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-        this.state = MuSocketServerState.SHUTDOWN;
+        this._state = MuSocketServerState.SHUTDOWN;
         for (let i = 0; i < this.clients.length; ++i) {
             this.clients[i].close();
         }

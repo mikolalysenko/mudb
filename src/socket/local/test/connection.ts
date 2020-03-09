@@ -26,9 +26,9 @@ test('client socket will always be open first', (t) => {
         server.start({
             ready: () => client.start({
                 ready: () => {
-                    st.equal(clientSocket.state, MuSocketState.OPEN);
-                    st.equal(serverSocket.state, MuSocketState.INIT);
-                    setTimeout(() => st.equal(serverSocket.state, MuSocketState.OPEN), 0);
+                    st.equal(clientSocket.state(), MuSocketState.OPEN);
+                    st.equal(serverSocket.state(), MuSocketState.INIT);
+                    setTimeout(() => st.equal(serverSocket.state(), MuSocketState.OPEN), 0);
                 },
             }),
         });
@@ -50,9 +50,9 @@ test('client socket will always be open first', (t) => {
         client.start({
             ready: () => server.start({
                 ready: () => {
-                    st.equal(clientSocket.state, MuSocketState.OPEN);
-                    st.equal(serverSocket.state, MuSocketState.INIT);
-                    setTimeout(() => st.equal(serverSocket.state, MuSocketState.OPEN), 0);
+                    st.equal(clientSocket.state(), MuSocketState.OPEN);
+                    st.equal(serverSocket.state(), MuSocketState.INIT);
+                    setTimeout(() => st.equal(serverSocket.state(), MuSocketState.OPEN), 0);
                 },
             }),
         });

@@ -11,7 +11,7 @@ function id () {
 
 test('server initial state', (t) => {
     const server = createLocalSocketServer();
-    t.equal(server.state, MuSocketServerState.INIT, 'should be INIT');
+    t.equal(server.state(), MuSocketServerState.INIT, 'should be INIT');
     t.end();
 });
 
@@ -21,7 +21,7 @@ test('server.start() - when INIT', (t) => {
     const server = createLocalSocketServer();
     server.start({
         ready: () => {
-            t.equal(server.state, MuSocketServerState.RUNNING, 'should change server state to RUNNING');
+            t.equal(server.state(), MuSocketServerState.RUNNING, 'should change server state to RUNNING');
             setTimeout(() => {
                 t.equal(server.clients.length, 1, 'should handle pending connections');
                 server.close();
@@ -78,7 +78,7 @@ test('server.start() - when SHUTDOWN', (t) => {
         close: (error) => {
             if (error) {
                 t.equal(typeof error, 'string', 'should invoke close handler with error message');
-                t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should not change server state');
+                t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should not change server state');
             }
         },
     });
@@ -102,10 +102,10 @@ test('server.close() - when RUNNING', (t) => {
         }),
         close: (error) => {
             t.equal(error, undefined, 'should invoke close handler without error message');
-            t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+            t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
             t.equal(server.clients.length, 0, 'should remove connection from server');
-            t.equal(clientSocket.state, MuSocketState.CLOSED, 'should close client socket');
-            t.equal(clientSocket._duplex.state, MuSocketState.CLOSED, 'should close server socket');
+            t.equal(clientSocket.state(), MuSocketState.CLOSED, 'should close client socket');
+            t.equal(clientSocket._duplex.state(), MuSocketState.CLOSED, 'should close server socket');
         },
     });
 
@@ -136,11 +136,11 @@ test('server.close() - when RUNNING, sockets not OPEN', (t) => {
         connection: noop,
         close: (error) => {
             t.equal(error, undefined, 'should invoke close handler without error message');
-            t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+            t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
             t.equal(server.clients.length, 0, 'should remove connection from server');
             setTimeout(() => {
-                t.equal(clientSocket.state, MuSocketState.CLOSED, 'should close client socket');
-                t.equal(clientSocket._duplex.state, MuSocketState.CLOSED, 'should close server socket');
+                t.equal(clientSocket.state(), MuSocketState.CLOSED, 'should close client socket');
+                t.equal(clientSocket._duplex.state(), MuSocketState.CLOSED, 'should close server socket');
             }, 0);
         },
     });
@@ -156,7 +156,7 @@ test('server.close() - when INIT', (t) => {
     const server = createLocalSocketServer();
     server.close();
 
-    t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
+    t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should change server state to SHUTDOWN');
     t.end();
 });
 

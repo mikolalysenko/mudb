@@ -15,7 +15,10 @@ interface WebSocketConstructor {
 }
 
 export class MuUWSSocket implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () {
+        return this._state;
+    }
 
     public readonly sessionId:MuSessionId;
 
@@ -56,7 +59,7 @@ export class MuUWSSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw new Error(`socket had already been opened [mudb/socket/web/client]`);
         }
 
@@ -76,7 +79,7 @@ export class MuUWSSocket implements MuSocket {
             socket.binaryType = 'arraybuffer';
 
             socket.onmessage = (ev) => {
-                if (this.state === MuSocketState.CLOSED) {
+                if (this._state === MuSocketState.CLOSED) {
                     socket.close();
                     return;
                 }
@@ -84,7 +87,7 @@ export class MuUWSSocket implements MuSocket {
                 // first message from server determines whether socket should be reliable
                 if (JSON.parse(ev.data).reliable) {
                     socket.onmessage = ({ data }) => {
-                        if (this.state !== MuSocketState.OPEN) {
+                        if (this._state !== MuSocketState.OPEN) {
                             return;
                         }
 
@@ -99,17 +102,17 @@ export class MuUWSSocket implements MuSocket {
                             this._unreliableSockets[i].close();
                         }
 
-                        this.state = MuSocketState.CLOSED;
+                        this._state = MuSocketState.CLOSED;
                         spec.close();
                     };
                     this._reliableSocket = socket;
 
                     // order matters
-                    this.state = MuSocketState.OPEN;
+                    this._state = MuSocketState.OPEN;
                     spec.ready();
                 } else {
                     socket.onmessage = ({ data }) => {
-                        if (this.state !== MuSocketState.OPEN) {
+                        if (this._state !== MuSocketState.OPEN) {
                             return;
                         }
 
@@ -138,7 +141,7 @@ export class MuUWSSocket implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -153,14 +156,14 @@ export class MuUWSSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
-        if (this.state === MuSocketState.INIT) {
+        if (this._state === MuSocketState.INIT) {
             this._logger.log(`closing socket before fully open [mudb/socket/uws/client]`);
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
 
         if (this._reliableSocket) {
             this._reliableSocket.close();

@@ -15,7 +15,7 @@ export class MuNetSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
 
     private _state = MuSocketState.INIT;
-    get state () : MuSocketState {
+    public state () : MuSocketState {
         return this._state;
     }
 

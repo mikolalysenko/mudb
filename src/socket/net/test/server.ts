@@ -16,7 +16,7 @@ test('server initial state', (t) => {
         }),
     });
 
-    t.equal(server.state, MuSocketServerState.INIT, 'should be INIT');
+    t.equal(server.state(), MuSocketServerState.INIT, 'should be INIT');
     t.end();
 });
 
@@ -33,7 +33,7 @@ test('server.start() - when INIT', (t) => {
     server.start({
         ready: () => {
             t.ok(true, 'should invoke ready handler');
-            t.equal(server.state, MuSocketServerState.RUNNING, 'should change state to RUNNING');
+            t.equal(server.state(), MuSocketServerState.RUNNING, 'should change state to RUNNING');
         },
         connection: noop,
         close: noop,
@@ -100,7 +100,7 @@ test('server.close() - when INIT', (t) => {
     });
 
     server.close();
-    t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should change state to SHUTDOWN');
+    t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should change state to SHUTDOWN');
     t.end();
 });
 
@@ -122,7 +122,7 @@ test('server.close() - when RUNNING', (t) => {
         connection: noop,
         close: (error) => {
             t.equal(error, undefined, 'should not invoke close handler with an error');
-            t.equal(server.state, MuSocketServerState.SHUTDOWN, 'should change state to SHUTDOWN');
+            t.equal(server.state(), MuSocketServerState.SHUTDOWN, 'should change state to SHUTDOWN');
         },
     });
 });

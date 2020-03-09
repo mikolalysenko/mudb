@@ -188,6 +188,7 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     prelude.append(`this[${propRef}]=${type.identity};`);
                     break;
                 case 'ascii':
+                case 'fixed-ascii':
                 case 'utf8':
                     prelude.append(`this[${propRef}]=${inject(type.identity)};`);
                     break;
@@ -202,6 +203,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -211,7 +214,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     break;
@@ -227,6 +229,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -236,7 +240,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     break;
@@ -253,6 +256,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -262,7 +267,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     break;
@@ -278,6 +282,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -287,7 +293,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     methods.equal.append(`if(a[${propRef}]!==b[${propRef}]){return false}`);
@@ -304,6 +309,8 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
                 case 'boolean':
                 case 'float32':
                 case 'float64':
@@ -313,7 +320,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     methods.clone.append(`result[${propRef}]=x[${propRef}];`);
@@ -330,8 +336,9 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const type = structTypes[i];
             switch (type.muType) {
                 case 'ascii':
-                case 'boolean':
                 case 'fixed-ascii':
+                case 'utf8':
+                case 'boolean':
                 case 'float32':
                 case 'float64':
                 case 'int8':
@@ -340,7 +347,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint8':
                 case 'uint16':
                 case 'uint32':
-                case 'utf8':
                 case 'varint':
                 case 'rvarint':
                     methods.assign.append(`d[${propRef}]=s[${propRef}];`);
@@ -385,10 +391,14 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                 case 'uint16':
                 case 'uint32':
                 case 'varint':
+                case 'utf8':
                     methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.${muType2WriteMethod[muType]}(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 case 'rvarint':
                     methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.writeVarint(0xAAAAAAAA+(t[${propRef}]-b[${propRef}])^0xAAAAAAAA);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
+                    break;
+                case 'ascii':
+                    methods.diff.append(`if(b[${propRef}]!==t[${propRef}]){s.grow(5+t[${propRef}].length);s.writeVarint(t[${propRef}].length);s.writeASCII(t[${propRef}]);++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
                     break;
                 default:
                     methods.diff.append(`if(${typeRefs[i]}.diff(b[${propRef}],t[${propRef}],s)){++${numPatch};${dTracker}|=${1 << (i & 7)}}`);
@@ -416,9 +426,6 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
             const muType = structTypes[i].muType;
             methods.patch.append(`;result[${propRef}]=(${pTracker}&${1 << (i & 7)})?`);
             switch (muType) {
-                case 'ascii':
-                    methods.patch.append(`s.readASCII(s.readUint32()):b[${propRef}];`);
-                    break;
                 case 'boolean':
                     methods.patch.append(`!b[${propRef}]:b[${propRef}];`);
                     break;
@@ -436,6 +443,9 @@ export class MuStruct<Spec extends { [propName:string]:MuSchema<any> }>
                     break;
                 case 'rvaint':
                     methods.patch.append(`b[${propRef}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${propRef}]`);
+                    break;
+                case 'ascii':
+                    methods.patch.append(`s.readASCII(s.readVarint()):b[${propRef}];`);
                     break;
                 default:
                     methods.patch.append(`${typeRefs[i]}.patch(b[${propRef}],s):${typeRefs[i]}.clone(b[${propRef}]);`);

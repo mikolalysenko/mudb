@@ -176,6 +176,7 @@ export class MuWriteStream {
 
     public writeString (str:string) {
         const bytes = encodeUTF8(str);
+        this.grow(5 + bytes.length);
         this.writeVarint(bytes.length);
         this.buffer.uint8.set(bytes, this.offset);
         this.offset += bytes.length;
@@ -205,29 +206,44 @@ export class MuReadStream {
         return this.buffer.uint8.subarray(this.offset, this.length);
     }
 
+    public checkBounds () {
+        if (this.offset > this.length) {
+            throw new Error('out of bounds');
+        }
+    }
+
     public readInt8 () : number {
-        return this.buffer.dataView.getInt8(this.offset++);
+        const offset = this.offset;
+        this.offset += 1;
+        this.checkBounds();
+        return this.buffer.dataView.getInt8(offset);
     }
 
     public readInt16 () : number {
         const offset = this.offset;
         this.offset += 2;
+        this.checkBounds();
         return this.buffer.dataView.getInt16(offset, LITTLE_ENDIAN);
     }
 
     public readInt32 () : number {
         const offset = this.offset;
         this.offset += 4;
+        this.checkBounds();
         return this.buffer.dataView.getInt32(offset, LITTLE_ENDIAN);
     }
 
     public readUint8 () : number {
-        return this.buffer.dataView.getUint8(this.offset++);
+        const offset = this.offset;
+        this.offset += 1;
+        this.checkBounds();
+        return this.buffer.dataView.getUint8(offset);
     }
 
     public readUint16 () : number {
         const offset = this.offset;
         this.offset += 2;
+        this.checkBounds();
         return this.buffer.dataView.getUint16(offset, LITTLE_ENDIAN);
     }
 
@@ -240,12 +256,14 @@ export class MuReadStream {
     public readFloat32 () : number {
         const offset = this.offset;
         this.offset += 4;
+        this.checkBounds();
         return this.buffer.dataView.getFloat32(offset, LITTLE_ENDIAN);
     }
 
     public readFloat64 () : number {
         const offset = this.offset;
         this.offset += 8;
+        this.checkBounds();
         return this.buffer.dataView.getFloat64(offset, LITTLE_ENDIAN);
     }
 
@@ -256,17 +274,20 @@ export class MuReadStream {
         const x0 = bytes[offset++];
         if (x0 < 0x80) {
             this.offset = offset;
+            this.checkBounds();
             return x0;
         }
         const x1 = bytes[offset++];
         if (x1 < 0x80) {
             this.offset = offset;
+            this.checkBounds();
             return (x0 & 0x7f) |
                 (x1 << 7);
         }
         const x2 = bytes[offset++];
         if (x2 < 0x80) {
             this.offset = offset;
+            this.checkBounds();
             return (x0 & 0x7f) |
                 ((x1 & 0x7f) << 7) |
                 (x2 << 14);
@@ -274,6 +295,7 @@ export class MuReadStream {
         const x3 = bytes[offset++];
         if (x3 < 0x80) {
             this.offset = offset;
+            this.checkBounds();
             return (x0 & 0x7f) |
                 ((x1 & 0x7f) << 7) |
                 ((x2 & 0x7f) << 14) |
@@ -281,6 +303,7 @@ export class MuReadStream {
         }
         const x4 = bytes[offset++];
         this.offset = offset;
+        this.checkBounds();
         return (x0 & 0x7f) +
             ((x1 & 0x7f) << 7) +
             ((x2 & 0x7f) << 14) +
@@ -291,7 +314,7 @@ export class MuReadStream {
     public readASCII (length:number) : string {
         const head = this.offset;
         this.offset += length;
-
+        this.checkBounds();
         let str = '';
         for (let i = head; i < this.offset; ++i) {
             str += String.fromCharCode(this.buffer.uint8[i]);
@@ -301,8 +324,10 @@ export class MuReadStream {
 
     public readString () : string {
         const byteLength = this.readVarint();
-        const bytes = this.buffer.uint8.subarray(this.offset, this.offset + byteLength);
+        const head = this.offset;
         this.offset += byteLength;
+        this.checkBounds();
+        const bytes = this.buffer.uint8.subarray(head, this.offset);
         return decodeUTF8(bytes);
     }
 

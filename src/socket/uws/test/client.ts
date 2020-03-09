@@ -35,7 +35,7 @@ getFreePort((port) => {
             url,
             ws,
         });
-        t.equal(socket.state, MuSocketState.INIT, 'should be INIT');
+        t.equal(socket.state(), MuSocketState.INIT, 'should be INIT');
         t.end();
     });
 
@@ -49,14 +49,14 @@ getFreePort((port) => {
         });
         socket.open({
             ready: () => {
-                t.equal(socket.state, MuSocketState.OPEN, 'should change state to OPEN');
+                t.equal(socket.state(), MuSocketState.OPEN, 'should change state to OPEN');
                 t.pass('should invoke ready handler only once');
                 t.end();
             },
             message: noop,
             close: noop,
         });
-        t.equal(socket.state, MuSocketState.INIT, 'should not change state immediately');
+        t.equal(socket.state(), MuSocketState.INIT, 'should not change state immediately');
     });
 
     test('socket.open() when OPEN', (t) => {
@@ -69,7 +69,7 @@ getFreePort((port) => {
         });
         socket.open({
             ready: () => {
-                t.equal(socket.state, MuSocketState.OPEN);
+                t.equal(socket.state(), MuSocketState.OPEN);
                 t.throws(() => {
                     socket.open({
                         ready: noop,
@@ -95,7 +95,7 @@ getFreePort((port) => {
         socket.open({
             ready: () => {
                 socket.close();
-                t.equal(socket.state, MuSocketState.CLOSED);
+                t.equal(socket.state(), MuSocketState.CLOSED);
                 t.throws(() => {
                     socket.open({
                         ready: noop,
@@ -116,9 +116,9 @@ getFreePort((port) => {
             url,
             ws,
         });
-        t.equal(socket.state, MuSocketState.INIT);
+        t.equal(socket.state(), MuSocketState.INIT);
         socket.close();
-        t.equal(socket.state, MuSocketState.CLOSED, 'should change state to CLOSED immediately');
+        t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to CLOSED immediately');
         t.end();
     });
 
@@ -132,9 +132,9 @@ getFreePort((port) => {
         });
         socket.open({
             ready: () => {
-                t.equal(socket.state, MuSocketState.OPEN);
+                t.equal(socket.state(), MuSocketState.OPEN);
                 socket.close();
-                t.equal(socket.state, MuSocketState.CLOSED, 'should change state to CLOSED immediately');
+                t.equal(socket.state(), MuSocketState.CLOSED, 'should change state to CLOSED immediately');
             },
             message: noop,
             close: () => {
@@ -157,7 +157,7 @@ getFreePort((port) => {
         socket.open({
             ready: () => {
                 socket.close();
-                t.equal(socket.state, MuSocketState.CLOSED);
+                t.equal(socket.state(), MuSocketState.CLOSED);
                 socket.close();
             },
             message: noop,
