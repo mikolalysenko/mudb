@@ -2,68 +2,7 @@ import { MuReadStream, MuWriteStream } from '../stream';
 import { MuSchema } from './schema';
 import { MuNumber } from './_number';
 
-export interface MuFloat32Array<D extends number> extends Float32Array {
-    readonly length:D;
-}
-export interface MuFloat64Array<D extends number> extends Float64Array {
-    readonly length:D;
-}
-export interface MuInt8Array<D extends number> extends Int8Array {
-    readonly length:D;
-}
-export interface MuInt16Array<D extends number> extends Int16Array {
-    readonly length:D;
-}
-export interface MuInt32Array<D extends number> extends Int32Array {
-    readonly length:D;
-}
-export interface MuUint8Array<D extends number> extends Uint8Array {
-    readonly length:D;
-}
-export interface MuUint16Array<D extends number> extends Uint16Array {
-    readonly length:D;
-}
-export interface MuUint32Array<D extends number> extends Uint32Array {
-    readonly length:D;
-}
-
-export interface MuFloat32ArrayConstructor {
-    new<D extends number> (length:D) : MuFloat32Array<D>;
-}
-export interface MuFloat64ArrayConstructor {
-    new<D extends number> (length:D) : MuFloat64Array<D>;
-}
-export interface MuInt8ArrayConstructor {
-    new<D extends number> (length:D) : MuInt8Array<D>;
-}
-export interface MuInt16ArrayConstructor {
-    new<D extends number> (length:D) : MuInt16Array<D>;
-}
-export interface MuInt32ArrayConstructor {
-    new<D extends number> (length:D) : MuInt32Array<D>;
-}
-export interface MuUint8ArrayConstructor {
-    new<D extends number> (length:D) : MuUint8Array<D>;
-}
-export interface MuUint16ArrayConstructor {
-    new<D extends number> (length:D) : MuUint16Array<D>;
-}
-export interface MuUint32ArrayConstructor {
-    new<D extends number> (length:D) : MuUint32Array<D>;
-}
-
-export interface MuTypedArrayConstructorTable {
-    float32:MuFloat32ArrayConstructor;
-    float64:MuFloat64ArrayConstructor;
-    int8:MuInt8ArrayConstructor;
-    int16:MuInt16ArrayConstructor;
-    int32:MuInt32ArrayConstructor;
-    uint8:MuUint8ArrayConstructor;
-    uint16:MuUint16ArrayConstructor;
-    uint32:MuUint32ArrayConstructor;
-}
-
-export const ConstructorTable:MuTypedArrayConstructorTable = {
+const muTypeToTypedArray = {
     float32: Float32Array,
     float64: Float64Array,
     int8: Int8Array,
@@ -74,9 +13,34 @@ export const ConstructorTable:MuTypedArrayConstructorTable = {
     uint32: Uint32Array,
 };
 
-export type MuVectorNumericType = keyof typeof ConstructorTable;
+type MuNumericType = keyof typeof muTypeToTypedArray;
 
-export type Vector<ValueSchema extends MuNumber<MuVectorNumericType>, D extends number> = {
+interface MuFloat32Array<D extends number> extends Float32Array {
+    readonly length:D;
+}
+interface MuFloat64Array<D extends number> extends Float64Array {
+    readonly length:D;
+}
+interface MuInt8Array<D extends number> extends Int8Array {
+    readonly length:D;
+}
+interface MuInt16Array<D extends number> extends Int16Array {
+    readonly length:D;
+}
+interface MuInt32Array<D extends number> extends Int32Array {
+    readonly length:D;
+}
+interface MuUint8Array<D extends number> extends Uint8Array {
+    readonly length:D;
+}
+interface MuUint16Array<D extends number> extends Uint16Array {
+    readonly length:D;
+}
+interface MuUint32Array<D extends number> extends Uint32Array {
+    readonly length:D;
+}
+
+export type Vec<T extends MuNumericType, D extends number> = {
     float32:MuFloat32Array<D>;
     float64:MuFloat64Array<D>;
     int8:MuInt8Array<D>;
@@ -85,25 +49,31 @@ export type Vector<ValueSchema extends MuNumber<MuVectorNumericType>, D extends 
     uint8:MuUint8Array<D>;
     uint16:MuUint16Array<D>;
     uint32:MuUint32Array<D>;
-}[ValueSchema['muType']];
+}[MuNumber<T>['muType']];
 
-export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D extends number>
-        implements MuSchema<Vector<ValueSchema, D>> {
-    public readonly identity:Vector<ValueSchema, D>;
+export type FixedLengthArray<D extends number> = D extends 0
+    ? never[]
+    : {
+        0:number;
+        length:D;
+    } & ReadonlyArray<number>;
+
+export class MuVector<T extends MuNumericType, D extends number> implements MuSchema<Vec<T, D>> {
+    public readonly identity:Vec<T, D>;
     public readonly muType = 'vector';
-    public readonly muData:ValueSchema;
+    public readonly muData:MuNumber<T>;
     public readonly json:object;
 
-    private _constructor:any;
     public readonly dimension:D;
+    public readonly TypedArray:any;
 
-    public pool:Vector<ValueSchema, D>[] = [];
+    private _pool:Vec<T, D>[] = [];
 
-    constructor (schema:ValueSchema, dimension:D) {
+    constructor (schema:MuNumber<T>, dimension:D) {
         this.muData = schema;
-        this._constructor = ConstructorTable[schema.muType];
         this.dimension = dimension;
-        this.identity = new this._constructor(dimension);
+        this.TypedArray = muTypeToTypedArray[schema.muType];
+        this.identity = new this.TypedArray(dimension);
         for (let i = 0; i < dimension; ++i) {
             this.identity[i] = schema.identity;
         }
@@ -112,21 +82,23 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
             valueType: schema.json,
             dimension,
         };
+
+        this.__b = new this.TypedArray(dimension);
+        this.__t = new this.TypedArray(dimension);
+        this._b = new Uint8Array(this.__b.buffer);
+        this._t = new Uint8Array(this.__t.buffer);
     }
 
-    public alloc () : Vector<ValueSchema, D> {
-        return this.pool.pop() || new this._constructor(this.dimension);
+    public alloc () : Vec<T, D> {
+        return this._pool.pop() || new this.TypedArray(this.dimension);
     }
 
-    public free (vec:Vector<ValueSchema, D>) : void {
-        this.pool.push(vec);
+    public free (vec:Vec<T, D>) : void {
+        this._pool.push(vec);
     }
 
-    public equal (
-        a:Vector<ValueSchema, D>,
-        b:Vector<ValueSchema, D>,
-    ) : boolean {
-        if (!(a instanceof this._constructor) || !(b instanceof this._constructor)) {
+    public equal (a:Vec<T, D>, b:Vec<T, D>) : boolean {
+        if (!(a instanceof this.TypedArray) || !(b instanceof this.TypedArray)) {
             return false;
         }
         if (a.length !== b.length) {
@@ -140,27 +112,26 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
         return true;
     }
 
-    public clone (vec:Vector<ValueSchema, D>) : Vector<ValueSchema, D> {
+    public clone (vec:Vec<T, D>) : Vec<T, D> {
         const copy = this.alloc();
         copy.set(vec);
         return copy;
     }
 
-    public assign (
-        dst:Vector<ValueSchema, D>,
-        src:Vector<ValueSchema, D>,
-    ) : Vector<ValueSchema, D> {
+    public assign (dst:Vec<T, D>, src:Vec<T, D>) : Vec<T, D> {
         dst.set(src);
         return dst;
     }
 
-    public diff (
-        base_:Vector<ValueSchema, D>,
-        target_:Vector<ValueSchema, D>,
-        out:MuWriteStream,
-    ) : boolean {
-        const base = new Uint8Array(base_.buffer);
-        const target = new Uint8Array(target_.buffer);
+    // caches
+    private __b:Vec<T, D>;
+    private __t:Vec<T, D>;
+    private _b:Uint8Array;
+    private _t:Uint8Array;
+
+    public diff (base:Vec<T, D>, target:Vec<T, D>, out:MuWriteStream) : boolean {
+        this.__b.set(base);
+        this.__t.set(target);
 
         const byteLength = this.identity.byteLength;
         out.grow(Math.ceil(byteLength * 9 / 8));
@@ -173,8 +144,8 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
         let numPatches = 0;
 
         for (let i = 0; i < byteLength; ++i) {
-            if (base[i] !== target[i]) {
-                out.writeUint8(target[i]);
+            if (this._b[i] !== this._t[i]) {
+                out.writeUint8(this._t[i]);
                 tracker |= 1 << (i & 7);
                 ++numPatches;
             }
@@ -195,24 +166,20 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
         return true;
     }
 
-    public patch (
-        base:Vector<ValueSchema, D>,
-        inp:MuReadStream,
-    ) : Vector<ValueSchema, D> {
+    public patch (base:Vec<T, D>, inp:MuReadStream) : Vec<T, D> {
         const head = inp.offset;
         const numTrackerBits = this.dimension * this.identity.BYTES_PER_ELEMENT;
         const numTrackerFullBytes = Math.floor(numTrackerBits / 8);
         const numTrackerBytes = Math.ceil(numTrackerBits / 8);
         inp.offset = head + numTrackerBytes;
 
-        const result = this.clone(base);
-        const uint8View = new Uint8Array(result.buffer);
+        this.__b.set(base);
         for (let i = 0; i < numTrackerFullBytes; ++i) {
             const start = i * 8;
             const tracker = inp.readUint8At(head + i);
             for (let j = 0; j < 8; ++j) {
                 if (tracker & (1 << j)) {
-                    uint8View[start + j] = inp.readUint8();
+                    this._b[start + j] = inp.readUint8();
                 }
             }
         }
@@ -222,22 +189,22 @@ export class MuVector<ValueSchema extends MuNumber<MuVectorNumericType>, D exten
             const partialBits = numTrackerBits & 7;
             for (let j = 0; j < partialBits; ++j) {
                 if (tracker & (1 << j)) {
-                    uint8View[start + j] = inp.readUint8();
+                    this._b[start + j] = inp.readUint8();
                 }
             }
         }
-        return result;
+        return this.clone(this.__b);
     }
 
-    public toJSON (vec:Vector<ValueSchema, D>) : number[] {
+    public toJSON (vec:Vec<T, D>) : FixedLengthArray<D> {
         const arr = new Array(vec.length);
         for (let i = 0; i < arr.length; ++i) {
             arr[i] = vec[i];
         }
-        return arr;
+        return <FixedLengthArray<D>>arr;
     }
 
-    public fromJSON (x:number[]) : Vector<ValueSchema, D> {
+    public fromJSON (x:FixedLengthArray<D>) : Vec<T, D> {
         if (Array.isArray(x)) {
             const vec = this.alloc();
             for (let i = 0; i < vec.length; ++i) {
