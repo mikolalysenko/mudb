@@ -189,7 +189,6 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         let tracker = 0;
         for (let i = 0; i < numAdd; ++i) {
             const key = newKeys[i];
-            out.grow(5 + 4 * key.length);
             out.writeString(key);
             if (schema.diff(schema.identity, target[key], out)) {
                 tracker |= 1 << (i & 7);

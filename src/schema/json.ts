@@ -114,7 +114,6 @@ export class MuJSON implements MuSchema<object> {
 
     public diff (base:object, target:object, out:MuWriteStream) : boolean {
         const str = JSON.stringify(target);
-        out.grow(4 + 4 * str.length);
         out.writeString(str);
         return true;
     }
