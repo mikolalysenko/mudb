@@ -42,9 +42,12 @@ export class MuRDAConstant<StateSchema extends MuSchema<any>>
     };
     public readonly action = {};
 
+    public readonly emptyStore:MuRDAConstantStore<this>;
+
     constructor (stateSchema:StateSchema) {
         this.stateSchema = stateSchema;
         this.storeSchema = stateSchema;
+        this.emptyStore = new MuRDAConstantStore(stateSchema.identity);
     }
 
     public createStore (initialState:StateSchema['identity']) : MuRDAConstantStore<this> {

@@ -15,7 +15,10 @@ import { MuLogger, MuDefaultLogger } from '../../logger';
 function noop () { }
 
 export class MuUWSSocketClient implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () {
+        return this._state;
+    }
 
     public readonly sessionId:string;
 
@@ -43,7 +46,7 @@ export class MuUWSSocketClient implements MuSocket {
             this._pendingMessages.push(msg_);
         };
         this._reliableSocket.onclose = () => {
-            this.state = MuSocketState.CLOSED;
+            this._state = MuSocketState.CLOSED;
             for (let i = 0; i < this._unreliableSockets.length; ++i) {
                 this._unreliableSockets[i].close();
             }
@@ -53,7 +56,7 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public _addUnreliable (socket:uWS.WebSocket) {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
@@ -67,7 +70,7 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw new Error(`socket had already been opened [mudb/socket/web/server]`);
         }
 
@@ -79,7 +82,7 @@ export class MuUWSSocketClient implements MuSocket {
             };
 
             // order matters
-            this.state = MuSocketState.OPEN;
+            this._state = MuSocketState.OPEN;
             spec.ready();
 
             for (let i = 0; i < this._pendingMessages.length; ++i) {
@@ -90,7 +93,7 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -106,11 +109,11 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public close () {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._reliableSocket.close();
         for (let i = 0; i < this._unreliableSockets.length; ++i) {
             this._unreliableSockets[i].close();
@@ -119,7 +122,10 @@ export class MuUWSSocketClient implements MuSocket {
 }
 
 export class MuUWSSocketServer implements MuSocketServer {
-    public state = MuSocketServerState.INIT;
+    private _state = MuSocketServerState.INIT;
+    public state () {
+        return this._state;
+    }
 
     public clients:MuUWSSocketClient[] = [];
 
@@ -151,7 +157,7 @@ export class MuUWSSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this.state !== MuSocketServerState.INIT) {
+        if (this._state !== MuSocketServerState.INIT) {
             throw new Error(`server had already been started [mudb/socket/web/server]`);
         }
 
@@ -202,7 +208,7 @@ export class MuUWSSocketServer implements MuSocketServer {
             });
 
             this._onclose = spec.close;
-            this.state = MuSocketServerState.RUNNING;
+            this._state = MuSocketServerState.RUNNING;
             spec.ready();
         }, 0);
     }
@@ -232,14 +238,14 @@ export class MuUWSSocketServer implements MuSocketServer {
     }
 
     public close () {
-        if (this.state === MuSocketServerState.SHUTDOWN) {
+        if (this._state === MuSocketServerState.SHUTDOWN) {
             return;
         }
-        if (this.state === MuSocketServerState.INIT) {
+        if (this._state === MuSocketServerState.INIT) {
             this._logger.log(`shutting down socket server before fully started [mudb/socket/uws/server]`);
         }
 
-        this.state = MuSocketServerState.SHUTDOWN;
+        this._state = MuSocketServerState.SHUTDOWN;
 
         if (this._listenSocket) {
             uWS.us_listen_socket_close(this._listenSocket);

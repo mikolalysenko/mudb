@@ -1,136 +1,81 @@
 import { MuSchema } from '../schema/schema';
-import { MuStruct } from '../schema/struct';
-import { MuUint32 } from '../schema/uint32';
-import { MuUTF8 } from '../schema/utf8';
-import { MuRPCRemoteClient } from './server';
+import { MuUnion, MuVarint, MuUTF8 } from '../schema';
 
-// Remote Procedure Call, a response-request protocol
-export namespace MuRPC {
-    export type Schema = [MuSchema<any>, MuSchema<any>];
-    export interface SchemaTable {
-        [proc:string]:Schema;
-    }
-    export interface ProtocolSchema {
-        name?:string;
-        client:SchemaTable;
-        server:SchemaTable;
-    }
+export type MuRPCTableEntry<
+    ArgsSchema extends MuSchema<any>,
+    ReturnSchema extends MuSchema<any>> = {
+    arg:ArgsSchema;
+    ret:ReturnSchema;
+};
 
-    export type Req = 0;
-    export type Res = 1;
-    export type Phase = Req | Res;
+export type MuRPCTable = {
+    [method:string]:MuRPCTableEntry<any, any>;
+};
 
-    export type MaybeError = string | undefined;
+export type MuRPCProtocol<RPCTable extends MuRPCTable> = {
+    name:string;
+    api:RPCTable;
+};
 
-    export interface API<Table extends SchemaTable> {
-        caller:{
-            [proc in keyof Table]:(
-                arg:Table[proc][Req]['identity'],
-                callback:(ret:Table[proc][Res]['identity']) => void,
-            ) => void
-        };
-        clientProcedure:{
-            [proc in keyof Table]:(
-                arg:Table[proc][Req]['identity'],
-                next:(err:MaybeError, ret?:Table[proc][Res]['identity']) => void,
-            ) => void
-        };
-        serverProcedure:{
-            [proc in keyof Table]:(
-                arg:Table[proc][Req]['identity'],
-                next:(err:MaybeError, ret?:Table[proc][Res]['identity']) => void,
-                client?:MuRPCRemoteClient<Table>,
-            ) => void
-        };
+export class MuRPCSchemas<Protocol extends MuRPCProtocol<any>> {
+    public errorSchema = new MuUTF8();
+    public tokenSchema = new MuVarint();
+    public argSchema:MuUnion<{
+        [method in keyof Protocol['api']]:Protocol['api']['arg'];
+    }>;
+    public retSchema:MuUnion<{
+        [method in keyof Protocol['api']]:Protocol['api']['ret'];
+    }>;
+    public responseSchema:MuUnion<{
+        success:MuRPCSchemas<Protocol>['retSchema'];
+        error:MuRPCSchemas<Protocol>['errorSchema'];
+    }>;
+    public error (message:string) {
+        const result = this.responseSchema.alloc();
+        result.type = 'error';
+        result.data = message;
+        return result;
     }
 
-    export type CallbackSchemaTable<Table extends SchemaTable, P extends Phase> = {
-        [proc in keyof Table]:MuStruct<{
-            id:MuUint32;
-            base:Table[proc][P];
-        }>
-    };
-
-    export type TransposedProtocolSchema<S extends ProtocolSchema> = [
-        {
-            name?:string;
-            client:CallbackSchemaTable<S['client'], Req>;
-            server:CallbackSchemaTable<S['server'], Req>;
-        },
-        {
-            name?:string;
-            client:CallbackSchemaTable<S['client'], Res>;
-            server:CallbackSchemaTable<S['server'], Res>;
+    constructor(
+        public protocol:Protocol,
+    ) {
+        const argTable:any = {};
+        const retTable:any = {};
+        const methods = Object.keys(protocol.api);
+        for (let i = 0; i < methods.length; ++i) {
+            const m = methods[i];
+            const s = protocol.api[m];
+            argTable[m] = s.arg;
+            retTable[m] = s.ret;
         }
-    ];
-
-    export function transpose <S extends ProtocolSchema> (
-        protocolSchema:S,
-    ) : TransposedProtocolSchema<S> {
-        // tuple type is not inferred
-        const transposed = [
-            { client: {}, server: {} }, // request protocol schema
-            { client: {}, server: {} }, // response protocol schema
-        ];
-
-        const req:Req = 0;
-        const res:Res = 1;
-        const callbackIdSchema = new MuUint32();
-
-        Object.keys(protocolSchema.client).forEach((proc) => {
-            const reqRes = protocolSchema.client[proc];
-            transposed[req].client[proc] = new MuStruct({
-                id: callbackIdSchema,
-                base: reqRes[req],
-            });
-            transposed[res].server[proc] = new MuStruct({
-                id: callbackIdSchema,
-                base: reqRes[res],
-            });
+        this.argSchema = new MuUnion(argTable);
+        this.retSchema = new MuUnion(retTable);
+        this.responseSchema = new MuUnion({
+            success: this.retSchema,
+            error: this.errorSchema,
         });
-        Object.keys(protocolSchema.server).forEach((proc) => {
-            const reqRes = protocolSchema.server[proc];
-            transposed[req].server[proc] = new MuStruct({
-                id: callbackIdSchema,
-                base: reqRes[req],
-            });
-            transposed[res].client[proc] = new MuStruct({
-                id: callbackIdSchema,
-                base: reqRes[res],
-            });
-        });
-
-        if (protocolSchema.name) {
-            const name = protocolSchema.name;
-            (<TransposedProtocolSchema<S>>transposed)[req].name = `${name}Request`;
-            (<TransposedProtocolSchema<S>>transposed)[res].name = `${name}Response`;
-        }
-
-        return <TransposedProtocolSchema<S>>transposed;
     }
+}
 
-    export const errorSchema = new MuStruct({
-        id: new MuUint32(),
-        message: new MuUTF8(),
-    });
+export interface MuRPCClientTransport<Protocol extends MuRPCProtocol<any>> {
+    send:(
+        schema:MuRPCSchemas<Protocol>,
+        rpc:MuRPCSchemas<Protocol>['argSchema']['identity']) =>
+            Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>;
+}
 
-    export interface ErrorProtocolSchema {
-        name?:string;
-        client:{ error:typeof errorSchema };
-        server:{ error:typeof errorSchema };
-    }
+export interface MuRPCConnection {
+    auth:string;
+    setAuth:(auth:string) => void;
+}
 
-    export function createErrorProtocolSchema (
-        protocolSchema:ProtocolSchema,
-    ) : ErrorProtocolSchema {
-        const schema = {
-            client: { error: errorSchema },
-            server: { error: errorSchema },
-        } as ErrorProtocolSchema;
-
-        if (protocolSchema.name) {
-            schema.name = `${protocolSchema.name}Error`;
-        }
-        return schema;
-    }
+export interface MuRPCServerTransport<Protocol extends MuRPCProtocol<any>, Connection extends MuRPCConnection> {
+    listen:(
+        schemas:MuRPCSchemas<Protocol>,
+        authorize:(connection:Connection) => Promise<boolean>,
+        recv:(
+            connection:Connection,
+            rpc:MuRPCSchemas<Protocol>['argSchema']['identity'],
+            response:MuRPCSchemas<Protocol>['responseSchema']['identity']) => Promise<void>) => void;
 }

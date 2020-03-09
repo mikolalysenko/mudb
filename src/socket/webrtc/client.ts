@@ -12,7 +12,8 @@ const isBrowser = typeof self !== undefined && !!self && self['Object'] === Obje
 function noop () { }
 
 export class MuRTCSocket implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () { return this._state; }
     public readonly sessionId:MuSessionId;
 
     public readonly wrtc:MuRTCBinding;
@@ -65,7 +66,7 @@ export class MuRTCSocket implements MuSocket {
         });
         this._reliableChannel.binaryType = this._unreliableChannel.binaryType = 'arraybuffer';
         this._pc.onicecandidate = (ev) => {
-            if (this.state !== MuSocketState.INIT) {
+            if (this._state !== MuSocketState.INIT) {
                 return;
             }
             if (ev.candidate) {
@@ -81,8 +82,8 @@ export class MuRTCSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
-            throw error(`attempt to connect when connection is ${this.state === MuSocketState.OPEN ? 'open' : 'closed'}`);
+        if (this._state !== MuSocketState.INIT) {
+            throw error(`attempt to connect when connection is ${this._state === MuSocketState.OPEN ? 'open' : 'closed'}`);
         }
 
         if (isBrowser) {
@@ -92,13 +93,13 @@ export class MuRTCSocket implements MuSocket {
         }
 
         const maybeReady = () => {
-            if (this.state !== MuSocketState.INIT) {
+            if (this._state !== MuSocketState.INIT) {
                 return;
             }
             if (this._reliableChannel.readyState === 'open' &&
                 this._unreliableChannel.readyState === 'open'
             ) {
-                this.state = MuSocketState.OPEN;
+                this._state = MuSocketState.OPEN;
                 spec.ready();
             }
         };
@@ -106,7 +107,7 @@ export class MuRTCSocket implements MuSocket {
         this._unreliableChannel.onopen = maybeReady;
 
         this._reliableChannel.onmessage = ({ data }) => {
-            if (this.state !== MuSocketState.OPEN) {
+            if (this._state !== MuSocketState.OPEN) {
                 return;
             }
             if (typeof data !== 'string') {
@@ -116,7 +117,7 @@ export class MuRTCSocket implements MuSocket {
             }
         };
         this._unreliableChannel.onmessage = ({ data }) => {
-            if (this.state !== MuSocketState.OPEN) {
+            if (this._state !== MuSocketState.OPEN) {
                 return;
             }
             if (typeof data !== 'string') {
@@ -127,7 +128,7 @@ export class MuRTCSocket implements MuSocket {
         };
 
         const onChannelClose = (ev) => {
-            if (this.state === MuSocketState.CLOSED) {
+            if (this._state === MuSocketState.CLOSED) {
                 return;
             }
             this._logger.error(`${ev.target.channel} channel closed unexpectedly`);
@@ -142,12 +143,12 @@ export class MuRTCSocket implements MuSocket {
         this._scheduler.setTimeout(() => {
             this._pc.createOffer(this._offerOpts)
             .then((offer) => {
-                if (this.state === MuSocketState.CLOSED) {
+                if (this._state === MuSocketState.CLOSED) {
                     return;
                 }
                 this._pc.setLocalDescription(offer)
                 .then(() => {
-                    if (this.state === MuSocketState.CLOSED) {
+                    if (this._state === MuSocketState.CLOSED) {
                         return;
                     }
                     offer['sid'] = this.sessionId;
@@ -161,7 +162,7 @@ export class MuRTCSocket implements MuSocket {
 
     private _pendingCandidates:RTCIceCandidateInit[] = [];
     public handleSignal (data:RTCSessionDescriptionInit|RTCIceCandidateInit) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             return;
         }
 
@@ -174,7 +175,7 @@ export class MuRTCSocket implements MuSocket {
         if ('sdp' in data) {
             pc.setRemoteDescription(data)
             .then(() => {
-                if (this.state === MuSocketState.CLOSED) {
+                if (this._state === MuSocketState.CLOSED) {
                     return;
                 }
                 for (let i = 0; i < this._pendingCandidates.length; ++i) {
@@ -194,7 +195,7 @@ export class MuRTCSocket implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
         if (unreliable) {
@@ -205,13 +206,13 @@ export class MuRTCSocket implements MuSocket {
     }
 
     public close (e?:any) {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
         if (e) {
             this._logger.exception(e);
         }
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._pc.close();
         this._reliableChannel.onopen = null;
         this._reliableChannel.onmessage = null;

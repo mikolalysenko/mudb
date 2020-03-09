@@ -1,120 +1,52 @@
-import { MuClient, MuClientProtocol } from '../client';
-import { MuSessionId } from '../socket/socket';
-import { MuRPC } from './protocol';
+import { MuRPCProtocol, MuRPCSchemas, MuRPCClientTransport } from './protocol';
+import { MuLogger, MuDefaultLogger } from '../logger';
 
-const uniqueId = (() => {
-    let next = 0;
-    return () => next++;
-})();
+export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
+    public api:{
+        [method in keyof Protocol['api']]:
+            (arg:Protocol['api'][method]['arg']['identity']) =>
+                Promise<Protocol['api'][method]['ret']['identity']>;
+    };
 
-export class MuRPCRemoteServer<Table extends MuRPC.SchemaTable> {
-    public readonly rpc:MuRPC.API<Table>['caller'];
+    public schemas:MuRPCSchemas<Protocol>;
+    public transport:MuRPCClientTransport<Protocol>;
+    public logger:MuLogger;
 
-    constructor (rpc:MuRPC.API<Table>['caller']) {
-        this.rpc = rpc;
-    }
-}
-
-export class MuRPCClient<Schema extends MuRPC.ProtocolSchema> {
-    public readonly sessionId:MuSessionId;
-    public readonly client:MuClient;
-    public readonly schema:Schema;
-
-    public readonly server:MuRPCRemoteServer<Schema['server']>;
-
-    private _requestProtocol:MuClientProtocol<MuRPC.TransposedProtocolSchema<Schema>[0]>;
-    private _responseProtocol:MuClientProtocol<MuRPC.TransposedProtocolSchema<Schema>[1]>;
-    private _errorProtocol:MuClientProtocol<MuRPC.ErrorProtocolSchema>;
-
-    private _callbacks:{ [id:string]:(ret) => void } = {};
-
-    constructor (client:MuClient, schema:Schema) {
-        this.sessionId = client.sessionId;
-        this.client = client;
-        this.schema = schema;
-
-        const transposedSchema = MuRPC.transpose(schema);
-        this._requestProtocol = client.protocol(transposedSchema[0]);
-        this._responseProtocol = client.protocol(transposedSchema[1]);
-        this._errorProtocol = client.protocol(MuRPC.createErrorProtocolSchema(schema));
-
-        this.server = new MuRPCRemoteServer(this._createRPC());
+    private _handleResponse = (response) => {
+        const { type, data } = response;
+        response.type = 'error';
+        response.data = '';
+        this.schemas.responseSchema.free(response);
+        if (type === 'success') {
+            return data.data;
+        } else {
+            this.logger.exception(data);
+            throw data;
+        }
     }
 
-    private _createRPC () {
-        const rpc = {};
-        Object.keys(this.schema.server).forEach((proc) => {
-            rpc[proc] = (arg, cb) => {
-                const id = uniqueId();
-                this._callbacks[id] = cb;
-                this._requestProtocol.server.message[proc]({
-                    id,
-                    base: this.schema.server[proc][0].clone(arg),
-                });
-            };
-        });
-        return <{ [proc in keyof Schema['server']]:(arg, cb) => void }>rpc;
+    private _createRPC (method:keyof Protocol['api']) {
+        return (arg) => {
+            const rpc = this.schemas.argSchema.alloc();
+            rpc.type = method;
+            rpc.data = arg;
+            return this.transport.send(this.schemas, rpc).then(this._handleResponse);
+        };
     }
 
-    public configure (spec:{
-        rpc:MuRPC.API<Schema['client']>['clientProcedure'];
-        ready?:() => void;
-        close?:() => void;
-    }) {
-        this._requestProtocol.configure({
-            message: (() => {
-                const handlers = {};
-                Object.keys(this.schema.client).forEach((proc) => {
-                    handlers[proc] = ({ id, base }) => {
-                        spec.rpc[proc](base, (err, ret) => {
-                            if (err) {
-                                this._errorProtocol.server.message.error({
-                                    id,
-                                    message: err,
-                                });
-                            } else {
-                                this._responseProtocol.server.message[proc]({
-                                    id,
-                                    base: this.schema.client[proc][1].clone(ret),
-                                });
-                            }
-                        });
-                    };
-                });
-                return <{ [proc in keyof Schema['client']]:({id, base}) => void }>handlers;
-            })(),
-            ready: () => {
-                if (spec && spec.ready) {
-                    spec.ready();
-                }
-            },
-            close: () => {
-                if (spec && spec.close) {
-                    spec.close();
-                }
-            },
-        });
-
-        this._responseProtocol.configure({
-            message: (() => {
-                const handlers = {};
-                Object.keys(this.schema.server).forEach((proc) => {
-                    handlers[proc] = ({ id, base }) => {
-                        this._callbacks[id](this.schema.server[proc][1].clone(base));
-                        delete this._callbacks[id];
-                    };
-                });
-                return <{ [proc in keyof Schema['server']]:({ id, base }) => void }>handlers;
-            })(),
-        });
-
-        this._errorProtocol.configure({
-            message: {
-                error: ({ id, message }) => {
-                    delete this._callbacks[id];
-                    console.error(`mudb/rpc: ${message}`);
-                },
-            },
-        });
+    constructor (
+        protocol:Protocol,
+        transport:MuRPCClientTransport<Protocol>,
+        logger?:MuLogger,
+    ) {
+        this.schemas = new MuRPCSchemas(protocol);
+        this.transport = transport;
+        this.logger = logger || MuDefaultLogger;
+        const api = this.api = <any>{};
+        const methods = Object.keys(protocol.api);
+        for (let i = 0; i < methods.length; ++i) {
+            const method = methods[i];
+            api[method] = this._createRPC(method);
+        }
     }
 }

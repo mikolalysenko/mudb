@@ -31,8 +31,6 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public readonly compare:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number;
     public readonly capacity:number;
 
-    public pool:ValueSchema['identity'][][];
-
     constructor (
         schema:ValueSchema,
         capacity:number,
@@ -51,7 +49,6 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
             // FIXME: use diff instead
             identity: JSON.stringify(this.identity),
         };
-        this.pool = arraySchema.pool;
 
         this.alloc = arraySchema.alloc;
         this.free = arraySchema.free;

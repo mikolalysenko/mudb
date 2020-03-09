@@ -10,8 +10,10 @@ import {
 function noop () { }
 
 export class MuWorkerSocket implements MuSocket {
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
     public sessionId:MuSessionId;
+
+    public state () { return this._state; }
 
     private _socket:Worker;
 
@@ -27,14 +29,14 @@ export class MuWorkerSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state === MuSocketState.OPEN) {
+        if (this._state === MuSocketState.OPEN) {
             throw new Error('client-side Worker socket already open');
         }
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             throw new Error('client-side Worker socket already closed, cannot reopen');
         }
 
-        this.state = MuSocketState.OPEN;
+        this._state = MuSocketState.OPEN;
 
         // perform a two-way "handshake" to ensure server is ready before sending messages
         // 1. client sends server the session id as a SYN
@@ -60,7 +62,7 @@ export class MuWorkerSocket implements MuSocket {
     }
 
     public send (message:MuData, unreliable_?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -82,12 +84,12 @@ export class MuWorkerSocket implements MuSocket {
     }
 
     public close () {
-        if (this.state !== MuSocketState.OPEN) {
-            this.state = MuSocketState.CLOSED;
+        if (this._state !== MuSocketState.OPEN) {
+            this._state = MuSocketState.CLOSED;
             return;
         }
 
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
         this._socket.terminate();
         this._onclose();
     }

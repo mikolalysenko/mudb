@@ -35,7 +35,7 @@ getFreePort((port) => {
             sessionId: randStr(),
             url,
         });
-        t.equal(socket.state, MuSocketState.INIT, 'should be INIT');
+        t.equal(socket.state(), MuSocketState.INIT, 'should be INIT');
         t.end();
     });
 
@@ -56,7 +56,7 @@ getFreePort((port) => {
                 if (callsToReady > 1) {
                     t.fail('should not call ready handler more than once');
                 }
-                t.equal(socket.state, MuSocketState.OPEN, 'should change socket state to OPEN');
+                t.equal(socket.state(), MuSocketState.OPEN, 'should change socket state to OPEN');
             },
             message: noop,
             close: noop,
@@ -118,7 +118,7 @@ getFreePort((port) => {
         socket.open({
             ready: () => socket.close(),
             message: noop,
-            close: () => t.equal(socket.state, MuSocketState.CLOSED, 'should change socket state to CLOSED'),
+            close: () => t.equal(socket.state(), MuSocketState.CLOSED, 'should change socket state to CLOSED'),
         });
     });
 
@@ -129,7 +129,7 @@ getFreePort((port) => {
         });
 
         socket.close();
-        t.equal(socket.state, MuSocketState.CLOSED, 'should change socket state to CLOSED');
+        t.equal(socket.state(), MuSocketState.CLOSED, 'should change socket state to CLOSED');
         t.end();
     });
 });

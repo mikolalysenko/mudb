@@ -18,7 +18,8 @@ if (isBrowser) {
 
 export class MuWebSocket implements MuSocket {
     public readonly sessionId:MuSessionId;
-    public state = MuSocketState.INIT;
+    private _state = MuSocketState.INIT;
+    public state () { return this._state; }
 
     private _url:string;
 
@@ -49,7 +50,7 @@ export class MuWebSocket implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
-        if (this.state !== MuSocketState.INIT) {
+        if (this._state !== MuSocketState.INIT) {
             throw error(`socket had been opened`);
         }
 
@@ -69,14 +70,14 @@ export class MuWebSocket implements MuSocket {
                 // remove handler
                 socket.onopen = null;
 
-                if (self.state === MuSocketState.CLOSED) {
+                if (self._state === MuSocketState.CLOSED) {
                     self._logger.log('socket opened after connection closed');
                     socket.close();
                     return;
                 }
 
                 socket.onmessage = function (event) {
-                    if (self.state === MuSocketState.CLOSED) {
+                    if (self._state === MuSocketState.CLOSED) {
                         socket.onmessage = null;
                         socket.close();
                         return;
@@ -98,7 +99,7 @@ export class MuWebSocket implements MuSocket {
                     // first message indicates whether socket is reliable
                     if (reliable) {
                         socket.onmessage = function ({ data }) {
-                            if (self.state !== MuSocketState.OPEN) {
+                            if (self._state !== MuSocketState.OPEN) {
                                 return;
                             }
                             if (typeof data === 'string') {
@@ -120,11 +121,11 @@ export class MuWebSocket implements MuSocket {
                         };
                         self._reliableSocket = socket;
 
-                        self.state = MuSocketState.OPEN;
+                        self._state = MuSocketState.OPEN;
                         spec.ready();
                     } else {
                         socket.onmessage = function ({ data }) {
-                            if (self.state !== MuSocketState.OPEN) {
+                            if (self._state !== MuSocketState.OPEN) {
                                 return;
                             }
                             if (typeof data === 'string') {
@@ -146,7 +147,7 @@ export class MuWebSocket implements MuSocket {
                                     sockets.splice(i, 1);
                                 }
                             }
-                            if (self.state !== MuSocketState.CLOSED) {
+                            if (self._state !== MuSocketState.CLOSED) {
                                 self._logger.log('attempt to reopen unreliable socket');
                                 openSocket();
                             }
@@ -167,7 +168,7 @@ export class MuWebSocket implements MuSocket {
     }
 
     public send (data:MuData, unreliable?:boolean) {
-        if (this.state !== MuSocketState.OPEN) {
+        if (this._state !== MuSocketState.OPEN) {
             return;
         }
 
@@ -197,10 +198,10 @@ export class MuWebSocket implements MuSocket {
     }
 
     public close = () => {
-        if (this.state === MuSocketState.CLOSED) {
+        if (this._state === MuSocketState.CLOSED) {
             return;
         }
-        this.state = MuSocketState.CLOSED;
+        this._state = MuSocketState.CLOSED;
 
         // remove listener
         if (isBrowser) {

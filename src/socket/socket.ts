@@ -28,9 +28,8 @@ export interface MuSocketSpec {
 }
 
 export interface MuSocket {
-    sessionId:MuSessionId;
-    state:MuSocketState;
-
+    readonly sessionId:MuSessionId;
+    state() : MuSocketState;
     open(spec:MuSocketSpec);
     send(data:MuData, unreliable?:boolean);
     close();
@@ -50,8 +49,7 @@ export interface MuSocketServerSpec {
 
 export interface MuSocketServer {
     clients:MuSocket[];
-    state:MuSocketServerState;
-
+    state() : MuSocketServerState;
     start(spec:MuSocketServerSpec);
     close();
 }

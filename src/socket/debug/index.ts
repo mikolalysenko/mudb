@@ -1,6 +1,5 @@
 import {
     MuSocketServer,
-    MuSocketServerState,
     MuSocketServerSpec,
     MuSocket,
     MuSocketState,
@@ -51,8 +50,8 @@ export class MuDebugSocket implements MuSocket {
     public socket:MuSocket;
 
     public readonly sessionId:MuSessionId;
-    public get state() : MuSocketState {
-        return this.socket.state;
+    public state() : MuSocketState {
+        return this.socket.state();
     }
 
     public inLatency = 0;
@@ -186,8 +185,8 @@ export class MuDebugSocket implements MuSocket {
 
 export class MuDebugServer implements MuSocketServer {
     public socketServer:MuSocketServer;
-    public get state () {
-        return this.socketServer.state;
+    public state () {
+        return this.socketServer.state();
     }
 
     public clients:MuDebugSocket[] = [];
