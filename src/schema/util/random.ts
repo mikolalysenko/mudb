@@ -48,9 +48,13 @@ export function randFloat32 () {
 }
 
 export function randFloat64 () {
-    dv.setUint32(0, randUint32(), true);
-    dv.setUint32(4, randUint32(), true);
-    return dv.getFloat64(0, true);
+    let f;
+    do {
+        dv.setUint32(0, randUint32(), true);
+        dv.setUint32(4, randUint32(), true);
+        f  = dv.getFloat64(0, true);
+    } while (isNaN(f));
+    return f;
 }
 
 // random array

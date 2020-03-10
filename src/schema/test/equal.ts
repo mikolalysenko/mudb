@@ -1,19 +1,29 @@
 import test = require('tape');
 import {
-    MuBoolean,
+    MuASCII,
+    MuFixedASCII,
     MuUTF8,
+    MuBoolean,
     MuFloat32,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVarint,
+    MuRelativeVarint,
+    MuStruct,
     MuArray,
     MuSortedArray,
-    MuStruct,
-    MuUnion,
-    MuBytes,
     MuDictionary,
     MuVector,
+    MuUnion,
     MuDate,
     MuJSON,
+    MuBytes,
     MuOption,
-    MuUint8,
 } from '../index';
 
 test('primitive.equal()', (t) => {
@@ -117,34 +127,92 @@ test('sortedArray.equal()', (t) => {
 
 test('struct.equal()', (t) => {
     const struct = new MuStruct({
-        a: new MuFloat32(),
-        b: new MuFloat32(),
+        struct: new MuStruct({
+            ascii: new MuASCII(),
+            fixed: new MuFixedASCII(1),
+            utf8: new MuUTF8(),
+            bool: new MuBoolean(),
+            float32: new MuFloat32(),
+            float64: new MuFloat64(),
+            int8: new MuInt8(),
+            int16: new MuInt16(),
+            int32: new MuInt32(),
+            uint8: new MuUint8(),
+            uint16: new MuUint16(),
+            uint32: new MuUint32(),
+            varint: new MuVarint(),
+            rvarint: new MuRelativeVarint(),
+            array: new MuArray(new MuFloat32(), Infinity),
+            sorted: new MuSortedArray(new MuFloat32(), Infinity),
+            dict: new MuDictionary(new MuFloat32(), Infinity),
+            vector: new MuVector(new MuFloat32(), 3),
+            union: new MuUnion({
+                b: new MuBoolean(),
+                f: new MuFloat32(),
+            }),
+        }),
     });
-    t.true(struct.equal({a: 0, b: 0}, {a: 0, b: 0}));
-    t.true(struct.equal({a: 0.5, b: 1}, {a: 0.5, b: 1}));
-    t.false(struct.equal({a: 0.5, b: 0.5}, {a: 0.5, b: 1}));
-    t.false(struct.equal({a: 0, b: 1}, {a:  1, b: 0}));
 
-    const nestedStruct = new MuStruct({
-        a: new MuStruct({
-            c: new MuUTF8(),
-            d: new MuBoolean(),
-            e: new MuFloat32(),
-        }),
-        b: new MuStruct({
-            f: new MuUTF8(),
-            g: new MuBoolean(),
-            h: new MuFloat32(),
-        }),
-    });
-    t.true(nestedStruct.equal(
-        {a: {c: '', d: false, e: 0}, b: {f: 'ab', g: true, h: 0.5}},
-        {a: {c: '', d: false, e: 0}, b: {f: 'ab', g: true, h: 0.5}},
-    ));
-    t.false(nestedStruct.equal(
-        {a: {c: '', d: false, e: 0}, b: {f: 'ab', g: true, h: 0.5}},
-        {a: {c: '', d: false, e: 0}, b: {f: 'abc', g: true, h: 0.5}},
-    ));
+    const s0 = struct.alloc();
+    t.true(struct.equal(s0, s0));
+
+    let s1 = struct.alloc();
+    s1.struct.ascii = 'a';
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.fixed = 'a';
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.utf8 = 'a';
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.bool = true;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.float32 = 0.5;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.float64 = 0.5;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.int8 = -1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.int16 = -1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.int32 = -1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.uint8 = 1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.uint16 = 1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.uint32 = 1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.varint = 1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.rvarint = -1;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.array.push(0);
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.sorted.push(0);
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.dict['a'] = 0;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.vector[0] = 0.5;
+    t.false(struct.equal(s0, s1));
+    s1 = struct.alloc();
+    s1.struct.union.type = 'b';
+    s1.struct.union.data = false;
     t.end();
 });
 

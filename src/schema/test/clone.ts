@@ -1,19 +1,30 @@
 import test = require('tape');
 import {
     MuSchema,
-    MuBoolean,
+    MuASCII,
+    MuFixedASCII,
     MuUTF8,
+    MuBoolean,
     MuFloat32,
-    MuArray,
-    MuOption,
-    MuSortedArray,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVarint,
+    MuRelativeVarint,
     MuStruct,
-    MuUnion,
-    MuBytes,
+    MuArray,
+    MuSortedArray,
     MuDictionary,
     MuVector,
+    MuUnion,
     MuDate,
     MuJSON,
+    MuBytes,
+    MuOption,
 } from '../index';
 
 test('primitive.clone()', (t) => {
@@ -94,37 +105,59 @@ test('sortedArray.clone()', (t) => {
 
 test('struct.clone()', (t) => {
     const struct = new MuStruct({
-        b: new MuBoolean(),
-        u: new MuUTF8(),
-        f: new MuFloat32(),
+        struct: new MuStruct({
+            ascii: new MuASCII(),
+            fixed: new MuFixedASCII(1),
+            utf8: new MuUTF8(),
+            bool: new MuBoolean(),
+            float32: new MuFloat32(),
+            float64: new MuFloat64(),
+            int8: new MuInt8(),
+            int16: new MuInt16(),
+            int32: new MuInt32(),
+            uint8: new MuUint8(),
+            uint16: new MuUint16(),
+            uint32: new MuUint32(),
+            varint: new MuVarint(),
+            rvarint: new MuRelativeVarint(),
+            array: new MuArray(new MuFloat32(), Infinity),
+            sorted: new MuSortedArray(new MuFloat32(), Infinity),
+            dict: new MuDictionary(new MuFloat32(), Infinity),
+            vector: new MuVector(new MuFloat32(), 3),
+            union: new MuUnion({
+                b: new MuBoolean(),
+                f: new MuFloat32(),
+            }),
+        }),
     });
-    const s = struct.alloc();
-    t.isNot(struct.clone(s), s);
-    t.deepEqual(struct.clone(s), s);
-    s.b = true;
-    s.u = 'Iñtërnâtiônàlizætiøn☃💩';
-    s.f = 0.5;
-    t.deepEqual(struct.clone(s), s);
 
-    const nestedStruct = new MuStruct({
-        s1: new MuStruct({
-            b: new MuBoolean(),
-            u: new MuUTF8(),
-            f: new MuFloat32(),
-        }),
-        s2: new MuStruct({
-            b: new MuBoolean(),
-            u: new MuUTF8(),
-            f: new MuFloat32(),
-        }),
-    });
-    const ns = nestedStruct.alloc();
-    t.deepEqual(nestedStruct.clone(ns), ns);
-    t.isNot(nestedStruct.clone(ns).s1, ns.s1);
-    ns.s1.b = true;
-    ns.s1.u = 'Iñtërnâtiônàlizætiøn☃💩';
-    ns.s1.f = 0.5;
-    t.deepEqual(nestedStruct.clone(ns), ns);
+    const s = struct.alloc();
+    t.notEquals(struct.clone(s), s);
+    t.deepEquals(struct.clone(s), s);
+    t.notEquals(struct.clone(s).struct, s.struct);
+
+    s.struct.ascii = 'a';
+    s.struct.fixed = 'a';
+    s.struct.utf8 = 'Iñtërnâtiônàlizætiøn☃💩';
+    s.struct.bool = true;
+    s.struct.float32 = 0.5;
+    s.struct.float64 = 0.5;
+    s.struct.int8 = -1;
+    s.struct.int16 = -2;
+    s.struct.int32 = -3;
+    s.struct.uint8 = 1;
+    s.struct.uint16 = 2;
+    s.struct.uint32 = 3;
+    s.struct.varint = 1;
+    s.struct.rvarint = -1;
+    s.struct.array = [0, 0.5, 1];
+    s.struct.sorted = [0, 0.5, 1];
+    s.struct.dict = {a: 0, b: 0.5};
+    s.struct.vector[1] = 0.5;
+    s.struct.vector[2] = 1;
+    s.struct.union.type = 'b';
+    s.struct.union.data = false;
+    t.deepEquals(struct.clone(s), s);
     t.end();
 });
 
