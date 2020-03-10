@@ -14,7 +14,7 @@ import {
     MuDate,
     MuJSON,
 } from '../index';
-import { randFloat32, randUint8 } from '../util/random';
+import { randFloat32, randUint8 } from '../../util/random';
 
 test('primitive.toJSON()', (t) => {
     const bool = new MuBoolean();

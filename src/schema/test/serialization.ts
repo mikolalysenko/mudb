@@ -42,7 +42,7 @@ import {
     randUint8,
     randUint16,
     randUint32,
-} from '../util/random';
+} from '../../util/random';
 
 function createTest<T> (
     t:tape.Test,
