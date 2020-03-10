@@ -56,24 +56,3 @@ export function randFloat64 () {
     } while (isNaN(f));
     return f;
 }
-
-// random array
-
-export function randArray () {
-    const a = new Array(Math.random() * 10 | 0);
-    for (let i = 0; i < a.length; ++i) {
-        a[i] = randFloat32();
-    }
-    return a;
-}
-
-// random dictionary
-
-export function randDict () {
-    const d = {};
-    let code = 97 + Math.random() * 6 | 0;
-    for (let i = Math.random() * 6 | 0; i > 0; --i) {
-        d[String.fromCharCode(code++)] = randFloat32();
-    }
-    return d;
-}
