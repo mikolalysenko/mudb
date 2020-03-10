@@ -1,19 +1,30 @@
 import test = require('tape');
 import {
     MuSchema,
-    MuBoolean,
+    MuASCII,
+    MuFixedASCII,
     MuUTF8,
+    MuBoolean,
     MuFloat32,
-    MuArray,
-    MuOption,
-    MuSortedArray,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVarint,
+    MuRelativeVarint,
     MuStruct,
-    MuUnion,
-    MuBytes,
+    MuArray,
+    MuSortedArray,
     MuDictionary,
     MuVector,
+    MuUnion,
     MuDate,
     MuJSON,
+    MuBytes,
+    MuOption,
 } from '../index';
 
 test('primitive.assign()', (t) => {
@@ -92,25 +103,76 @@ test('sortedArray.assign()', (t) => {
 
 test('struct.assign()', (t) => {
     const struct = new MuStruct({
-        f: new MuFloat32(),
-    });
-    const sSrc = struct.alloc();
-    const sDst = struct.alloc();
-    sSrc.f = 0.5;
-    t.is(struct.assign(sDst, sSrc), sDst);
-    t.deepEqual(sDst, sSrc);
-
-    const nestedStruct = new MuStruct({
-        s: new MuStruct({
-            f: new MuFloat32(),
+        struct: new MuStruct({
+            ascii: new MuASCII(),
+            fixed: new MuFixedASCII(1),
+            utf8: new MuUTF8(),
+            bool: new MuBoolean(),
+            float32: new MuFloat32(),
+            float64: new MuFloat64(),
+            int8: new MuInt8(),
+            int16: new MuInt16(),
+            int32: new MuInt32(),
+            uint8: new MuUint8(),
+            uint16: new MuUint16(),
+            uint32: new MuUint32(),
+            varint: new MuVarint(),
+            rvarint: new MuRelativeVarint(),
+            array: new MuArray(new MuFloat32(), Infinity),
+            sorted: new MuSortedArray(new MuFloat32(), Infinity),
+            dict: new MuDictionary(new MuFloat32(), Infinity),
+            vector: new MuVector(new MuFloat32(), 3),
+            union: new MuUnion({
+                b: new MuBoolean(),
+                f: new MuFloat32(),
+            }),
         }),
     });
-    const nsSrc = nestedStruct.alloc();
-    const nsDst = nestedStruct.alloc();
-    nsSrc.s.f = 0.5;
-    t.is(nestedStruct.assign(nsDst, nsSrc), nsDst);
-    t.deepEqual(nsDst, nsSrc);
-    t.isNot(nsDst.s, nsSrc.s);
+
+    const s0 = struct.alloc();
+    const s1 = struct.alloc();
+    s1.struct.ascii = 'a';
+    t.equals(struct.assign(s0, s1), s0);
+    t.notEquals(struct.assign(s0, s1), s1);
+    t.deepEquals(struct.assign(s0, s1), s1);
+    t.notEquals(struct.assign(s0, s1).struct, s1.struct);
+    s1.struct.fixed = 'a';
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.utf8 = 'Iñtërnâtiônàlizætiøn☃💩';
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.bool = true;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.float32 = 0.5;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.float64 = 0.5;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.int8 = -1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.int16 = -1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.int32 = -1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.uint8 = 1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.uint16 = 1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.uint32 = 1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.varint = 1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.rvarint = -1;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.array.push(0);
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.sorted.push(0);
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.dict['a'] = 0.5;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.vector[0] = 0.5;
+    t.deepEquals(struct.assign(s0, s1), s1);
+    s1.struct.union.type = 'b';
+    s1.struct.union.data = false;
+    t.deepEquals(struct.assign(s0, s1), s1);
     t.end();
 });
 

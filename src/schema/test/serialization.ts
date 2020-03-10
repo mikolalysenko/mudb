@@ -35,11 +35,15 @@ import { MuNumber } from '../_number';
 import {
     randBool,
     randFloat32,
+    randFloat64,
+    randInt8,
+    randInt16,
+    randInt32,
+    randUint8,
+    randUint16,
+    randUint32,
     randArray,
     randDict,
-    randInt,
-    randUint8,
-    randUint32,
 } from '../util/random';
 
 function createTest<T> (
@@ -368,51 +372,54 @@ tape('de/serializing struct', (t) => {
     }
 
     const struct = new MuStruct({
-        b: new MuBoolean(),
-        a: new MuASCII(),
-        u: new MuUTF8(),
-        f: new MuFloat32(),
-        i: new MuVarint(),
-        r: new MuRelativeVarint(),
-        arr: new MuArray(new MuFloat32(), Infinity),
-        sa: new MuSortedArray(new MuFloat32(), Infinity),
-        v: new MuVector(new MuFloat32(), 9),
-        d: new MuDictionary(new MuFloat32(), Infinity),
-        s: new MuStruct({
-            b: new MuBoolean(),
-            u: new MuUTF8(),
-            f: new MuFloat32(),
+        struct: new MuStruct({
+            ascii: new MuASCII(),
+            fixed: new MuFixedASCII(8),
+            utf8: new MuUTF8(),
+            bool: new MuBoolean(),
+            float32: new MuFloat32(),
+            float64: new MuFloat64(),
+            int8: new MuInt8(),
+            int16: new MuInt16(),
+            int32: new MuInt32(),
+            uint8: new MuUint8(),
+            uint16: new MuUint16(),
+            uint32: new MuUint32(),
+            varint: new MuVarint(),
+            rvarint: new MuRelativeVarint(),
+            array: new MuArray(new MuFloat32(), Infinity),
+            sorted: new MuSortedArray(new MuFloat32(), Infinity),
+            dict: new MuDictionary(new MuFloat32(), Infinity),
+            vector: new MuVector(new MuFloat32(), 3),
         }),
     });
 
-    const ascii = [
-        ' ',
-        'a',
-        'e42dfecf821ebdfce692c7692b18d2b1',
-        '<a href="https://github.com/mikolalysenko/mudb/">mudb</a>',
-    ];
-
     const strings = [
-        '',
+        ' ',
         '<a href="https://github.com/mikolalysenko/mudb/">mudb</a>',
         'Iñtërnâtiônàlizætiøn☃💩',
     ];
 
     function createStruct () {
         const s = struct.alloc();
-        s.b = randBool();
-        s.a = ascii[Math.random() * ascii.length | 0];
-        s.u = strings[Math.random() * 3 | 0];
-        s.f = randFloat32();
-        s.i = randUint32();
-        s.r = randInt(-0x40000000, 0x3fffffff);
-        s.arr = randArray();
-        s.sa = randArray().sort(compare);
-        s.v = randVec(9);
-        s.d = randDict();
-        s.s.b = randBool();
-        s.s.u = strings[Math.random() * 3 | 0];
-        s.s.f = randFloat32();
+        s.struct.ascii = Math.random().toString(36);
+        s.struct.fixed = Math.random().toString(36).substring(2, 10);
+        s.struct.utf8 = strings[Math.random() * 3 | 0];
+        s.struct.bool = randBool();
+        s.struct.float32 = randFloat32();
+        s.struct.float64 = randFloat64();
+        s.struct.int8 = randInt8();
+        s.struct.int16 = randInt16();
+        s.struct.int32 = randInt32();
+        s.struct.uint8 = randUint8();
+        s.struct.uint16 = randUint16();
+        s.struct.uint32 = randUint32();
+        s.struct.varint = randUint32();
+        s.struct.rvarint = randInt16();
+        s.struct.array = randArray();
+        s.struct.sorted = randArray().sort(compare);
+        s.struct.dict = randDict();
+        s.struct.vector = randVec(3);
         return s;
     }
 

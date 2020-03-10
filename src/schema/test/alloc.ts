@@ -1,18 +1,29 @@
 import test = require('tape');
 import {
-    MuBoolean,
+    MuASCII,
+    MuFixedASCII,
     MuUTF8,
+    MuBoolean,
     MuFloat32,
-    MuArray,
-    MuOption,
-    MuSortedArray,
+    MuFloat64,
+    MuInt8,
+    MuInt16,
+    MuInt32,
+    MuUint8,
+    MuUint16,
+    MuUint32,
+    MuVarint,
+    MuRelativeVarint,
     MuStruct,
-    MuUnion,
+    MuArray,
+    MuSortedArray,
     MuDictionary,
     MuVector,
+    MuUnion,
     MuDate,
     MuJSON,
     MuBytes,
+    MuOption,
 } from '../index';
 
 test('primitive.alloc()', (t) => {
@@ -45,15 +56,59 @@ test('nonPrimitive.alloc()', (t) => {
 });
 
 test('struct.alloc()', (t) => {
-    const flat = new MuStruct({ f: new MuFloat32() });
-    t.deepEqual(flat.alloc(), {f: 0});
-
-    const nested = new MuStruct({
-        s: new MuStruct({
-            f: new MuFloat32(),
+    const struct = new MuStruct({
+        struct: new MuStruct({
+            ascii: new MuASCII(),
+            fixed: new MuFixedASCII(1),
+            utf8: new MuUTF8(),
+            bool: new MuBoolean(),
+            float32: new MuFloat32(),
+            float64: new MuFloat64(),
+            int8: new MuInt8(),
+            int16: new MuInt16(),
+            int32: new MuInt32(),
+            uint8: new MuUint8(),
+            uint16: new MuUint16(),
+            uint32: new MuUint32(),
+            varint: new MuVarint(),
+            rvarint: new MuRelativeVarint(),
+            array: new MuArray(new MuFloat32(), Infinity),
+            sorted: new MuSortedArray(new MuFloat32(), Infinity),
+            dict: new MuDictionary(new MuFloat32(), Infinity),
+            vector: new MuVector(new MuFloat32(), 3),
+            union: new MuUnion({
+                b: new MuBoolean(),
+                f: new MuFloat32(),
+            }),
         }),
     });
-    t.deepEqual(nested.alloc(), {s: {f: 0}});
+
+    t.deepEqual(struct.alloc(), {
+        struct: {
+            ascii: '',
+            fixed: ' ',
+            utf8: '',
+            bool: false,
+            float32: 0,
+            float64: 0,
+            int8: 0,
+            int16: 0,
+            int32: 0,
+            uint8: 0,
+            uint16: 0,
+            uint32: 0,
+            varint: 0,
+            rvarint: 0,
+            array: [],
+            sorted: [],
+            dict: {},
+            vector: new Float32Array(3),
+            union: {
+                type: '',
+                data: undefined,
+            },
+        },
+    });
     t.end();
 });
 
