@@ -293,7 +293,7 @@ test('stream offset & length', (t) => {
     t.end();
 });
 
-test.only('checking bounds', (t) => {
+test('checking bounds', (t) => {
 {
     const ws = new MuWriteStream(1);
     ws.offset += 1;
