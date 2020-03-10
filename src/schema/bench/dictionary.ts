@@ -15,12 +15,12 @@ const d0 = {};
 const d1 = {a: 0, b: 0, c: 0};
 const d2 = {pool: 0, preface: 1, prefix: 2, prefixed: 3};
 
-diffPatchDuration(dict, d1, d1, 1e3);
+diffPatchDuration(dict, d1, d1, 1e3, 'b=t');
 
-diffPatchDuration(dict, d0, d1, 1e3);
-diffPatchDuration(dict, d0, d1, 1e4);
-diffPatchDuration(dict, d0, d1, 1e5);
+diffPatchDuration(dict, d0, d1, 1e3, 'no common prefix');
+diffPatchDuration(dict, d0, d1, 1e4, 'no common prefix');
+diffPatchDuration(dict, d0, d1, 1e5, 'no common prefix');
 
-diffPatchDuration(dict, d0, d2, 1e3);
-diffPatchDuration(dict, d0, d2, 1e4);
-diffPatchDuration(dict, d0, d2, 1e5);
+diffPatchDuration(dict, d0, d2, 1e3, 'common prefix');
+diffPatchDuration(dict, d0, d2, 1e4, 'common prefix');
+diffPatchDuration(dict, d0, d2, 1e5, 'common prefix');

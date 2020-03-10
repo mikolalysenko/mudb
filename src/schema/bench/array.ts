@@ -20,8 +20,8 @@ deltaByteLength(array, ['a', 'b'], ['b', 'c']);
 const a0 = [];
 const a1 = ['a', 'b', 'c', 'd', 'e'];
 
-diffPatchDuration(array, a1, a1, 1e3);
+diffPatchDuration(array, a1, a1, 1e3, 'b=t');
 
-diffPatchDuration(array, a0, a1, 1e3);
-diffPatchDuration(array, a0, a1, 1e4);
-diffPatchDuration(array, a0, a1, 1e5);
+diffPatchDuration(array, a0, a1, 1e3, 'b!=t');
+diffPatchDuration(array, a0, a1, 1e4, 'b!=t');
+diffPatchDuration(array, a0, a1, 1e5, 'b!=t');

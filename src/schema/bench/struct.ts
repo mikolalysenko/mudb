@@ -13,10 +13,10 @@ deltaByteLength(struct, {a: 0, b: 0}, {a:1, b: 2});
 const s0 = {a: 0, b: 0};
 const s1 = {a: 1, b: 2};
 
-diffPatchDuration(struct, s0, s0, 1e3);
-diffPatchDuration(struct, s0, s1, 1e3);
-diffPatchDuration(struct, s0, s1, 1e4);
-diffPatchDuration(struct, s0, s1, 1e5);
+diffPatchDuration(struct, s1, s1, 1e3, 'uint8 - b=t');
+diffPatchDuration(struct, s0, s1, 1e3, 'uint8 - b!=t');
+diffPatchDuration(struct, s0, s1, 1e4, 'uint8 - b!=t');
+diffPatchDuration(struct, s0, s1, 1e5, 'uint8 - b!=t');
 }
 
 {
@@ -34,13 +34,13 @@ const s0 = {v: 0, rv: 0};
 const s1 = {v: 0x7f, rv: -0x2a};
 const s2 = {v: 0x80, rv: -0x2b};
 
-diffPatchDuration(struct, s0, s0, 1e3);
-diffPatchDuration(struct, s0, s1, 1e3);
-diffPatchDuration(struct, s0, s1, 1e4);
-diffPatchDuration(struct, s0, s1, 1e5);
-diffPatchDuration(struct, s0, s2, 1e3);
-diffPatchDuration(struct, s0, s2, 1e4);
-diffPatchDuration(struct, s0, s2, 1e5);
+diffPatchDuration(struct, s1, s1, 1e3, 'varint - b=t');
+diffPatchDuration(struct, s0, s1, 1e3, 'varint - one byte');
+diffPatchDuration(struct, s0, s1, 1e4, 'varint - one byte');
+diffPatchDuration(struct, s0, s1, 1e5, 'varint - one byte');
+diffPatchDuration(struct, s0, s2, 1e3, 'varint - two bytes');
+diffPatchDuration(struct, s0, s2, 1e4, 'varint - two bytes');
+diffPatchDuration(struct, s0, s2, 1e5, 'varint - two bytes');
 }
 
 {
@@ -58,8 +58,8 @@ const s1 = {
     vec3: Float32Array.from([0.5, 1.5, 2.5]),
 };
 
-diffPatchDuration(struct, s0, s0, 1e3);
-diffPatchDuration(struct, s0, s1, 1e3);
-diffPatchDuration(struct, s0, s1, 1e4);
-diffPatchDuration(struct, s0, s1, 1e5);
+diffPatchDuration(struct, s0, s0, 1e3, 'vector - b=t');
+diffPatchDuration(struct, s0, s1, 1e3, 'vector - b!=t');
+diffPatchDuration(struct, s0, s1, 1e4, 'vector - b!=t');
+diffPatchDuration(struct, s0, s1, 1e5, 'vector - b!=t');
 }
