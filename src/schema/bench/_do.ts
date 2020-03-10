@@ -9,24 +9,6 @@ export function deltaByteLength<T> (schema:MuSchema<T>, a:T, b:T) {
 }
 
 export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:number, id='', sampleSize=9) {
-    function diffPair (ws:MuWriteStream) {
-        schema.diff(schema.identity, a, ws);
-        schema.diff(schema.identity, b, ws);
-        schema.diff(a, schema.identity, ws);
-        schema.diff(b, schema.identity, ws);
-        schema.diff(a, b, ws);
-        schema.diff(b, a, ws);
-    }
-
-    function patchPair (rs:MuReadStream) {
-        (rs.offset < rs.length) && schema.patch(schema.identity, rs);
-        (rs.offset < rs.length) && schema.patch(schema.identity, rs);
-        (rs.offset < rs.length) && schema.patch(a, rs);
-        (rs.offset < rs.length) && schema.patch(b, rs);
-        (rs.offset < rs.length) && schema.patch(a, rs);
-        (rs.offset < rs.length) && schema.patch(b, rs);
-    }
-
     const diffSample:number[] = [];
     const diffObserver = new PerformanceObserver((list) => {
         const entry = list.getEntriesByName(`diff`)[0];
@@ -36,13 +18,14 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
             if (diffSample.length === sampleSize) {
                 diffObserver.disconnect();
                 diffSample.sort((x, y) => x - y);
-                console.log(`${id} diff ${rounds} rounds: ${diffSample[sampleSize >>> 1]}`);
+                const median = diffSample[sampleSize >>> 1];
+                console.log((id && `${id}: `) + `diff ${rounds} rounds: ${median}`);
             }
         }
     });
     diffObserver.observe({ entryTypes: ['measure'] });
 
-    const wss:MuWriteStream[] = new Array(rounds);
+    const wss:MuWriteStream[] = new Array(sampleSize * rounds);
     for (let i = 0; i < wss.length; ++i) {
         wss[i] = new MuWriteStream(1);
     }
@@ -50,7 +33,8 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
     for (let i = 0; i < sampleSize; ++i) {
         performance.mark('A');
         for (let j = 0; j < rounds; ++j) {
-            diffPair(wss[j]);
+            const ws = wss[i * rounds + j];
+            schema.diff(a, b, ws);
         }
         performance.mark('B');
         performance.measure(`diff`, 'A', 'B');
@@ -65,7 +49,8 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
             if (patchSample.length === sampleSize) {
                 patchObserver.disconnect();
                 patchSample.sort((x, y) => x - y);
-                console.log(`${id} patch ${rounds} rounds: ${patchSample[sampleSize >>> 1]}`);
+                const median = patchSample[sampleSize >>> 1];
+                console.log((id && `${id}: `) + `patch ${rounds} rounds: ${median}`);
             }
         }
     });
@@ -76,7 +61,8 @@ export function diffPatchDuration<T> (schema:MuSchema<T>, a:T, b:T, rounds:numbe
     for (let i = 0; i < sampleSize; ++i) {
         performance.mark('C');
         for (let j = 0; j < rounds; ++j) {
-            patchPair(rss[j]);
+            const rs = rss[i * rounds + j];
+            (rs.offset < rs.length) && schema.patch(a, rs);
         }
         performance.mark('D');
         performance.measure(`patch`, 'C', 'D');
