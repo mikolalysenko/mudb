@@ -279,3 +279,156 @@ test('varints', (t) => {
 
     t.end();
 });
+
+test('stream offset & length', (t) => {
+    const ws = new MuWriteStream(8);
+    ws.offset += 8;
+    const rs0 = new MuReadStream(ws.bytes());
+    t.equals(rs0.offset, 0);
+    t.equals(rs0.length, 8);
+    rs0.readFloat32();
+    const rs1 = new MuReadStream(rs0.bytes());
+    t.equals(rs1.offset, 4);
+    t.equals(rs1.length, 8);
+    t.end();
+});
+
+test.only('checking bounds', (t) => {
+{
+    const ws = new MuWriteStream(1);
+    ws.offset += 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readInt8());
+    t.throws(() => rs.readInt8());
+}
+{
+    const ws = new MuWriteStream(1);
+    ws.offset += 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readUint8());
+    t.throws(() => rs.readUint8());
+}
+{
+    const ws = new MuWriteStream(2);
+    ws.offset += 2;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readInt16());
+}
+{
+    const ws = new MuWriteStream(2);
+    ws.offset += 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readInt16());
+}
+{
+    const ws = new MuWriteStream(2);
+    ws.offset += 2;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readUint16());
+}
+{
+    const ws = new MuWriteStream(2);
+    ws.offset += 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readUint16());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 4;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readInt32());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 3;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readInt32());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 4;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readUint32());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 3;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readUint32());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 4;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readFloat32());
+}
+{
+    const ws = new MuWriteStream(4);
+    ws.offset += 3;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readFloat32());
+}
+{
+    const ws = new MuWriteStream(8);
+    ws.offset += 8;
+    const rs = new MuReadStream(ws.bytes());
+    t.doesNotThrow(() => rs.readFloat64());
+}
+{
+    const ws = new MuWriteStream(8);
+    ws.offset += 7;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readFloat64());
+}
+{
+    const ws = new MuWriteStream(5);
+    ws.writeVarint(0x7f);
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readVarint());
+}
+{
+    const ws = new MuWriteStream(5);
+    ws.writeVarint(0x3fff);
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readVarint());
+}
+{
+    const ws = new MuWriteStream(5);
+    ws.writeVarint(0x1fffff);
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readVarint());
+}
+{
+    const ws = new MuWriteStream(5);
+    ws.writeVarint(0xfffffff);
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readVarint());
+}
+{
+    const ws = new MuWriteStream(5);
+    ws.writeVarint(0xffffffff);
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readVarint());
+}
+{
+    const ws = new MuWriteStream(5);
+    const s = 'a';
+    ws.writeVarint(s.length + 1);
+    ws.writeASCII(s);
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readASCII(rs.readVarint()));
+}
+{
+    const ws = new MuWriteStream(128);
+    ws.writeString('Iñtërnâtiônàlizætiøn☃💩');
+    ws.offset -= 1;
+    const rs = new MuReadStream(ws.bytes());
+    t.throws(() => rs.readString());
+}
+t.end();
+});
