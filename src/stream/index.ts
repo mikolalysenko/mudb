@@ -250,6 +250,7 @@ export class MuReadStream {
     public readUint32 () : number {
         const offset = this.offset;
         this.offset += 4;
+        this.checkBounds();
         return this.buffer.dataView.getUint32(offset, LITTLE_ENDIAN);
     }
 
