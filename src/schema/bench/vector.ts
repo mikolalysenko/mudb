@@ -11,8 +11,8 @@ deltaByteLength(vec3, from([0, 0, 0]), from([1.5, 1.5, 1.5]));
 const v1 = from([0, 0, 0]);
 const v2 = from([0.5, 1, 1.5]);
 
-diffPatchDuration(vec3, v2, v2, 1e3);
+diffPatchDuration(vec3, v2, v2, 1e3, 'b=t');
 
-diffPatchDuration(vec3, v1, v2, 1e3);
-diffPatchDuration(vec3, v1, v2, 1e4);
-diffPatchDuration(vec3, v1, v2, 1e5);
+diffPatchDuration(vec3, v1, v2, 1e3, 'b!=t');
+diffPatchDuration(vec3, v1, v2, 1e4, 'b!=t');
+diffPatchDuration(vec3, v1, v2, 1e5, 'b!=t');
