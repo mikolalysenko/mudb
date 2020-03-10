@@ -2,7 +2,7 @@ import uWS = require('uWebSockets.js');
 import ws = require('ws');
 import test = require('tape');
 
-import getFreePort = require('../../util/get-free-port');
+import getFreePort = require('../../../util/port');
 import { MuUWSSocketServer } from '../server';
 import { MuUWSSocket } from '../client';
 import { MuSocketState } from '../../socket';
