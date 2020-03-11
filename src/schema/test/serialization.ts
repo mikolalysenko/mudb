@@ -42,9 +42,7 @@ import {
     randUint8,
     randUint16,
     randUint32,
-    randArray,
-    randDict,
-} from '../util/random';
+} from '../../util/random';
 
 function createTest<T> (
     t:tape.Test,
@@ -63,6 +61,23 @@ function createTest<T> (
             t.equal(out.offset, 0, 'no bytes should be written to stream');
         }
     };
+}
+
+function randArray () {
+    const a = new Array(Math.random() * 10 | 0);
+    for (let i = 0; i < a.length; ++i) {
+        a[i] = randFloat32();
+    }
+    return a;
+}
+
+function randDict () {
+    const d = {};
+    let code = 97 + Math.random() * 6 | 0;
+    for (let i = Math.random() * 6 | 0; i > 0; --i) {
+        d[String.fromCharCode(code++)] = randFloat32();
+    }
+    return d;
 }
 
 const compare = (a, b) => a - b;

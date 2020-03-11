@@ -4,7 +4,7 @@ import http = require('http');
 import { MuWebSocketServer } from '../server';
 import { MuWebSocket } from '../client';
 import { MuSocketState } from '../../socket';
-import getFreePort = require('../../util/get-free-port');
+import getFreePort = require('../../../util/port');
 
 function noop () { }
 

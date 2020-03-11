@@ -3,7 +3,7 @@ import tape = require('tape');
 import { MuRPCHttpServerTransport } from '../http/server';
 import { MuUTF8, MuVoid, MuStruct, MuFloat64 } from '../../schema';
 import { MuRPCServer } from '../server';
-import getFreePort = require('../../socket/util/get-free-port');
+import getFreePort = require('../../util/port');
 import { MuRPCClient } from '../client';
 import { MuRPCHttpClientTransport } from '../http/client';
 

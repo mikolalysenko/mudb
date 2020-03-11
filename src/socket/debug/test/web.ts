@@ -8,7 +8,7 @@ import { MuWebSocket } from '../../web/client';
 import { MuDebugSocket } from '../index';
 import { MuClient } from '../../../client';
 import { protocolSchema } from './_/schema';
-import getFreePort = require('../../util/get-free-port');
+import getFreePort = require('../../../util/port');
 
 function randStr () {
     return Math.random().toString(36).substring(2);

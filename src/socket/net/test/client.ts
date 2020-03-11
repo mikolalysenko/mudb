@@ -3,7 +3,7 @@ import test = require('tape');
 import tcp = require('net');
 import udp = require('dgram');
 
-import getFreePort = require('../../util/get-free-port');
+import getFreePort = require('../../../util/port');
 import { MuNetSocketServer } from '../server';
 import { MuNetSocket } from '../client';
 import { MuSocketState } from '../../socket';
