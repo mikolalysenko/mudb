@@ -294,8 +294,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (!element) {
                 return false;
             }
-            element.value.apply(rda.valueRDA, updateAction.action);
-            return true;
+            return element.value.apply(rda.valueRDA, updateAction.action);
         } else if (type === 'move') {
             const moveAction = <MapRDA['moveActionSchema']['identity']>data;
             const element = this.idIndex[moveAction.id];

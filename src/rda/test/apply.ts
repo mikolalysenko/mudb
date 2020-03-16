@@ -220,7 +220,7 @@ function createTestState<T extends MuRDA<any, any, any, any>> (t:tape.Test, stor
     };
 }
 
-tape('map of Date constants', (t) => {
+tape('map of constants', (t) => {
     const M = new MuRDAMap(new MuVarint(), new MuRDAConstant(new MuDate()));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
@@ -285,7 +285,7 @@ tape('map of Date constants', (t) => {
     t.end();
 });
 
-tape('map of maps of varint register', (t) => {
+tape('map of maps of registers', (t) => {
     const M = new MuRDAMap(
         new MuASCII(),
         new MuRDAMap(new MuASCII(), new MuRDARegister(new MuVarint())),
@@ -335,15 +335,29 @@ tape('map of maps of varint register', (t) => {
     testState({foo: {}});
     testApply(dispatchers.clear(), true);
     testState({});
+
+    testApply(dispatchers.reset({foo: {bar: 0}}), true);
+    testState({foo: {bar: 0}});
+
+    // contrived invalid actions
+    let action:any = dispatchers.update('foo').update('bar')(1);
+    action.data.id = -1;
+    testApply(action, false);
+    testState({foo: {bar: 0}});
+
+    action = dispatchers.update('foo').update('bar')(1);
+    action.data.action.data.id = -1;
+    testApply(action, false);
+    testState({foo: {bar: 0}});
     t.end();
 });
 
 tape('map of structs', (t) => {
     const M = new MuRDAMap(new MuVarint(), new MuRDAStruct({
-        bool: new MuRDARegister(new MuBoolean()),
-        varint: new MuRDARegister(new MuVarint()),
-        utf8: new MuRDARegister(new MuUTF8()),
-        date: new MuRDAConstant(new MuDate()),
+        b: new MuRDARegister(new MuBoolean()),
+        v: new MuRDARegister(new MuVarint()),
+        u: new MuRDARegister(new MuUTF8()),
+        d: new MuRDAConstant(new MuDate()),
     }));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
@@ -351,68 +365,73 @@ tape('map of structs', (t) => {
     const testApply = createTestApply(t, store, M);
     const testState = createTestState(t, store, M);
 
-    testApply(dispatchers.set(127, {bool: false, varint: 0, utf8: '', date: new Date(0)}), true);
-    testState({127: { bool: false, varint: 0, utf8: '', date: new Date(0)}});
+    testApply(dispatchers.set(127, {b: false, v: 0, u: '', d: new Date(0)}), true);
+    testState({127: {b: false, v: 0, u: '', d: new Date(0)}});
     testApply(dispatchers.move(127, 128), true);
-    testState({128: {bool: false, varint: 0, utf8: '', date: new Date(0)}});
-    testApply(dispatchers.update(127).bool(true), true);
-    testState({128: {bool: false, varint: 0, utf8: '', date: new Date(0)}});
-    testApply(dispatchers.update(128).utf8('Iñtërnâtiônàlizætiøn☃💩'), true);
-    testState({128: {bool: false, varint: 0, utf8: 'Iñtërnâtiônàlizætiøn☃💩', date: new Date(0)}});
+    testState({128: {b: false, v: 0, u: '', d: new Date(0)}});
+    testApply(dispatchers.update(128).b(true), true);
+    testState({128: {b: true, v: 0, u: '', d: new Date(0)}});
+    testApply(dispatchers.update(128).v(1), true);
+    testState({128: {b: true, v: 1, u: '', d: new Date(0)}});
+    testApply(dispatchers.update(128).u('Iñtërnâtiônàlizætiøn☃💩'), true);
+    testState({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
+    testApply(dispatchers.remove(128), true);
+    testState({});
+    testApply(dispatchers.reset({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}}), true);
+    testState({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
+    testApply(dispatchers.clear(), true);
+    testState({});
     t.end();
 });
 
 tape('map of structs of structs of structs', (t) => {
-    const M = new MuRDAMap(new MuASCII(), new MuRDAStruct({
-        s: new MuRDAStruct({
-            b: new MuRDARegister(new MuBoolean()),
+    const M = new MuRDAMap(
+        new MuASCII(),
+        new MuRDAStruct({
             s: new MuRDAStruct({
-                v: new MuRDARegister(new MuVarint()),
+                s: new MuRDAStruct({
+                    v: new MuRDARegister(new MuVarint()),
+                }),
             }),
         }),
-    }));
+    );
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
 
     const testApply = createTestApply(t, store, M);
     const testState = createTestState(t, store, M);
 
-    testApply(dispatchers.set('foo', {
-        s: {
-            b: false,
-            s: {
-                v: 0,
-            },
-        },
+    testApply(dispatchers.set('foo', {s: {s: {v: 0}}}), true);
+    testState({foo: {s: {s: {v: 0}}}});
+    testApply(dispatchers.move('foo', 'bar'), true);
+    testState({bar: {s: {s: {v: 0}}}});
+    testApply(dispatchers.update('bar').s.s.v(128), true);
+    testState({bar: {s: {s: {v: 128}}}});
+    testApply(dispatchers.move('bar', 'baz'), true);
+    testState({baz: {s: {s: {v: 128}}}});
+    testApply(dispatchers.update('bar').s.s.v(129), true);
+    testState({baz: {s: {s: {v: 128}}}});
+    testApply(dispatchers.remove('baz'), true);
+    testState({});
+    testApply(dispatchers.reset({
+        bar: {s: {s: {v: 128}}},
+        baz: {s: {s: {v: 0}}},
     }), true);
     testState({
-        'foo': {
-            s: {
-                b: false,
-                s: {
-                    v: 0,
-                },
-            },
-        },
+        bar: {s: {s: {v: 128}}},
+        baz: {s: {s: {v: 0}}},
     });
-    testApply(dispatchers.move('foo', 'bar'), true);
-    testState({
-        'bar': {
-            s: {
-                b: false,
-                s: {
-                    v: 0,
-                },
-            },
-        },
-    });
+    testApply(dispatchers.move('bar', 'baz'), true);
+    testState({baz: {s: {s: {v: 128}}}});
+    testApply(dispatchers.clear(), true);
+    testState({});
     t.end();
 });
 
 tape('map of structs of maps of structs', (t) => {
     const M = new MuRDAMap(new MuVarint(), new MuRDAStruct({
         m: new MuRDAMap(new MuASCII(), new MuRDAStruct({
-            date: new MuRDAConstant(new MuDate()),
+            v: new MuRDARegister(new MuVarint()),
         })),
     }));
     const store = M.createStore(M.stateSchema.identity);
@@ -421,20 +440,32 @@ tape('map of structs of maps of structs', (t) => {
     const testApply = createTestApply(t, store, M);
     const testState = createTestState(t, store, M);
 
-    testApply(dispatchers.set(16383, {
-        m: {},
-    }), true);
-    testState({
-        16383: {
-            m: {},
-        },
-    });
+    testApply(dispatchers.set(16383, { m: {}}), true);
+    testState({16383: {m: {}}});
     testApply(dispatchers.move(16383, 16384), true);
-    testState({
-        16384: {
-            m: {},
-        },
-    });
+    testState({16384: {m: {}}});
+    testApply(dispatchers.update(16384).m.set('foo', {v: 127}), true);
+    testState({16384: {m: {foo: {v: 127}}}});
+    testApply(dispatchers.update(16384).m.move('foo', 'bar'), true);
+    testState({16384: {m: {bar: {v: 127}}}});
+    testApply(dispatchers.update(16384).m.update('bar').v(128), true);
+    testState({16384: {m: {bar: {v: 128}}}});
+    testApply(dispatchers.update(16384).m.update('foo').v(128), true);
+    testState({16384: {m: {bar: {v: 128}}}});
+    testApply(dispatchers.update(16384).m.remove('bar'), true);
+    testState({16384: {m: {}}});
+    testApply(dispatchers.update(16384).m.reset({
+        foo: {v: 127},
+        bar: {v: 128},
+    }), true);
+    testState({16384: {m: {
+        foo: {v: 127},
+        bar: {v: 128},
+    }}});
+    testApply(dispatchers.update(16384).m.move('foo', 'bar'), true);
+    testState({16384: {m: {bar: {v: 127}}}});
+    testApply(dispatchers.update(16384).m.clear(), true);
+    testState({16384: {m: {}}});
     t.end();
 });
 
