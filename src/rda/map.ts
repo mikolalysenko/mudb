@@ -153,9 +153,6 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < elements.length; ++i) {
             const element = elements[i];
             const id = element.id;
-            if (id in idIndex) {
-                continue;
-            }
             idIndex[id] = element;
             this._insertElement(element);
         }
