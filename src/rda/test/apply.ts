@@ -469,6 +469,20 @@ tape('map of structs of maps of structs', (t) => {
     t.end();
 });
 
+tape('non-empty output map', (t) => {
+    const M = new MuRDAMap(new MuVarint(), new MuRDAConstant(new MuDate()));
+    const store = M.createStore(M.stateSchema.identity);
+    const dispatchers = M.action(store);
+
+    t.deepEqual(store.state(M, {}), {});
+    t.deepEqual(store.state(M, {0: new Date(0)}), {});
+
+    store.apply(M, dispatchers.reset({127: new Date(127), 128: new Date(128)}));
+    t.deepEqual(store.state(M, {0: new Date(0)}), {127: new Date(127), 128: new Date(128)});
+    t.deepEqual(store.state(M, {127: new Date(0)}), {127: new Date(127), 128: new Date(128)});
+    t.end();
+});
+
 tape('struct', (t) => {
     const S = new MuRDAStruct({
         c: new MuRDAConstant(new MuInt8()),
