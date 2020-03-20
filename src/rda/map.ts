@@ -4,9 +4,9 @@ import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
 import { MuSortedArray } from '../schema/sorted-array';
 import { MuVoid } from '../schema/void';
-import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
 import { MuVarint } from '../schema/varint';
 import { MuBoolean } from '../schema/boolean';
+import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
 
 function compareKey (a:string, b:string) {
     return a < b ? -1 : (b < a ? 1 : 0);
@@ -153,9 +153,6 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         for (let i = 0; i < elements.length; ++i) {
             const element = elements[i];
             const id = element.id;
-            if (id in idIndex) {
-                continue;
-            }
             idIndex[id] = element;
             this._insertElement(element);
         }
@@ -207,6 +204,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         element.next = element.prev = null;
 
         // insert into new bucket
+        element.key = key;
         this._insertElement(element);
     }
 
@@ -293,8 +291,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (!element) {
                 return false;
             }
-            element.value.apply(rda.valueRDA, updateAction.action);
-            return true;
+            return element.value.apply(rda.valueRDA, updateAction.action);
         } else if (type === 'move') {
             const moveAction = <MapRDA['moveActionSchema']['identity']>data;
             const element = this.idIndex[moveAction.id];
@@ -594,7 +591,7 @@ export class MuRDAMap<
                 result.type = 'move';
                 const moveAction = result.data = this.moveActionSchema.alloc();
                 moveAction.id = prev.id;
-                moveAction.key = prev.key;
+                moveAction.key = to;
                 const target = this._savedStore.keyIndex[to];
                 if (target) {
                     moveAction.sequence = target.sequence + 1;
