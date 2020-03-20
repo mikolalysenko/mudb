@@ -480,6 +480,10 @@ tape('non-empty output map', (t) => {
     store.apply(M, dispatchers.reset({127: new Date(127), 128: new Date(128)}));
     t.deepEqual(store.state(M, {0: new Date(0)}), {127: new Date(127), 128: new Date(128)});
     t.deepEqual(store.state(M, {127: new Date(0)}), {127: new Date(127), 128: new Date(128)});
+    t.deepEqual(store.state(M, {127: new Date(127), 128: new Date(128)}), {127: new Date(127), 128: new Date(128)});
+
+    store.apply(M, dispatchers.remove(127));
+    t.deepEqual(store.state(M, {127: new Date(127), 128: new Date(128)}), {128: new Date(128)});
     t.end();
 });
 
