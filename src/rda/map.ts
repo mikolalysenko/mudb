@@ -163,7 +163,8 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         const outKeys = Object.keys(out);
         for (let i = 0; i < outKeys.length; ++i) {
             const key = outKeys[i];
-            if (!(key in keyIndex)) {
+            const cur = keyIndex[key];
+            if (!cur || cur.deleted) {
                 rda.valueRDA.stateSchema.free(out[key]);
                 delete out[key];
             }
