@@ -188,6 +188,9 @@ export class MuWebSocketConnection {
                 if (bufferedAmount < this.bufferLimit) {
                     socket.send(data);
                 }
+            } else {
+                this.lastReliablePing = Date.now();
+                this.reliableSocket.send(data);
             }
         } else {
             this.lastReliablePing = Date.now();

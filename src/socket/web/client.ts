@@ -191,6 +191,8 @@ export class MuWebSocket implements MuSocket {
                 if (bufferedAmount < this.bufferLimit) {
                     socket.send(data);
                 }
+            } else if (this._reliableSocket) {
+                this._reliableSocket.send(data);
             }
         } else if (this._reliableSocket) {
             this._reliableSocket.send(data);
