@@ -329,22 +329,6 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         return false;
     }
 
-    private _inverseUpsert (rda:MapRDA, upsertAction:MapRDA['upsertActionSchema']['identity']) {
-        const id = upsertAction.id;
-        const prev = this.idIndex[id];
-
-        if (prev) {
-            const inverseUpsertAction = rda.upsertActionSchema.alloc();
-            inverseUpsertAction.id = id;
-            inverseUpsertAction.key = prev.key;
-            inverseUpsertAction.deleted = prev.deleted;
-            inverseUpsertAction.sequence = prev.sequence;
-            inverseUpsertAction.value = prev.value.serialize(rda.valueRDA, inverseUpsertAction.value);
-            return inverseUpsertAction;
-        }
-        return null;
-    }
-
     public inverse(rda:MapRDA, action:MuRDATypes<MapRDA>['action']) {
         const { type, data } = action;
         const idIndex = this.idIndex;
