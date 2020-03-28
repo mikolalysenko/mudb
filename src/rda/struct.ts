@@ -216,6 +216,8 @@ export class MuRDAStruct<Spec extends { [prop:string]:MuRDA<any, any, any, any> 
                     result[key] = wrapAction(meta.table[key], dispatch);
                 }
                 return result;
+            } else if (meta.type === 'partial') {
+                return wrapPartial(meta.action, dispatch);
             }
             return {};
         }
