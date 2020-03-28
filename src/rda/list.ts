@@ -622,8 +622,6 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
                     result[key] = wrapAction(meta.table[key], dispatcher[key]);
                 }
                 return result;
-            } else if (meta.type === 'partial') {
-                return wrapPartial(meta.action, dispatcher);
             }
             return {};
         }

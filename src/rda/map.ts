@@ -807,8 +807,6 @@ export class MuRDAMap<
                     result[key] = wrapAction(meta.table[key], dispatcher[key]);
                 }
                 return result;
-            } else if (meta.type === 'partial') {
-                return wrapPartial(meta.action, dispatcher);
             }
             return {};
         }
