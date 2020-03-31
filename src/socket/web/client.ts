@@ -45,7 +45,7 @@ export class MuWebSocket implements MuSocket {
         this.bufferLimit = spec.bufferLimit || 1024;
     }
 
-    private _onError (e) {
+    private _onError = (e) => {
         this._logger.error(`websocket error: ${e}`);
     }
 
