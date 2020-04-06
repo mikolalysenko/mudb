@@ -1,394 +1,243 @@
-import test = require('tape');
+import tape = require('tape');
+import { MuStruct, MuFloat64, MuUTF8, MuSchema, MuASCII, MuFloat32, MuDate, MuBoolean, MuVarint } from '../../schema';
+import { MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct, MuRDA } from '../index';
 
-import { MuInt32, MuStruct, MuFloat64, MuUTF8, MuUint8 } from '../../schema';
-import { MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '../index';
-
-test('store - constant', (t) => {
-    const C = new MuRDAConstant(new MuStruct({
-        x: new MuInt32(),
-        y: new MuInt32(),
-    }));
-    const o = { x: -123, y: 456 };
-    const store = C.createStore(o);
-    t.deepEqual(store.state(C, C.stateSchema.alloc()), o, 'construct int32');
-    t.isNot(store.state(C, C.stateSchema.alloc()), o, 'should be a copy');
-
-    const serialized = store.serialize(C, C.storeSchema.alloc());
-    const storeReplica = C.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(C, C.stateSchema.alloc()),
-        store.state(C, C.stateSchema.alloc()),
-        'serialize -> parse',
-    );
-
-    const anotherStore = C.createStore(C.stateSchema.alloc());
-    store.free(C);
-    storeReplica.free(C);
-    anotherStore.free(C);
-    t.end();
-});
-
-test('store - register', (t) => {
-    const R = new MuRDARegister(new MuStruct({
-        i: new MuInt32(),
-        f: new MuFloat64(),
-        u: new MuUTF8(),
-    }));
-    const s = { i: 1, f: -1.11, u: 'Iñtërnâtiônàlizætiøn☃💩' };
-    const store = R.createStore(s);
-    t.deepEqual(store.state(R, R.stateSchema.alloc()), s, 'construct struct');
-    t.isNot(store.state(R, R.stateSchema.alloc()), s, 'should be a copy');
-
-    const serialized = store.serialize(R, R.storeSchema.alloc());
-    const storeReplica = R.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(R, R.stateSchema.alloc()),
-        store.state(R, R.stateSchema.alloc()),
-        'serialize -> parse',
-    );
-
-    const anotherStore = R.createStore(R.stateSchema.alloc());
-    store.free(R);
-    storeReplica.free(R);
-    anotherStore.free(R);
-    t.end();
-});
-
-test('store - list', (t) => {
-    const L = new MuRDAList(new MuRDARegister(
-        new MuStruct({
-            f: new MuFloat64(),
-            i: new MuInt32(),
-            u: new MuUTF8(),
-        }),
-    ));
-    const l = [
-        { f: -1.11, i: 111, u: 'Iñtërnâtiônàlizætiøn☃💩' },
-        { f: -2.22, i: 222, u: 'foo' },
-    ];
-    const store = L.createStore(l);
-    t.deepEqual(store.state(L, []), l, 'construct list');
-    t.isNot(store.state(L, []), l, 'should be a copy');
-
-    const anotherStore = L.createStore([]);
-    t.deepEqual(anotherStore.state(L, []), [], 'construct empty list');
-
-    const serialized = store.serialize(L, L.storeSchema.alloc());
-    const storeReplica = L.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(L, []),
-        store.state(L, []),
-        'serialize -> parse',
-    );
-
-    store.free(L);
-    storeReplica.free(L);
-    anotherStore.free(L);
-    t.end();
-});
-
-test('store - map', (t) => {
-    const M = new MuRDAMap(new MuUTF8(), new MuRDARegister(new MuUTF8()));
-    const m = { x: 'x', 123: '123', 'Iñtërnâtiônàlizætiøn☃💩': 'Iñtërnâtiônàlizætiøn☃💩' };
-    const store = M.createStore(m);
-    t.deepEqual(store.state(M, M.stateSchema.alloc()), m, 'construct map');
-    t.isNot(store.state(M, M.stateSchema.alloc()), m, 'should be a copy');
-
-    const serialized = store.serialize(M, M.storeSchema.alloc());
-    const storeReplica = M.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(M, M.stateSchema.alloc()),
-        store.state(M, M.stateSchema.alloc()),
-        'serialize -> parse',
-    );
-
-    store.free(M);
-    storeReplica.free(M);
-    t.end();
-});
-
-test('store - struct', (t) => {
-    const Role = new MuRDAStruct({
-        id: new MuRDAConstant(new MuUTF8()),
-        hp: new MuRDARegister(new MuUint8(100)),
-        coord: new MuRDAStruct({
-            x: new MuRDARegister(new MuFloat64()),
-            y: new MuRDARegister(new MuFloat64()),
-        }),
-        ability: new MuRDAStruct({
-            id: new MuRDAConstant(new MuUint8()),
-            name: new MuRDAConstant(new MuUTF8()),
-        }),
-    });
-    const r = {
-        id: 'invisible assassin',
-        hp: 1,
-        coord: { x: 1.111, y: -2.222 },
-        ability: { id: 123, name: 'stealth' },
+function createTest<T extends MuSchema<any>> (t:tape.Test, rda:MuRDA<T, any, any, any>) {
+    return function (init:T['identity']) {
+        const store = rda.createStore(init);
+        const state = store.state(rda, rda.stateSchema.identity);
+        t.deepEqual(state, init, `store initial head state: ${typeof state !== 'number' ? JSON.stringify(state) : state}`);
+        const serialized = store.serialize(rda, rda.storeSchema.alloc());
+        const replicated = rda.parse(serialized);
+        const replicatedState = replicated.state(rda, rda.stateSchema.alloc());
+        t.deepEqual(replicatedState, init, `replicated store initial head state: ${typeof replicatedState !== 'number' ? JSON.stringify(replicatedState) : replicatedState}`);
     };
-    const store = Role.createStore(r);
-    t.deepEqual(store.state(Role, Role.stateSchema.alloc()), r, 'construct struct');
-    t.isNot(store.state(Role, Role.stateSchema.alloc()), r, 'should be a copy');
+}
 
-    const serialized = store.serialize(Role, Role.storeSchema.alloc());
-    const storeReplica = Role.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(Role, Role.stateSchema.alloc()),
-        store.state(Role, Role.stateSchema.alloc()),
-        'serialize -> parse',
-    );
+tape('constant', (t) => {
+    const testAscii = createTest(t, new MuRDAConstant(new MuASCII()));
+    testAscii('');
+    testAscii('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
 
-    store.free(Role);
-    storeReplica.free(Role);
-    t.end();
-});
+    const testFloat = createTest(t, new MuRDAConstant(new MuFloat32()));
+    testFloat(0);
+    testFloat(Math.E);
+    testFloat(Infinity);
+    testFloat(-Infinity);
 
-test('store - list of structs', (t) => {
-    const L = new MuRDAList(new MuRDAStruct({
-        f: new MuRDARegister(new MuFloat64()),
-        i: new MuRDARegister(new MuInt32()),
-        u: new MuRDARegister(new MuUTF8()),
-    }));
-    const l = [
-        { f: -1.11, i: 111, u: 'Iñtërnâtiônàlizætiøn☃💩' },
-        { f: -2.22, i: 222, u: 'foo' },
-    ];
-    const store = L.createStore(l);
-    t.deepEqual(store.state(L, []), l, 'construct list');
-    t.isNot(store.state(L, []), l, 'should be a copy');
+    const testDate = createTest(t, new MuRDAConstant(new MuDate()));
+    testDate(new Date(0));
+    testDate(new Date(1000));
+    testDate(new Date());
 
-    const anotherStore = L.createStore([]);
-    t.deepEqual(anotherStore.state(L, []), [], 'construct empty list');
-
-    const serialized = store.serialize(L, L.storeSchema.alloc());
-    const storeReplica = L.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(L, []),
-        store.state(L, []),
-        'serialize -> parse',
-    );
-
-    store.free(L);
-    storeReplica.free(L);
-    anotherStore.free(L);
-    t.end();
-});
-
-test('store - list of structs of struct', (t) => {
-    const PuzzlePiece = new MuRDAStruct({
-        color: new MuRDARegister(new MuUTF8()),
-        position: new MuRDAStruct({
-            x: new MuRDARegister(new MuFloat64(0)),
-            y: new MuRDARegister(new MuFloat64(0)),
+    const testStruct = createTest(t, new MuRDAConstant(new MuStruct({
+        s: new MuStruct({
+            a: new MuASCII(),
+            f: new MuFloat64(),
+            d: new MuDate(),
         }),
-        rotation: new MuRDARegister(new MuFloat64(0)),
-    });
-
-    const Puzzle = new MuRDAList(PuzzlePiece);
-
-    const store = Puzzle.createStore([
-        {
-            color: 'red',
-            position: { x: 0, y: 0 },
-            rotation: 0,
-        },
-        {
-            color: 'green',
-            position: { x: 100, y: 0 },
-            rotation: 0,
-        },
-        {
-            color: 'blue',
-            position: { x: 0, y: 100 },
-            rotation: 0,
-        },
-        {
-            color: 'yellow',
-            position: { x: 100, y: 100 },
-            rotation: 0,
-        },
-    ]);
-
-    const serialized = store.serialize(Puzzle, Puzzle.storeSchema.alloc());
-    const storeReplica = Puzzle.parse(serialized);
-    t.deepEqual(storeReplica.state(Puzzle, Puzzle.stateSchema.alloc()), [
-        {
-            color: 'red',
-            position: { x: 0, y: 0 },
-            rotation: 0,
-        },
-        {
-            color: 'green',
-            position: { x: 100, y: 0 },
-            rotation: 0,
-        },
-        {
-            color: 'blue',
-            position: { x: 0, y: 100 },
-            rotation: 0,
-        },
-        {
-            color: 'yellow',
-            position: { x: 100, y: 100 },
-            rotation: 0,
-        },
-    ], 'puzzle schema serialize');
-
+    })));
+    testStruct({s: {a: '', f: 0, d: new Date(0)}});
+    testStruct({s: {a: 'foo', f: 1.111, d: new Date()}});
     t.end();
 });
 
-test('store - map of maps', (t) => {
-    const M = new MuRDAMap(
-        new MuUTF8(),
-        new MuRDAMap(new MuUTF8(), new MuRDARegister(new MuUTF8())),
-    );
-    const store = M.createStore({
-        x: { x: 'Iñtërnâtiônàlizætiøn☃💩', 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩' },
-        123: { 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩' },
-        'Iñtërnâtiônàlizætiøn☃💩': { 123: 'Iñtërnâtiônàlizætiøn☃💩' },
-        '': { },
-    });
-    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
-        x: { x: 'Iñtërnâtiônàlizætiøn☃💩', 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩' },
-        123: { 123: 'Iñtërnâtiônàlizætiøn☃💩', '': 'Iñtërnâtiônàlizætiøn☃💩' },
-        'Iñtërnâtiônàlizætiøn☃💩': { 123: 'Iñtërnâtiônàlizætiøn☃💩' },
-        '': { },
-    }, 'construct map');
+tape('register', (t) => {
+    const testUtf8 = createTest(t, new MuRDARegister(new MuUTF8()));
+    testUtf8('');
+    testUtf8('Iñtërnâtiônàlizætiøn☃💩');
 
-    const serialized = store.serialize(M, M.storeSchema.alloc());
-    const storeReplica = M.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(M, M.stateSchema.alloc()),
-        store.state(M, M.stateSchema.alloc()),
-        'serialize -> parse',
-    );
+    const testFloat = createTest(t, new MuRDARegister(new MuFloat64()));
+    testFloat(0);
+    testFloat(Math.E);
+    testFloat(Infinity);
+    testFloat(-Infinity);
 
-    store.free(M);
-    storeReplica.free(M);
-    t.end();
-});
+    const testDate = createTest(t, new MuRDARegister(new MuDate()));
+    testDate(new Date(0));
+    testDate(new Date(1000));
+    testDate(new Date());
 
-test('store - map of structs', (t) => {
-    const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-        i: new MuRDARegister(new MuInt32()),
-        f: new MuRDARegister(new MuFloat64()),
-        u: new MuRDARegister(new MuUTF8()),
-    }));
-    const store = M.createStore({
-        x: { i: -1, f: 1.11, u: 'x' },
-        123: { i: -2, f: 2.22, u: '123' },
-        'Iñtërnâtiônàlizætiøn☃💩': { i: -3, f: 3.33, u: 'Iñtërnâtiônàlizætiøn☃💩' },
-    });
-    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
-        x: { i: -1, f: 1.11, u: 'x' },
-        123: { i: -2, f: 2.22, u: '123' },
-        'Iñtërnâtiônàlizætiøn☃💩': { i: -3, f: 3.33, u: 'Iñtërnâtiônàlizætiøn☃💩' },
-    }, 'construct map');
-
-    const serialized = store.serialize(M, M.storeSchema.alloc());
-    const storeReplica = M.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(M, M.stateSchema.alloc()),
-        store.state(M, M.stateSchema.alloc()),
-        'serialize -> parse',
-    );
-
-    store.free(M);
-    storeReplica.free(M);
-    t.end();
-});
-
-test('store - map of structs of struct', (t) => {
-    const PuzzlePiece = new MuRDAStruct({
-        color: new MuRDARegister(new MuUTF8()),
-        position: new MuRDAStruct({
-            x: new MuRDARegister(new MuFloat64(0)),
-            y: new MuRDARegister(new MuFloat64(0)),
+    const testStruct = createTest(t, new MuRDARegister(new MuStruct({
+        s: new MuStruct({
+            a: new MuASCII(),
+            f: new MuFloat64(),
+            d: new MuDate(),
         }),
-        rotation: new MuRDARegister(new MuFloat64(0)),
-    });
-
-    const Puzzle = new MuRDAMap(new MuUTF8(), PuzzlePiece);
-
-    const store = Puzzle.createStore({
-        'red':{
-            color: 'red',
-            position: { x: 0, y: 0 },
-            rotation: 0,
-        },
-        'green':{
-            color: 'green',
-            position: { x: 100, y: 0 },
-            rotation: 0,
-        },
-        'blue':{
-            color: 'blue',
-            position: { x: 0, y: 100 },
-            rotation: 0,
-        },
-        'yellow':{
-            color: 'yellow',
-            position: { x: 100, y: 100 },
-            rotation: 0,
-        },
-    });
-
-    const serialized = store.serialize(Puzzle, Puzzle.storeSchema.alloc());
-    const storeReplica = Puzzle.parse(serialized);
-    t.deepEqual(storeReplica.state(Puzzle, Puzzle.stateSchema.alloc()), {
-        'red':{
-            color: 'red',
-            position: { x: 0, y: 0 },
-            rotation: 0,
-        },
-        'green':{
-            color: 'green',
-            position: { x: 100, y: 0 },
-            rotation: 0,
-        },
-        'blue':{
-            color: 'blue',
-            position: { x: 0, y: 100 },
-            rotation: 0,
-        },
-        'yellow':{
-            color: 'yellow',
-            position: { x: 100, y: 100 },
-            rotation: 0,
-        },
-    }, 'puzzle schema serialize');
-
+    })));
+    testStruct({s: {a: '', f: 0, d: new Date(0)}});
+    testStruct({s: {a: 'foo', f: 1.111, d: new Date()}});
     t.end();
 });
 
-test('store - map of structs of map of structs', (t) => {
-    const M = new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-        m: new MuRDAMap(new MuUTF8(), new MuRDAStruct({
-            i: new MuRDARegister(new MuInt32()),
+function createTestPair<T extends MuSchema<any>> (t:tape.Test, rda:MuRDA<T, any, any, any>) {
+    function testSerializeParse (inpState:T['identity'], outState:T['identity']) {
+        const store = rda.createStore(inpState);
+        const out = rda.createStore(outState).serialize(rda, rda.storeSchema.alloc());
+        const serialized = store.serialize(rda, out);
+        const replicated = rda.parse(serialized);
+        const replicatedState = replicated.state(rda, rda.stateSchema.alloc());
+        t.deepEqual(replicatedState, inpState, JSON.stringify(inpState));
+    }
+
+    return function (a:T['identity'], b:T['identity']) {
+        testSerializeParse(a, a);
+        testSerializeParse(b, b);
+        testSerializeParse(rda.stateSchema.alloc(), a);
+        testSerializeParse(rda.stateSchema.alloc(), b);
+        testSerializeParse(a, rda.stateSchema.alloc());
+        testSerializeParse(b, rda.stateSchema.alloc());
+        testSerializeParse(a, b);
+        testSerializeParse(b, a);
+    };
+}
+
+tape('list', (t) => {
+    const L = new MuRDAList(
+        new MuRDAList(
+            new MuRDAList(new MuRDARegister(new MuASCII())),
+        ),
+    );
+    const testPair = createTestPair(t, L);
+    testPair([[]], [[[]]]);
+    testPair([[]], [[[]], [[]]]);
+    testPair([[], []], [[['foo']]]);
+    testPair([[['foo', 'bar']]], [[], [['foo', 'bar']]]);
+    testPair([[], [[]], [['foo', 'bar']]], [[['foo'], ['foo', 'bar'], ['foo', 'bar', 'baz']]]);
+    t.end();
+});
+
+tape('list of maps', (t) => {
+    const L = new MuRDAList(
+        new MuRDAMap(new MuVarint(), new MuRDARegister(new MuDate())),
+    );
+    const testPair = createTestPair(t, L);
+    testPair([{}], [{}, {}]);
+    testPair([{100: new Date(100)}], [{100: new Date(100), 1000: new Date(1000), 10000: new Date(10000)}]);
+    testPair([{100: new Date(100), 1000: new Date(1000)}], [{100: new Date(100)}, {1000: new Date(1000)}]);
+    t.end();
+});
+
+tape('list of structs', (t) => {
+    const L = new MuRDAList(
+        new MuRDAStruct({
+            a: new MuRDARegister(new MuASCII()),
             f: new MuRDARegister(new MuFloat64()),
-            u: new MuRDARegister(new MuUTF8()),
-        })),
-    }));
-    const store = M.createStore({
-        '': { m: { } },
-        x: { m: { x: { i: -1, f: 1.11, u: 'x' } } },
-        123: { m: { x: { i: -1, f: 1.11, u: 'x' }, 123: { i: -2, f: 2.22, u: '123' } } },
-    });
-    t.deepEqual(store.state(M, M.stateSchema.alloc()), {
-        '': { m: { } },
-        x: { m: { x: { i: -1, f: 1.11, u: 'x' } } },
-        123: { m: { x: { i: -1, f: 1.11, u: 'x' }, 123: { i: -2, f: 2.22, u: '123' } } },
-    }, 'construct map');
-
-    const serialized = store.serialize(M, M.storeSchema.alloc());
-    const storeReplica = M.parse(serialized);
-    t.deepEqual(
-        storeReplica.state(M, M.stateSchema.alloc()),
-        store.state(M, M.stateSchema.alloc()),
-        'serialize -> parse',
+            d: new MuRDARegister(new MuDate()),
+        }),
     );
+    const testPair = createTestPair(t, L);
+    testPair(
+        [{a: 'foo', f: 1.1111, d: new Date(1000)}],
+        [{a: 'foo', f: 1.1111, d: new Date(1000)}, {a: 'bar', f: 2.2222, d: new Date(10000)}],
+    );
+    testPair(
+        [{a: 'foo', f: 1.1111, d: new Date(1000)}, {a: 'bar', f: 2.2222, d: new Date(10000)}, {a: 'baz', f: 3.3333, d: new Date()}],
+        [{a: 'baz', f: 3.3333, d: new Date()}, {a: 'foo', f: 1.1111, d: new Date(1000)}, {a: 'bar', f: 2.2222, d: new Date(10000)}],
+    );
+    t.end();
+});
 
-    store.free(M);
-    storeReplica.free(M);
+tape('map', (t) => {
+    const M = new MuRDAMap(
+        new MuASCII(),
+        new MuRDAMap(
+            new MuASCII(),
+            new MuRDAMap(
+                new MuASCII(),
+                new MuRDARegister(new MuStruct({
+                    u: new MuASCII(),
+                    d: new MuDate(),
+                })),
+            ),
+        ),
+    );
+    const testPair = createTestPair(t, M);
+    testPair(
+        {foo: {bar: {baz: {u: 'foo', d: new Date(1000)}}}},
+        {
+            foo: {bar: {baz: {u: 'bar', d: new Date(1000)}}},
+            bar: {
+                foo: {bar: {u: 'baz', d: new Date(10000)}},
+                bar: {
+                    foo: {u: 'qux', d: new Date(100000)},
+                    bar: {u: 'quux', d: new Date(1000000)},
+                },
+            },
+        },
+    );
+    t.end();
+});
+
+tape('map of lists', (t) => {
+    const M = new MuRDAMap(
+        new MuASCII(),
+        new MuRDAList(new MuRDARegister(new MuASCII())),
+    );
+    const testPair = createTestPair(t, M);
+    testPair({foo: []}, {bar: [], baz: []});
+    testPair({foo: ['foo']}, {foo: ['bar'], bar: ['baz']});
+    testPair({foo: ['foo', 'bar']}, {foo: ['bar', 'baz']});
+    t.end();
+});
+
+tape('map of structs', (t) => {
+    const M = new MuRDAMap(
+        new MuASCII(),
+        new MuRDAStruct({
+            a: new MuRDARegister(new MuASCII()),
+            f: new MuRDARegister(new MuFloat64()),
+            d: new MuRDARegister(new MuDate()),
+        }),
+    );
+    const testPair = createTestPair(t, M);
+    testPair(
+        {foo: {a: 'foo', f: 1.1111, d: new Date(1000)}},
+        {foo: {a: 'bar', f: 2.2222, d: new Date(10000)}},
+    );
+    testPair(
+        {foo: {a: 'foo', f: 1.1111, d: new Date(1000)}, bar: {a: 'bar', f: 2.2222, d: new Date(10000)}},
+        {baz: {a: 'foo', f: 1.1111, d: new Date(1000)}, qux: {a: 'bar', f: 2.2222, d: new Date(10000)}},
+    );
+    t.end();
+});
+
+tape('struct', (t) => {
+    const S = new MuRDAStruct({
+        s: new MuRDAStruct({
+            s: new MuRDAStruct({
+                b: new MuRDARegister(new MuBoolean()),
+                a: new MuRDARegister(new MuASCII()),
+                f: new MuRDARegister(new MuFloat64()),
+                v: new MuRDARegister(new MuVarint()),
+                d: new MuRDARegister(new MuDate()),
+            }),
+        }),
+    });
+    const testPair = createTestPair(t, S);
+    testPair(
+        {s: {s: {b: false, a: 'foo', f: 1.1111, v: 127, d: new Date(1000)}}},
+        {s: {s: {b: true, a: 'bar', f: 2.2222, v: 128, d: new Date()}}},
+    );
+    t.end();
+});
+
+tape('struct of lists', (t) => {
+    const S = new MuRDAStruct({
+        l: new MuRDAList(new MuRDARegister(new MuASCII())),
+    });
+    const testPair = createTestPair(t, S);
+    testPair({l: ['foo']}, {l: ['foo', 'bar']});
+    testPair({l: ['foo', 'bar', 'baz']}, {l: ['bar', 'baz', 'foo']});
+    t.end();
+});
+
+tape('struct of maps', (t) => {
+    const S = new MuRDAStruct({
+        m: new MuRDAMap(new MuASCII(), new MuRDARegister(new MuASCII())),
+    });
+    const testPair = createTestPair(t, S);
+    testPair({m: {foo: 'foo'}}, {m: {foo: 'bar', bar: 'bar'}});
+    testPair({m: {foo: 'foo', bar: 'bar', baz: 'baz'}}, {m: {foo: 'bar', bar: 'baz', baz: 'foo'}});
     t.end();
 });
