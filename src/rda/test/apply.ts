@@ -1,7 +1,13 @@
 import tape = require('tape');
-
 import { MuFloat64, MuStruct, MuUint32, MuUTF8, MuInt8, MuASCII, MuVarint, MuBoolean, MuDate } from '../../schema';
 import { MuRDA, MuRDAStore, MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '../index';
+
+function createTest<T extends MuRDA<any, any, any, any>> (t:tape.Test, store:MuRDAStore<T>, rda:T) {
+    return function (action:T['actionSchema']['identity'], stateAfter:T['stateSchema']['identity']) {
+        t.equal(store.apply(rda, action), true, JSON.stringify(action));
+        t.deepEqual(store.state(rda, rda.stateSchema.alloc()), stateAfter);
+    };
+}
 
 tape('constant', (t) => {
     const store = new MuRDAConstant(new MuFloat64()).createStore(0);
@@ -45,53 +51,29 @@ tape('list', (t) => {
     const L = new MuRDAList(new MuRDARegister(new MuInt8()));
     const store = L.createStore([]);
     const dispatchers = L.action(store);
-    let action;
+    const test = createTest(t, store, L);
 
-    function checkState (expected:number[]) {
-        t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
-    }
-
-    t.true(store.apply(L, action = dispatchers.push(1, 2, 3, 4, 5)), 'push');
-    checkState([1, 2, 3, 4, 5]);
-    t.true(store.apply(L, action = dispatchers.pop()), 'pop 1');
-    checkState([1, 2, 3, 4]);
-    t.true(store.apply(L, action = dispatchers.pop(2)), 'pop 2');
-    checkState([1, 2]);
-    t.true(store.apply(L, action = dispatchers.pop(3)), 'pop 3');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.unshift(1, 3, 5)), 'unshift');
-    checkState([1, 3, 5]);
-    t.throws(() => store.apply(L, action = dispatchers.update(3)(6)), TypeError, 'update [3]');
-    t.true(store.apply(L, action = dispatchers.update(2)(6)), 'update [2]');
-    checkState([1, 3, 6]);
-    t.true(store.apply(L, action = dispatchers.splice(0, 0, 0)), 'insert at [0]');
-    checkState([0, 1, 3, 6]);
-    t.true(store.apply(L, action = dispatchers.splice(2, 0, 2)), 'insert at [2]');
-    checkState([0, 1, 2, 3, 6]);
-    t.true(store.apply(L, action = dispatchers.splice(4, 0, 4, 5)), 'insert at [4]');
-    checkState([0, 1, 2, 3, 4, 5, 6]);
-    t.true(store.apply(L, action = dispatchers.splice(7, 1)), 'remove [7]');
-    checkState([0, 1, 2, 3, 4, 5, 6]);
-    t.true(store.apply(L, action = dispatchers.splice(2, 2)), 'remove [2]');
-    checkState([0, 1, 4, 5, 6]);
-    t.true(store.apply(L, action = dispatchers.shift()), 'shift 1');
-    checkState([1, 4, 5, 6]);
-    t.true(store.apply(L, action = dispatchers.shift(2)), 'shift 2');
-    checkState([5, 6]);
-    t.true(store.apply(L, action = dispatchers.shift(3)), 'shift 3');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.splice(0, 0, 7, 7, 7)), 'insert at [7]');
-    checkState([7, 7, 7]);
-    t.true(store.apply(L, action = dispatchers.clear()), 'clear');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.splice(1, 0, 7, 7, 7)), 'insert at [7]');
-    checkState([7, 7, 7]);
-    t.true(store.apply(L, action = dispatchers.reset([1, 2, 3])), 'reset');
-    checkState([1, 2, 3]);
-    t.true(store.apply(L, action = dispatchers.reset([4, 5, 6])), 'reset again');
-    checkState([4, 5, 6]);
-    t.true(store.apply(L, action = dispatchers.clear()), 'clear');
-    checkState([]);
+    test(dispatchers.push(1, 2, 3, 4, 5), [1, 2, 3, 4, 5]);
+    test(dispatchers.pop(), [1, 2, 3, 4]);
+    test(dispatchers.pop(2), [1, 2]);
+    test(dispatchers.pop(3), []);
+    test(dispatchers.unshift(1, 3, 5), [1, 3, 5]);
+    t.throws(() => store.apply(L, dispatchers.update(3)(6)), TypeError, 'update [3]');
+    test(dispatchers.update(2)(6), [1, 3, 6]);
+    test(dispatchers.splice(0, 0, 0), [0, 1, 3, 6]);
+    test(dispatchers.splice(2, 0, 2), [0, 1, 2, 3, 6]);
+    test(dispatchers.splice(4, 0, 4, 5), [0, 1, 2, 3, 4, 5, 6]);
+    test(dispatchers.splice(7, 1), [0, 1, 2, 3, 4, 5, 6]);
+    test(dispatchers.splice(2, 2), [0, 1, 4, 5, 6]);
+    test(dispatchers.shift(), [1, 4, 5, 6]);
+    test(dispatchers.shift(2), [5, 6]);
+    test(dispatchers.shift(3), []);
+    test(dispatchers.splice(0, 0, 7, 7, 7), [7, 7, 7]);
+    test(dispatchers.clear(), []);
+    test(dispatchers.splice(1, 0, 7, 7, 7), [7, 7, 7]);
+    test(dispatchers.reset([1, 2, 3]), [1, 2, 3]);
+    test(dispatchers.reset([4, 5, 6]), [4, 5, 6]);
+    test(dispatchers.clear(), []);
     t.end();
 });
 
@@ -99,50 +81,26 @@ tape('list of lists', (t) => {
     const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuFloat64())));
     const store = L.createStore([]);
     const dispatchers = L.action(store);
-    let action;
+    const test = createTest(t, store, L);
 
-    function checkState (expected) {
-        t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
-    }
-
-    t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.push([0], [], [1, 2], [3, 4, 5])), 'outer push');
-    checkState([[0], [], [1, 2], [3, 4, 5]]);
-    t.true(store.apply(L, action = dispatchers.pop(2)), 'outer pop');
-    checkState([[0], []]);
-    t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop when empty');
-    checkState([[0], []]);
-    t.true(store.apply(L, action = dispatchers.update(1).shift(2)), 'shift when empty');
-    checkState([[0], []]);
-    t.true(store.apply(L, action = dispatchers.update(1).push(0, 1, 2, 3, 4, 5, 6)), 'push when empty');
-    checkState([[0], [0, 1, 2, 3, 4, 5, 6]]);
-    t.true(store.apply(L, action = dispatchers.update(1).pop()), 'pop');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
-    t.true(store.apply(L, action = dispatchers.update(1).pop(2)), 'pop 2');
-    checkState([[0], [0, 1, 2, 3]]);
-    t.true(store.apply(L, action = dispatchers.update(1).shift()), 'shift');
-    checkState([[0], [1, 2, 3]]);
-    t.true(store.apply(L, action = dispatchers.update(1).shift(3)), 'shift 3');
-    checkState([[0], []]);
-    t.true(store.apply(L, action = dispatchers.update(1).unshift(0, 1, 2)), 'unshift when empty');
-    checkState([[0], [0, 1, 2]]);
-    t.true(store.apply(L, action = dispatchers.update(1).splice(1, 0, 1, 2)), 'insert');
-    checkState([[0], [0, 1, 2, 1, 2]]);
-    t.true(store.apply(L, action = dispatchers.update(1).splice(3, 0, 1, 2)), 'insert');
-    checkState([[0], [0, 1, 2, 1, 2, 1, 2]]);
-    t.true(store.apply(L, action = dispatchers.update(1).splice(2, 4)), 'remove');
-    checkState([[0], [0, 1, 2]]);
-    t.true(store.apply(L, action = dispatchers.update(1).push(3, 4, 5)), 'push');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
-    t.true(store.apply(L, action = dispatchers.update(1).unshift(3, 4, 5)), 'unshift');
-    checkState([[0], [3, 4, 5, 0, 1, 2, 3, 4, 5]]);
-    t.true(store.apply(L, action = dispatchers.update(1).clear()), 'clear');
-    checkState([[0], []]);
-    t.true(store.apply(L, action = dispatchers.update(1).reset([0, 1, 2, 6, 4, 5])), 'reset');
-    checkState([[0], [0, 1, 2, 6, 4, 5]]);
-    t.true(store.apply(L, action = dispatchers.update(1).update(3)(3)), 'update');
-    checkState([[0], [0, 1, 2, 3, 4, 5]]);
+    test(dispatchers.push([0], [], [1, 2], [3, 4, 5]), [[0], [], [1, 2], [3, 4, 5]]);
+    test(dispatchers.pop(2), [[0], []]);
+    test(dispatchers.update(1).pop(), [[0], []]);
+    test(dispatchers.update(1).shift(2), [[0], []]);
+    test(dispatchers.update(1).push(0, 1, 2, 3, 4, 5, 6), [[0], [0, 1, 2, 3, 4, 5, 6]]);
+    test(dispatchers.update(1).pop(), [[0], [0, 1, 2, 3, 4, 5]]);
+    test(dispatchers.update(1).pop(2), [[0], [0, 1, 2, 3]]);
+    test(dispatchers.update(1).shift(), [[0], [1, 2, 3]]);
+    test(dispatchers.update(1).shift(3), [[0], []]);
+    test(dispatchers.update(1).unshift(0, 1, 2), [[0], [0, 1, 2]]);
+    test(dispatchers.update(1).splice(1, 0, 1, 2), [[0], [0, 1, 2, 1, 2]]);
+    test(dispatchers.update(1).splice(3, 0, 1, 2), [[0], [0, 1, 2, 1, 2, 1, 2]]);
+    test(dispatchers.update(1).splice(2, 4), [[0], [0, 1, 2]]);
+    test(dispatchers.update(1).push(3, 4, 5), [[0], [0, 1, 2, 3, 4, 5]]);
+    test(dispatchers.update(1).unshift(3, 4, 5), [[0], [3, 4, 5, 0, 1, 2, 3, 4, 5]]);
+    test(dispatchers.update(1).clear(), [[0], []]);
+    test(dispatchers.update(1).reset([0, 1, 2, 6, 4, 5]), [[0], [0, 1, 2, 6, 4, 5]]);
+    test(dispatchers.update(1).update(3)(3), [[0], [0, 1, 2, 3, 4, 5]]);
     t.end();
 });
 
@@ -159,129 +117,72 @@ tape('list of structs of list of structs', (t) => {
     }));
     const store = L.createStore([]);
     const dispatchers = L.action(store);
-    let action;
+    const test = createTest(t, store, L);
 
-    function checkState (expected) {
-        t.deepEqual(store.state(L, L.stateSchema.alloc()), expected, JSON.stringify(action));
-    }
-
-    t.deepEqual(action = dispatchers.update(0), {}, 'update before push');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.pop()), 'outer pop when empty');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.shift()), 'outer shift when empty');
-    checkState([]);
-    t.true(store.apply(L, action = dispatchers.push({s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]})), 'outer push');
-    checkState([{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).s.f(11.22)), 'update [0].s.f');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(1).s.f(22.22)), 'update [1].s.f');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.11'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(1).l.update(0).u('22.22')), 'update [1].l[0].u');
-    checkState([{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.pop()), 'outer pop');
-    checkState([{s: {f: 11.22}, l: []}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop when empty');
-    checkState([{s: {f: 11.22}, l: []}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift when empty');
-    checkState([{s: {f: 11.22}, l: []}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.push({u: '11.11'}, {u: '11.22'}, {u: '11.33'})), 'push');
-    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}, {u: '11.33'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.pop()), 'pop');
-    checkState([{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.shift()), 'shift');
-    checkState([{s: {f: 11.22}, l: [{u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.unshift({u: '11.00'}, {u: '11.11'})), 'unshift');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.splice(1, 0, {u: '11.33'})), 'insert');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.splice(1, 0, {u: '11.11'}, {u: '11.22'})), 'insert 2');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.splice(1, 1)), 'remove');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.splice(1, 2)), 'remove 2');
-    checkState([{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.clear()), 'clear');
-    checkState([{s: {f: 11.22}, l: []}]);
-    t.true(store.apply(L, action = dispatchers.update(0).l.reset([{u: '11.33'}, {u: '11.44'}, {u: '11.55'}])), 'reset');
-    checkState([{s: {f: 11.22}, l: [{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]}]);
+    test(dispatchers.pop(), []);
+    test(dispatchers.shift(), []);
+    test(dispatchers.push({s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}), [{s: {f: 11.11}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    test(dispatchers.update(0).s.f(11.22), [{s: {f: 11.22}, l: []}, {s: {f: 22.11}, l: [{u: '22.11'}]}]);
+    test(dispatchers.update(1).s.f(22.22), [{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.11'}]}]);
+    test(dispatchers.update(1).l.update(0).u('22.22'), [{s: {f: 11.22}, l: []}, {s: {f: 22.22}, l: [{u: '22.22'}]}]);
+    test(dispatchers.pop(), [{s: {f: 11.22}, l: []}]);
+    test(dispatchers.update(0).l.pop(), [{s: {f: 11.22}, l: []}]);
+    test(dispatchers.update(0).l.shift(), [{s: {f: 11.22}, l: []}]);
+    test(dispatchers.update(0).l.push({u: '11.11'}, {u: '11.22'}, {u: '11.33'}), [{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}, {u: '11.33'}]}]);
+    test(dispatchers.update(0).l.pop(), [{s: {f: 11.22}, l: [{u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.shift(), [{s: {f: 11.22}, l: [{u: '11.22'}]}]);
+    test(dispatchers.update(0).l.unshift({u: '11.00'}, {u: '11.11'}), [{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.splice(1, 0, {u: '11.33'}), [{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.splice(1, 0, {u: '11.11'}, {u: '11.22'}), [{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.splice(1, 1), [{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.22'}, {u: '11.33'}, {u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.splice(1, 2), [{s: {f: 11.22}, l: [{u: '11.00'}, {u: '11.11'}, {u: '11.22'}]}]);
+    test(dispatchers.update(0).l.clear(), [{s: {f: 11.22}, l: []}]);
+    test(dispatchers.update(0).l.reset([{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]), [{s: {f: 11.22}, l: [{u: '11.33'}, {u: '11.44'}, {u: '11.55'}]}]);
     t.end();
 });
-
-function createTestApply<T extends MuRDA<any, any, any, any>> (t:tape.Test, store:MuRDAStore<T>, rda:T) {
-    return function (action:T['actionSchema']['identity'], expected:boolean) {
-        t.equal(store.apply(rda, action), expected, JSON.stringify(action));
-    };
-}
-
-function createTestState<T extends MuRDA<any, any, any, any>> (t:tape.Test, store:MuRDAStore<T>, rda:T) {
-    return function (expected:T['stateSchema']['identity']) {
-        t.deepEqual(store.state(rda, rda.stateSchema.alloc()), expected);
-    };
-}
 
 tape('map of constants', (t) => {
     const M = new MuRDAMap(new MuVarint(), new MuRDAConstant(new MuDate()));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
+    const test = createTest(t, store, M);
 
-    const testApply = createTestApply(t, store, M);
-    const testState = createTestState(t, store, M);
+    test(dispatchers.clear(), {});
+    test(dispatchers.move(0, 1), {});
+    test(dispatchers.remove(0), {});
+    test(dispatchers.reset({}), {});
 
-    testApply(dispatchers.clear(), true);
-    testState({});
-    testApply(dispatchers.move(0, 1), true);
-    testState({});
-    testApply(dispatchers.remove(0), true);
-    testState({});
-    testApply(dispatchers.reset({}), true);
-    testState({});
+    test(dispatchers.set(0, new Date(0)), {0: new Date(0)});
+    test(dispatchers.set(0, new Date(1)), {0: new Date(1)});
+    test(dispatchers.move(0, 1), {1: new Date(1)});
+    test(dispatchers.move(1, 1), {1: new Date(1)});
 
-    testApply(dispatchers.set(0, new Date(0)), true);
-    testState({0: new Date(0)});
-    testApply(dispatchers.set(0, new Date(1)), true);
-    testState({0: new Date(1)});
-    testApply(dispatchers.move(0, 1), true);
-    testState({1: new Date(1)});
-    testApply(dispatchers.move(1, 1), true);
-    testState({1: new Date(1)});
-    testApply(dispatchers.set(2, new Date(2)), true);
-    testState({1: new Date(1), 2: new Date(2)});
-    testApply(dispatchers.move(2, 1), true);
-    testState({1: new Date(2)});
-    testApply(dispatchers.move(2, 0), true);
-    testState({1: new Date(2)});
-    testApply(dispatchers.remove(1), true);
-    testState({});
-    testApply(dispatchers.move(1, 0), true);
-    testState({});
+    test(dispatchers.set(2, new Date(2)), {1: new Date(1), 2: new Date(2)});
+    test(dispatchers.move(2, 1), {1: new Date(2)});
+    test(dispatchers.move(2, 0), {1: new Date(2)});
+    test(dispatchers.remove(1), {});
+    test(dispatchers.move(1, 0), {});
 
-    testApply(dispatchers.reset({0: new Date(0), 1: new Date(1)}), true);
-    testState({0: new Date(0), 1: new Date(1)});
-    testApply(dispatchers.reset({2: new Date(2)}), true);
-    testState({2: new Date(2)});
-    testApply(dispatchers.clear(), true);
-    testState({});
-
-    testApply(dispatchers.reset({0: new Date(0)}), true);
-    testState({0: new Date(0)});
+    test(dispatchers.reset({0: new Date(0), 1: new Date(1)}), {0: new Date(0), 1: new Date(1)});
+    test(dispatchers.reset({2: new Date(2)}), {2: new Date(2)});
+    test(dispatchers.clear(), {});
+    test(dispatchers.reset({0: new Date(0)}), {0: new Date(0)});
 
     // contrived invalid actions
     let action:any = dispatchers.remove(0);
     action.data.id = -1;
-    testApply(action, false);
-    testState({0: new Date(0)});
+    t.equal(store.apply(M, action), false, JSON.stringify(action));
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {0: new Date(0)});
 
     action = dispatchers.move(0, 1);
     action.data.id = -1;
-    testApply(action, false);
-    testState({0: new Date(0)});
+    t.equal(store.apply(M, action), false, JSON.stringify(action));
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {0: new Date(0)});
 
     action = dispatchers.set(1, new Date(1));
     action.type = 'foo';
-    testApply(action, false);
-    testState({0: new Date(0)});
-
+    t.equal(store.apply(M, action), false, JSON.stringify(action));
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {0: new Date(0)});
     t.end();
 });
 
@@ -293,62 +194,43 @@ tape('map of maps of registers', (t) => {
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
 
-    const testApply = createTestApply(t, store, M);
-    const testState = createTestState(t, store, M);
+    const test = createTest(t, store, M);
 
-    testApply(dispatchers.update('a').clear(), true);
-    testApply(dispatchers.update('a').set('a', 0), true);
-    testApply(dispatchers.update('a').update('a')(1), true);
-    testApply(dispatchers.update('a').move('a', 'b'), true);
-    testApply(dispatchers.update('a').remove('b'), true);
-    testApply(dispatchers.update('a').reset({'a': 0}), true);
-    testState({});
+    test(dispatchers.update('a').clear(), {});
+    test(dispatchers.update('a').set('a', 0), {});
+    test(dispatchers.update('a').update('a')(1), {});
+    test(dispatchers.update('a').move('a', 'b'), {});
+    test(dispatchers.update('a').remove('b'), {});
+    test(dispatchers.update('a').reset({'a': 0}), {});
 
-    testApply(dispatchers.set('foo', {}), true);
-    testState({foo: {}});
-    testApply(dispatchers.update('foo').set('a', 0), true);
-    testState({foo: {a: 0}});
-    testApply(dispatchers.update('foo').set('a', 1), true);
-    testState({foo: {a: 1}});
-    testApply(dispatchers.update('foo').move('a', 'b'), true);
-    testState({foo: {b: 1}});
-    testApply(dispatchers.update('foo').move('b', 'b'), true);
-    testState({foo: {b: 1}});
-    testApply(dispatchers.update('foo').set('a', 0), true);
-    testState({foo: {a: 0, b: 1}});
-    testApply(dispatchers.update('foo').move('b', 'a'), true);
-    testState({foo: {a: 1}});
-    testApply(dispatchers.update('foo').move('b', 'c'), true);
-    testState({foo: {a: 1}});
-    testApply(dispatchers.update('foo').remove('a'), true);
-    testState({foo: {}});
-    testApply(dispatchers.update('foo').move('a', 'b'), true);
-    testState({foo: {}});
+    test(dispatchers.set('foo', {}), {foo: {}});
+    test(dispatchers.update('foo').set('a', 0), {foo: {a: 0}});
+    test(dispatchers.update('foo').set('a', 1), {foo: {a: 1}});
+    test(dispatchers.update('foo').move('a', 'b'), {foo: {b: 1}});
+    test(dispatchers.update('foo').move('b', 'b'), {foo: {b: 1}});
+    test(dispatchers.update('foo').set('a', 0), {foo: {a: 0, b: 1}});
+    test(dispatchers.update('foo').move('b', 'a'), {foo: {a: 1}});
+    test(dispatchers.update('foo').move('b', 'c'), {foo: {a: 1}});
+    test(dispatchers.update('foo').remove('a'), {foo: {}});
+    test(dispatchers.update('foo').move('a', 'b'), {foo: {}});
 
-    testApply(dispatchers.update('foo').reset({a: 0, b: 1}), true);
-    testState({foo: {a: 0, b: 1}});
-    testApply(dispatchers.update('foo').reset({c: 2}), true);
-    testState({foo: {c: 2}});
-    testApply(dispatchers.update('foo').update('c')(3), true);
-    testState({foo: {c: 3}});
-    testApply(dispatchers.update('foo').clear(), true);
-    testState({foo: {}});
-    testApply(dispatchers.clear(), true);
-    testState({});
-
-    testApply(dispatchers.reset({foo: {bar: 0}}), true);
-    testState({foo: {bar: 0}});
+    test(dispatchers.update('foo').reset({a: 0, b: 1}), {foo: {a: 0, b: 1}});
+    test(dispatchers.update('foo').reset({c: 2}), {foo: {c: 2}});
+    test(dispatchers.update('foo').update('c')(3), {foo: {c: 3}});
+    test(dispatchers.update('foo').clear(), {foo: {}});
+    test(dispatchers.clear(), {});
+    test(dispatchers.reset({foo: {bar: 0}}), {foo: {bar: 0}});
 
     // contrived invalid actions
     let action:any = dispatchers.update('foo').update('bar')(1);
     action.data.id = -1;
-    testApply(action, false);
-    testState({foo: {bar: 0}});
+    t.equal(store.apply(M, action), false, JSON.stringify(action));
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {foo: {bar: 0}});
 
     action = dispatchers.update('foo').update('bar')(1);
     action.data.action.data.id = -1;
-    testApply(action, false);
-    testState({foo: {bar: 0}});
+    t.equal(store.apply(M, action), false, JSON.stringify(action));
+    t.deepEqual(store.state(M, M.stateSchema.alloc()), {foo: {bar: 0}});
     t.end();
 });
 
@@ -361,26 +243,16 @@ tape('map of structs', (t) => {
     }));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
+    const test = createTest(t, store, M);
 
-    const testApply = createTestApply(t, store, M);
-    const testState = createTestState(t, store, M);
-
-    testApply(dispatchers.set(127, {b: false, v: 0, u: '', d: new Date(0)}), true);
-    testState({127: {b: false, v: 0, u: '', d: new Date(0)}});
-    testApply(dispatchers.move(127, 128), true);
-    testState({128: {b: false, v: 0, u: '', d: new Date(0)}});
-    testApply(dispatchers.update(128).b(true), true);
-    testState({128: {b: true, v: 0, u: '', d: new Date(0)}});
-    testApply(dispatchers.update(128).v(1), true);
-    testState({128: {b: true, v: 1, u: '', d: new Date(0)}});
-    testApply(dispatchers.update(128).u('Iñtërnâtiônàlizætiøn☃💩'), true);
-    testState({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
-    testApply(dispatchers.remove(128), true);
-    testState({});
-    testApply(dispatchers.reset({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}}), true);
-    testState({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
-    testApply(dispatchers.clear(), true);
-    testState({});
+    test(dispatchers.set(127, {b: false, v: 0, u: '', d: new Date(0)}), {127: {b: false, v: 0, u: '', d: new Date(0)}});
+    test(dispatchers.move(127, 128), {128: {b: false, v: 0, u: '', d: new Date(0)}});
+    test(dispatchers.update(128).b(true), {128: {b: true, v: 0, u: '', d: new Date(0)}});
+    test(dispatchers.update(128).v(1), {128: {b: true, v: 1, u: '', d: new Date(0)}});
+    test(dispatchers.update(128).u('Iñtërnâtiônàlizætiøn☃💩'), {128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
+    test(dispatchers.remove(128), {});
+    test(dispatchers.reset({128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}}), {128: {b: true, v: 1, u: 'Iñtërnâtiônàlizætiøn☃💩', d: new Date(0)}});
+    test(dispatchers.clear(), {});
     t.end();
 });
 
@@ -397,34 +269,23 @@ tape('map of structs of structs of structs', (t) => {
     );
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
+    const test = createTest(t, store, M);
 
-    const testApply = createTestApply(t, store, M);
-    const testState = createTestState(t, store, M);
-
-    testApply(dispatchers.set('foo', {s: {s: {v: 0}}}), true);
-    testState({foo: {s: {s: {v: 0}}}});
-    testApply(dispatchers.move('foo', 'bar'), true);
-    testState({bar: {s: {s: {v: 0}}}});
-    testApply(dispatchers.update('bar').s.s.v(128), true);
-    testState({bar: {s: {s: {v: 128}}}});
-    testApply(dispatchers.move('bar', 'baz'), true);
-    testState({baz: {s: {s: {v: 128}}}});
-    testApply(dispatchers.update('bar').s.s.v(129), true);
-    testState({baz: {s: {s: {v: 128}}}});
-    testApply(dispatchers.remove('baz'), true);
-    testState({});
-    testApply(dispatchers.reset({
+    test(dispatchers.set('foo', {s: {s: {v: 0}}}), {foo: {s: {s: {v: 0}}}});
+    test(dispatchers.move('foo', 'bar'), {bar: {s: {s: {v: 0}}}});
+    test(dispatchers.update('bar').s.s.v(128), {bar: {s: {s: {v: 128}}}});
+    test(dispatchers.move('bar', 'baz'), {baz: {s: {s: {v: 128}}}});
+    test(dispatchers.update('bar').s.s.v(129), {baz: {s: {s: {v: 128}}}});
+    test(dispatchers.remove('baz'), {});
+    test(dispatchers.reset({
         bar: {s: {s: {v: 128}}},
         baz: {s: {s: {v: 0}}},
-    }), true);
-    testState({
+    }), {
         bar: {s: {s: {v: 128}}},
         baz: {s: {s: {v: 0}}},
     });
-    testApply(dispatchers.move('bar', 'baz'), true);
-    testState({baz: {s: {s: {v: 128}}}});
-    testApply(dispatchers.clear(), true);
-    testState({});
+    test(dispatchers.move('bar', 'baz'), {baz: {s: {s: {v: 128}}}});
+    test(dispatchers.clear(), {});
     t.end();
 });
 
@@ -436,36 +297,24 @@ tape('map of structs of maps of structs', (t) => {
     }));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
+    const test = createTest(t, store, M);
 
-    const testApply = createTestApply(t, store, M);
-    const testState = createTestState(t, store, M);
-
-    testApply(dispatchers.set(16383, { m: {}}), true);
-    testState({16383: {m: {}}});
-    testApply(dispatchers.move(16383, 16384), true);
-    testState({16384: {m: {}}});
-    testApply(dispatchers.update(16384).m.set('foo', {v: 127}), true);
-    testState({16384: {m: {foo: {v: 127}}}});
-    testApply(dispatchers.update(16384).m.move('foo', 'bar'), true);
-    testState({16384: {m: {bar: {v: 127}}}});
-    testApply(dispatchers.update(16384).m.update('bar').v(128), true);
-    testState({16384: {m: {bar: {v: 128}}}});
-    testApply(dispatchers.update(16384).m.update('foo').v(128), true);
-    testState({16384: {m: {bar: {v: 128}}}});
-    testApply(dispatchers.update(16384).m.remove('bar'), true);
-    testState({16384: {m: {}}});
-    testApply(dispatchers.update(16384).m.reset({
+    test(dispatchers.set(16383, { m: {}}), {16383: {m: {}}});
+    test(dispatchers.move(16383, 16384), {16384: {m: {}}});
+    test(dispatchers.update(16384).m.set('foo', {v: 127}), {16384: {m: {foo: {v: 127}}}});
+    test(dispatchers.update(16384).m.move('foo', 'bar'), {16384: {m: {bar: {v: 127}}}});
+    test(dispatchers.update(16384).m.update('bar').v(128), {16384: {m: {bar: {v: 128}}}});
+    test(dispatchers.update(16384).m.update('foo').v(128), {16384: {m: {bar: {v: 128}}}});
+    test(dispatchers.update(16384).m.remove('bar'), {16384: {m: {}}});
+    test(dispatchers.update(16384).m.reset({
         foo: {v: 127},
         bar: {v: 128},
-    }), true);
-    testState({16384: {m: {
+    }), {16384: {m: {
         foo: {v: 127},
         bar: {v: 128},
     }}});
-    testApply(dispatchers.update(16384).m.move('foo', 'bar'), true);
-    testState({16384: {m: {bar: {v: 127}}}});
-    testApply(dispatchers.update(16384).m.clear(), true);
-    testState({16384: {m: {}}});
+    test(dispatchers.update(16384).m.move('foo', 'bar'), {16384: {m: {bar: {v: 127}}}});
+    test(dispatchers.update(16384).m.clear(), {16384: {m: {}}});
     t.end();
 });
 
