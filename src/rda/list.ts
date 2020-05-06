@@ -485,12 +485,13 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
             tagged.sort((a, b) => compare(a.state, b.state));
             const result = this.actionSchema.alloc();
             for (let i = 0; i < tagged.length; ++i) {
-                const a = result[i];
+                const a = list[i];
                 const b = tagged[i].element;
                 if (a !== b) {
                     const move = this.moveActionSchema.alloc();
                     move.id = b.id;
                     move.key = a.key;
+                    result.moves.push(move);
                 }
                 this.valueRDA.stateSchema.free(tagged[i].state);
             }
