@@ -926,7 +926,17 @@ export class MuRDAMap<
     }
 
     public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) {
-        const keys = Object.keys(initialState);
+        const keys:string[]|number[] = Object.keys(initialState);
+        if (typeof this.keySchema.identity === 'number') {
+            for (let i = 0; i < keys.length; ++i) {
+                const k:any = +keys[i];
+                if (k !== k) {
+                    throw new Error(`invalid key ${keys[i]}`);
+                }
+                keys[i] = k;
+            }
+        }
+
         const elements:MuRDAMapStoreElement<this>[] = new Array(keys.length);
         let idCounter = 1;
         for (let i = 0; i < keys.length; ++i) {
