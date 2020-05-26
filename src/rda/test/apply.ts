@@ -134,22 +134,21 @@ tape('map of constants', (t) => {
     test(dispatchers.reset({}), {});
 
     test(dispatchers.set(0, new Date(0)), {0: new Date(0)});
-    test(dispatchers.set(0, new Date(1)), {0: new Date(1)});
-    test(dispatchers.move(0, 1), {1: new Date(1)});
-    test(dispatchers.move(1, 1), {1: new Date(1)});
-
-    test(dispatchers.set(2, new Date(2)), {1: new Date(1), 2: new Date(2)});
-    test(dispatchers.move(2, 1), {1: new Date(2)});
-    test(dispatchers.move(2, 0), {1: new Date(2)});
+    test(dispatchers.set(1, new Date(1000)), {0: new Date(0), 1: new Date(1000)});
+    test(dispatchers.move(1, 0), {0: new Date(1000)});
+    test(dispatchers.move(0, 1), {1: new Date(1000)});
+    test(dispatchers.set(2, new Date(2000)), {1: new Date(1000), 2: new Date(2000)});
+    test(dispatchers.move(2, 1), {1: new Date(2000)});
+    test(dispatchers.move(2, 0), {1: new Date(2000)});
     test(dispatchers.remove(1), {});
     test(dispatchers.move(1, 0), {});
 
-    test(dispatchers.reset({0: new Date(0), 1: new Date(1)}), {0: new Date(0), 1: new Date(1)});
-    test(dispatchers.reset({2: new Date(2)}), {2: new Date(2)});
+    test(dispatchers.reset({0: new Date(0), 1: new Date(1000)}), {0: new Date(0), 1: new Date(1000)});
+    test(dispatchers.reset({2: new Date(2000)}), {2: new Date(2000)});
     test(dispatchers.clear(), {});
-    test(dispatchers.reset({0: new Date(0)}), {0: new Date(0)});
 
     // contrived invalid actions
+    test(dispatchers.reset({0: new Date(0)}), {0: new Date(0)});
     let action:any = dispatchers.remove(0);
     action.data.id = -1;
     t.equal(store.apply(M, action), false, JSON.stringify(action));
