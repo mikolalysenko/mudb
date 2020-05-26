@@ -16,6 +16,13 @@ export class MuDate implements MuSchema<Date> {
             type: 'date',
             identity: this.identity.toISOString(),
         };
+
+        const time = this.identity.getTime();
+        this.cloneIdentity = () => {
+            const date = this.alloc();
+            date.setTime(time);
+            return date;
+        };
     }
 
     public alloc () : Date {
@@ -35,6 +42,8 @@ export class MuDate implements MuSchema<Date> {
         date.setTime(date_.getTime());
         return date;
     }
+
+    public cloneIdentity:() => Date;
 
     public assign (dst:Date, src:Date) : Date {
         dst.setTime(src.getTime());

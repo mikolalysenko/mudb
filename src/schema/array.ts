@@ -113,6 +113,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     public assign:(dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) => ValueSchema['identity'][];
     public free:(x:ValueSchema['identity'][]) => void;
     public clone:(src:ValueSchema['identity'][]) => ValueSchema['identity'][];
+    public cloneIdentity:() => ValueSchema['identity'][];
     public equal:(a:ValueSchema['identity'][], b:ValueSchema['identity'][]) => boolean;
     public toJSON:(src:ValueSchema['identity'][]) => any;
 
@@ -139,12 +140,14 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         if (isMuPrimitiveType(schema.muType)) {
             this.assign = assignPrimitive;
             this.clone = clonePrimitive;
+            this.cloneIdentity = () => this.identity.slice();
             this.free = (x) => x.length = 0;
             this.equal = equalPrimitive;
             this.toJSON = toJSONPrimitive;
         } else {
             this.assign = assignGeneric(schema);
             this.clone = cloneGeneric(schema);
+            this.cloneIdentity = () => this.clone(this.identity);
             this.free = freeGeneric(schema);
             this.equal = equalGeneric(schema);
             this.toJSON = toJSONGeneric(schema);

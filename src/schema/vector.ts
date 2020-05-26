@@ -118,6 +118,12 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
         return copy;
     }
 
+    public cloneIdentity () : Vec<T, D> {
+        const identity = this.alloc();
+        identity.set(this.identity);
+        return identity;
+    }
+
     public assign (dst:Vec<T, D>, src:Vec<T, D>) : Vec<T, D> {
         dst.set(src);
         return dst;

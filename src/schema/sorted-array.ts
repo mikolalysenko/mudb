@@ -42,7 +42,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.compare = compare || defaultCompare;
 
         const arraySchema = new MuArray(schema, capacity, identity);
-        this.identity = arraySchema.identity.sort(this.compare);
+        const identity_ = this.identity = arraySchema.identity.sort(this.compare);
         this.json = {
             type: 'sorted-array',
             valueType: schema.json,
@@ -54,6 +54,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.free = arraySchema.free;
         this.equal = arraySchema.equal;
         this.clone = arraySchema.clone;
+        this.cloneIdentity = () => arraySchema.clone(identity_);
         this.assign = arraySchema.assign;
         this.toJSON = arraySchema.toJSON;
         this.fromJSON = arraySchema.fromJSON;
@@ -63,6 +64,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public free:(set:ValueSchema['identity'][]) => void;
     public equal:(a:ValueSchema['identity'][], b:ValueSchema['identity'][]) => boolean;
     public clone:(set:ValueSchema['identity'][]) => ValueSchema['identity'][];
+    public cloneIdentity:() => ValueSchema['identity'][];
     public assign:(dst:ValueSchema['identity'][], src:ValueSchema['identity'][]) => ValueSchema['identity'][];
     public toJSON:(set:ValueSchema['identity'][]) => any[];
     public fromJSON:(json:any[]) => ValueSchema['identity'][];

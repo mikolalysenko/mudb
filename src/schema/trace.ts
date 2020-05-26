@@ -97,6 +97,11 @@ export class MuSchemaTrace<BaseSchema extends MuSchema<any>>
         return this.schema.clone(x);
     }
 
+    public cloneIdentity () : BaseSchema['identity'] {
+        this.allocCount++;
+        return this.schema.clone(this.identity);
+    }
+
     public assign (
         dst:BaseSchema['identity'],
         src:BaseSchema['identity'],

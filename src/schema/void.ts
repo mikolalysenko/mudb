@@ -13,6 +13,7 @@ export class MuVoid implements MuSchema<void> {
     public free (_:void) : void { }
     public equal (a:void, b:void) : true { return true; }
     public clone (_:void) : void { }
+    public cloneIdentity () : void { }
     public assign (d:void, s:void) : void { }
     public diff (b, t, out:MuWriteStream) : false { return false; }
     public patch (b, inp:MuReadStream) : void { }

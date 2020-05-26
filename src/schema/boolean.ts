@@ -7,11 +7,12 @@ export class MuBoolean implements MuSchema<boolean> {
     public readonly json:object;
 
     constructor (identity?:boolean) {
-        this.identity = !!identity;
+        const identity_ = this.identity = !!identity;
         this.json = {
             type: 'boolean',
             identity: this.identity,
         };
+        this.cloneIdentity = () => identity_;
     }
 
     public alloc () : boolean { return this.identity; }
@@ -21,6 +22,8 @@ export class MuBoolean implements MuSchema<boolean> {
     public equal (a:boolean, b:boolean) : boolean { return a === b; }
 
     public clone (bool:boolean) : boolean { return bool; }
+
+    public cloneIdentity:() => boolean;
 
     public assign (dst:boolean, src:boolean) : boolean { return src; }
 

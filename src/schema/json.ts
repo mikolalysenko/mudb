@@ -88,6 +88,10 @@ export class MuJSON implements MuSchema<object> {
         return deepClone(obj);
     }
 
+    public cloneIdentity () : object {
+        return deepClone(this.identity);
+    }
+
     public assign (dst:object, src:object) : object {
         if (Array.isArray(dst) && Array.isArray(src)) {
             dst.length = src.length;

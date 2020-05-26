@@ -31,15 +31,24 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
         this._types = Object.keys(schemaSpec).sort();
 
         if (identityType) {
+            const schema = schemaSpec[identityType];
             this.identity = {
                 type: identityType,
-                data: schemaSpec[identityType].identity,
+                data: schema.identity,
             };
+            this.cloneIdentity = () => ({
+                type: identityType,
+                data: schema.cloneIdentity(),
+            });
         } else {
             this.identity = {
                 type: '',
-                data: void 0,
+                data: undefined,
             };
+            this.cloneIdentity = () => ({
+                type: '',
+                data: undefined,
+            });
         }
 
         const result = {};
@@ -85,6 +94,8 @@ export class MuUnion<SubTypes extends { [type:string]:MuSchema<any> }>
             data: type ? this.muData[type].clone(union.data) : void 0,
         };
     }
+
+    public cloneIdentity:() => UnionTypes<SubTypes>['instance'];
 
     public assign (dst:UnionTypes<SubTypes>['instance'], src:UnionTypes<SubTypes>['instance']) : UnionTypes<SubTypes>['instance'] {
         const dType = dst.type;

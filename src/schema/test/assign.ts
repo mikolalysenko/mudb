@@ -373,6 +373,7 @@ class MuReference<T> implements MuSchema<T|null> {
     public free () { }
     public assign (dst:T|null, src:T|null) : T|null { return src; }
     public clone (x) { return x; }
+    public cloneIdentity () { return this.identity; }
     public equal (a, b) { return a === b; }
 
     public diff () : never { throw new TypeError('cannot serialize reference'); }

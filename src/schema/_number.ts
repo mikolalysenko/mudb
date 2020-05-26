@@ -56,6 +56,7 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
             type,
             identity,
         };
+        this.cloneIdentity = () => identity;
     }
 
     public alloc () : number { return this.identity; }
@@ -65,6 +66,8 @@ export abstract class MuNumber<T extends MuNumericType> implements MuSchema<numb
     public equal (a:number, b:number) : boolean { return a === b; }
 
     public clone (num:number) : number { return num; }
+
+    public cloneIdentity:() => number;
 
     public assign (dst:number, src:number) : number { return src; }
 

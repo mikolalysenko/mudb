@@ -18,6 +18,7 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
             type,
             identity,
         };
+        this.cloneIdentity = () => identity;
     }
 
     public alloc () : string { return this.identity; }
@@ -27,6 +28,8 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
     public equal (a:string, b:string) : boolean { return a === b; }
 
     public clone (str:string) : string { return str; }
+
+    public cloneIdentity:() => string;
 
     public assign (dst:string, src:string) : string { return src; }
 

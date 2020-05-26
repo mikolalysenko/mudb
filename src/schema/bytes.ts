@@ -9,15 +9,17 @@ export class MuBytes implements MuSchema<Uint8Array> {
     public pool:{ [dimension:string]:Uint8Array[] } = {};
 
     constructor (identity?:Uint8Array) {
-        if (identity) {
-            this.identity = identity.slice();
-        } else {
-            this.identity = new Uint8Array(1);
-        }
-
+        const identity_ = this.identity = identity ? identity.slice() : new Uint8Array(1);
         this.json = {
             type: 'bytes',
             identity: `[${(Array.prototype.slice.call(this.identity).join())}]`,
+        };
+
+        const length = identity_.length;
+        this.cloneIdentity = () => {
+            const copy = this._allocBytes(length);
+            copy.set(identity_);
+            return copy;
         };
     }
 
@@ -54,6 +56,8 @@ export class MuBytes implements MuSchema<Uint8Array> {
         copy.set(bytes);
         return copy;
     }
+
+    public cloneIdentity:() => Uint8Array;
 
     public assign (dst:Uint8Array, src:Uint8Array) : Uint8Array {
         if (dst.length !== src.length) {

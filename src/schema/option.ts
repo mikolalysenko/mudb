@@ -63,6 +63,10 @@ export class MuOption<ValueSchema extends MuSchema<any>>
         return this.muData.clone(val);
     }
 
+    public cloneIdentity () : ValueSchema['identity']|undefined {
+        return this.clone(this.identity);
+    }
+
     public assign (
         dst:ValueSchema['identity']|undefined,
         src:ValueSchema['identity']|undefined,

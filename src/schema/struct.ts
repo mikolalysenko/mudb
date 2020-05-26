@@ -60,6 +60,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
     public readonly free:(struct:Struct<Spec>) => void;
     public readonly equal:(a:Struct<Spec>, b:Struct<Spec>) => boolean;
     public readonly clone:(struct:Struct<Spec>) => Struct<Spec>;
+    public readonly cloneIdentity:() => Struct<Spec>;
     public readonly assign:(dst:Struct<Spec>, src:Struct<Spec>) => Struct<Spec>;
     public readonly diff:(base:Struct<Spec>, target:Struct<Spec>, out:MuWriteStream) => boolean;
     public readonly patch:(base:Struct<Spec>, inp:MuReadStream) => Struct<Spec>;
@@ -154,6 +155,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             free: func('free', ['s']),
             equal: func('equal', ['a', 'b']),
             clone: func('clone', ['s']),
+            cloneIdentity: func('cloneIdentity', []),
             assign: func('assign', ['d', 's']),
             diff: func('diff', ['b', 't', 's']),
             patch: func('patch', ['b', 's']),
@@ -326,6 +328,36 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
         });
         methods.clone.append('return c;');
 
+        // cloneIdentity
+        methods.cloneIdentity.append(`var id=_alloc();`);
+        propRefs.forEach((pr, i) => {
+            const type = types[i];
+            switch (type.muType) {
+                case 'boolean':
+                case 'float32':
+                case 'float64':
+                case 'int8':
+                case 'int16':
+                case 'int32':
+                case 'uint8':
+                case 'uint16':
+                case 'uint32':
+                case 'varint':
+                case 'rvarint':
+                    methods.cloneIdentity.append(`id[${pr}]=${type.identity};`);
+                    break;
+                case 'ascii':
+                case 'fixed-ascii':
+                case 'utf8':
+                    methods.cloneIdentity.append(`id[${pr}]=${inject(type.identity)};`);
+                    break;
+                default:
+                    methods.cloneIdentity.append(`id[${pr}]=${typeRefs[i]}.cloneIdentity();`);
+                    break;
+            }
+        });
+        methods.clone.append('return id;');
+
         // assign
         propRefs.forEach((pr, i) => {
             const type = types[i];
@@ -487,6 +519,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
         this.free = compiled.free;
         this.equal = compiled.equal;
         this.clone = compiled.clone;
+        this.cloneIdentity = compiled.cloneIdentity;
         this.assign = compiled.assign;
         this.diff = compiled.diff;
         this.patch = compiled.patch;

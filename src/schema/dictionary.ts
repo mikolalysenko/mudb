@@ -63,7 +63,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     ) {
         this.muData = schema;
         this.capacity = capacity;
-        this.identity = {};
+        const identity_ = this.identity = {};
         if (identity) {
             const keys = Object.keys(identity);
             for (let i = 0; i < keys.length; ++i) {
@@ -77,10 +77,27 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             identity: JSON.stringify(this.identity),
         };
 
+        const identityKeys = Object.keys(this.identity);
         if (isMuPrimitiveType(schema.muType)) {
             this.assign = assignPrimitive;
+            this.cloneIdentity = () => {
+                const dict = {};
+                for (let i = 0; i < identityKeys.length; ++i) {
+                    const k = identityKeys[i];
+                    dict[k] = identity_[k];
+                }
+                return dict;
+            };
         } else {
             this.assign = assignGeneric(schema);
+            this.cloneIdentity = () => {
+                const dict = {};
+                for (let i = 0; i < identityKeys.length; ++i) {
+                    const k = identityKeys[i];
+                    dict[k] = schema.clone(identity_[k]);
+                }
+                return dict;
+            };
         }
     }
 
@@ -132,6 +149,8 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
         }
         return copy;
     }
+
+    public cloneIdentity:() => Dictionary<ValueSchema>;
 
     public assign:(dst:Dictionary<ValueSchema>, src:Dictionary<ValueSchema>) => Dictionary<ValueSchema>;
 

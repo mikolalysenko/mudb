@@ -25,6 +25,9 @@ export interface MuSchema<Value> {
     /** Makes a copy of `value` */
     clone (value:Value) : Value;
 
+    /** Makes a copy of identity  */
+    cloneIdentity () : Value;
+
     /** Assigns `dst` the content of `src` */
     assign (dst:Value, src:Value) : Value;
 
