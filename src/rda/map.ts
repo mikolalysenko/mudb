@@ -300,7 +300,12 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             return true;
         } else if (type === 'upsert') {
             const upsertAction = <MapRDA['upsertActionSchema']['identity']>data;
-            this._applyUpsert(rda.valueRDA, upsertAction);
+            const { key } = upsertAction;
+            if (key.length <= rda.constrain.maxKeyLength) {
+                if (rda.constrain.set(key, upsertAction.value)) {
+                    this._applyUpsert(rda.valueRDA, upsertAction);
+                }
+            }
             return true;
         } else if (type === 'update') {
             const updateAction = <MapRDA['updateActionSchema']['identity']>data;
@@ -315,8 +320,13 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (!element) {
                 return false;
             }
-            element.sequence = moveAction.sequence;
-            this._moveElement(element, moveAction.key);
+            const target = moveAction.key;
+            if (target.length <= rda.constrain.maxKeyLength) {
+                if (rda.constrain.move(element.key, target)) {
+                    element.sequence = moveAction.sequence;
+                    this._moveElement(element, target);
+                }
+            }
             return true;
         } else if (type === 'setDeleted') {
             const setDeletedAction = <MapRDA['setDeletedActionSchema']['identity']>data;
@@ -324,8 +334,10 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (!element) {
                 return false;
             }
-            element.deleted = setDeletedAction.deleted;
-            element.sequence = setDeletedAction.sequence;
+            if (rda.constrain.remove(element.key)) {
+                element.deleted = setDeletedAction.deleted;
+                element.sequence = setDeletedAction.sequence;
+            }
             return true;
         } else if (type === 'noop') {
             return true;
@@ -344,7 +356,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             const { upserts, deletes, undeletes, sequenceIds, sequenceVals } = <MapRDA['resetActionSchema']['identity']>data;
             const inverseReset = result.data = rda.resetActionSchema.clone(rda.resetActionSchema.identity);
 
-            // first compute inverse userts
+            // first compute inverse upserts
             const inverseUndelete = inverseReset.undeletes;
             const inverseDelete = inverseReset.deletes;
             const inverseUpsert = inverseReset.upserts;
@@ -539,6 +551,13 @@ type StripBindAndWrap<Key, ValueRDA extends MuRDA<any, any, any, any>> =
             ? WrapAction<Key, ValueRDA['actionMeta']['action'], RetAction>
             : never
     : WrapAction<Key, ValueRDA['actionMeta'], ValueRDA['action']>;
+
+export type MuRDAMapConstrain = {
+    set?:boolean | ((key, value) => boolean);
+    remove?:boolean | ((key) => boolean);
+    move?:boolean | ((from, to) => boolean);
+    maxKeyLength?:number;
+};
 
 export class MuRDAMap<
     KeySchema extends MuSchema<any>,
@@ -852,9 +871,31 @@ export class MuRDAMap<
         }
     }
 
-    constructor(keySchema:KeySchema, valueRDA:ValueRDA) {
+    public readonly constrain = {
+        set: (key, value) => true,
+        remove: (key) => true,
+        move: (from, to) => true,
+        maxKeyLength: Infinity,
+    };
+
+    constructor(keySchema:KeySchema, valueRDA:ValueRDA, constrain?:MuRDAMapConstrain) {
         this.keySchema = keySchema;
         this.valueRDA = valueRDA;
+
+        if (constrain) {
+            const keys = Object.keys(constrain);
+            for (let i = 0; i < keys.length; ++i) {
+                const key = keys[i];
+                const predicate = constrain[key];
+                if (key === 'maxKeyLength') {
+                    this.constrain.maxKeyLength = (Math.max(0, <number>constrain['maxKeyLength']) | 0) || Infinity;
+                } else if (typeof predicate === 'boolean') {
+                    this.constrain[key] = () => predicate;
+                } else if (typeof predicate === 'function') {
+                    this.constrain[key] = predicate;
+                }
+            }
+        }
 
         this.stateSchema = new MuDictionary(valueRDA.stateSchema, Infinity);
         this.storeElementSchema = new MuStruct({
