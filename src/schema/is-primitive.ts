@@ -1,17 +1,8 @@
 const muPrimitiveTypes = [
-    'ascii',
-    'boolean',
-    'fixed-ascii',
-    'float32',
-    'float64',
-    'int8',
-    'int16',
-    'int32',
-    'uint8',
-    'uint16',
-    'uint32',
-    'utf8',
     'void',
+    'boolean',
+    'ascii', 'fixed-ascii', 'utf8',
+    'float32', 'float64', 'int8', 'int16', 'int32', 'uint8', 'uint16', 'uint32', 'varint', 'rvarint',
 ];
 
 export function isMuPrimitiveType (muType:string) : boolean {
