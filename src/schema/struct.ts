@@ -356,7 +356,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     break;
             }
         });
-        methods.clone.append('return id;');
+        methods.cloneIdentity.append('return id;');
 
         // assign
         propRefs.forEach((pr, i) => {
