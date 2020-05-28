@@ -301,7 +301,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         } else if (type === 'upsert') {
             const upsertAction = <MapRDA['upsertActionSchema']['identity']>data;
             const { key } = upsertAction;
-            if (key.length <= rda.constrain.maxKeyLength) {
+            if (key.length <= rda.constrain.maxKeyLength || typeof key === 'number') {
                 if (rda.constrain.set(key, upsertAction.value)) {
                     this._applyUpsert(rda.valueRDA, upsertAction);
                 }
@@ -321,7 +321,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 return false;
             }
             const target = moveAction.key;
-            if (target.length <= rda.constrain.maxKeyLength) {
+            if (target.length <= rda.constrain.maxKeyLength || typeof target === 'number') {
                 if (rda.constrain.move(element.key, target)) {
                     element.sequence = moveAction.sequence;
                     this._moveElement(element, target);
