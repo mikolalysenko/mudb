@@ -2,10 +2,10 @@ import tape = require('tape');
 import { MuFloat64, MuStruct, MuUint32, MuUTF8, MuInt8, MuASCII, MuVarint, MuBoolean, MuDate } from '../../schema';
 import { MuRDA, MuRDAStore, MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '../index';
 
-function createTest<T extends MuRDA<any, any, any, any>> (t:tape.Test, store:MuRDAStore<T>, rda:T) {
-    return function (action:T['actionSchema']['identity'], stateAfter:T['stateSchema']['identity']) {
+function createTest<T extends MuRDA<any, any, any, any>> (t:tape.Test, store:MuRDAStore<T>, rda:T, out:T['stateSchema']['identity']) {
+    return function (action:T['actionSchema']['identity'], state:T['stateSchema']['identity']) {
         t.equal(store.apply(rda, action), true, JSON.stringify(action));
-        t.deepEqual(store.state(rda, rda.stateSchema.alloc()), stateAfter);
+        t.deepEqual(store.state(rda, out), state);
     };
 }
 
@@ -49,9 +49,9 @@ tape('constrain', (t) => {
 
 tape('list of lists', (t) => {
     const L = new MuRDAList(new MuRDAList(new MuRDARegister(new MuInt8())));
-    const store = L.createStore([]);
+    const store = L.createStore(L.stateSchema.identity);
     const dispatchers = L.action(store);
-    const test = createTest(t, store, L);
+    const test = createTest(t, store, L, []);
 
     test(dispatchers.push([]), [[]]);
     test(dispatchers.update(0).push(), [[]]);
@@ -96,9 +96,9 @@ tape('list of structs of list of structs', (t) => {
             }),
         ),
     }));
-    const store = L.createStore([]);
+    const store = L.createStore(L.stateSchema.identity);
     const dispatchers = L.action(store);
-    const test = createTest(t, store, L);
+    const test = createTest(t, store, L, []);
 
     test(dispatchers.pop(), []);
     test(dispatchers.shift(), []);
@@ -126,7 +126,7 @@ tape('map of constants', (t) => {
     const M = new MuRDAMap(new MuVarint(), new MuRDAConstant(new MuDate()));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
-    const test = createTest(t, store, M);
+    const test = createTest(t, store, M, {});
 
     test(dispatchers.clear(), {});
     test(dispatchers.move(0, 1), {});
@@ -173,8 +173,7 @@ tape('map of maps of registers', (t) => {
     );
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
-
-    const test = createTest(t, store, M);
+    const test = createTest(t, store, M, {});
 
     test(dispatchers.update('a').clear(), {});
     test(dispatchers.update('a').set('a', 0), {});
@@ -223,7 +222,7 @@ tape('map of structs', (t) => {
     }));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
-    const test = createTest(t, store, M);
+    const test = createTest(t, store, M, {});
 
     test(dispatchers.set(127, {b: false, v: 0, u: '', d: new Date(0)}), {127: {b: false, v: 0, u: '', d: new Date(0)}});
     test(dispatchers.move(127, 128), {128: {b: false, v: 0, u: '', d: new Date(0)}});
@@ -249,7 +248,7 @@ tape('map of structs of structs of structs', (t) => {
     );
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
-    const test = createTest(t, store, M);
+    const test = createTest(t, store, M, {});
 
     test(dispatchers.set('foo', {s: {s: {v: 0}}}), {foo: {s: {s: {v: 0}}}});
     test(dispatchers.move('foo', 'bar'), {bar: {s: {s: {v: 0}}}});
@@ -277,9 +276,9 @@ tape('map of structs of maps of structs', (t) => {
     }));
     const store = M.createStore(M.stateSchema.identity);
     const dispatchers = M.action(store);
-    const test = createTest(t, store, M);
+    const test = createTest(t, store, M, {});
 
-    test(dispatchers.set(16383, { m: {}}), {16383: {m: {}}});
+    test(dispatchers.set(16383, {m: {}}), {16383: {m: {}}});
     test(dispatchers.move(16383, 16384), {16384: {m: {}}});
     test(dispatchers.update(16384).m.set('foo', {v: 127}), {16384: {m: {foo: {v: 127}}}});
     test(dispatchers.update(16384).m.move('foo', 'bar'), {16384: {m: {bar: {v: 127}}}});
