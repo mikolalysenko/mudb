@@ -5,10 +5,9 @@
   "scripts": {
     "build": "tsc",
     "clean": "ls -F src | grep / | xargs rm -rf coverage *.d.ts *.js *.js.map",
-    "coverage": "nyc npm run test-all",
+    "coverage": "f(){ nyc tape -r ts-node/register src/${1:-\\*}/test/*.ts; }; f",
     "link": "npm link && npm run clean && npm run build",
     "release": "npm run test-all && npm run clean && npm run build && npm publish",
-    "report": "nyc report --reporter=text",
     "test": "f(){ tape -r ts-node/register src/${1:-\\*}/test/${2:-\\*}.ts; }; f",
     "test-all": "npm test socket/\\* && npm test",
     "watch": "tsc -w"
@@ -70,9 +69,7 @@
       ".ts"
     ],
     "reporter": [
-      "html",
-      "text",
-      "text-summary"
+      "html"
     ]
   }
 }
