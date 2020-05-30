@@ -46,8 +46,8 @@ export class MuBuffer {
 }
 
 // initialize buffer pool
-const bufferPool:MuBuffer[][] = new Array(32);
-for (let i = 0; i < 32; ++i) {
+const bufferPool:MuBuffer[][] = new Array(31);
+for (let i = 0; i < 31; ++i) {
     bufferPool[i] = [];
 }
 
@@ -79,6 +79,11 @@ export class MuWriteStream {
     public offset:number;
 
     constructor (capacity:number) {
+        // max typed array length is 0x7fffffff
+        if (capacity > 0x40000000 || capacity < 0) {
+            throw new RangeError(`invalid capacity: ${capacity}`);
+        }
+        capacity = Math.max(capacity | 0, 2);
         this.buffer = allocBuffer(capacity);
         this.offset = 0;
     }

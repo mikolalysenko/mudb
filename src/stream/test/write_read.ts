@@ -1,14 +1,24 @@
 import test = require('tape');
 import { MuWriteStream, MuReadStream, allocBuffer } from '../';
 
-test('buffer allocation', (t) => {
-    t.equals(allocBuffer(8).buffer.byteLength, 8);
-    t.equals(allocBuffer(9).buffer.byteLength, 16);
-    t.equals(allocBuffer(15).buffer.byteLength, 16);
-    t.equals(allocBuffer(2 ** 30).buffer.byteLength, 2 ** 30);
-    t.throws(() => allocBuffer(2 ** 30 + 1));
-    t.throws(() => allocBuffer(2 ** 32));
+test('new MuWriteStream()', (t) => {
+    t.equal(new MuWriteStream(0).buffer.uint8.byteLength, 2);
+    t.equal(new MuWriteStream(0.1).buffer.uint8.byteLength, 2);
+    t.equal(new MuWriteStream(1).buffer.uint8.byteLength, 2);
+    t.equal(new MuWriteStream(2).buffer.uint8.byteLength, 2);
+    t.equal(new MuWriteStream(3).buffer.uint8.byteLength, 4);
+    t.equal(new MuWriteStream(4).buffer.uint8.byteLength, 4);
+    t.equal(new MuWriteStream(5).buffer.uint8.byteLength, 8);
+    t.equal(new MuWriteStream(8).buffer.uint8.byteLength, 8);
+    t.equal(new MuWriteStream(9).buffer.uint8.byteLength, 16);
+    t.equal(new MuWriteStream(16).buffer.uint8.byteLength, 16);
+    t.equal(new MuWriteStream(2 ** 30).buffer.uint8.byteLength, 2 ** 30);
 
+    t.equal(new MuWriteStream(NaN).buffer.uint8.byteLength, 2);
+    t.throws(() => new MuWriteStream(Infinity));
+    t.throws(() => new MuWriteStream(-Infinity));
+    t.throws(() => new MuWriteStream(-1));
+    t.throws(() => new MuWriteStream(2 ** 30 + 1));
     t.end();
 });
 
