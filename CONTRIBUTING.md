@@ -1,52 +1,54 @@
 # How to Contribute
 By participating, you are expected to uphold [Code of Conduct](CODE_OF_CONDUCT.md).
 
-* [bootstrap](#bootstrap)
+* [setup](#setup)
 * [compile](#compile)
 * [test](#test)
-* [document](#document)
-* [publish](#publish)
+* [coverage](#coverage)
+* [release](#release)
 * [coding style](#coding-style)
 
-## bootstrap
+## setup
 ```
-git clone https://github.com/mikolalysenko/mudb.git && cd mudb
+git clone git@github.com:mikolalysenko/mudb.git && cd mudb
 npm i
-npm run bootstrap
+npm run watch
 ```
 
 ## compile
 ```
-# watch all modules
-npm run watch
-
-# watch all socket modules
-npm run watch *-socket
-
-# watch both mudb and muweb-socket
-npm run watch mudb muweb-socket
+npm run build
 ```
 
 ## test
 ```
-# run tests in all modules
-npm run test
+# run all tests
+npm run test-all
+
+# run tests in a module
+npm run test [module]
+# run tests in rda
+npm run test rda
+# run tests in socket/web
+npm run test socket/web
+
+# run tests in a file
+npm run test [module test_file]
+# run tests in rda/test/inverse.ts
+npm run test rda inverse
+# run tests in socket/web/test/server.ts
+npm run test socket/web server
 ```
 
-## document
-[`mdtoc.js`](https://github.com/kitcambridge/mdtoc.js) is required to generate TOC:
+## coverage
 ```
-npm i -g mdtoc
-```
-
-Edit `README-toc.md`, **not** `README.md`.  To generate TOC,
-```
-npm run docs
+npm run coverage [module]
+open coverage/index.html
 ```
 
-## publish
+## release
 ```
-npm run publish
+npm run release
 ```
 
 ## coding style
@@ -56,7 +58,7 @@ npm run publish
 * Name variables, properties, and functions in camelCase.
 * Name constant in SCREAMING_SNAKE_CASE.
 * Prefix private properties with `_`.
-* Use whole words in names whenever possible.
+* Prefer whole words in names.
 
 ### whitespace
 * Indent with 4 spaces.
@@ -66,7 +68,6 @@ npm run publish
         type:string;
         payload:any;
         timestamp:number;
-
         constructor(type:string, payload:any) { }
     }
     ```
@@ -79,4 +80,3 @@ npm run publish
 * Use `const` by default.
 * Use single quotes for strings. Use template literals instead of concatenations.
 * Always surround loop and conditional bodies with curly braces.
-* Avoid lines longer than 80 characters.
