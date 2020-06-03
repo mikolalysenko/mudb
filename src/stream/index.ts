@@ -66,16 +66,6 @@ export function freeBuffer (buffer:MuBuffer) {
     }
 }
 
-export function reallocBuffer (buffer:MuBuffer, nsize:number) {
-    if (buffer.uint8.length >= nsize) {
-        return buffer;
-    }
-    const result = allocBuffer(nsize);
-    result.uint8.set(buffer.uint8);
-    freeBuffer(buffer);
-    return result;
-}
-
 const LITTLE_ENDIAN = true;
 
 export class MuWriteStream {
@@ -96,7 +86,14 @@ export class MuWriteStream {
     }
 
     public grow (bytes:number) {
-        this.buffer = reallocBuffer(this.buffer, this.offset + bytes);
+        const newSize = this.offset + bytes;
+        const uint8 = this.buffer.uint8;
+        if (uint8.length < newSize) {
+            const buffer = allocBuffer(newSize);
+            buffer.uint8.set(uint8);
+            freeBuffer(this.buffer);
+            this.buffer = buffer;
+        }
     }
 
     public writeInt8 (x:number) {
