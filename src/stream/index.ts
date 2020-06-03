@@ -52,6 +52,10 @@ for (let i = 0; i < 31; ++i) {
 }
 
 export function allocBuffer (size:number) : MuBuffer {
+    if (size > 0x40000000 || size < 0) {
+        throw new RangeError(`size out of range: ${size}`);
+    }
+    size = Math.max(2, size | 0);
     const b = ceilLog2(size);
     return bufferPool[b].pop() || new MuBuffer(new ArrayBuffer(1 << b));
 }
@@ -79,11 +83,6 @@ export class MuWriteStream {
     public offset:number;
 
     constructor (capacity:number) {
-        // max typed array length is 0x7fffffff
-        if (capacity > 0x40000000 || capacity < 0) {
-            throw new RangeError(`invalid capacity: ${capacity}`);
-        }
-        capacity = Math.max(capacity | 0, 2);
         this.buffer = allocBuffer(capacity);
         this.offset = 0;
     }
@@ -101,7 +100,8 @@ export class MuWriteStream {
     }
 
     public writeInt8 (x:number) {
-        this.buffer.dataView.setInt8(this.offset++, x);
+        this.buffer.dataView.setInt8(this.offset, x);
+        this.offset += 1;
     }
 
     public writeInt16 (x:number) {
@@ -115,7 +115,8 @@ export class MuWriteStream {
     }
 
     public writeUint8 (x:number) {
-        this.buffer.dataView.setUint8(this.offset++, x);
+        this.buffer.dataView.setUint8(this.offset, x);
+        this.offset += 1;
     }
 
     public writeUint16 (x:number) {
