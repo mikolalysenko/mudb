@@ -21,6 +21,7 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
         if (this._timeout < Infinity && this._timeout) {
             xhr.timeout = this._timeout;
         }
+        xhr.withCredentials = true;
         xhr.open('POST', this._url + '/' + schemas.protocol.name, true);
         const body = JSON.stringify(schemas.argSchema.toJSON(arg));
         return new Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>((resolve, reject) => {
