@@ -141,34 +141,30 @@ export class MuWriteStream {
     public writeVarint (x:number) {
         const x_ = x >>> 0;
         const bytes = this.buffer.uint8;
-        const offset = this.offset;
+        let offset = this.offset;
 
         if (x_ < 0x80) {
-            bytes[offset] = x_;
-            this.offset += 1;
+            bytes[offset++] = x_;
         } else if (x_ < 0x4000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >>> 7;
-            this.offset += 2;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 7;
         } else if (x_ < 0x200000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >>> 14;
-            this.offset += 3;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 14;
         } else if (x_ < 0x10000000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >> 14 & 0x7f | 0x80;
-            bytes[offset + 3] = x_ >>> 21;
-            this.offset += 4;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 21;
         } else {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >> 14 & 0x7f | 0x80;
-            bytes[offset + 3] = x_ >> 21 & 0x7f | 0x80;
-            bytes[offset + 4] = x_ >>> 28;
-            this.offset += 5;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 21 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 28;
         }
+        this.offset = offset;
     }
 
     public writeASCII (str:string) {
