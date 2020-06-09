@@ -18,7 +18,6 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
             type,
             identity,
         };
-        this.cloneIdentity = () => identity;
     }
 
     public alloc () : string { return this.identity; }
@@ -29,7 +28,7 @@ export abstract class MuString<T extends MuStringType> implements MuSchema<strin
 
     public clone (str:string) : string { return str; }
 
-    public cloneIdentity:() => string;
+    public cloneIdentity () : string { return this.identity; }
 
     public assign (dst:string, src:string) : string { return src; }
 

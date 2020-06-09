@@ -124,30 +124,31 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     ) {
         this.muData = schema;
         this.capacity = capacity;
+        let identity_:ValueSchema['identity'][];
         if (identity) {
-            const copy = this.identity = identity.slice();
-            for (let i = 0; i < copy.length; ++i) {
-                copy[i] = schema.clone(copy[i]);
+            identity_ = this.identity = identity.slice();
+            for (let i = 0; i < identity_.length; ++i) {
+                identity_[i] = schema.clone(identity_[i]);
             }
         } else {
-            this.identity = [];
+            identity_ = this.identity = [];
         }
         this.json = {
             type: 'array',
             valueType: schema.json,
-            identity: JSON.stringify(this.identity),
+            identity: JSON.stringify(identity_),
         };
         if (isMuPrimitiveType(schema.muType)) {
             this.assign = assignPrimitive;
             this.clone = clonePrimitive;
-            this.cloneIdentity = () => this.identity.slice();
+            this.cloneIdentity = () => identity_.slice();
             this.free = (x) => x.length = 0;
             this.equal = equalPrimitive;
             this.toJSON = toJSONPrimitive;
         } else {
             this.assign = assignGeneric(schema);
-            this.clone = cloneGeneric(schema);
-            this.cloneIdentity = () => this.clone(this.identity);
+            const clone = this.clone = cloneGeneric(schema);
+            this.cloneIdentity = () => clone(identity_);
             this.free = freeGeneric(schema);
             this.equal = equalGeneric(schema);
             this.toJSON = toJSONGeneric(schema);
