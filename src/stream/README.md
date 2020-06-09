@@ -103,7 +103,7 @@ Writes the number as a uint8 to the buffer and increments the pointer.  Methods 
 * `num` absolute value of which should be in [5.0e-324, 1.8e308] (15 significant digits)
 
 ### `writeStream.writeVarint(num)`
-* `num` in [0, 2^35-1]
+* `num` in [0, 4294967295]
 
 For the encoding format, see the [FLIF specification](https://flif.info/spec.html#_part_1_main_header).
 
