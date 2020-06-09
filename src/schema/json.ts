@@ -1,7 +1,7 @@
 import { MuWriteStream, MuReadStream } from '../stream';
 import { MuSchema } from './schema';
 
-function equal (a, b) : boolean {
+export function deepEqual (a, b) : boolean {
     if (a === b) {
         return true;
     }
@@ -16,7 +16,7 @@ function equal (a, b) : boolean {
                 return false;
             }
             for (let i = leng - 1; i >= 0; --i) {
-                if (!equal(a[i], b[i])) {
+                if (!deepEqual(a[i], b[i])) {
                     return false;
                 }
             }
@@ -29,7 +29,7 @@ function equal (a, b) : boolean {
         }
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            if (!b.hasOwnProperty(key) || !equal(a[key], b[key])) {
+            if (!b.hasOwnProperty(key) || !deepEqual(a[key], b[key])) {
                 return false;
             }
         }
@@ -39,7 +39,7 @@ function equal (a, b) : boolean {
     return a !== a && b !== b;
 }
 
-function clone (x) {
+export function deepClone (x) {
     if (typeof x !== 'object' || x === null) {
         return x;
     }
@@ -48,20 +48,17 @@ function clone (x) {
     if (Array.isArray(copy)) {
         copy.length = x.length;
         for (let i = 0; i < x.length; ++i) {
-            copy[i] = clone(x[i]);
+            copy[i] = deepClone(x[i]);
         }
     } else {
         const keys = Object.keys(x);
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            copy[key] = clone(x[key]);
+            copy[key] = deepClone(x[key]);
         }
     }
     return copy;
 }
-
-export const deepEqual = equal;
-export const deepClone = clone;
 
 export class MuJSON implements MuSchema<object> {
     public readonly muType = 'json';
@@ -69,8 +66,7 @@ export class MuJSON implements MuSchema<object> {
     public readonly json:object;
 
     constructor (identity?:object) {
-        this.identity = identity && clone(identity);
-        this.identity = this.identity || {};
+        this.identity = identity && deepClone(identity) || {};
         this.json = {
             type: 'json',
             identity: this.identity,
