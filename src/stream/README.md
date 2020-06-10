@@ -1,237 +1,216 @@
-# mustream
-Binary stream API for mudb.  It is different from the Stream API of Node.js in that
-
-- all streams of this API operate on typed arrays
-- it provides built-in buffer pooling to help you minimize garbage collection
-
-**WIP**
+# stream
+TypedArray-based, growable stream API, using buffer pooling to minimize GC
 
 ## example
-
-Here is a highly contrived example of using `mustreams`.
-
 ```javascript
-// on client side
+const { MuWriteStream, MuReadStream } = require('mudb/stream')
 
-var MuWriteStream = require('mustreams').MuWriteStream
+// initialize a write stream
+const initialSize = 4
+const inp = new MuWriteStream(initialSize)
 
-var initialBufferSize = 2
-var stream = new MuWriteStream(initialBufferSize)
+// write stuff to it
+const prop = 'hp'
+inp.writeVarint(prop.length)
+inp.writeASCII(prop)
+inp.writeUint8(100)
 
-var socket = new WebSocket(/* server url */)
-// make sure data will be received in ArrayBuffer form
-socket.binaryType = 'arraybuffer'
+// if you're not sure whether the stream has enough space for the data coming in,
+// you should grow the stream before you write to it.  it's ok to over grow a bit
+inp.grow(60)
+inp.writeString('半分しか食べてないままで捨てちゃダメ')
 
-// increase the buffer size by 62 bytes
-stream.grow(62)
+// get the data written to the stream so far, which can then be transferred over
+// the Internet or whatever
+const data = inp.bytes()
 
-stream.writeString('ピカチュウ')
-stream.writeUint8(2)    // length of 'hp'
-stream.writeASCII('hp')
-stream.writeUint8(100)
+// remember to destroy the stream
+inp.destroy()
 
-// send buffered data
-socket.send(stream.bytes())
+// assume we receive the data at another endpoint
+const out = new MuReadStream(data)
 
-// pool the buffer
-stream.destroy()
+// you can retrieve data in the order as they were written
+const propLeng = out.readVarint()
+out.readASCII(propLeng) // 'hp'
+out.readUint8()         // 100
+out.readString()        // '半分しか食べてないままで捨てちゃダメ'
 ```
 
-```javascript
-// on server side
+## API
+* [MuWriteStream](#muwritestream)
+* [MuReadStream](#mureadstream)
+* [MuBuffer](#mubuffer)
 
-var createServer = require('http').createServer
-var Server = require('uws').Server
-var MuReadStream = require('mustreams').MuReadStream
+Generally, data written by `writeX()` is meant be read by the corresponding `readX()`.  All `writeX()` and `readX()` methods set/get the data at the position marked by `stream.offset` and then increment it.  While `writeXAt()` and `readXAt()` set/get the data at the specified position, and don't alter the value of `stream.offset`.
 
-var socketServer = new Server({ server: createServer() })
-socketServer.on('connection', function (socket) {
-    socket.onmessage = function (ev) {
-        if (ev.data instanceof ArrayBuffer) {
-            var stream = new MuReadStream(new Uint8Array(ev.data))
+### usage tips
+* remember to destroy the stream after using it, doing so can help reduce GC, which in turn leads to better performance
+* try to reduce the calls to `grow()` when possible
+* prefer the use of `writeVarint()` over variants like `writeUint32()` when the values can be large and small, it may save you some bytes
 
-            stream.readString()                     // 'ピカチュウ'
-            stream.readASCII(stream.readUint8())    // 'hp'
-            stream.readUint8()                      // 100
+### MuWriteStream
+Provides a set of methods to write different types of data to the buffer.
 
-            // pool the buffer
-            stream.destroy()
-        }
-    }
-})
-```
+### `new MuWriteStream(capacity)`
+* `capacity` *number* initial size of the stream
 
-# table of contents
+### `writeStream.buffer`
+* *[MuBuffer](#mubuffer)* a handy wrapper of the underlying buffer
 
-   * [2 api](#section_2)
-      * [2.1 `MuWriteStream(bufferCapacity:number)`](#section_2.1)
-         * [2.1.1 `buffer:MuBuffer`](#section_2.1.1)
-         * [2.1.2 `offset:number`](#section_2.1.2)
-         * [2.1.3 `bytes() : Uint8Array`](#section_2.1.3)
-         * [2.1.4 `grow(numBytes:number)`](#section_2.1.4)
-         * [2.1.5 `destroy()`](#section_2.1.5)
-         * [2.1.6 `writeInt8(i:number)`](#section_2.1.6)
-         * [2.1.7 `writeInt16(i:number)`](#section_2.1.7)
-         * [2.1.8 `writeInt32(i:number)`](#section_2.1.8)
-         * [2.1.9 `writeUint8(i:number)`](#section_2.1.9)
-         * [2.1.10 `writeUint16(i:number)`](#section_2.1.10)
-         * [2.1.11 `writeUint32(i:number)`](#section_2.1.11)
-         * [2.1.12 `writeVarInt(i:number)`](#section_2.1.12)
-         * [2.1.13 `writeFloat32(f:number)`](#section_2.1.13)
-         * [2.1.14 `writeFloat64(f:number)`](#section_2.1.14)
-         * [2.1.15 `writeASCII(s:string)`](#section_2.1.15)
-         * [2.1.16 `writeString(s:string)`](#section_2.1.16)
-         * [2.1.17 `writeUint8At(offset:number, i:number)`](#section_2.1.17)
-      * [2.2 `MuReadStream(data:Uint8Array)`](#section_2.2)
-         * [2.2.1 `buffer:MuBuffer`](#section_2.2.1)
-         * [2.2.2 `offset:number`](#section_2.2.2)
-         * [2.2.3 `length:number`](#section_2.2.3)
-         * [2.2.4 `readInt8() : number`](#section_2.2.4)
-         * [2.2.5 `readInt16() : number`](#section_2.2.5)
-         * [2.2.6 `readInt32() : number`](#section_2.2.6)
-         * [2.2.7 `readUint8() : number`](#section_2.2.7)
-         * [2.2.8 `readUint16() : number`](#section_2.2.8)
-         * [2.2.9 `readUint32() : number`](#section_2.2.9)
-         * [2.2.10 `readVarInt() : number`](#section_2.2.10)
-         * [2.2.11 `readFloat32() : number`](#section_2.2.11)
-         * [2.2.12 `readFloat64() : number`](#section_2.2.12)
-         * [2.2.13 `readASCII(length:number) : string`](#section_2.2.13)
-         * [2.2.14 `readString() : string`](#section_2.2.14)
-         * [2.2.15 `readUint8At(offset:number) : number`](#section_2.2.15)
-      * [2.3 `MuBuffer`](#section_2.3)
-         * [2.3.1 `buffer:ArrayBuffer`](#section_2.3.1)
-         * [2.3.2 `dataView:DataView`](#section_2.3.2)
-         * [2.3.3 `uint8:Uint8Array`](#section_2.3.3)
-   * [3 usage tips](#section_3)
-   * [4 TODO](#section_4)
+### `writeStream.offset`
+* *number* pointer that marks where data will be written by a write method
 
-# <a name="section_2"></a> 2 api
+Generally, you shouldn't have to deal with this property directly.
 
-The methods of `MuWriteStream` and `MuReadStream` are closely related so they are meant to be used together.
+### `writeStream.grow(size)`
+* `size` *number* increment to the size of the buffer
 
-## <a name="section_2.1"></a> 2.1 `MuWriteStream(bufferCapacity:number)`
-An interface through which you can buffer different types of data.
+Ensures there will be at least `size` bytes available in the buffer.
 
-### <a name="section_2.1.1"></a> 2.1.1 `buffer:MuBuffer`
-A wrapper object providing access to the internal buffer.
+### `writeStream.bytes()`
+* return *Uint8Array* data buffered so far
 
-### <a name="section_2.1.2"></a> 2.1.2 `offset:number`
-The offset in bytes from the start of the internal buffer which marks the position where the data will be written.  The value of `offset` is automatically incremented whenever you write to the stream.
+More specifically, it returns a copy of a slice of the buffer, from the start to the index marked by the pointer.
 
-### <a name="section_2.1.3"></a> 2.1.3 `bytes() : Uint8Array`
-Creates a copy of a portion of the internal buffer, from the start to the position marked by `offset`.
+### `writeStream.destroy()`
+You SHOULD call this method after using the stream, to pool the buffer.
 
-### <a name="section_2.1.4"></a> 2.1.4 `grow(numBytes:number)`
-Increases the size of the internal buffer by a number of bytes.  The resulted buffer size will always be a power of 2.
+### `writeStream.writeUint8(num)`
+* `num` should be in the range [0, 255] in order to get the correct result
 
-### <a name="section_2.1.5"></a> 2.1.5 `destroy()`
-Pools `this.buffer`.
+Writes the number as a uint8 to the buffer and increments the pointer.  Methods below share similar behavior.
 
-### <a name="section_2.1.6"></a> 2.1.6 `writeInt8(i:number)`
-Buffers a signed 8-bit integer ranging from -128 to 127.
+### `writeStream.writeUint16(num)`
+* `num` in [0, 65535]
 
-### <a name="section_2.1.7"></a> 2.1.7 `writeInt16(i:number)`
-Buffers a signed 16-bit integer ranging from -32768 to 32767.
+### `writeStream.writeUint32(num)`
+* `num` in [0, 4294967295]
 
-### <a name="section_2.1.8"></a> 2.1.8 `writeInt32(i:number)`
-Buffers a signed 32-bit integer ranging from -2147483648 to 2147483647.
+### `writeStream.writeInt8(num)`
+* `num` in [-128, 127]
 
-### <a name="section_2.1.9"></a> 2.1.9 `writeUint8(i:number)`
-Buffers an unsigned 8-bit integer ranging from 0 to 255.
+### `writeStream.writeInt16(num)`
+* `num` in [-32768, 32767]
 
-### <a name="section_2.1.10"></a> 2.1.10 `writeUint16(i:number)`
-Buffers an unsigned 16-bit integer ranging from 0 to 65535.
+### `writeStream.writeInt32(num)`
+* `num` in [-2147483648, 2147483647]
 
-### <a name="section_2.1.11"></a> 2.1.11 `writeUint32(i:number)`
-Buffers an unsigned 32-bit integer ranging from 0 to 4294967295.
+### `writeStream.writeFloat32(num)`
+* `num` absolute value of which should be in [1.2e-38, 3.4e38] (7 significant digits)
 
-### <a name="section_2.1.12"></a> 2.1.12 `writeVarInt(i:number)`
-Buffers an unsigned integer ranging from 0 to 4294967295.  The number of bytes used to store `i` varies by the value.  So unlike other write methods, `writeVarInt()` uses no more space than it is required to store `i`.
+### `writeStream.writeFloat64(num)`
+* `num` absolute value of which should be in [5.0e-324, 1.8e308] (15 significant digits)
 
-### <a name="section_2.1.13"></a> 2.1.13 `writeFloat32(f:number)`
-Buffers a signed 32-bit float number whose absolute value ranging from 1.2e-38 to 3.4e38, with 7 significant digits.
+### `writeStream.writeVarint(num)`
+* `num` in [0, 4294967295]
 
-### <a name="section_2.1.14"></a> 2.1.14 `writeFloat64(f:number)`
-Buffers a signed 64-bit float number whose absolute value ranging from 5.0e-324 to 1.8e308, with 15 significant digits.
+For the encoding format, see the [FLIF specification](https://flif.info/spec.html#_part_1_main_header).
 
-### <a name="section_2.1.15"></a> 2.1.15 `writeASCII(s:string)`
-Buffers a string composed of only ASCII characters.
+### `writeStream.writeASCII(str)`
+* `str` should be a string composed of only ASCII characters
 
-### <a name="section_2.1.16"></a> 2.1.16 `writeString(s:string)`
-Buffers a string which may contain non-ASCII characters.
+You MUST keep track of the string length yourself, like writing the length along with the string into the buffer as the example shows.
 
-### <a name="section_2.1.17"></a> 2.1.17 `writeUint8At(offset:number, i:number)`
-Similar to `writeUint8()` except it writes the integer at the position marked by the specified offset.  Note that unlike other write methods, this method will not increment the value of `offset`.
+### `writeStream.writeString(str)`
+* `str` can be a string composed of any Unicode characters
 
-## <a name="section_2.2"></a> 2.2 `MuReadStream(data:Uint8Array)`
-An interface through which you can retrieve different types of data from the buffer.
+Unlike `writeASCII()`, `writeString()` keeps track of the string length for you.
 
-### <a name="section_2.2.1"></a> 2.2.1 `buffer:MuBuffer`
-A wrapper object providing access to the internal buffer.
+### `writeStream.writeUint8At(offset, num)`
+* `offset` *number* index to write to
+* `num` in [0, 255]
 
-### <a name="section_2.2.2"></a> 2.2.2 `offset:number`
-The offset in bytes from the start of the internal buffer which marks the position the data will be read from.  The value of `offset` is automatically incremented whenever you read from the stream.
+Unlike `writeUint8()`, this method writes to the specified position and doesn't increment the pointer.
 
-### <a name="section_2.2.3"></a> 2.2.3 `length:number`
+### `writeStream.writeUint32At(offset, num)`
+* `offset` *number* index to write to
+* `num` in [0, 4294967295]
 
-### <a name="section_2.2.4"></a> 2.2.4 `readInt8() : number`
-Reads a signed 8-bit integer from buffer.
+Unlike `writeUint32()`, this method writes to the specified position and doesn't increment the pointer.
 
-### <a name="section_2.2.5"></a> 2.2.5 `readInt16() : number`
-Reads a signed 16-bit integer from buffer.
+### MuReadStream
+Provides a set of read methods to read different types of data from the buffer.
 
-### <a name="section_2.2.6"></a> 2.2.6 `readInt32() : number`
-Reads a signed 32-bit integer from buffer.
+### `new MuReadStream(bytes)`
+* `bytes` *Uint8Array* normally created by `writeStream.bytes()`
 
-### <a name="section_2.2.7"></a> 2.2.7 `readUint8() : number`
-Reads a unsigned 8-bit integer from buffer.
+### `readStream.buffer`
+* *[MuBuffer](#mubuffer)* handy wrapper of the underlying buffer
 
-### <a name="section_2.2.8"></a> 2.2.8 `readUint16() : number`
-Reads a unsigned 16-bit integer from buffer.
+### `readStream.length`
+* *number* byte length of the buffer
 
-### <a name="section_2.2.9"></a> 2.2.9 `readUint32() : number`
-Reads a unsigned 32-bit integer from buffer.
+### `readStream.offset`
+* *number* pointer that marks where data will be read from by a read method
 
-### <a name="section_2.2.10"></a> 2.2.10 `readVarInt() : number`
+### `readStream.bytes()`
+* return *Uint8Array* unread data on the buffer
 
-### <a name="section_2.2.11"></a> 2.2.11 `readFloat32() : number`
-Reads a signed 32-bit float number from buffer.
+### `readStream.checkBounds()`
+Checks the pointer, throws if it's out of bounds.
 
-### <a name="section_2.2.12"></a> 2.2.12 `readFloat64() : number`
-Reads a signed 64-bit float number from buffer.
+### `readStream.readUint8()`
+* return *number*
 
-### <a name="section_2.2.13"></a> 2.2.13 `readASCII(length:number) : string`
-Reads a string of `length` consisting of only ASCII characters from buffer.
+Reads a number as uint8 from the buffer and increments the pointer.  Methods below share similar behavior.
 
-### <a name="section_2.2.14"></a> 2.2.14 `readString() : string`
-Reads a string from buffer.
+### `readStream.readUint16()`
+* return *number*
 
-### <a name="section_2.2.15"></a> 2.2.15 `readUint8At(offset:number) : number`
-Similar to `readUint8()` except it reads data from the specified offset.  Unlike other read methods, this will not increment the value of `offset`.
+### `readStream.readUint32()`
+* return *number*
 
-## <a name="section_2.3"></a> 2.3 `MuBuffer`
-A handy wrapper that provides `DataView` and `Uint8Array` views to the internal buffer.
+### `readStream.readInt8()`
+* return *number*
 
-### <a name="section_2.3.1"></a> 2.3.1 `buffer:ArrayBuffer`
-The internal binary buffer.
+### `readStream.readInt16()`
+* return *number*
 
-### <a name="section_2.3.2"></a> 2.3.2 `dataView:DataView`
-The `DataView` view of `this.buffer`.
+### `readStream.readInt32()`
+* return *number*
 
-### <a name="section_2.3.3"></a> 2.3.3 `uint8:Uint8Array`
-The `Uint8Array` view of `this.buffer`.
+### `readStream.readFloat32()`
+* return *number*
 
-# <a name="section_3"></a> 3 usage tips
+### `readStream.readFloat64()`
+* return *number*
 
-- normally you should not use `MuBuffer` directly
-- remember to destroy the stream after using it
-- try to minimize the uses of `grow()`
+### `readStream.readVarint()`
+* return *number*
 
-# <a name="section_4"></a> 4 TODO
+### `readStream.readASCII(length)`
+* `length` *number* how many ascii characters to read from the buffer
+* return *string*
 
-- bulk access to the internal buffer
+### `readStream.readString()`
+* return *string*
 
-# credits
+Unlike `readASCII()`, you don't need to worry about the length of the string.
+
+### `readStream.readUint8At(offset)`
+* `offset` *number* index to read from
+* return *number*
+
+Unlike `readUint8()`, this method reads from the specified position and doesn't increment the pointer.
+
+### MuBuffer
+A handy wrapper cumulating different views over the underlying `ArrayBuffer`.
+
+### `new MuBuffer(buffer)`
+* `buffer` *ArrayBuffer*
+
+### `buffer.buffer`
+* *ArrayBuffer* reference to the underlying buffer
+
+### `buffer.dataView`
+* *DataView* view over the underlying buffer
+
+### `buffer.uint8`
+* *Uint8Array* view over the underlying buffer
+
+## ideas
+* bulk access to the internal buffer
+
+## credits
 Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
-
-

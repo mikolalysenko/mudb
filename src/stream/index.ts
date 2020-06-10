@@ -46,12 +46,16 @@ export class MuBuffer {
 }
 
 // initialize buffer pool
-const bufferPool:MuBuffer[][] = new Array(32);
-for (let i = 0; i < 32; ++i) {
+const bufferPool:MuBuffer[][] = new Array(31);
+for (let i = 0; i < 31; ++i) {
     bufferPool[i] = [];
 }
 
 export function allocBuffer (size:number) : MuBuffer {
+    if (size > 0x40000000 || size < 0) {
+        throw new RangeError(`size out of range: ${size}`);
+    }
+    size = Math.max(2, size | 0);
     const b = ceilLog2(size);
     return bufferPool[b].pop() || new MuBuffer(new ArrayBuffer(1 << b));
 }
@@ -60,16 +64,6 @@ export function freeBuffer (buffer:MuBuffer) {
     if (buffer.uint8.length > 0) {
         bufferPool[ceilLog2(buffer.uint8.length)].push(buffer);
     }
-}
-
-export function reallocBuffer (buffer:MuBuffer, nsize:number) {
-    if (buffer.uint8.length >= nsize) {
-        return buffer;
-    }
-    const result = allocBuffer(nsize);
-    result.uint8.set(buffer.uint8);
-    freeBuffer(buffer);
-    return result;
 }
 
 const LITTLE_ENDIAN = true;
@@ -92,11 +86,19 @@ export class MuWriteStream {
     }
 
     public grow (bytes:number) {
-        this.buffer = reallocBuffer(this.buffer, this.offset + bytes);
+        const newSize = this.offset + bytes;
+        const uint8 = this.buffer.uint8;
+        if (uint8.length < newSize) {
+            const buffer = allocBuffer(newSize);
+            buffer.uint8.set(uint8);
+            freeBuffer(this.buffer);
+            this.buffer = buffer;
+        }
     }
 
     public writeInt8 (x:number) {
-        this.buffer.dataView.setInt8(this.offset++, x);
+        this.buffer.dataView.setInt8(this.offset, x);
+        this.offset += 1;
     }
 
     public writeInt16 (x:number) {
@@ -110,7 +112,8 @@ export class MuWriteStream {
     }
 
     public writeUint8 (x:number) {
-        this.buffer.dataView.setUint8(this.offset++, x);
+        this.buffer.dataView.setUint8(this.offset, x);
+        this.offset += 1;
     }
 
     public writeUint16 (x:number) {
@@ -138,34 +141,30 @@ export class MuWriteStream {
     public writeVarint (x:number) {
         const x_ = x >>> 0;
         const bytes = this.buffer.uint8;
-        const offset = this.offset;
+        let offset = this.offset;
 
         if (x_ < 0x80) {
-            bytes[offset] = x_;
-            this.offset += 1;
+            bytes[offset++] = x_;
         } else if (x_ < 0x4000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >>> 7;
-            this.offset += 2;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 7;
         } else if (x_ < 0x200000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >>> 14;
-            this.offset += 3;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 14;
         } else if (x_ < 0x10000000) {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >> 14 & 0x7f | 0x80;
-            bytes[offset + 3] = x_ >>> 21;
-            this.offset += 4;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 21;
         } else {
-            bytes[offset] = x_ & 0x7f | 0x80;
-            bytes[offset + 1] = x_ >> 7 & 0x7f | 0x80;
-            bytes[offset + 2] = x_ >> 14 & 0x7f | 0x80;
-            bytes[offset + 3] = x_ >> 21 & 0x7f | 0x80;
-            bytes[offset + 4] = x_ >>> 28;
-            this.offset += 5;
+            bytes[offset++] = x_ & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 7 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 14 & 0x7f | 0x80;
+            bytes[offset++] = x_ >> 21 & 0x7f | 0x80;
+            bytes[offset++] = x_ >>> 28;
         }
+        this.offset = offset;
     }
 
     public writeASCII (str:string) {
