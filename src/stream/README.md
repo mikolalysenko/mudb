@@ -1,13 +1,12 @@
 # stream
-TypedArray-based, growable stream API, using buffer pooling to minimize GC
+Growable binary streams, built on top of `ArrayBuffer`, with internal buffer pooling
 
 ## example
 ```javascript
 const { MuWriteStream, MuReadStream } = require('mudb/stream')
 
-// initialize a write stream
-const initialSize = 4
-const inp = new MuWriteStream(initialSize)
+// create a write-only stream with buffer of 4 bytes
+const inp = new MuWriteStream(4)
 
 // write stuff to it
 const prop = 'hp'
@@ -15,22 +14,21 @@ inp.writeVarint(prop.length)
 inp.writeASCII(prop)
 inp.writeUint8(100)
 
-// if you're not sure whether the stream has enough space for the data coming in,
+// if you're not sure whether the buffer has enough space for the data coming in,
 // you should grow the stream before you write to it.  it's ok to over grow a bit
 inp.grow(60)
 inp.writeString('半分しか食べてないままで捨てちゃダメ')
 
-// get the data written to the stream so far, which can then be transferred over
-// the Internet or whatever
+// get the data written to the buffer, which can then be transferred over the Internet
 const data = inp.bytes()
 
 // remember to destroy the stream
 inp.destroy()
 
-// assume we receive the data at another endpoint
+// create a read-only stream with the received data
 const out = new MuReadStream(data)
 
-// you can retrieve data in the order as they were written
+// read data in the order as they were written
 const propLeng = out.readVarint()
 out.readASCII(propLeng) // 'hp'
 out.readUint8()         // 100
@@ -42,172 +40,164 @@ out.readString()        // '半分しか食べてないままで捨てちゃダ�
 * [MuReadStream](#mureadstream)
 * [MuBuffer](#mubuffer)
 
-Generally, data written by `writeX()` is meant be read by the corresponding `readX()`.  All `writeX()` and `readX()` methods set/get the data at the position marked by `stream.offset` and then increment it.  While `writeXAt()` and `readXAt()` set/get the data at the specified position, and don't alter the value of `stream.offset`.
-
 ### usage tips
+* data written by `writeX()` is meant to be read by the corresponding `readX()`
 * remember to destroy the stream after using it, doing so can help reduce GC, which in turn leads to better performance
 * try to reduce the calls to `grow()` when possible
-* prefer the use of `writeVarint()` over variants like `writeUint32()` when the values can be large and small, it may save you some bytes
+* prefer the use of `writeVarint()` over "larger" variants like `writeUint32()` when the values can be large and small, it may save you some bytes
 
-### MuWriteStream
+### `MuWriteStream`
 Provides a set of methods to write different types of data to the buffer.
 
-### `new MuWriteStream(capacity)`
-* `capacity` *number* initial size of the stream
+**`new MuWriteStream(capacity:number)`**
+* `capacity` initial buffer size, in bytes
 
-### `writeStream.buffer`
-* *[MuBuffer](#mubuffer)* a handy wrapper of the underlying buffer
+#### props
 
-### `writeStream.offset`
-* *number* pointer that marks where data will be written by a write method
+**`buffer:MuBuffer`**
 
-Generally, you shouldn't have to deal with this property directly.
+A handy wrapper of the buffer.
 
-### `writeStream.grow(size)`
-* `size` *number* increment to the size of the buffer
+**`offset:number`**
 
-Ensures there will be at least `size` bytes available in the buffer.
+The pointer that marks where data will be written next, by a write method.
 
-### `writeStream.bytes()`
-* return *Uint8Array* data buffered so far
+#### methods
 
-More specifically, it returns a copy of a slice of the buffer, from the start to the index marked by the pointer.
+**`grow(size:number) : void`**
 
-### `writeStream.destroy()`
-You SHOULD call this method after using the stream, to pool the buffer.
+Grows the buffer when necessary, to guarantee at least `size` bytes can be written to the buffer.
 
-### `writeStream.writeUint8(num)`
-* `num` should be in the range [0, 255] in order to get the correct result
+**`bytes() : Uint8Array`**
 
-Writes the number as a uint8 to the buffer and increments the pointer.  Methods below share similar behavior.
+Returns a slice holding the buffered data.
 
-### `writeStream.writeUint16(num)`
-* `num` in [0, 65535]
+**`destroy() : void`**
 
-### `writeStream.writeUint32(num)`
-* `num` in [0, 4294967295]
+Pools the buffer, SHOULD be called after using the stream.  DO NOT write to a destroyed stream.
 
-### `writeStream.writeInt8(num)`
-* `num` in [-128, 127]
+**`writeUint8(n:number) : void`**
 
-### `writeStream.writeInt16(num)`
-* `num` in [-32768, 32767]
+Writes `n` as uint8 to the buffer.  `n` should be in the range [0, 255] in order to get the correct result.  As other write methods, it increments the pointer.
 
-### `writeStream.writeInt32(num)`
-* `num` in [-2147483648, 2147483647]
+**`writeUint16(n:number) : void`**
 
-### `writeStream.writeFloat32(num)`
-* `num` absolute value of which should be in [1.2e-38, 3.4e38] (7 significant digits)
+`n` should be in the range [0, 65535].
 
-### `writeStream.writeFloat64(num)`
-* `num` absolute value of which should be in [5.0e-324, 1.8e308] (15 significant digits)
+**`writeUint32(n:number) : void`**
 
-### `writeStream.writeVarint(num)`
-* `num` in [0, 4294967295]
+`n` should be in the range [0, 4294967295].
 
-For the encoding format, see the [FLIF specification](https://flif.info/spec.html#_part_1_main_header).
+**`writeVarint(n:number) : void`**
 
-### `writeStream.writeASCII(str)`
-* `str` should be a string composed of only ASCII characters
+`n` should be in the range [0, 4294967295].  `n` is encoded as a [variable-length integer](https://en.wikipedia.org/wiki/Variable-length_quantity#General_structure), hence the name.  Compared to other write methods like `writeUint32()`, rather than a fixed number of bytes, `writeVarint()` only consumes space required to encode the number.
 
-You MUST keep track of the string length yourself, like writing the length along with the string into the buffer as the example shows.
+**`writeInt8(n:number) : void`**
 
-### `writeStream.writeString(str)`
-* `str` can be a string composed of any Unicode characters
+`n` should be in the range [-128, 127].
 
-Unlike `writeASCII()`, `writeString()` keeps track of the string length for you.
+**`writeInt16(n:number) : void`**
 
-### `writeStream.writeUint8At(offset, num)`
-* `offset` *number* index to write to
-* `num` in [0, 255]
+`n` should be in the range [-32768, 32767].
 
-Unlike `writeUint8()`, this method writes to the specified position and doesn't increment the pointer.
+**`writeInt32(n:number) : void`**
 
-### `writeStream.writeUint32At(offset, num)`
-* `offset` *number* index to write to
-* `num` in [0, 4294967295]
+`n` should be in the range [-2147483648, 2147483647].
 
-Unlike `writeUint32()`, this method writes to the specified position and doesn't increment the pointer.
+**`writeFloat32(n:number) : void`**
 
-### MuReadStream
+Absolute value of `n` should be in the range [1.2e-38, 3.4e38], with 7 significant digits.
+
+**`writeFloat64(n:number) : void`**
+
+Absolute value of `n` should be in the range [5.0e-324, 1.8e308], with 15 significant digits.
+
+**`writeASCII(s:string) : void`**
+
+`s` should be a string composed of only ASCII characters.  You MUST keep track of the string length yourself, like writing the length to the buffer along with the string, as the example shows.
+
+**`writeString(s:string) : void`**
+
+`s` can be a string composed of any Unicode characters.  Unlike `writeASCII()`, `writeString()` keeps track of the string length.
+
+**`writeUint8At(offset:number, n:number) : void`**
+
+**`writeUint32At(offset:number, n:number) : void`**
+
+Unlike their variants, these methods write to the buffer at the specified `offset` and doesn't increment the pointer.
+
+### `MuReadStream`
 Provides a set of read methods to read different types of data from the buffer.
 
-### `new MuReadStream(bytes)`
-* `bytes` *Uint8Array* normally created by `writeStream.bytes()`
+**`new MuReadStream(bytes:Uint8Array)`**
+* `bytes` usually comes from `writeStream.bytes()`
 
-### `readStream.buffer`
-* *[MuBuffer](#mubuffer)* handy wrapper of the underlying buffer
+#### props
 
-### `readStream.length`
-* *number* byte length of the buffer
+**`buffer:MuBuffer`**
 
-### `readStream.offset`
-* *number* pointer that marks where data will be read from by a read method
+A handy wrapper of the buffer.
 
-### `readStream.bytes()`
-* return *Uint8Array* unread data on the buffer
+**`length:number`**
 
-### `readStream.checkBounds()`
-Checks the pointer, throws if it's out of bounds.
+Byte length of the buffer.
 
-### `readStream.readUint8()`
-* return *number*
+**`offset:number`**
 
-Reads a number as uint8 from the buffer and increments the pointer.  Methods below share similar behavior.
+The pointer that marks where data will be read from next, by a read method.
 
-### `readStream.readUint16()`
-* return *number*
+#### methods
 
-### `readStream.readUint32()`
-* return *number*
+**`bytes() : Uint8Array`**
 
-### `readStream.readInt8()`
-* return *number*
+Returns a slice of the buffer holding the unread data.
 
-### `readStream.readInt16()`
-* return *number*
+**`readUint8() : number`**
 
-### `readStream.readInt32()`
-* return *number*
+Reads a number as uint8 from the buffer and increments the pointer.  Other read methods below share similar behavior.
 
-### `readStream.readFloat32()`
-* return *number*
+**`readUint16() : number`**
 
-### `readStream.readFloat64()`
-* return *number*
+**`readUint32() : number`**
 
-### `readStream.readVarint()`
-* return *number*
+**`readVarint() : number`**
 
-### `readStream.readASCII(length)`
-* `length` *number* how many ascii characters to read from the buffer
-* return *string*
+**`readInt8() : number`**
 
-### `readStream.readString()`
-* return *string*
+**`readInt16() : number`**
+
+**`readInt32() : number`**
+
+**`readFloat32() : number`**
+
+**`readFloat64() : number`**
+
+**`readASCII(length:number) : string`**
+* `length` length of the string written to the buffer
+
+**`readString() : string`**
 
 Unlike `readASCII()`, you don't need to worry about the length of the string.
 
-### `readStream.readUint8At(offset)`
-* `offset` *number* index to read from
-* return *number*
+**`readUint8At(offset:number) : number`**
 
-Unlike `readUint8()`, this method reads from the specified position and doesn't increment the pointer.
+Unlike its variant, `readUint8At()` reads from the specified `offset` and doesn't increment the pointer.
 
-### MuBuffer
+### `MuBuffer`
 A handy wrapper cumulating different views over the underlying `ArrayBuffer`.
 
-### `new MuBuffer(buffer)`
-* `buffer` *ArrayBuffer*
+**`new MuBuffer(buffer:ArrayBuffer)`**
 
-### `buffer.buffer`
-* *ArrayBuffer* reference to the underlying buffer
+#### props
 
-### `buffer.dataView`
-* *DataView* view over the underlying buffer
+**`buffer:ArrayBuffer`**
+Reference to the buffer.
 
-### `buffer.uint8`
-* *Uint8Array* view over the underlying buffer
+**`dataView:DataView`**
+**DataView** view over the buffer.
+
+**`uint8:Uint8Array`**
+**Uint8Array** view over the buffer.
 
 ## ideas
 * bulk access to the internal buffer
