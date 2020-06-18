@@ -1,5 +1,5 @@
 # rpc
-client-server RPC based on `MuSchema` that supports authentication and more
+schema-based RPC that supports authentication and more
 
 ## concepts
 
@@ -272,7 +272,9 @@ new MuRPCClient(protocol:P, transport:MuRPCClientTransport, logger?:MuLogger)
 #### props
 ```ts
 api:{
-    [method in keyof P['api']]:(arg:P['api'][method]['arg']['identity']) => Promise<P['api'][method]['ret']['identity']>;
+    [method in keyof P['api']]:(
+        arg:P['api'][method]['arg']['identity'],
+    ) => Promise<P['api'][method]['ret']['identity']>,
 }
 ```
 A table of stubs to be called to initiate invocations to remote procedures.
