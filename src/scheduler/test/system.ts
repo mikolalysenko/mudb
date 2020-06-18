@@ -22,15 +22,12 @@ test('cAF', (t) => {
 });
 
 test('rAF does not eat errors', (t) => {
-    function onError () {
-        t.pass('error bubbled up');
-        t.end();
-    }
-
-    if (typeof window !== 'undefined') {
-        window.onerror = onError;
-    } else if (typeof process !== 'undefined') {
-        process.on('uncaughtException', onError);
+    if (typeof process !== 'undefined') {
+        process.on('uncaughtException', () => {
+            process.on('uncaughtException', () => {});
+            t.pass('error bubbled up');
+            t.end();
+        });
     }
 
     MuSystemScheduler.requestAnimationFrame(() => {
