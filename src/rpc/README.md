@@ -339,3 +339,9 @@ send(
     arg:MuRPCSchemas<P>['argSchema']['identity'],
 ) : Promise<MuRPCSchemas<P>['responseSchema']['identity']>
 ```
+
+## ideas
+* streaming transport
+    * status
+    * keep alive
+    * auto reconnect
