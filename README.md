@@ -18,13 +18,15 @@ A *schema* is a type declaration for the interface between client and server.
 ## modules
 
 * core
-* rda
-* replica
-* rpc
-* scheduler
-* schema
-* socket
-* stream
+* [rda](src/rda)
+* [replica](src/replica)
+* [rpc](src/rpc)
+* [scheduler](src/scheduler)
+* [schema](src/schema)
+* [socket](src/socket)
+    * [local](src/socket/local)
+    * [web](src/socket/web)
+* [stream](src/stream)
 
 ## examples
 
