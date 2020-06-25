@@ -178,18 +178,24 @@ export class MuWebSocket implements MuSocket {
             if (sockets.length > 0) {
                 let socket = sockets[0];
                 let bufferedAmount = socket.bufferedAmount || 0;
+                let idx = 0;
                 for (let i = 1; i < sockets.length; ++i) {
                     const s = sockets[i];
                     const b = s.bufferedAmount || 0;
                     if (b < bufferedAmount) {
                         socket = s;
                         bufferedAmount = b;
+                        idx = i;
                     }
                 }
                 // if buffered amount below cutoff, send a packet
                 // otherwise just drop it
                 if (bufferedAmount < this.bufferLimit) {
                     socket.send(data);
+
+                    // move socket to back of queue
+                    sockets.splice(idx, 1);
+                    sockets.push(socket);
                 }
             }
         } else if (this._reliableSocket) {
