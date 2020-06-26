@@ -80,6 +80,7 @@ new MuWebSocketServer(spec:{
     * `threshold:number=1024` payloads smaller than this will not be compressed
     * `zlibDeflateOptions:object` [options](https://nodejs.org/api/zlib.html#zlib_class_options) to pass to zlib on deflate
     * `zlibInflateOptions:object` [options](https://nodejs.org/api/zlib.html#zlib_class_options) to pass to zlib on inflate
+* `scheduler` can be set to a [`MuMockScheduler`](../../scheduler/README#mumockscheduler) for testing
 
 ---
 

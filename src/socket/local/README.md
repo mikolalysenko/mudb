@@ -40,7 +40,7 @@ createLocalSocketServer(spec?:{
     scheduler?:MuScheduler,
 }) : MuLocalSocketServer
 ```
-* `scheduler`
+* `scheduler` can be set to a [`MuMockScheduler`](../../scheduler/README#mumockscheduler) for testing
 
 ---
 
@@ -56,7 +56,7 @@ createLocalSocket(spec:{
 ```
 * `sessionId` a user-generated session id
 * `server` the server returned by `createLocalSocketServer()`
-* `scheduler`
+* `scheduler` can be set to a [`MuMockScheduler`](../../scheduler/README#mumockscheduler) for testing
 
 ---
 
