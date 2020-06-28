@@ -17,7 +17,7 @@ A *schema* is a type declaration for the interface between client and server.
 
 ## modules
 
-* core
+* [core](src)
 * [rda](src/rda)
 * [replica](src/replica)
 * [rpc](src/rpc)
@@ -51,7 +51,10 @@ Academic references:
 * C. Savery, T.C. Graham, "[Timelines: Simplifying the programming of lag compensation for the next generation of networked games](https://link.springer.com/article/10.1007/s00530-012-0271-3)" 2013
 * Local perception filters
 
+## FAQ
+[FAQ](https://github.com/mikolalysenko/mudb/issues?q=is%3Aissue+label%3AFAQ+)
+
 ## credits
 Development supported by Shenzhen DianMao Digital Technology Co., Ltd.
 
-(c) 2020 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.
+Copyright (c) 2020 Mikola Lysenko, Shenzhen DianMao Digital Technology Co., Ltd.

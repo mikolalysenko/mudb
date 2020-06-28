@@ -89,8 +89,3 @@ Unlike in other `mudb` socket modules, `MuDebugSocket` and `MuDebugServer` are d
 * out-of-order packets
 * duplicate packets
 * throttling
-
-## credits
-Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited
-
-
