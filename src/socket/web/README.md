@@ -9,16 +9,12 @@ for WebSocket communications, server implementation based on [`ws`](https://gith
 import { MuWebSocketServer } from 'mudb/socket/web/server'
 import { MuServer } from 'mudb/server'
 import http = require('http')
-import net = require('net')
 
 const httpServer = http.createServer()
 const socketServer = new MuWebSocketServer({
     server: httpServer,
 })
 const server = new MuServer(socketServer)
-
-server.start()
-httpServer.listen(9966)
 ```
 
 **client**
@@ -32,8 +28,6 @@ const socket = new MuWebSocket({
     url: 'ws://127.0.0.1:9966',
 })
 const client = new MuClient(socket)
-
-client.start()
 ```
 
 ## API
