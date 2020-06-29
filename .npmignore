@@ -14,11 +14,15 @@ yarn-error.log*
 Desktop.ini
 
 # misc
+.editorconfig
+.github
 .jsbeautifyrc
 .vscode
 *package-lock.json
 *yarn.lock
 coverage
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
 
 # dev
 bin
