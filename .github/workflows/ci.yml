@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  Test:
+    name: ${{ matrix.os }} Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.15, ubuntu-18.04]
+        node: [8, 10, 12]
+
+    steps:
+      - name: Checkout HEAD
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Compile
+        run: npm run build
+
+      - name: Test
+        run: npm run test-all
