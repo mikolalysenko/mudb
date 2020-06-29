@@ -1,394 +1,380 @@
-# mudb
-A database for real-time server-client applications.
+# core
+the starting point of creating a `mudb` application
 
-A `mudb` application has one `MuServer` and several `MuClient`s.  Each node consists of one or more protocols which define different behaviors.
-
-A *protocol* is essentially a collection of event handlers.  To define a protocol, typically you need to specify
-1. a protocol schema
-2. a server protocol
-3. a client protocol
+Building a `mudb` application is all about implementing protocols.
+* construct client/server with the socket implementation of your choice
+* define messaging interfaces and group them together by protocol
+* register protocols and the corresponding message and event handlers
 
 ## example
-Here is a minimal chat room demo, heavily documented to show how to define a protocol using `mudb`.
 
-**schema.js**
-The first step of creating any applications with `mudb` is to specify a protocol schema using `muschema`, defining the data structures of different messages that all parties agree on.
+**schema.ts**
+```ts
+import { MuStruct, MuASCII, MuUTF8 } from 'mudb/schema'
 
-```javascript
-var muschema = require('muschema')
-var MuStruct = muschema.MuStruct
-var MuString = muschema.MuString
+// you can define as many protocols as you need
+// each protocol should be a sensible grouping of several messaging interfaces
 
-// define a protocol schema, which always contains a `server` and a `client` property
-exports.ChatSchema = {
-    // define data structures of messages sent to client
+// minimal but useless protocol
+export const DummyProtocolSchema = {
+    client: { },
+    server: { },
+}
+
+export const ChatProtocolSchema = {
+    // useful for tracing
+    name: 'chat',
+
+    // define all message types sent to client
+    // key: message type
+    // value: message structure
     client: {
-        // each `chat` message contains a record with
-        // a `name` property of string type
-        // a `text` property of string type
-        // both should always be present
-        chat: new MuStruct({
-            name: new MuString(),
-            text: new MuString(),
-        }),
+        // all `log` messages share the structure { id:string, text:string }
+        log: new MuStruct({
+            id: new MuASCII(),
+            text: new MuUTF8(),
+        })
     },
-    // define data structures of messages sent to server
+
+    // define all message types sent to server
     server: {
-        // each `say` message contains a string
-        say: new MuString(),
+        direct: new MuStruct({
+            id: new MuASCII(),
+            text: new MuUTF8(),
+        }),
+        world: new MuUTF8(),
     },
 }
 ```
 
-**server.js**
+**server.ts**
+```ts
+import http = require('http')
+import { MuWebSocketServer } from 'mudb/socket/web/server'
+import { MuServer } from 'mudb/server'
+import { ChatProtocolSchema, DummyProtocolSchema } from './schema'
 
-```javascript
-function randomName () {
-    return Math.random().toString(36).substr(2, 11)
-}
+// construct server
 
-// `server` should be a `MuServer`
-module.exports = function (server) {
-    // create a protocol and add it to `server`
-    var serverProtocol = server.protocol(require('./schema').ChatSchema)
+const httpServer = http.createServer()
+const socketServer = new MuWebSocketServer({
+    server: httpServer,
+})
+const server = new MuServer(socketServer)
 
-    // a dictionary of clients' displayed names
-    var clientNames = {}
+// register protocols
 
-    // configure protocol by specifying handlers
-    serverProtocol.configure({
-        // handlers for client messages
-        message: {
-            // whenever a client sends a `say` message (i.e. clientProtocol.server.message.say()),
-            // server should broadcast the content to everyone, along with sender's displayed name
-            say: function (client, content) {
-                // fist argument of every client message handler is a reference
-                // to client who sent the message
+const serverChatProtocol = server.protocol(ChatProtocolSchema)
+const serverDummyProtocol = server.protocol(DummyProtocolSchema)
 
-                // broadcast sender's name and text content, both of which are strings contained in a record,
-                // as described in `ChatSchema.client.chat`, to all connected clients in a `chat` message
-                serverProtocol.broadcast.chat({
-                    name: clientNames[client.sessionId],
-                    text: content,
-                })
+// configure protocols
+
+serverChatProtocol.configure({
+    // define message handlers, which must coincide with `ChatProtocolSchema.server`
+    message: {
+        direct: (client, { id, text }) => {
+            // send a `log` message to a specific client
+            // refer to `ChatProtocolSchema.client.log` for the valid message structure
+            serverChatProtocol.clients[id].message.log({
+                id: client.sessionId,
+                text: text,
+            })
+        },
+        world: (client, text) => {
+            // send a `log` message to all connected clients
+            serverChatProtocol.broadcast.log({
+                id: client.sessionId,
+                text: text,
+            })
+        }
+    }
+})
+
+// start server
+
+server.start()
+httpServer.listen(9966)
+```
+
+**client.ts**
+```ts
+import { MuWebSocket } from 'mudb/socket/web/client'
+import { MuClient } from 'mudb/client'
+import { ChatProtocolSchema, DummyProtocolSchema } from './schema'
+
+// construct client
+
+const socket = new MuWebSocket({
+    sessionId: Math.random().toString(36).substring(2),
+    url: 'ws://127.0.0.1:9966'
+})
+const client = new MuClient(socket)
+
+// register protocols
+
+// note that you must register the same set of protocols in the same order as the server code does
+const clientChatProtocol = client.protocol(ChatProtocolSchema)
+const clientDummyProtocol = client.protocol(DummyProtocolSchema)
+
+// configure protocols
+
+clientChatProtocol.configure({
+    // define message handlers, which must coincide with `ChatProtocolSchema.client`
+    message: {
+        log: ({ id, text }) => {
+            console.log(`${id}: ${text}`)
+        }
+    }
+})
+
+// start client
+
+client.start({
+    ready: () => {
+        // send a `world` message to server when client is ready
+        clientChatProtocol.server.message.world('hi everyone')
+    }
+})
+```
+
+## API
+* server-side
+    * [`MuServer`](#muserver)
+    * [`MuServerProtocol`](#muserverprotocol)
+    * [`MuRemoteClient`](#muremoteclient)
+* client-side
+    * [`MuClient`](#muclient)
+    * [`MuClientProtocol`](#muclientprotocol)
+    * [`MuRemoteServer`](#muremoteserver)
+
+---
+
+### `MuServer`
+```ts
+import { MuServer } from 'mudb/server'
+
+new MuServer(
+    socketServer:MuSocketServer,
+    logger?:MuLogger,
+    skipProtocolValidation:boolean=false,
+)
+```
+* `socketServer` a [`MuSocketServer`](socket/README#musocketserver) that handles communications with clients
+* `skipProtocolValidation` whether to skip validating protocol consistency
+
+#### props
+```ts
+bandwidth:{
+    [sessionId:string]:{
+        sent:{
+            [message:string]:{
+                count:number,
+                bytes:number,
             },
         },
-        // when a client connects, server should inform everyone
-        connect: function (client) {
-            // set client's displayed name to a random string
-            clientNames[client.sessionId] = randomName()
-            // also broadcast a `chat` message to all connected clients
-            // except this time the message is from server
-            serverProtocol.broadcast.chat({
-                name: 'server',
-                text: clientNames[client.sessionId] + ' joined the channel',
-            })
+        received:{
+            [message:string]:{
+                count:number,
+                bytes:number,
+            },
         },
-        // when a client disconnects, server should also inform everyone
-        disconnect: function (client) {
-            serverProtocol.broadcast.chat({
-                name: 'server',
-                text: clientNames[client.sessionId] + ' left',
-            })
-            // stop tracking client's displayed name
-            delete clientNames[client.sessionId]
-        },
-    })
-
-    // launch server after creating and configuring all protocols
-    server.start()
+    },
 }
 ```
+An accumulator tracking bandwidth usage by session.
 
-**client.js**
+#### methods
+```ts
+protocol(schema:{
+    server:{ [message:string]:MuSchema<any> },
+    client:{ [message:string]:MuSchema<any> },
+    name?:string,
+}) : MuServerProtocol
+```
+Registers a protocol.
 
-```javascript
-// `client` should be a `MuClient`
-module.exports = function (client) {
-    var messageDiv = document.createElement('div')
-    var textLabel = document.createElement('label')
-    var textInput = document.createElement('input')
+Caveats
+* You CANNOT register or configure protocols after the server is started.
 
-    // create a protocol and add it to `client`
-    var clientProtocol = client.protocol(require('./schema').ChatSchema)
+```ts
+start(spec?:{
+    ready?:() => void,
+    close?:(error?:any) => void,
+}) : void
+```
+* `ready()` is called when the socket server is up and running
+* `close()` is called when the socket server is being shut down
 
-    messageDiv.style.overflow = 'auto'
-    messageDiv.style.width = '400px'
-    messageDiv.style.height = '300px'
+```ts
+destroy() : void
+```
+Shuts down the server and invoke close handlers.
 
-    textLabel.textContent = 'message: '
+---
 
-    textInput.type = 'text'
-    textInput.style.width = '400px'
-    textInput.style.padding = '0px'
-    textInput.style.margin = '0px'
+### `MuServerProtocol`
+Created by calling `server.protocol()`, carries a bunch of server-side message dispatchers and event handlers exclusive to the protocol.
 
-    document.body.appendChild(messageDiv)
-    document.body.appendChild(document.createElement('br'))
-    document.body.appendChild(textLabel)
-    document.body.appendChild(textInput)
-
-    // configure protocol by specifying handlers
-    clientProtocol.configure({
-        // when client is ready to handle messages
-        ready: function () {
-            textInput.addEventListener('keydown', function (ev) {
-                // when pressing `enter` on the input box
-                if (ev.keyCode === 13) {
-                    // send a `say` message to server
-                    // the message being sent contains the text in the input box,
-                    // a string, as described by `ChatSchema.server.say`
-                    clientProtocol.server.message.say(textInput.value)
-                    // empty input box
-                    textInput.value = ''
-                }
-            })
-        },
-        // handlers for server messages
-        message: {
-            // whenever server sends a `chat` message (e.g. serverProtocol.broadcast.chat()),
-            chat: function (data) {
-                // which contains name of whoever said something and the content
-                var name = data.name
-                var text = data.text
-
-                // print name and content out in message box
-                var textNode = document.createTextNode(name + ": " + text)
-                messageDiv.appendChild(textNode)
-                messageDiv.appendChild(document.createElement('br'))
-            }
-        }
-    })
-
-    // open client after creating and configuring all protocols
-    client.start()
-}
+#### props
+```ts
+server:MuServer
 ```
 
-To run the demo,
-
-1. cd into the directory containing the three files above
-2. `npm i mudo`
-3. `mudo --socket websocket --open`
-
-# table of contents
-
-   * [1 install](#section_1)
-   * [2 api](#section_2)
-      * [2.1 interfaces](#section_2.1)
-         * [2.1.1 `MuSocket`](#section_2.1.1)
-            * [2.1.1.1 `sessionId:string`](#section_2.1.1.1)
-            * [2.1.1.2 `open:boolean`](#section_2.1.1.2)
-            * [2.1.1.3 `start(spec)`](#section_2.1.1.3)
-            * [2.1.1.4 `send(data:Uint8Array|string, unreliable?:boolean)`](#section_2.1.1.4)
-            * [2.1.1.5 `close()`](#section_2.1.1.5)
-         * [2.1.2 `MuSocketServer`](#section_2.1.2)
-            * [2.1.2.1 `clients:MuSocket[]`](#section_2.1.2.1)
-            * [2.1.2.2 `open:boolean`](#section_2.1.2.2)
-            * [2.1.2.3 `start(spec)`](#section_2.1.2.3)
-            * [2.1.2.4 `close()`](#section_2.1.2.4)
-      * [2.2 `MuServer(socketServer:MuSocketServer)`](#section_2.2)
-         * [2.2.1 `protocol(schema:ProtocolSchema) : MuServerProtocol`](#section_2.2.1)
-         * [2.2.2 `start(spec?)`](#section_2.2.2)
-         * [2.2.3 `destroy()`](#section_2.2.3)
-      * [2.3 `MuServerProtocol`](#section_2.3)
-         * [2.3.1 `broadcast:TableOf<DispatchFn>`](#section_2.3.1)
-         * [2.3.2 `configure(spec)`](#section_2.3.2)
-      * [2.4 `MuRemoteClient`](#section_2.4)
-         * [2.4.1 `sessionId`](#section_2.4.1)
-         * [2.4.2 `message:TableOf<DispatchFn>`](#section_2.4.2)
-         * [2.4.3 `sendRaw:SendRawFn`](#section_2.4.3)
-         * [2.4.4 `close()`](#section_2.4.4)
-      * [2.5 `MuClient(socket:MuSocket)`](#section_2.5)
-         * [2.5.1 `protocol(schema:ProtocolSchema) : MuClientProtocol`](#section_2.5.1)
-         * [2.5.2 `start(spec?)`](#section_2.5.2)
-         * [2.5.3 `destroy()`](#section_2.5.3)
-      * [2.6 `MuClientProtocol`](#section_2.6)
-         * [2.6.1 `server:MuRemoteServer`](#section_2.6.1)
-         * [2.6.2 `configure(spec)`](#section_2.6.2)
-      * [2.7 `MuRemoteServer`](#section_2.7)
-         * [2.7.1 `message:TableOf<DispatchFn>`](#section_2.7.1)
-   * [3 usage tips](#section_3)
-   * [4 helpful modules](#section_4)
-   * [5 more examples](#section_5)
-   * [6 TODO](#section_6)
-
-# <a name="section_1"></a> 1 install
+```ts
+clients:{ [sessionId:string]:MuRemoteClient }
 ```
-npm i mudb muweb-socket mulocal-socket
+A table of server-side abstractions of connected clients, indexed by session id.
+
+```ts
+broadcast:{ [message:string]:(data:any, unreliable?:boolean) => void }
 ```
+A table of message dispatchers, calling one of which will broadcast a message to all connected clients.  For example, calling `protocol.broadcast.sync(state)` will send `state` as a `sync` message to all the clients through reliable delivery.
 
-# <a name="section_2"></a> 2 api
-
-## <a name="section_2.1"></a> 2.1 interfaces
-
-Purely instructive types used to describe the API:
-* `TableOf<T>`: `{ [messageName:string]:T } | {}`
-* `ProtocolSchema`: `{ server:TableOf<AnyMuSchema>, client:TableOf<AnyMuSchema> }`
-* `DispatchFn`: `(data, unreliable?:boolean) => undefined`
-* `SendRawFn`: `(data:Uint8Array|string, unreliable?:boolean) => undefined`
-* `ClientMessageHandler`: `(client:MuRemoteClient, data, unreliable?:boolean) => undefined`
-* `ServerMessageHandler`: `(data, unreliable:boolean) => undefined`
-
-To create a `mudb` application, a socket (i.e. a `MuSocket` instance) and a corresponding socket server (i.e. a `MuSocketServer` instance) are required.  We try to make `mudb` extensible by allowing you to use a customized socket-server implementation.
-
-A few socket modules are provided out of the box alongside `mudb` (e.g. [muweb-socket](../muweb-socket)).  Make sure that you have checked those out before trying to create your own socket modules.
-
-### <a name="section_2.1.1"></a> 2.1.1 `MuSocket`
-`MuSocket`s are **bidirectional** sockets.  They support both reliable, ordered streams and unreliable optimistic packet transfer.  Any `mudb` sockets should implement the `MuSocket` interface as described below.
-
-#### <a name="section_2.1.1.1"></a> 2.1.1.1 `sessionId:string`
-Required property, a unique session id identifying the socket
-
-#### <a name="section_2.1.1.2"></a> 2.1.1.2 `open:boolean`
-Required property, a flag determining whether the socket is open
-
-#### <a name="section_2.1.1.3"></a> 2.1.1.3 `start(spec)`
-Required method, can be used to establish a connection to the server from the client side
-
-* `spec:{ ready, message, close }`
-    * `ready()` should be called when the connection is ready
-    * `message(data:Uint8Array|string, unreliable:boolean)` should be called when receiving messages
-    * `close(error?)` should be called when the connection is closed
-
-#### <a name="section_2.1.1.4"></a> 2.1.1.4 `send(data:Uint8Array|string, unreliable?:boolean)`
-Required method, used to send messages to the other end of the connection
-
-#### <a name="section_2.1.1.5"></a> 2.1.1.5 `close()`
-Required method, used to close the connection
-
-### <a name="section_2.1.2"></a> 2.1.2 `MuSocketServer`
-A `MuSocketServer` handles client communications coming through the corresponding `MuSocket`s.  Any `mudb` socket servers should implement the `MuSocketServer` interface as described below.
-
-#### <a name="section_2.1.2.1"></a> 2.1.2.1 `clients:MuSocket[]`
-Required property, server-side mocks of connected clients
-
-#### <a name="section_2.1.2.2"></a> 2.1.2.2 `open:boolean`
-Required property, a flag determining whether the socket server is running
-
-#### <a name="section_2.1.2.3"></a> 2.1.2.3 `start(spec)`
-Required method, used to launch the socket server
-
-* `spec:{ ready, connection, close }`
-    * `ready()` should be called when the socket server is launched
-    * `connection(client:MuSocket)` should be called when a client connects
-    * `close(error?)` should be called when the socket server is closed
-
-#### <a name="section_2.1.2.4"></a> 2.1.2.4 `close()`
-Required method, used to shut down the socket server
-
-## <a name="section_2.2"></a> 2.2 `MuServer(socketServer:MuSocketServer)`
-
-```javascript
-var httpServer = require('http').createServer(/* ... */)
-var socketServer = new require('muweb-socket').MuWebSocketServer(httpServer)
-var muServer = new require('mudb').MuServer(socketServer)
+#### methods
+```ts
+configure(spec:{
+    message:{ [type:string]:(client:MuRemoteClient, data:any, unreliable?:boolean) => void },
+    ready?:() => void,
+    connect?:(client:MuRemoteClient) => void,
+    raw?:(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean) => void,
+    disconnect?:(client:MuRemoteClient) => void,
+    close?:() => void,
+}) : void
 ```
+Defines event handlers specific to the protocol.  The optional handlers default to noop if not specified.
+* `message` a table of message handlers
+* `ready()` is called when the server is ready
+* `connect()` is called when a client is connected
+* `raw()` handles `raw` messages from clients
+* `disconnect()` is called when a client is disconnected
+* `close()` is called when the serve is being shut down
 
-### <a name="section_2.2.1"></a> 2.2.1 `protocol(schema:ProtocolSchema) : MuServerProtocol`
-Adds a server protocol, and returns it to be configured.
+Caveats:
+* You SHOULD configure the protocols before the server is started.
+* `configure()` can be called only once for each protocol.
 
-A `MuServer` can have multiple protocols.  Note that you cannot add any new protocols after the server is started.
+```ts
+broadcastRaw(data:Uint8Array|string, unreliable?:boolean) : void
+```
+Broadcasts `data` as a `raw` message to all the clients.  `data` will be sent as is.
 
-### <a name="section_2.2.2"></a> 2.2.2 `start(spec?)`
-Launches server.
+---
 
-* `spec:{ ready?, close? }`
-    * `ready()`: called when the underlying socket server is launched
-    * `close(error?)`: called when the underlying socket server is closed
+### `MuRemoteClient`
+An abstraction of a connected client.  Available as an argument to the event handlers representing the client in question.
 
-### <a name="section_2.2.3"></a> 2.2.3 `destroy()`
-Shuts down the underlying socket server and terminates all clients.  Useful when having multiple instances of `mudb`.
+#### props
+```ts
+sessionId:string
+```
+The session id the client is constructed with.
 
-## <a name="section_2.3"></a> 2.3 `MuServerProtocol`
+```ts
+message:{ [type:string]:(data:any, unreliable?:boolean) => void }
+```
+A table of message dispatchers, calling one of which will send a message to the corresponding client.  For example, calling `client.message.sync(state, true)` will send `state` as a `sync` message to the client through unreliable delivery.
 
-### <a name="section_2.3.1"></a> 2.3.1 `broadcast:TableOf<DispatchFn>`
-An object of methods, each of which broadcasts to all connected clients.  Each message (delta encoded) will be handled by a specific handler.  For example, the message sent by `protocol.broadcast.shower(shampoo, true)` will be handled by the `shower` method on the corresponding client protocol, as `shower(shampoo, true)`.  So this is effectively dispatching method calls to a remote object.
+#### methods
+```ts
+sendRaw(data:Uint8Array|string, unreliable?:boolean) : void
+```
+Sends `data` as a `raw` message to the corresponding client.
 
-### `broadcastRaw:SendRawFn`
-A method that broadcasts to all connected clients with "raw" (not processed, contrary to delta) messages.  The messages will be handled by the raw message handler of the corresponding client protocol.
+```ts
+close() : void
+```
+Closes the connection.
 
-### <a name="section_2.3.2"></a> 2.3.2 `configure(spec)`
-Each protocol should be configured before the server is started and can be configured only once, by specifying the event handlers in `spec`.
+---
 
-* `spec:{ message, ready?, connect?, raw?, disconnect?, close? }`
-    * `message:TableOf<ClientMessageHandler>` required
-    * `ready()` called when the underlying socket server is launched
-    * `connect(client:MuRemoteClient)` called when a client connects
-    * `raw(client:MuRemoteClient, data:Uint8Array|string, unreliable:boolean)` called when a "raw" message is received
-    * `disconnect(client:MuRemoteClient)` called when a client disconnects
-    * `close()` called when the underlying socket server is closed
+### `MuClient`
+```ts
+import { MuClient } from 'mudb/client'
 
-## <a name="section_2.4"></a> 2.4 `MuRemoteClient`
-A `MuRemoteClient` is the server-side representation of a client, used in the event handlers.
+new MuClient(
+    socket:MuSocket,
+    logger?:MuLogger,
+    skipProtocolValidation:boolean=false,
+)
+```
+* `socket` a [`MuSocket`](socket/README#musocket) that handles communications with the server
+* `skipProtocolValidation` whether to skip validating protocol consistency
 
-### <a name="section_2.4.1"></a> 2.4.1 `sessionId`
-A string representing a unique session id identifying the client.
+#### methods
+```ts
+protocol(schema:{
+    server:{ [message:string]:MuSchema<any> },
+    client:{ [message:string]:MuSchema<any> },
+    name?:string,
+}) : MuClientProtocol
+```
+Registers a protocol.
 
-### <a name="section_2.4.2"></a> 2.4.2 `message:TableOf<DispatchFn>`
-An object of methods, each of which sends messages (delta encoded) to the corresponding client.
+Caveats:
+* You CANNOT register protocols after the client is started.
+* You MUST register the same set of protocols in the exact same order as the server code does, otherwise the protocol validation will fail and the connection will be killed.
 
-### <a name="section_2.4.3"></a> 2.4.3 `sendRaw:SendRawFn`
-A method that sends "raw" messages to the corresponding client.
+```ts
+start(spec?:{
+    ready?:(error?:string) => void,
+    close?:(error?:string) => void,
+}) : void
+```
+Starts the client and connects to the server.
+* `ready()` is called when the connection is ready
+* `close()` is called when the socket is being closed
 
-### <a name="section_2.4.4"></a> 2.4.4 `close()`
-Closes the reliable socket.
+```ts
+destroy() : void
+```
+Closes the connection to server.
 
-## <a name="section_2.5"></a> 2.5 `MuClient(socket:MuSocket)`
+---
 
-```javascript
-var socket = new require('muweb-socket/socket').MuWebSocket(spec)
-var muClient = new require('mudb').MuClient(socket)
+### `MuClientProtocol`
+Created by calling `client.protocol()`, carries a bunch of client-side message dispatchers and event handlers exclusive to the protocol.
+
+#### props
+```ts
+client:MuClient
 ```
 
-### <a name="section_2.5.1"></a> 2.5.1 `protocol(schema:ProtocolSchema) : MuClientProtocol`
-Adds a client protocol, and returns it to be configured.
+```ts
+server:MuRemoteServer
+```
 
-A `MuClient` can have multiple protocols.  Note that you cannot add any new protocols after the client is started.
+#### methods
+```ts
+configure(spec:{
+    message:{ [type:string]:(data:any, unreliable:boolean) => void },
+    ready: () => void,
+    raw?:(data:Uint8Array|string, unreliable:boolean) => void,
+    close: () => void,
+}) : void
+```
+Defines event handlers specific to the protocol.  The optional handlers default to noop if not specified.
+* `message` a table of message handlers
+* `ready()` is called when the connection is established
+* `raw()` handles `raw` messages from the server
+* `close()` is called when the connection is being closed
 
-### <a name="section_2.5.2"></a> 2.5.2 `start(spec?)`
-Runs client.
+Caveats:
+* You SHOULD configure the protocols before the client is started.
+* `configure()` can be called only once for each protocol.
 
-* `spec:{ ready?, close? }`
-    * `ready(error?:string)` called when the client is ready to handle messages
-    * `close(error?:string)` called when all sockets are closed
+---
 
-### <a name="section_2.5.3"></a> 2.5.3 `destroy()`
-Closes all sockets.
+### `MuRemoteServer`
+Client-side abstraction of the server.
 
-## <a name="section_2.6"></a> 2.6 `MuClientProtocol`
+#### props
+```ts
+message:{ [type:string]:(data:any, unreliable?:boolean) => void }
+```
+A table of message dispatchers, calling one of which will send a message to the server.  For example, calling `server.message.sync(state, true)` will send `state` as a `sync` message to the server through unreliable delivery.
 
-### <a name="section_2.6.1"></a> 2.6.1 `server:MuRemoteServer`
-The client-side representation of the server.
-
-### <a name="section_2.6.2"></a> 2.6.2 `configure(spec)`
-Each protocol should be configured before the client is started and can be configured only once, by specifying the event handlers in `spec`.
-
-* `spec:{ message, ready?, raw?, close? }`
-    * `message:TableOf<ServerMessageHandler>` required
-    * `ready()` called when the client is ready to handle messages
-    * `raw(data:Uint8Array|string, unreliable:boolean)` called when receiving a "raw" message
-    * `close()` called when all sockets are closed
-
-## <a name="section_2.7"></a> 2.7 `MuRemoteServer`
-
-### <a name="section_2.7.1"></a> 2.7.1 `message:TableOf<DispatchFn>`
-An object of methods, each of which sends specific messages (delta encoded) to the server.
-
-### `sendRaw:SendRawFn`
-A method that sends "raw" messages to the server.
-
-# <a name="section_3"></a> 3 usage tips
-
-# <a name="section_4"></a> 4 helpful modules
-
-# <a name="section_5"></a> 5 more examples
-
-# <a name="section_6"></a> 6 TODO
-
-* more test cases
-
-# credits
-Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
-
-
+#### methods
+```ts
+sendRaw(data:Uint8Array|string, unreliable?:boolean) : void
+```
+Sends `data` as a `raw` message to the server.

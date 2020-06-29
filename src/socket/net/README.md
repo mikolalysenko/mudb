@@ -83,8 +83,3 @@ muClient.start()
     * `bindOpts` `<Object>` used by [bind()](https://nodejs.org/dist/latest/docs/api/dgram.html#dgram_socket_bind_options_callback) to make the socket listen for datagram messages when the client starts
     * `tcpSocket` `<net.Socket>` optional
     * `udpSocket` `<dgram.Socket>` optional
-
-## credits
-Copyright (c) 2018 He Diyi, Shenzhen Dianmao Technology Company Limited
-
-

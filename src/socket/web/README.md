@@ -1,133 +1,98 @@
-# muweb-socket
-WebSocket communications made available for `mudb`, using [`uws`](https://github.com/uNetworking/uWebSockets) for the WebSocket server implementation.
+# web-socket
+for WebSocket communications, server implementation based on [`ws`](https://github.com/websockets/ws)
 
-# example
+## example
 
-**server.js**
+**server**
 
-```javascript
-var http = require('http')
-var MuWebSocketServer = require('muweb-socket/server').MuWebSocketServer
-var MuServer = require('mudb/server').MuServer
+```ts
+import { MuWebSocketServer } from 'mudb/socket/web/server'
+import { MuServer } from 'mudb/server'
+import http = require('http')
 
-var httpServer = http.createServer()
-// use a pre-created HTTP server
-var socketServer = new MuWebSocketServer({
-    server: httpServer
+const httpServer = http.createServer()
+const socketServer = new MuWebSocketServer({
+    server: httpServer,
 })
-var muServer = new MuServer(socketServer)
-
-muServer.start({ /* event handlers */ })
-
-// should call `listen()` when using an external HTTP/S server
-httpServer.listen()
+const server = new MuServer(socketServer)
 ```
 
-**client.js**
+**client**
 
-```javascript
-var MuWebSocket = require('muweb-socket/socket').MuWebSocket
-var MuClient = require('mudb/client').MuClient
+```ts
+import { MuWebSocket } from 'mudb/socket/web/client'
+import { MuClient } from 'mudb/client'
 
-var socket = new MuWebSocket({
-    sessionId: Math.random().toString(36).substr(2),
-    url: /* URL to server */,
-    maxSockets: 10, // how many WebSockets to be opened
+const socket = new MuWebSocket({
+    sessionId: Math.random().toString(36).substring(2),
+    url: 'ws://127.0.0.1:9966',
 })
-var muClient = new MuClient(socket)
-
-muClient.start({ /* event handlers */ })
+const client = new MuClient(socket)
 ```
 
-# table of contents
+## API
+* [`MuWebSocketServer`](#muwebsocketserver)
+* [`MuWebSocket`](#muwebsocket)
 
-   * [2 api](#section_2)
-      * [2.1 interfaces](#section_2.1)
-      * [2.2 `MuWebSocketServer(spec)`](#section_2.2)
-         * [2.2.1 `state:SocketServerState`](#section_2.2.1)
-         * [2.2.2 `clients:MuWebSocketClient[]`](#section_2.2.2)
-         * [2.2.3 `start(spec)`](#section_2.2.3)
-         * [2.2.4 `close()`](#section_2.2.4)
-      * [2.3 `MuWebSocket(spec)`](#section_2.3)
-         * [2.3.1 `sessionId:SessionId`](#section_2.3.1)
-         * [2.3.2 `state:SocketState`](#section_2.3.2)
-         * [2.3.3 `open(spec)`](#section_2.3.3)
-         * [2.3.4 `send(data:Data, unreliable?:boolean)`](#section_2.3.4)
-         * [2.3.5 `close()`](#section_2.3.5)
+---
 
-# <a name="section_2"></a> 2 api
+### `MuWebSocketServer`
+implements [`MuSocketServer`](../README#musocketserver)
 
-## <a name="section_2.1"></a> 2.1 interfaces
+```ts
+import { MuWebSocketServer } from 'mudb/socket/web/server'
 
-Purely instructive types used to describe the API:
-* `SessionId`: `string`
-* `Data`: `Uint8Array | string`
-* `SocketState`: an enum consisting of three members
-    * `SocketState.INIT`
-    * `SocketState.OPEN`
-    * `SocketState.CLOSED`
-* `SocketServerState`: an enum consisting of three members
-    * `SocketServerState.INIT`
-    * `SocketServerState.RUNNING`
-    * `SocketServerState.SHUTDOWN`
+new MuWebSocketServer(spec:{
+    server:http.Server|https.Server,
+    bufferLimit:number=1024,
+    pingInterval:number=0,
+    backlog?:number,
+    maxPayload?:number,
+    path?:string,
+    handleProtocols?:(protocols:any[], request:http.IncomingMessage) => any,
+    perMessageDeflate:boolean|object=false,
+    scheduler?:MuScheduler,
+    logger?:MuLogger;
+})
+```
+* `server` an HTTP/S server
+* `bufferLimit` the hard limit on the byte size of buffered data per connection, exceeding which will cause unreliable messages to be dropped
+* `pingInterval` if >0, server will send a ping frame to an idle connection every `pingInterval` ms
+* `backlog` the hard limit on the number of pending connections
+* `maxPayload` the maximum byte size of each message
+* `path` if specified, only connections matching `path` will be accepted
+* `handleProtocols(protocols, request)` a function used to handle the WebSocket subprotocols
+    * `protocols` a list of subprotocols indicated by the client in the `Sec-WebSocket-Protocol` header
+    * `request` an HTTP GET request
+* `perMessageDeflate` controlling the behavior of [permessage-deflate extension](https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-19#page-15), disabled by default, can be a table of extension parameters:
+    * `serverNoContextTakeover:boolean` whether to include the `server_no_context_takeover` parameter in the corresponding
+   negotiation response
+    * `clientNoContextTakeover:boolean` whether to include the `client_no_context_takeover` parameter in the corresponding
+   negotiation response
+    * `serverMaxWindowBits:number` the value of `windowBits`
+    * `clientMaxWindowBits:number` request a custom client window size
+    * `threshold:number=1024` payloads smaller than this will not be compressed
+    * `zlibDeflateOptions:object` [options](https://nodejs.org/api/zlib.html#zlib_class_options) to pass to zlib on deflate
+    * `zlibInflateOptions:object` [options](https://nodejs.org/api/zlib.html#zlib_class_options) to pass to zlib on inflate
+* `scheduler` can be set to a [`MuMockScheduler`](../../scheduler/README#mumockscheduler) for testing
 
-## <a name="section_2.2"></a> 2.2 `MuWebSocketServer(spec)`
-A `MuWebSocketServer` can be used to create a `MuServer`.  It handles client-server communications over the WebSocket protocol.
+---
 
-* `spec:object`
-    * `server:http.Server | https.Server` an HTTP/S server
+### `MuWebSocket`
+implements [`MuSocket`](../README#musocket)
 
-### <a name="section_2.2.1"></a> 2.2.1 `state:SocketServerState`
-A tri-valued field **determining** the availability of the socket server.  It is initialized to `SocketServerState.INIT`.
+```ts
+import { MuWebSocket } from 'mudb/socket/web/client'
 
-### <a name="section_2.2.2"></a> 2.2.2 `clients:MuWebSocketClient[]`
-Virtual server-side sockets each of which is used to communicate with a specific client.
-
-### <a name="section_2.2.3"></a> 2.2.3 `start(spec)`
-Spins up a WebSocket server and hooks handlers.  `state` is set to `SocketServerState.RUNNING`.
-
-* `spec:object`
-    * `ready()` called when the WebSocket server is ready to handle connections
-    * `connection(socket:MuWebSocketClient)` called when a client first connects
-    * `close(error?)` called when the WebSocket server is shut down
-
-### <a name="section_2.2.4"></a> 2.2.4 `close()`
-Shuts down the WebSocket server.  `state` is set to `SocketServerState.SHUTDOWN`.
-
-## <a name="section_2.3"></a> 2.3 `MuWebSocket(spec)`
-A `MuWebSocket` can be used to create a `MuClient`.  It is a virtual client-side socket used to communicate with the server over the WebSocket protocol.
-
-* `spec:object`
-    * `sessionId:SessionId`: a unique session id used to identify a client
-    * `url:string`: URL to the server
-    * `maxSockets?:number`: optional, the number of connections to be opened, which defaults to 5
-
-Two data channels can exist simultaneously in each `MuWebSocket`, one delivers in order and the other delivers out of order but with potentially lower latency.  The first established connection is used as the in-order data channel.
-
-### <a name="section_2.3.1"></a> 2.3.1 `sessionId:SessionId`
-The unique session id identifying the client.
-
-### <a name="section_2.3.2"></a> 2.3.2 `state:SocketState`
-A tri-valued field determining the availability of the socket.  It is initialized to `SocketState.INIT`.
-
-### <a name="section_2.3.3"></a> 2.3.3 `open(spec)`
-Opens a number of connections to the server. `state` is set to `SocketState.OPEN` when the in-order data channel is determined.
-
-* `spec:object`
-    * `ready()` called when the in-order channel is ready
-    * `message(data:Data, unreliable:boolean)` called when receiving data
-    * `close(error?)` called when the in-order channel is closed
-
-### <a name="section_2.3.4"></a> 2.3.4 `send(data:Data, unreliable?:boolean)`
-Sends data to the server, either via the in-order channel or the out-of-order channel.
-
-* `data:Data` data to be sent, can either be a JSON string or a `Uint8Array`
-* `unreliable?:boolean` optional, data is sent via the out-of-order channel if set to `true` to allow potential performance improvements
-
-### <a name="section_2.3.5"></a> 2.3.5 `close()`
-Closes all connections.  `state` is set to `SocketState.CLOSED`.
-
-# credits
-Copyright (c) 2017 Mikola Lysenko, Shenzhen Dianmao Technology Company Limited
-
-
+new MuWebSocket(spec:{
+    sessionId:string,
+    url:string,
+    maxSockets:number=5,
+    bufferLimit:number=1024,
+    logger?:MuLogger,
+})
+```
+* `sessionId` the token used to identify the client
+* `url` the server URL
+* `maxSockets` the number of WebSocket connections to be opened
+* `bufferLimit` the hard limit on the byte size of buffered data, exceeding which will cause unreliable messages to be dropped
