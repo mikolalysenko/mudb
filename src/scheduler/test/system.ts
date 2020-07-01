@@ -24,7 +24,7 @@ test('cAF', (t) => {
 test('rAF does not eat errors', (t) => {
     if (typeof process !== 'undefined') {
         process.on('uncaughtException', () => {
-            process.on('uncaughtException', () => {});
+            process.removeAllListeners('uncaughtException');
             t.pass('error bubbled up');
             t.end();
         });
