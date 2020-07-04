@@ -94,7 +94,7 @@ test('when a client connects', (t) => {
             const sessionId = id();
 
             function openSocket () {
-                const socket = new WebSocket(url);
+                const socket = new WebSocket(`${url}?sid=${sessionId}`);
                 socket.binaryType = 'arraybuffer';
 
                 socket.onopen = () => {
@@ -117,8 +117,6 @@ test('when a client connects', (t) => {
                             }
                         }
                     };
-
-                    socket.send(JSON.stringify({ sessionId }));
                 };
             }
 

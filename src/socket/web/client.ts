@@ -60,7 +60,7 @@ export class MuWebSocket implements MuSocket {
 
         const self = this;
         function openSocket () {
-            const socket = new WS(self._url);
+            const socket = new WS(`${self._url}?sid=${self.sessionId}`);
             socket.binaryType = 'arraybuffer';
             socket.onerror = self._onError;
 
@@ -155,10 +155,6 @@ export class MuWebSocket implements MuSocket {
                         self._unreliableSockets.push(socket);
                     }
                 };
-
-                socket.send(JSON.stringify({
-                    sessionId: self.sessionId,
-                }));
             };
         }
 

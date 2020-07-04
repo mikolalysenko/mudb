@@ -2,6 +2,8 @@ import ws = require('ws');
 
 import http = require('http');
 import https = require('https');
+import url = require('url');
+import qs = require('querystring');
 
 import {
     MuSessionId, MuSocket, MuSocketState, MuSocketSpec,
@@ -380,7 +382,7 @@ export class MuWebSocketServer implements MuSocketServer {
         this.scheduler.setTimeout(
             () => {
                 this._wsServer = new ws.Server(this._options)
-                .on('connection', (socket) => {
+                .on('connection', (socket, req) => {
                     if (this._state === MuSocketServerState.SHUTDOWN) {
                         this._logger.error('connection attempt from closed socket server');
                         socket.terminate();
@@ -389,51 +391,44 @@ export class MuWebSocketServer implements MuSocketServer {
 
                     this._logger.log(`muwebsocket connection received: extensions ${socket.extensions} protocol ${socket.protocol}`);
 
+                    const query:any = url.parse(req.url).query;
+                    const sessionId = qs.parse(query)['sid'];
+                    if (typeof sessionId !== 'string') {
+                        this._logger.error(`no session id`);
+                        return;
+                    }
+
                     socket.binaryType = 'fragments';
                     socket.onerror = (e) => this._logger.exception(e);
                     socket.onopen = () => this._logger.log('socket opened');
-                    socket.onmessage = ({ data }) => {
-                        try {
-                            const sessionId = JSON.parse(data).sessionId;
-                            if (typeof sessionId !== 'string') {
-                                this._logger.error('invalid session id');
-                                return;
-                            }
 
-                            let connection = this._findConnection(sessionId);
+                    let connection = this._findConnection(sessionId);
+                    if (connection) {
+                        socket.send(JSON.stringify({
+                            reliable: false,
+                        }));
+                        connection.addUnreliableSocket(socket);
+                    } else {
+                        socket.send(JSON.stringify({
+                            reliable: true,
+                        }));
+
+                        connection = new MuWebSocketConnection(sessionId, socket, () => {
                             if (connection) {
-                                socket.send(JSON.stringify({
-                                    reliable: false,
-                                }));
-                                connection.addUnreliableSocket(socket);
-                                return;
-                            } else {
-                                socket.send(JSON.stringify({
-                                    reliable: true,
-                                }));
-                                connection = new MuWebSocketConnection(sessionId, socket, () => {
-                                    if (connection) {
-                                        this._connections.splice(this._connections.indexOf(connection), 1);
-                                        for (let i = this.clients.length - 1; i >= 0; --i) {
-                                            if (this.clients[i].sessionId === connection.sessionId) {
-                                                this.clients.splice(i, 1);
-                                            }
-                                        }
+                                this._connections.splice(this._connections.indexOf(connection), 1);
+                                for (let i = this.clients.length - 1; i >= 0; --i) {
+                                    if (this.clients[i].sessionId === connection.sessionId) {
+                                        this.clients.splice(i, 1);
                                     }
-                                }, this._logger, this.bufferLimit);
-                                this._connections.push(connection);
-
-                                const client = new MuWebSocketClient(connection, this.scheduler, this._logger);
-                                this.clients.push(client);
-
-                                spec.connection(client);
-                                return;
+                                }
                             }
-                        } catch (e) {
-                            this._logger.exception(e);
-                            socket.terminate();
-                        }
-                    };
+                        }, this._logger, this.bufferLimit);
+                        this._connections.push(connection);
+
+                        const client = new MuWebSocketClient(connection, this.scheduler, this._logger);
+                        this.clients.push(client);
+                        spec.connection(client);
+                    }
                 })
                 .on('error', (e) => this._logger.exception(e))
                 .on('listening', () => this._logger.log(`muwebsocket server listening: ${JSON.stringify(this._wsServer.address())}`))
