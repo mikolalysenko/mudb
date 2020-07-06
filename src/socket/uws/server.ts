@@ -1,107 +1,117 @@
-import querystring = require('querystring');
-import { Buffer } from 'buffer';
-
 import uWS = require('uWebSockets.js');
-
+import qs = require('querystring');
+import util = require('util');
 import {
-    MuData, MuMessageHandler, MuCloseHandler,
     MuSocket, MuSocketState, MuSocketSpec,
     MuSocketServer, MuSocketServerState, MuSocketServerSpec,
+    MuSessionId, MuData, MuCloseHandler, MuMessageHandler,
 } from '../socket';
-import { MuScheduler } from '../../scheduler/scheduler';
-import { MuSystemScheduler } from '../../scheduler/system';
+import { MuScheduler, MuSystemScheduler } from '../../scheduler/index';
 import { MuLogger, MuDefaultLogger } from '../../logger';
 
 function noop () { }
 
-export class MuUWSSocketClient implements MuSocket {
-    private _state = MuSocketState.INIT;
-    public state () {
-        return this._state;
-    }
+const decoder = new util.TextDecoder();
+const filename = '[mudb/socket/uws/server]';
 
-    public readonly sessionId:string;
+export class MuUWSSocketConnection {
+    public readonly sessionId:MuSessionId;
 
-    public _reliableSocket:uWS.WebSocket;
-    public _unreliableSockets:uWS.WebSocket[] = [];
-    private _nextUnreliable = 0;
-    public _pendingMessages:MuData[] = [];
+    public opened = false;
+    public closed = false;
 
-    public _scheduler:MuScheduler;
-    public _onmessage:MuMessageHandler = noop;
-    public _onclose:MuCloseHandler = noop;
+    private _reliableSocket:uWS.WebSocket;
+    private _unreliableSockets:uWS.WebSocket[] = [];
+
+    private _pendingMessages:MuData[] = [];
+
+    public onMessage:MuMessageHandler = noop;
+    public onClose:() => void = noop;
+    public cleanUp:() => void;
+
+    private _logger:MuLogger;
 
     constructor (
-        sessionId:string,
-        reliableSocket:uWS.WebSocket,
-        scheduler:MuScheduler,
-        onclientclose:() => void,
+        sessionId:MuSessionId,
+        socket:uWS.WebSocket,
+        cleanUp:() => void,
+        logger:MuLogger,
     ) {
         this.sessionId = sessionId;
-        this._reliableSocket = reliableSocket;
-        this._scheduler = scheduler;
+        this._reliableSocket = socket;
+        this.cleanUp = cleanUp;
+        this._logger = logger;
 
-        this._reliableSocket.onmessage = (msg:MuData) => {
-            const msg_ = typeof msg === 'string' ? msg : msg.slice(0);
-            this._pendingMessages.push(msg_);
+        socket.onMessage = (msg:MuData) => {
+            if (!this.closed) {
+                const msg_ = typeof msg === 'string' ? msg : msg.slice(0);
+                this._pendingMessages.push(msg_);
+            }
         };
-        this._reliableSocket.onclose = () => {
-            this._state = MuSocketState.CLOSED;
+        socket.onClose = (code, codeMsg) => {
+            if (code > 1001) {
+                this._logger.error(`${filename} - reliable socket ${this.sessionId} closed unexpectedly${codeMsg}`);
+            }
+
+            this.closed = true;
             for (let i = 0; i < this._unreliableSockets.length; ++i) {
                 this._unreliableSockets[i].close();
             }
-            this._onclose();
-            onclientclose();
+            this._unreliableSockets.length = 0;
+            this.onClose();
+            this.cleanUp();
         };
     }
 
-    public _addUnreliable (socket:uWS.WebSocket) {
-        if (this._state === MuSocketState.CLOSED) {
+    public addUnreliable (socket:uWS.WebSocket) {
+        if (this.closed) {
             return;
         }
 
-        socket.onmessage = (msg:MuData) => {
-            this._onmessage(msg, true);
-        };
-        socket.onclose = () => {
-            this._unreliableSockets.splice(this._unreliableSockets.indexOf(socket), 1);
-        };
         this._unreliableSockets.push(socket);
+        socket.onMessage = (msg) => {
+            if (!this.closed) {
+                this.onMessage(msg, true);
+            }
+        };
+        socket.onClose = (code, codeMsg) => {
+            if (!this.closed) {
+                this._logger.error(`${filename} - unreliable socket ${this.sessionId} closed unexpectedly${codeMsg}`);
+            }
+            const idx = this._unreliableSockets.indexOf(socket);
+            if (idx > -1) {
+                this._unreliableSockets.splice(idx, 1);
+            }
+        };
     }
 
-    public open (spec:MuSocketSpec) {
-        if (this._state !== MuSocketState.INIT) {
-            throw new Error(`socket had already been opened [mudb/socket/web/server]`);
-        }
-
-        this._scheduler.setTimeout(() => {
-            this._onmessage = spec.message;
-            this._onclose = spec.close;
-            this._reliableSocket.onmessage = (msg:MuData) => {
-                this._onmessage(msg, false);
-            };
-
-            // order matters
-            this._state = MuSocketState.OPEN;
-            spec.ready();
+    public open () {
+        if (!this.opened && !this.closed) {
+            this.opened = true;
 
             for (let i = 0; i < this._pendingMessages.length; ++i) {
-                this._onmessage(this._pendingMessages[i], false);
+                this.onMessage(this._pendingMessages[i], false);
             }
             this._pendingMessages.length = 0;
-        }, 0);
+
+            this._reliableSocket.onMessage = (msg) => {
+                this.onMessage(msg, false);
+            };
+        }
     }
 
-    public send (data:MuData, unreliable?:boolean) {
-        if (this._state !== MuSocketState.OPEN) {
+    private _nextUnreliable = 0;
+    public send (data:MuData, unreliable:boolean) {
+        if (this.closed) {
             return;
         }
 
         const isBinary = typeof data !== 'string';
         if (unreliable) {
-            const numUnreliable = this._unreliableSockets.length;
-            if (numUnreliable > 0) {
-                this._unreliableSockets[this._nextUnreliable++ % numUnreliable].send(data, isBinary);
+            const sockets = this._unreliableSockets;
+            const length = sockets.length;
+            if (length > 0) {
+                sockets[this._nextUnreliable++ % length].send(data, isBinary);
             }
         } else {
             this._reliableSocket.send(data, isBinary);
@@ -109,153 +119,230 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public close () {
-        if (this._state === MuSocketState.CLOSED) {
-            return;
-        }
-
-        this._state = MuSocketState.CLOSED;
         this._reliableSocket.close();
-        for (let i = 0; i < this._unreliableSockets.length; ++i) {
-            this._unreliableSockets[i].close();
+    }
+}
+
+export class MuUWSSocketClient implements MuSocket {
+    public readonly sessionId:MuSessionId;
+
+    private _state = MuSocketState.INIT;
+    public state () : MuSocketState {
+        return this._state;
+    }
+
+    private _connection:MuUWSSocketConnection;
+
+    private _scheduler:MuScheduler;
+    private _logger:MuLogger;
+
+    constructor (
+        connection:MuUWSSocketConnection,
+        scheduler:MuScheduler,
+        logger:MuLogger,
+    ) {
+        this._connection = connection;
+        this.sessionId = connection.sessionId;
+        this._scheduler = scheduler;
+        this._logger = logger;
+    }
+
+    public open (spec:MuSocketSpec) {
+        this._scheduler.setTimeout(() => {
+            if (this._state === MuSocketState.OPEN) {
+                throw new Error(`${filename} - socket already open`);
+            }
+            if (this._state === MuSocketState.CLOSED) {
+                throw new Error(`${filename} - socket already closed, cannot reopen`);
+            }
+            if (this._connection.closed) {
+                this._state = MuSocketState.CLOSED;
+                spec.close();
+                return;
+            }
+
+            this._state = MuSocketState.OPEN;
+            spec.ready();
+
+            this._connection.onMessage = spec.message;
+            this._connection.onClose = () => {
+                this._state = MuSocketState.CLOSED;
+                spec.close();
+            };
+            this._connection.open();
+        }, 0);
+    }
+
+    public send (data:MuData, unreliable?:boolean) {
+        this._connection.send(data, !!unreliable);
+    }
+
+    public close () {
+        if (this._state !== MuSocketState.CLOSED) {
+            this._state = MuSocketState.CLOSED;
+            this._connection.close();
         }
     }
 }
 
 export class MuUWSSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;
-    public state () {
+    public state () : MuSocketServerState {
         return this._state;
     }
 
-    public clients:MuUWSSocketClient[] = [];
-
     private _server:uWS.TemplatedApp;
-    private _listenSocket:uWS.us_listen_socket|null = null;
-    private _onclose:MuCloseHandler = noop;
+    private _idleTimeout:number;
+    private _path:string;
+
+    public clients:MuUWSSocketClient[] = [];
+    private _connections:MuUWSSocketConnection[] = [];
+
+    private _onClose:MuCloseHandler = noop;
 
     private _scheduler:MuScheduler;
-
     private _logger:MuLogger;
 
     constructor (spec:{
         server:uWS.TemplatedApp,
+        idleTimeout?:number,
+        path?:string,
         scheduler?:MuScheduler,
         logger?:MuLogger,
     }) {
-        this._logger = spec.logger || MuDefaultLogger;
         this._server = spec.server;
+        this._idleTimeout = spec.idleTimeout || 0;
+        this._path = spec.path || '/*';
         this._scheduler = spec.scheduler || MuSystemScheduler;
+        this._logger = spec.logger || MuDefaultLogger;
     }
 
-    private _findClient (sessionId:string) : MuUWSSocketClient|null {
-        for (let i = this.clients.length - 1; i >= 0; --i) {
-            if (this.clients[i].sessionId === sessionId) {
-                return this.clients[i];
+    private _findConnection (sessionId:MuSessionId) {
+        for (let i = this._connections.length - 1; i >= 0; --i) {
+            const conn = this._connections[i];
+            if (conn.sessionId === sessionId) {
+                return conn;
             }
         }
         return null;
     }
 
     public start (spec:MuSocketServerSpec) {
-        if (this._state !== MuSocketServerState.INIT) {
-            throw new Error(`server had already been started [mudb/socket/web/server]`);
-        }
-
         this._scheduler.setTimeout(() => {
-            this._server.ws('/*', {
-                open: (socket, req) => {
-                    const sessionId = querystring.parse(req.getQuery()).sid;
+            if (this._state === MuSocketServerState.RUNNING) {
+                throw new Error(`${filename} - socket server already running`);
+            }
+            if (this._state === MuSocketServerState.SHUTDOWN) {
+                throw new Error(`${filename} - socket server already shut down, cannot restart`);
+            }
+
+            this._server.ws(this._path, {
+                idleTimeout: this._idleTimeout,
+
+                upgrade: (res, req, context) => {
+                    // the only way to pass user data to 'open' event
+                    res.upgrade(
+                        qs.parse(req.getQuery()),
+                        req.getHeader('sec-websocket-key'),
+                        req.getHeader('sec-websocket-protocol'),
+                        req.getHeader('sec-websocket-extensions'),
+                        context,
+                    );
+                },
+                open: (socket) => {
+                    const sessionId = socket.sid;
                     if (typeof sessionId !== 'string') {
                         socket.end(1008, `no session id`);
+                        this._logger.error(`${filename} - killing connection due to lack of session id`);
                         return;
                     }
 
-                    socket.onmessage = noop;
-                    socket.onclose = noop;
-
-                    // first open socket of client deemed to be reliable
-                    let client = this._findClient(sessionId);
-                    if (client) {
-                        socket.send(JSON.stringify({
-                            reliable: false,
-                        }), false);
-
-                        client._addUnreliable(socket);
+                    let conn = this._findConnection(sessionId);
+                    if (conn) {
+                        socket.send(JSON.stringify({ reliable: false }));
+                        conn.addUnreliable(socket);
                     } else {
-                        socket.send(JSON.stringify({
-                            reliable: true,
-                        }), false);
-
-                        client = new MuUWSSocketClient(sessionId, socket, this._scheduler, () => {
-                            if (client) {
-                                const idx = this.clients.indexOf(client);
-                                if (idx >= 0) {
-                                    this.clients.splice(idx, 1);
+                        socket.send(JSON.stringify({ reliable: true }));
+                        conn = new MuUWSSocketConnection(
+                            sessionId,
+                            socket,
+                            () => {
+                                if (conn) {
+                                    const idx = this._connections.indexOf(conn);
+                                    if (idx > -1) {
+                                        this._connections.splice(idx, 1);
+                                        for (let i = 0; i < this.clients.length; ++i) {
+                                            if (this.clients[i].sessionId === conn.sessionId) {
+                                                this.clients.splice(i, 1);
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-                        });
-                        spec.connection(client);
+                            },
+                            this._logger,
+                        );
+                        const client = new MuUWSSocketClient(conn, this._scheduler, this._logger);
+                        this._connections.push(conn);
                         this.clients.push(client);
+                        spec.connection(client);
                     }
                 },
-                message: (socket, message, isBinary) => {
-                    const message_ = isBinary ? new Uint8Array(message) : Buffer.from(message).toString();
-                    socket.onmessage(message_);
+                message: (socket, data, isBinary) => {
+                    if (socket.onMessage) {
+                        const msg = isBinary ? new Uint8Array(data) : decoder.decode(data);
+                        socket.onMessage(msg);
+                    }
                 },
-                close: (socket) => {
-                    socket.onclose();
+                close: (socket, code, message) => {
+                    function codeMessage () {
+                        let ret = '';
+                        code && (ret += code);
+                        const msg = decoder.decode(message);
+                        msg && (ret += ' ' + msg);
+                        if (ret) {
+                            ret = ': ' + ret;
+                        }
+                        return ret;
+                    }
+
+                    if (socket.onClose) {
+                        socket.onClose(code, codeMessage());
+                    }
                 },
             });
 
-            this._onclose = spec.close;
+            this._onClose = spec.close;
             this._state = MuSocketServerState.RUNNING;
             spec.ready();
         }, 0);
     }
 
-    public listen (spec:{
-        port:number,
-        host?:string,
-        listening?:(listenSocket:uWS.us_listen_socket) => void,
-    }) {
-        const onlistening = (ls:uWS.us_listen_socket) => {
-            if (ls) {
-                this._logger.log(`server listening to port ${spec.port}...`);
-                this._listenSocket = ls;
-                if (spec.listening) {
-                    spec.listening(ls);
-                }
+    private _listenSocket:uWS.us_listen_socket|null = null;
+    public listen (port:number, cb:(listenSocket:uWS.us_listen_socket) => void) {
+        this._server.listen(port, (token) => {
+            if (token) {
+                this._listenSocket = token;
+                cb(token);
             } else {
-                this._logger.error(`server failed to listen to port ${spec.port}`);
+                throw new Error(`${filename} - failed to listen to port ${port}`);
             }
-        };
-
-        if (spec.host) {
-            this._server.listen(spec.host, spec.port, onlistening);
-        } else {
-            this._server.listen(spec.port, onlistening);
-        }
+        });
     }
 
     public close () {
-        if (this._state === MuSocketServerState.SHUTDOWN) {
-            return;
-        }
-        if (this._state === MuSocketServerState.INIT) {
-            this._logger.log(`shutting down socket server before fully started [mudb/socket/uws/server]`);
-        }
+        if (this._state !== MuSocketServerState.SHUTDOWN) {
+            this._state = MuSocketServerState.SHUTDOWN;
 
-        this._state = MuSocketServerState.SHUTDOWN;
-
-        if (this._listenSocket) {
-            uWS.us_listen_socket_close(this._listenSocket);
+            if (this._listenSocket) {
+                uWS.us_listen_socket_close(this._listenSocket);
+            }
+            for (let i = 0; i < this.clients.length; ++i) {
+                this.clients[i].close();
+            }
+            this._listenSocket = null;
+            this.clients.length = 0;
+            this._connections.length = 0;
+            this._onClose();
         }
-        for (let i = 0; i < this.clients.length; ++i) {
-            this.clients[i].close();
-        }
-        this._listenSocket = null;
-        this.clients.length = 0;
-
-        this._onclose();
     }
 }
