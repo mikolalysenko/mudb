@@ -22,25 +22,27 @@ export class MuUWSSocketConnection {
 
     private _reliableSocket:uWS.WebSocket;
     private _unreliableSockets:uWS.WebSocket[] = [];
-
     private _pendingMessages:MuData[] = [];
 
     public onMessage:MuMessageHandler = noop;
     public onClose:() => void = noop;
     public cleanUp:() => void;
 
+    private _bufferLimit:number;
     private _logger:MuLogger;
 
     constructor (
         sessionId:MuSessionId,
         socket:uWS.WebSocket,
-        cleanUp:() => void,
+        bufferLimit:number,
         logger:MuLogger,
+        cleanUp:() => void,
     ) {
         this.sessionId = sessionId;
         this._reliableSocket = socket;
-        this.cleanUp = cleanUp;
+        this._bufferLimit = bufferLimit;
         this._logger = logger;
+        this.cleanUp = cleanUp;
 
         socket.onMessage = (msg:MuData) => {
             if (!this.closed) {
@@ -100,7 +102,6 @@ export class MuUWSSocketConnection {
         }
     }
 
-    private _nextUnreliable = 0;
     public send (data:MuData, unreliable:boolean) {
         if (this.closed) {
             return;
@@ -110,8 +111,26 @@ export class MuUWSSocketConnection {
         if (unreliable) {
             const sockets = this._unreliableSockets;
             const length = sockets.length;
+
             if (length > 0) {
-                sockets[this._nextUnreliable++ % length].send(data, isBinary);
+                let idx = 0;
+                let socket = sockets[0];
+                let bufferedAmount = socket.getBufferedAmount();
+                for (let i = 1; i < length; ++i) {
+                    const s = sockets[i];
+                    const b = s.getBufferedAmount();
+                    if (bufferedAmount > b) {
+                        idx = i;
+                        socket = s;
+                        bufferedAmount = b;
+                    }
+                }
+
+                if (bufferedAmount < this._bufferLimit) {
+                    socket.send(data, isBinary);
+                    sockets.splice(idx, 1);
+                    sockets.push(socket);
+                }
             }
         } else {
             this._reliableSocket.send(data, isBinary);
@@ -192,6 +211,7 @@ export class MuUWSSocketServer implements MuSocketServer {
     }
 
     private _server:uWS.TemplatedApp;
+    private _bufferLimit:number;
     private _idleTimeout:number;
     private _path:string;
 
@@ -205,12 +225,14 @@ export class MuUWSSocketServer implements MuSocketServer {
 
     constructor (spec:{
         server:uWS.TemplatedApp,
+        bufferLimit?:number
         idleTimeout?:number,
         path?:string,
         scheduler?:MuScheduler,
         logger?:MuLogger,
     }) {
         this._server = spec.server;
+        this._bufferLimit = spec.bufferLimit || 1024;
         this._idleTimeout = spec.idleTimeout || 0;
         this._path = spec.path || '/*';
         this._scheduler = spec.scheduler || MuSystemScheduler;
@@ -266,6 +288,8 @@ export class MuUWSSocketServer implements MuSocketServer {
                         conn = new MuUWSSocketConnection(
                             sessionId,
                             socket,
+                            this._bufferLimit,
+                            this._logger,
                             () => {
                                 if (conn) {
                                     const idx = this._connections.indexOf(conn);
@@ -279,7 +303,6 @@ export class MuUWSSocketServer implements MuSocketServer {
                                     }
                                 }
                             },
-                            this._logger,
                         );
                         const client = new MuUWSSocketClient(conn, this._scheduler, this._logger);
                         this._connections.push(conn);
