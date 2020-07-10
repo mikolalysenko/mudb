@@ -167,13 +167,14 @@ export class MuUWSSocketClient implements MuSocket {
     }
 
     public open (spec:MuSocketSpec) {
+        if (this._state === MuSocketState.OPEN) {
+            throw new Error(`${filename} - socket already open`);
+        }
+        if (this._state === MuSocketState.CLOSED) {
+            throw new Error(`${filename} - socket already closed, cannot reopen`);
+        }
+
         this._scheduler.setTimeout(() => {
-            if (this._state === MuSocketState.OPEN) {
-                throw new Error(`${filename} - socket already open`);
-            }
-            if (this._state === MuSocketState.CLOSED) {
-                throw new Error(`${filename} - socket already closed, cannot reopen`);
-            }
             if (this._connection.closed) {
                 this._state = MuSocketState.CLOSED;
                 spec.close();
@@ -250,12 +251,16 @@ export class MuUWSSocketServer implements MuSocketServer {
     }
 
     public start (spec:MuSocketServerSpec) {
+        if (this._state === MuSocketServerState.RUNNING) {
+            throw new Error(`${filename} - socket server already running`);
+        }
+        if (this._state === MuSocketServerState.SHUTDOWN) {
+            throw new Error(`${filename} - socket server already shut down, cannot restart`);
+        }
+
         this._scheduler.setTimeout(() => {
-            if (this._state === MuSocketServerState.RUNNING) {
-                throw new Error(`${filename} - socket server already running`);
-            }
-            if (this._state === MuSocketServerState.SHUTDOWN) {
-                throw new Error(`${filename} - socket server already shut down, cannot restart`);
+            if (this._state !== MuSocketServerState.INIT) {
+                return;
             }
 
             this._server.ws(this._path, {
@@ -341,13 +346,13 @@ export class MuUWSSocketServer implements MuSocketServer {
     }
 
     private _listenSocket:uWS.us_listen_socket|null = null;
-    public listen (port:number, cb:(listenSocket:uWS.us_listen_socket) => void) {
+    public listen (port:number, cb:(err:Error|null, listenSocket:uWS.us_listen_socket) => void) {
         this._server.listen(port, (token) => {
             if (token) {
                 this._listenSocket = token;
-                cb(token);
+                cb(null, token);
             } else {
-                throw new Error(`${filename} - failed to listen to port ${port}`);
+                cb(new Error(`${filename} - failed to listen to port ${port}`), token);
             }
         });
     }
