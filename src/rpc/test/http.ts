@@ -3,15 +3,9 @@ import tape = require('tape');
 import { MuRPCHttpServerTransport } from '../http/server';
 import { MuUTF8, MuVoid, MuStruct, MuFloat64 } from '../../schema';
 import { MuRPCServer } from '../server';
-import getFreePort = require('../../util/port');
+import { findPortAsync } from '../../util/port';
 import { MuRPCClient } from '../client';
 import { MuRPCHttpClientTransport } from '../http/client';
-
-function getPort () : Promise<number> {
-    return new Promise<number>((resolve) => {
-        getFreePort(resolve);
-    });
-}
 
 tape('http server', async (t) => {
     const protocol = {
@@ -53,7 +47,7 @@ tape('http server', async (t) => {
         }
     });
 
-    const port = await getPort();
+    const port = await findPortAsync();
     httpServer.listen(port);
 
     const server = new MuRPCServer({

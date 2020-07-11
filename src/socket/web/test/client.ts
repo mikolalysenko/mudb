@@ -1,10 +1,9 @@
 import test = require('tape');
 import http = require('http');
-
+import { findPort } from '../../../util/port';
 import { MuWebSocketServer } from '../server';
 import { MuWebSocket } from '../client';
 import { MuSocketState } from '../../socket';
-import getFreePort = require('../../../util/port');
 
 function noop () { }
 
@@ -25,7 +24,7 @@ socketServer.start({
     close: noop,
 });
 
-getFreePort((port) => {
+findPort((port) => {
     server.listen(port);
 
     const url = `ws://127.0.0.1:${port}`;
