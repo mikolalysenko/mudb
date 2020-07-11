@@ -1,31 +1,21 @@
-import test = require('tape');
+import tape = require('tape');
 import uWS = require('uWebSockets.js');
-
-import { MuUWSSocketServer } from '../server';
 import { MuSocketServerState } from '../../socket';
+import { MuUWSSocketServer } from '../server';
 
 function noop () { }
 
-test.onFinish(() => process.exit(0));
-(<any>test).onFailure(() => process.exit(1));
-
-test('server initial state', (t) => {
-    const server = uWS.App();
-    const socketServer = new MuUWSSocketServer({ server });
-    t.equal(socketServer.state(), MuSocketServerState.INIT, 'should be INIT');
-    t.end();
-});
-
-test('socketServer.start() when INIT', (t) => {
-    t.plan(3);
+tape('socketServer.start() when INIT', (t) => {
+    t.plan(4);
 
     const server = uWS.App();
     const socketServer = new MuUWSSocketServer({ server });
+    t.equal(socketServer.state(), MuSocketServerState.INIT, 'initial state should be INIT');
+
     socketServer.start({
         ready: () => {
-            t.equal(socketServer.state(), MuSocketServerState.RUNNING, 'should change state to RUNNING');
-            t.pass('should invoke ready handler only once');
-            t.end();
+            t.pass('should invoke ready handler');
+            t.equal(socketServer.state(), MuSocketServerState.RUNNING, 'should change state to RUNNING when ready');
         },
         connection: noop,
         close: noop,
@@ -33,14 +23,11 @@ test('socketServer.start() when INIT', (t) => {
     t.equal(socketServer.state(), MuSocketServerState.INIT, 'should not change state immediately');
 });
 
-test('socketServer.start() when RUNNING', (t) => {
-    t.plan(2);
-
+tape('socketServer.start() when RUNNING', async (t) => {
     const server = uWS.App();
     const socketServer = new MuUWSSocketServer({ server });
     socketServer.start({
         ready: () => {
-            t.equal(socketServer.state(), MuSocketServerState.RUNNING);
             t.throws(() => {
                 socketServer.start({
                     ready: noop,
@@ -53,17 +40,21 @@ test('socketServer.start() when RUNNING', (t) => {
         connection: noop,
         close: noop,
     });
+    socketServer.start({
+        ready: () => {
+            t.fail('start() should not be executed more than once');
+        },
+        connection: noop,
+        close: noop,
+    });
 });
 
-test('socketServer.start() when SHUTDOWN', (t) => {
-    t.plan(2);
-
+tape('socketServer.start() when SHUTDOWN', (t) => {
     const server = uWS.App();
     const socketServer = new MuUWSSocketServer({ server });
     socketServer.start({
         ready: () => {
             socketServer.close();
-            t.equal(socketServer.state(), MuSocketServerState.SHUTDOWN);
             t.throws(() => {
                 socketServer.start({
                     ready: noop,
@@ -78,7 +69,27 @@ test('socketServer.start() when SHUTDOWN', (t) => {
     });
 });
 
-test('socketServer.close() when INIT', (t) => {
+tape('socketServer.start() called twice', (t) => {
+    const server = uWS.App();
+    const socketServer = new MuUWSSocketServer({ server });
+    socketServer.start({
+        ready: () => {
+            t.pass('start() should be executed only once');
+            t.end();
+        },
+        connection: noop,
+        close: noop,
+    });
+    socketServer.start({
+        ready: () => {
+            t.fail('start() should not be executed more than once');
+        },
+        connection: noop,
+        close: noop,
+    });
+});
+
+tape('socketServer.close() when INIT', (t) => {
     const server = uWS.App();
     const socketServer = new MuUWSSocketServer({ server });
     t.equal(socketServer.state(), MuSocketServerState.INIT);
@@ -87,7 +98,7 @@ test('socketServer.close() when INIT', (t) => {
     t.end();
 });
 
-test('socketServer.close() when RUNNING', (t) => {
+tape('socketServer.close() when RUNNING', (t) => {
     t.plan(3);
 
     const server = uWS.App();
@@ -97,7 +108,6 @@ test('socketServer.close() when RUNNING', (t) => {
             t.equal(socketServer.state(), MuSocketServerState.RUNNING);
             socketServer.close();
             t.equal(socketServer.state(), MuSocketServerState.SHUTDOWN, 'should change state to SHUTDOWN immediately');
-            t.end();
         },
         connection: noop,
         close: () => {
@@ -106,7 +116,7 @@ test('socketServer.close() when RUNNING', (t) => {
     });
 });
 
-test('socketServer.close() when SHUTDOWN', (t) => {
+tape('socketServer.close() when SHUTDOWN', (t) => {
     t.plan(1);
 
     let closed = false;

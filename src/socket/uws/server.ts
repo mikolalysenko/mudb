@@ -345,29 +345,13 @@ export class MuUWSSocketServer implements MuSocketServer {
         }, 0);
     }
 
-    private _listenSocket:uWS.us_listen_socket|null = null;
-    public listen (port:number, cb:(err:Error|null, listenSocket:uWS.us_listen_socket) => void) {
-        this._server.listen(port, (token) => {
-            if (token) {
-                this._listenSocket = token;
-                cb(null, token);
-            } else {
-                cb(new Error(`${filename} - failed to listen to port ${port}`), token);
-            }
-        });
-    }
-
     public close () {
         if (this._state !== MuSocketServerState.SHUTDOWN) {
             this._state = MuSocketServerState.SHUTDOWN;
 
-            if (this._listenSocket) {
-                uWS.us_listen_socket_close(this._listenSocket);
-            }
             for (let i = 0; i < this.clients.length; ++i) {
                 this.clients[i].close();
             }
-            this._listenSocket = null;
             this.clients.length = 0;
             this._connections.length = 0;
             this._onClose();

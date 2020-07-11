@@ -1,5 +1,5 @@
 # uws-socket
-WebSocket communications for a [`uWebSockets.js`](https://github.com/uNetworking/uWebSockets.js) backend
+mudb socket server for [`uWebSockets.js`](https://github.com/uNetworking/uWebSockets.js)
 
 ## Example
 
@@ -14,11 +14,6 @@ const socketServer = new MuUWSSocketServer({ server })
 const server = new MuServer(socketServer)
 
 server.start()
-socketServer.listen(9001, (err, listenSocket) => {
-    if (err) {
-        console.error(err)
-    }
-})
 ```
 
 **client**
@@ -54,16 +49,10 @@ new MuUWSSocketServer(spec:{
     logger?:MuLogger,
 })
 ```
-* `server` a uWS app
+* `server` a `uWebSocket.js` app
 * `bufferLimit` the hard limit on the byte size of buffered data per WebSocket
 * `idleTimeout` an idle connection is closed after `idleTimeout` seconds, disabled by default
-* `path` only requests matching this URL pattern will be caught
-
-#### methods
-```ts
-listen(port:number, cb:(err:Error|null, listenSocket:object|false) => void)
-```
-Listens to port, callback hands an Error if failed.
+* `path` only the WebSocket upgrade requests matching this URL pattern will be caught
 
 ### `MuUWSSocket`
 an alias of [`MuWebSocket`](../web/README#muwebsocket)
