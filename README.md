@@ -25,6 +25,7 @@ A *schema* is a type declaration for the interface between client and server.
 * [schema](src/schema)
 * [socket](src/socket)
     * [local](src/socket/local)
+    * [uws](src/socket/uws)
     * [web](src/socket/web)
 * [stream](src/stream)
 
