@@ -12,18 +12,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-10.15, ubuntu-18.04]
-        node: [8, 10, 12, 14]
-
+        os: [ubuntu-18.04]
+        node: [8, 10, 12, 13, 14]
+        include:
+          - os: macos-latest
+            node: 14
     steps:
       - name: Checkout HEAD
         uses: actions/checkout@v2
-
       - name: Install dependencies
         run: npm i
-
       - name: Compile
         run: npm run build
-
       - name: Test
         run: npm run test-all
