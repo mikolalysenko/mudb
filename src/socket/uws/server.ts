@@ -1,17 +1,16 @@
 import uWS = require('uWebSockets.js');
 import qs = require('querystring');
-import util = require('util');
 import {
     MuSocket, MuSocketState, MuSocketSpec,
     MuSocketServer, MuSocketServerState, MuSocketServerSpec,
     MuSessionId, MuData, MuCloseHandler, MuMessageHandler,
 } from '../socket';
+import { decodeUTF8 } from '../../stream/index';
 import { MuScheduler, MuSystemScheduler } from '../../scheduler/index';
 import { MuLogger, MuDefaultLogger } from '../../logger';
 
 function noop () { }
 
-const decoder = new util.TextDecoder();
 const filename = '[mudb/socket/uws/server]';
 
 export class MuUWSSocketConnection {
@@ -317,7 +316,8 @@ export class MuUWSSocketServer implements MuSocketServer {
                 },
                 message: (socket, data, isBinary) => {
                     if (socket.onMessage) {
-                        const msg = isBinary ? new Uint8Array(data) : decoder.decode(data);
+                        const bytes = new Uint8Array(data);
+                        const msg = isBinary ? bytes : decodeUTF8(bytes);
                         socket.onMessage(msg);
                     }
                 },
@@ -325,11 +325,9 @@ export class MuUWSSocketServer implements MuSocketServer {
                     function codeMessage () {
                         let ret = '';
                         code && (ret += code);
-                        const msg = decoder.decode(message);
+                        const msg = decodeUTF8(new Uint8Array(message));
                         msg && (ret += ' ' + msg);
-                        if (ret) {
-                            ret = ': ' + ret;
-                        }
+                        ret && (ret = ': ' + ret);
                         return ret;
                     }
 
