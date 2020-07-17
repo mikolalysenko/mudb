@@ -56,7 +56,7 @@ export class MuUWSSocketConnection {
 
             this.closed = true;
             for (let i = 0; i < this._unreliableSockets.length; ++i) {
-                this._unreliableSockets[i].close();
+                this._unreliableSockets[i].end(code, 'Reliable Socket Is Closed');
             }
             this._unreliableSockets.length = 0;
             this.onClose();
@@ -137,7 +137,7 @@ export class MuUWSSocketConnection {
     }
 
     public close () {
-        this._reliableSocket.close();
+        this._reliableSocket.end(1001, 'Closing Server');
     }
 }
 
@@ -278,7 +278,7 @@ export class MuUWSSocketServer implements MuSocketServer {
                 open: (socket) => {
                     const sessionId = socket.sid;
                     if (typeof sessionId !== 'string') {
-                        socket.end(1008, `no session id`);
+                        socket.end(1008, `No session Id`);
                         this._logger.error(`${filename} - killing connection due to lack of session id`);
                         return;
                     }
