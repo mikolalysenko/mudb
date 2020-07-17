@@ -1,52 +1,66 @@
-import test = require('tape');
+import tape = require('tape');
 import http = require('http');
-import { findPort } from '../../../util/port';
+import { findPort, findPortAsync } from '../../../util/port';
 import { MuWebSocketServer } from '../server';
 import { MuWebSocket } from '../client';
 import { MuSocketState } from '../../socket';
 
 function noop () { }
 
-function randStr () {
+function sessionId () {
     return Math.random().toString(36).substring(2);
 }
 
-test.onFinish(() => process.exit(0));
-(<any>test).onFailure(() => process.exit(1));
+tape('session id', async (t) => {
+    const server = http.createServer();
+    const socketServer = new MuWebSocketServer({ server });
 
-const server = http.createServer();
-const socketServer = new MuWebSocketServer({ server });
-socketServer.start({
-    ready: () => {
-        console.log(`server listening on port ${server.address().port}...`);
-    },
-    connection: noop,
-    close: noop,
+    const sid = 'abc`1234567890-=~!@#$%^&*()_+[]\;\',./{}|:"<>?xyz';
+    const port = await findPortAsync();
+    const socket = new MuWebSocket({
+        sessionId: sid,
+        url: `ws://127.0.0.1:${port}`,
+    });
+
+    socketServer.start({
+        ready: () => {
+            socket.open({
+                ready: noop,
+                message: noop,
+                close: noop,
+            });
+        },
+        connection: (sock) => {
+            t.equal(sock.sessionId, sid, `should be escaped`);
+            t.end();
+        },
+        close: () => {},
+    });
+    server.listen(port);
 });
 
 findPort((port) => {
+    const server = http.createServer();
+    const socketServer = new MuWebSocketServer({ server });
+    socketServer.start({
+        ready: noop,
+        connection: noop,
+        close: noop,
+    });
     server.listen(port);
 
     const url = `ws://127.0.0.1:${port}`;
 
-    test('socket initial state', (t) => {
-        const socket = new MuWebSocket({
-            sessionId: randStr(),
-            url,
-        });
-        t.equal(socket.state(), MuSocketState.INIT, 'should be INIT');
-        t.end();
-    });
-
-    test('socket.open() - when INIT', (t) => {
-        t.plan(1);
+    tape('socket.open() - when INIT', (t) => {
+        t.plan(2);
 
         let callsToReady = 0;
 
         const socket = new MuWebSocket({
-            sessionId: randStr(),
+            sessionId: sessionId(),
             url,
         });
+        t.equal(socket.state(), MuSocketState.INIT, 'initial state should be INIT');
 
         socket.open({
             ready: () => {
@@ -62,11 +76,11 @@ findPort((port) => {
         });
     });
 
-    test('socket.open() - when OPEN', (t) => {
+    tape('socket.open() - when OPEN', (t) => {
         t.plan(1);
 
         const socket = new MuWebSocket({
-            sessionId: randStr(),
+            sessionId: sessionId(),
             url,
         });
 
@@ -85,11 +99,11 @@ findPort((port) => {
         });
     });
 
-    test('socket.open() - when CLOSED', (t) => {
+    tape('socket.open() - when CLOSED', (t) => {
         t.plan(1);
 
         const socket = new MuWebSocket({
-            sessionId: randStr(),
+            sessionId: sessionId(),
             url,
         });
 
@@ -106,11 +120,11 @@ findPort((port) => {
         });
     });
 
-    test('socket.close() - when OPEN', (t) => {
+    tape('socket.close() - when OPEN', (t) => {
         t.plan(1);
 
         const socket = new MuWebSocket({
-            sessionId: randStr(),
+            sessionId: sessionId(),
             url,
         });
 
@@ -121,9 +135,9 @@ findPort((port) => {
         });
     });
 
-    test('socket.close() - when INIT', (t) => {
+    tape('socket.close() - when INIT', (t) => {
         const socket = new MuWebSocket({
-            sessionId: randStr(),
+            sessionId: sessionId(),
             url,
         });
 

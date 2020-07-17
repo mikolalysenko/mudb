@@ -3,7 +3,6 @@ import ws = require('ws');
 import http = require('http');
 import https = require('https');
 import url = require('url');
-import qs = require('querystring');
 
 import {
     MuSessionId, MuSocket, MuSocketState, MuSocketSpec,
@@ -391,8 +390,8 @@ export class MuWebSocketServer implements MuSocketServer {
 
                     this._logger.log(`muwebsocket connection received: extensions ${socket.extensions} protocol ${socket.protocol}`);
 
-                    const query:any = url.parse(req.url).query;
-                    const sessionId = qs.parse(query)['sid'];
+                    const query = url.parse(req.url, true).query;
+                    const sessionId = query['sid'];
                     if (typeof sessionId !== 'string') {
                         this._logger.error(`no session id`);
                         return;

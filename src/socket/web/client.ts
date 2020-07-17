@@ -46,7 +46,7 @@ export class MuWebSocket implements MuSocket {
     }
 
     private _onError = (e) => {
-        this._logger.error(`websocket error: ${e}`);
+        this._logger.error(`websocket error: ${e.message}`);
     }
 
     public open (spec:MuSocketSpec) {
@@ -60,7 +60,7 @@ export class MuWebSocket implements MuSocket {
 
         const self = this;
         function openSocket () {
-            const socket = new WS(`${self._url}?sid=${self.sessionId}`);
+            const socket = new WS(`${self._url}?sid=${encodeURIComponent(self.sessionId)}`);
             socket.binaryType = 'arraybuffer';
             socket.onerror = self._onError;
 
@@ -216,7 +216,7 @@ export class MuWebSocket implements MuSocket {
             this._reliableSocket = null;
         }
 
-        // make a copy of unreliable sockets array before closing in case onlcose synchronosly modifies array
+        // make a copy of unreliable sockets array before closing in case onlcose synchronously modifies array
         const sockets = this._unreliableSockets.slice();
         for (let i = 0; i < sockets.length; ++i) {
             sockets[i].onmessage = null;
