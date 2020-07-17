@@ -276,6 +276,11 @@ export class MuUWSSocketServer implements MuSocketServer {
                     );
                 },
                 open: (socket) => {
+                    if (this._state !== MuSocketServerState.RUNNING) {
+                        socket.end(1011, 'Sever Is Closed');
+                        return;
+                    }
+
                     const sessionId = socket.sid;
                     if (typeof sessionId !== 'string') {
                         socket.end(1008, `No session Id`);
