@@ -266,12 +266,22 @@ export class MuUWSSocketServer implements MuSocketServer {
                 idleTimeout: this._idleTimeout,
 
                 upgrade: (res, req, context) => {
+                    const key = req.getHeader('sec-websocket-key');
+                    const protocol = req.getHeader('sec-websocket-protocol');
+                    const extensions = req.getHeader('sec-websocket-extensions');
+                    const version = req.getHeader('sec-websocket-version');
+
+                    let info = `version ${version}`;
+                    protocol && (info += ` | subprotocols: ${protocol}`);
+                    extensions && (info += ` | extensions: ${extensions}`);
+                    this._logger.log(`${filename} - handshake request: ${info}`);
+
                     // the only way to pass user data to 'open' event
                     res.upgrade(
                         qs.parse(req.getQuery()),
-                        req.getHeader('sec-websocket-key'),
-                        req.getHeader('sec-websocket-protocol'),
-                        req.getHeader('sec-websocket-extensions'),
+                        key,
+                        protocol,
+                        extensions,
                         context,
                     );
                 },
