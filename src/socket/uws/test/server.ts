@@ -1,9 +1,15 @@
 import tape = require('tape');
 import uWS = require('uWebSockets.js');
+import { findPortAsync, findPort } from '../../../util/port';
 import { MuSocketServerState } from '../../socket';
 import { MuUWSSocketServer } from '../server';
+import { MuUWSSocket } from '../client';
 
 function noop () { }
+
+function sessionId () : string {
+    return Math.random().toString(36).substring(2);
+}
 
 tape('socketServer.start() when INIT', (t) => {
     t.plan(4);
@@ -137,5 +143,64 @@ tape('socketServer.close() when SHUTDOWN', (t) => {
             }
             closed = true;
         },
+    });
+});
+
+tape('maxPayloadLength', async (t) => {
+    const server = uWS.App();
+    const maxPayloadLength = 1024 * 1024;
+    const socketServer = new MuUWSSocketServer({
+        server,
+        maxPayloadLength,
+    });
+
+    const port = await findPortAsync();
+    const clientSocket = new MuUWSSocket({
+        sessionId: sessionId(),
+        url: `ws://127.0.0.1:${port}`,
+    });
+    let listenSocket:uWS.us_listen_socket|null = null;
+
+    socketServer.start({
+        ready: () => {
+            clientSocket.open({
+                ready: () => {
+                    let str = 'R';
+                    for (let i = 0; i < 20; ++i) {
+                        str += str;
+                    }
+                    t.equal(str.length, maxPayloadLength, 'sending message the size of maxPayloadLength');
+                    clientSocket.send(str, false);
+                },
+                message: noop,
+                close: () => {
+                    if (socketServer.state() !== MuSocketServerState.SHUTDOWN) {
+                        t.fail('client socket should not be closed');
+                    }
+                },
+            });
+        },
+        connection: (serverSocket) => {
+            serverSocket.open({
+                ready: noop,
+                message: (data) => {
+                    t.equal(data.length, maxPayloadLength, 'message received');
+                    listenSocket && uWS.us_listen_socket_close(listenSocket);
+                    socketServer.close();
+                    clientSocket.close();
+                    t.end();
+                },
+                close: noop,
+            });
+        },
+        close: () => { },
+    });
+
+    server.listen(port, (token) => {
+        if (token) {
+            listenSocket = token;
+        } else {
+            throw new Error(`failed to listen to port ${port}`);
+        }
     });
 });

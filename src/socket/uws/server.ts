@@ -213,6 +213,7 @@ export class MuUWSSocketServer implements MuSocketServer {
     private _server:uWS.TemplatedApp;
     private _bufferLimit:number;
     private _idleTimeout:number;
+    private _maxPayloadLength:number;
     private _path:string;
 
     public clients:MuUWSSocketClient[] = [];
@@ -227,6 +228,7 @@ export class MuUWSSocketServer implements MuSocketServer {
         server:uWS.TemplatedApp,
         bufferLimit?:number
         idleTimeout?:number,
+        maxPayloadLength?:number,
         path?:string,
         scheduler?:MuScheduler,
         logger?:MuLogger,
@@ -234,6 +236,7 @@ export class MuUWSSocketServer implements MuSocketServer {
         this._server = spec.server;
         this._bufferLimit = spec.bufferLimit || 1024;
         this._idleTimeout = spec.idleTimeout || 0;
+        this._maxPayloadLength = spec.maxPayloadLength || (16 * 1024);
         this._path = spec.path || '/*';
         this._scheduler = spec.scheduler || MuSystemScheduler;
         this._logger = spec.logger || MuDefaultLogger;
@@ -264,6 +267,7 @@ export class MuUWSSocketServer implements MuSocketServer {
 
             this._server.ws(this._path, {
                 idleTimeout: this._idleTimeout,
+                maxPayloadLength: this._maxPayloadLength,
 
                 upgrade: (res, req, context) => {
                     const key = req.getHeader('sec-websocket-key');
@@ -274,7 +278,7 @@ export class MuUWSSocketServer implements MuSocketServer {
                     let info = `version ${version}`;
                     protocol && (info += ` | subprotocols: ${protocol}`);
                     extensions && (info += ` | extensions: ${extensions}`);
-                    this._logger.log(`${filename} - handshake request: ${info}`);
+                    this._logger.log(`${filename} - handshake: ${info}`);
 
                     // the only way to pass user data to 'open' event
                     res.upgrade(

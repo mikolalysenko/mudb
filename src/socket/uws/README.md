@@ -44,6 +44,7 @@ new MuUWSSocketServer(spec:{
     server:uWS.TemplatedApp,
     bufferLimit:number=1024,
     idleTimeout:number=0,
+    maxPayloadLength:number=(16*1024),
     path:string='/*',
     scheduler?:MuScheduler,
     logger?:MuLogger,
@@ -52,6 +53,7 @@ new MuUWSSocketServer(spec:{
 * `server` a `uWebSocket.js` app
 * `bufferLimit` the hard limit on the byte size of buffered data per WebSocket
 * `idleTimeout` an idle connection is closed after `idleTimeout` seconds, disabled by default
+* `maxPayloadLength` max length of a received message exceeding which will cause immediate disconnection
 * `path` only the WebSocket upgrade requests matching this URL pattern will be caught
 
 ### `MuUWSSocket`
