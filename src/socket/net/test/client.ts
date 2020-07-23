@@ -3,7 +3,7 @@ import test = require('tape');
 import tcp = require('net');
 import udp = require('dgram');
 
-import getFreePort = require('../../../util/port');
+import { findPort } from '../../../util/port';
 import { MuNetSocketServer } from '../server';
 import { MuNetSocket } from '../client';
 import { MuSocketState } from '../../socket';
@@ -34,7 +34,7 @@ tcpServer.listen(() => {
     tcpServerPort = tcpServer.address().port;
     console.log(`TCP server running on ${tcpServer.address().address}:${tcpServer.address().port}`);
 });
-getFreePort((port) => {
+findPort((port) => {
     udpServer.bind(
         {
             port,
@@ -46,7 +46,7 @@ getFreePort((port) => {
 
 socketServer.start({
     ready: () => {
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket initial state', (t) => {
                 const socket = new MuNetSocket({
                     sessionId: randomId(),
@@ -63,7 +63,7 @@ socketServer.start({
             });
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.open() - when INIT', (t) => {
                 t.plan(2);
 
@@ -88,7 +88,7 @@ socketServer.start({
             });
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.open() - when OPEN', (t) => {
                 t.plan(1);
 
@@ -118,7 +118,7 @@ socketServer.start({
             });
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.open() - when CLOSED', (t) => {
                 t.plan(1);
 
@@ -149,7 +149,7 @@ socketServer.start({
             });
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.close() - when INIT', (t) => {
                 const socket = new MuNetSocket({
                     sessionId: randomId(),
@@ -168,7 +168,7 @@ socketServer.start({
 
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.close() - when OPEN', (t) => {
                 t.plan(2);
 
@@ -194,7 +194,7 @@ socketServer.start({
             });
         });
 
-        getFreePort((udpPort) => {
+        findPort((udpPort) => {
             test('socket.close() - when CLOSED', (t) => {
                 t.plan(1);
 

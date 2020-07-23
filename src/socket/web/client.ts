@@ -45,8 +45,10 @@ export class MuWebSocket implements MuSocket {
         this.bufferLimit = spec.bufferLimit || 1024;
     }
 
-    private _onError = (e) => {
-        this._logger.error(`websocket error: ${e}`);
+    private _onClose = (ev:CloseEvent) => {
+        if (!ev.wasClean) {
+            this._logger.error(`WebSocket error: ${ev.code} ${ev.reason}`);
+        }
     }
 
     public open (spec:MuSocketSpec) {
@@ -60,9 +62,8 @@ export class MuWebSocket implements MuSocket {
 
         const self = this;
         function openSocket () {
-            const socket = new WS(self._url);
+            const socket = new WS(`${self._url}?sid=${encodeURIComponent(self.sessionId)}`);
             socket.binaryType = 'arraybuffer';
-            socket.onerror = self._onError;
 
             socket.onopen = function () {
                 self._logger.log(`open web socket.  extensions: ${socket.extensions}.  protocol: ${socket.protocol}`);
@@ -109,12 +110,12 @@ export class MuWebSocket implements MuSocket {
                             }
                         };
                         socket.onclose = function (ev) {
-                            self._logger.log('closing main web socket');
-                            self._reliableSocket = null;
+                            self._logger.log('closing reliable socket');
+                            self._onClose(ev);
 
+                            self._reliableSocket = null;
                             socket.onmessage = null;
                             socket.onclose = null;
-                            socket.onerror = null;
 
                             self.close();
                             spec.close(ev);
@@ -134,12 +135,12 @@ export class MuWebSocket implements MuSocket {
                                 spec.message(new Uint8Array(data), true);
                             }
                         };
-                        socket.onclose = function () {
+                        socket.onclose = function (ev) {
                             self._logger.log('closing unreliable socket');
+                            self._onClose(ev);
 
                             socket.onmessage = null;
                             socket.onclose = null;
-                            socket.onerror = null;
 
                             const sockets = self._unreliableSockets;
                             for (let i = sockets.length - 1; i >= 0; --i) {
@@ -155,10 +156,6 @@ export class MuWebSocket implements MuSocket {
                         self._unreliableSockets.push(socket);
                     }
                 };
-
-                socket.send(JSON.stringify({
-                    sessionId: self.sessionId,
-                }));
             };
         }
 
@@ -220,7 +217,7 @@ export class MuWebSocket implements MuSocket {
             this._reliableSocket = null;
         }
 
-        // make a copy of unreliable sockets array before closing in case onlcose synchronosly modifies array
+        // make a copy of unreliable sockets array before closing in case onlcose synchronously modifies array
         const sockets = this._unreliableSockets.slice();
         for (let i = 0; i < sockets.length; ++i) {
             sockets[i].onmessage = null;

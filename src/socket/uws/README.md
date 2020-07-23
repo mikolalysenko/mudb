@@ -1,57 +1,60 @@
-# uWS Socket
-For [`uWebSockets.js`](https://github.com/uNetworking/uWebSockets.js) backends.
+# uws-socket
+mudb socket server for [`uWebSockets.js`](https://github.com/uNetworking/uWebSockets.js)
 
 ## Example
 
 **server**
 ```ts
-import uWS = require('uWebSockets.js');
-import { MuUWSSocketServer } from 'mudb/socket/uws/server';
-import { MuServer } from 'mudb/server';
+import uWS = require('uWebSockets.js')
+import { MuUWSSocketServer } from 'mudb/socket/uws/server'
+import { MuServer } from 'mudb/server'
 
-const httpsServer = uWS.SSLApp({
-    key_file_name: 'key.pem',
-    cert_file_name: 'cert.pem',
-});
-const socketServer = new MuUWSSocketServer({
-    server: httpsServer,
-});
-const server = new MuServer(socketServer);
+const server = uWS.App()
+const socketServer = new MuUWSSocketServer({ server })
+const server = new MuServer(socketServer)
 
-server.start();
-socketServer.listen({
-    port: 9966,
-});
+server.start()
 ```
 
 **client**
 ```ts
-import { MuUWSSocket } from 'mudb/socket/uws/client';
-import { MuClient } from 'mudb/client';
+import { MuUWSSocket } from 'mudb/socket/uws/client'
+import { MuClient } from 'mudb/client'
 
 const socket = new MuUWSSocket({
     sessionId: Math.random().toString(36).substring(2),
-    url: 'wss://127.0.0.1:9966',
-});
-const client = new MuClient(socket);
+    url: 'ws://127.0.0.1:9001',
+})
+const client = new MuClient(socket)
 
-client.start();
+client.start()
 ```
 
-## new MuUWSSocketServer(spec)
-* `spec` {object}
-    * `server` {uWS.TemplatedApp}
-    * `scheduler?` {MuScheduler} mock scheduler for testing/debugging
+## API
+* [MuUWSSocketServer](#muuwssocketserver)
+* [MuUWSSocket](#muuwssocket)
 
-## socketServer.listen(spec)
-* `spec` {object}
-    * `port` {number}
-    * `host?`{string}
-    * `listening?` {(listenSocket) => void} 'listening' event handler
+### `MuUWSSocketServer`
+implements [`MuSocketServer`](../README#musocketserver)
 
-## new MuUWSSocket(spec)
-* `spec` {object}
-    * `sessionId` {string} client's unique identifier
-    * `url` {string} [WebSocket URL](https://tools.ietf.org/html/rfc6455#page-14) to server
-    * `maxSockets?` {number} maximum amount of concurrent WebSockets client can have, defaults to 5
-    * `ws?` {WebSocket} `WebSocket` binding for non-browser environment
+```ts
+import { MuUWSSocketServer } from 'mudb/socket/uws/server'
+
+new MuUWSSocketServer(spec:{
+    server:uWS.TemplatedApp,
+    bufferLimit:number=1024,
+    idleTimeout:number=0,
+    maxPayloadLength:number=(16*1024),
+    path:string='/*',
+    scheduler?:MuScheduler,
+    logger?:MuLogger,
+})
+```
+* `server` a `uWebSocket.js` app
+* `bufferLimit` the hard limit on the byte size of buffered data per WebSocket
+* `idleTimeout` an idle connection is closed after `idleTimeout` seconds, disabled by default
+* `maxPayloadLength` max length of a received message exceeding which will cause immediate disconnection
+* `path` only the WebSocket upgrade requests matching this URL pattern will be caught
+
+### `MuUWSSocket`
+an alias of [`MuWebSocket`](../web/README#muwebsocket)

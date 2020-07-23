@@ -8,7 +8,7 @@ import { MuWebSocket } from '../../web/client';
 import { MuDebugSocket } from '../index';
 import { MuClient } from '../../../client';
 import { protocolSchema } from './_/schema';
-import getFreePort = require('../../../util/port');
+import { findPort } from '../../../util/port';
 
 function randStr () {
     return Math.random().toString(36).substring(2);
@@ -34,7 +34,7 @@ muServer.protocol(protocolSchema).configure({
 });
 muServer.start();
 
-getFreePort((port) => {
+findPort((port) => {
     server.listen(port);
 
     const url = `ws://127.0.0.1:${port}`;
