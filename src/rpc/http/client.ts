@@ -6,12 +6,15 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
     private _cookies:{
         [cookie:string]:string;
     } = {};
+    private _headers;
 
     constructor (spec:{
         url:string;
         timeout:number;
+        headers?:object;
     }) {
         this._url = spec.url;
+        this._headers = spec.headers || {};
     }
 
     public send<Protocol extends MuRPCProtocol<any>> (
@@ -55,6 +58,7 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'Content-Length': argBuffer.length,
                     'Cookie': Object.keys(this._cookies).map((cookie) => `${cookie}=${encodeURIComponent(this._cookies[cookie])}`).join('; '),
+                    ...this._headers,
                 },
             }, (res) => {
                 const cookie = res.headers['set-cookie'];
