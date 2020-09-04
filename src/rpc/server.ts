@@ -57,10 +57,10 @@ export class MuRPCServer<Protocol extends MuRPCProtocol<any>, Connection extends
                 } catch (e) {
                     logger && logger.error(e);
                     response.type = 'error';
-                    if (e instanceof Error && e.stack) {
-                        response.data = `Internal error:\n${e.stack}`;
+                    if (e instanceof Error && e.message) {
+                        response.data = e.message;
                     } else {
-                        response.data = `internal error: ${e}`;
+                        response.data = e;
                     }
                 }
             });
