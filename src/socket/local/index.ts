@@ -88,12 +88,13 @@ export class MuLocalSocket implements MuSocket {
                     this._server._handleConnection(this._duplex);
                 }
 
+                spec.ready();
+
+                // drain messages *after* ready handler
                 this._drain();
                 while (this._pendingUnreliableMessages.length) {
                     this._drainUnreliable();
                 }
-
-                spec.ready();
             },
             0);
     }
