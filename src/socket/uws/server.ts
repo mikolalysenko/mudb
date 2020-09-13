@@ -22,6 +22,8 @@ export class MuUWSSocketConnection {
     private _reliableSocket:uWS.WebSocket;
     private _unreliableSockets:uWS.WebSocket[] = [];
     private _pendingMessages:MuData[] = [];
+    private _lastReliablePing:number;
+    private _lastUnreliablePing:number[] = [];
 
     public onMessage:MuMessageHandler = noop;
     public onClose:() => void = noop;
@@ -39,6 +41,7 @@ export class MuUWSSocketConnection {
     ) {
         this.sessionId = sessionId;
         this._reliableSocket = socket;
+        this._lastReliablePing = Date.now();
         this._bufferLimit = bufferLimit;
         this._logger = logger;
         this.cleanUp = cleanUp;
@@ -70,6 +73,7 @@ export class MuUWSSocketConnection {
         }
 
         this._unreliableSockets.push(socket);
+        this._lastUnreliablePing.push(Date.now());
         socket.onMessage = (msg) => {
             if (!this.closed) {
                 this.onMessage(msg, true);
@@ -82,6 +86,7 @@ export class MuUWSSocketConnection {
             const idx = this._unreliableSockets.indexOf(socket);
             if (idx > -1) {
                 this._unreliableSockets.splice(idx, 1);
+                this._lastUnreliablePing.splice(idx, 1);
             }
         };
     }
@@ -132,7 +137,24 @@ export class MuUWSSocketConnection {
                 }
             }
         } else {
+            this._lastReliablePing = Date.now();
             this._reliableSocket.send(data, isBinary);
+        }
+    }
+
+    public pingIdle (cutoff:number, now:number) {
+        if (this.closed) {
+            return;
+        }
+        if (this._lastReliablePing < cutoff) {
+            this._lastReliablePing = now;
+            this._reliableSocket.ping();
+        }
+        for (let i = 0; i < this._unreliableSockets.length; i++) {
+            if (this._lastUnreliablePing[i] < cutoff) {
+                this._lastUnreliablePing[i] = now;
+                this._unreliableSockets[i].ping();
+            }
         }
     }
 
@@ -215,6 +237,8 @@ export class MuUWSSocketServer implements MuSocketServer {
     private _idleTimeout:number;
     private _maxPayloadLength:number;
     private _path:string;
+    private _pingInterval:number = 30000;
+    private _pingIntervalId:any;
 
     public clients:MuUWSSocketClient[] = [];
     private _connections:MuUWSSocketConnection[] = [];
@@ -230,6 +254,7 @@ export class MuUWSSocketServer implements MuSocketServer {
         idleTimeout?:number,
         maxPayloadLength?:number,
         path?:string,
+        pingInterval?:number,
         scheduler?:MuScheduler,
         logger?:MuLogger,
     }) {
@@ -238,6 +263,10 @@ export class MuUWSSocketServer implements MuSocketServer {
         this._idleTimeout = spec.idleTimeout || 0;
         this._maxPayloadLength = spec.maxPayloadLength || (16 * 1024);
         this._path = spec.path || '/*';
+        if (typeof spec.pingInterval === 'number') {
+            this._pingInterval = Math.max(spec.pingInterval, 0);
+        }
+
         this._scheduler = spec.scheduler || MuSystemScheduler;
         this._logger = spec.logger || MuDefaultLogger;
     }
@@ -258,6 +287,17 @@ export class MuUWSSocketServer implements MuSocketServer {
         }
         if (this._state === MuSocketServerState.SHUTDOWN) {
             throw new Error(`${filename} - socket server already shut down, cannot restart`);
+        }
+
+        // prevent sockets from being closed due to inactivity
+        if (this._pingInterval) {
+            this._pingIntervalId = this._scheduler.setInterval(() => {
+                const now = Date.now();
+                const cutoff = now - this._pingInterval;
+                for (let i = 0; i < this._connections.length; ++i) {
+                    this._connections[i].pingIdle(cutoff, now);
+                }
+            }, this._pingInterval * 0.5);
         }
 
         this._scheduler.setTimeout(() => {
@@ -366,6 +406,9 @@ export class MuUWSSocketServer implements MuSocketServer {
         if (this._state !== MuSocketServerState.SHUTDOWN) {
             this._state = MuSocketServerState.SHUTDOWN;
 
+            if (this._pingIntervalId) {
+                this._scheduler.clearInterval(this._pingIntervalId);
+            }
             for (let i = 0; i < this.clients.length; ++i) {
                 this.clients[i].close();
             }

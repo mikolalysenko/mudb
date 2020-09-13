@@ -124,6 +124,10 @@ export class MuLocalSocket implements MuSocket {
         if (this._state !== MuSocketState.OPEN) {
             return;
         }
+        if (this._duplex._onMessage === noop) {
+            this.scheduler.setTimeout(() => this._drain(), 0);
+            return;
+        }
 
         for (let i = 0; i < this._pendingMessages.length; ++i) {
             const message = this._pendingMessages[i];
