@@ -436,7 +436,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'varint':
                     methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${pr}];`);
                     break;
-                case 'rvaint':
+                case 'rvarint':
                     methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}];`);
                     break;
                 case 'ascii':
