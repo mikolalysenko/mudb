@@ -319,6 +319,9 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'rvarint':
                     methods.clone.append(`c[${pr}]=s[${pr}];`);
                     break;
+                case 'quantized-float':
+                    methods.clone.append(`c[${pr}]=(Math.round(${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
+                    break;
                 default:
                     methods.clone.append(`c[${pr}]=${typeRefs[i]}.clone(s[${pr}]);`);
                     break;
@@ -345,6 +348,9 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'varint':
                 case 'rvarint':
                     methods.assign.append(`d[${pr}]=s[${pr}];`);
+                    break;
+                case 'quantized-float':
+                    methods.assign.append(`d[${pr}]=(Math.round(${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
                     break;
                 default:
                     methods.assign.append(`d[${pr}]=${typeRefs[i]}.assign(d[${pr}],s[${pr}]);`);
@@ -411,7 +417,8 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 methods.patch.append(`tr=s.readUint8At(head+${i >> 3});`);
             }
 
-            const muType = types[i].muType;
+            const type = types[i];
+            const muType = type.muType;
             methods.patch.append(`;t[${pr}]=(tr&${1 << (i & 7)})?`);
             switch (muType) {
                 case 'boolean':
@@ -429,11 +436,14 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'varint':
                     methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${pr}];`);
                     break;
-                case 'rvaint':
-                    methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}]`);
+                case 'rvarint':
+                    methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}];`);
                     break;
                 case 'ascii':
                     methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
+                    break;
+                case 'quantized-float':
+                    methods.patch.append(`((Math.round(${(<any>type).invPrecision}*b[${pr}])>>0)+(((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0))*${(<any>type).precision}:b[${pr}];`);
                     break;
                 default:
                     methods.patch.append(`${typeRefs[i]}.patch(b[${pr}],s):${typeRefs[i]}.clone(b[${pr}]);`);

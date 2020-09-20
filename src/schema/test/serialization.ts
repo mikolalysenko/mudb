@@ -19,6 +19,7 @@ import {
     MuUint32,
     MuVarint,
     MuRelativeVarint,
+    MuQuantizedFloat,
     MuArray,
     MuOption,
     MuSortedArray,
@@ -441,6 +442,62 @@ tape('de/serializing struct', (t) => {
     const testPair = createTestPair(t, struct);
     for (let i = 0; i < 2000; ++i) {
         testPair(createStruct(), createStruct());
+    }
+    t.end();
+});
+
+tape('struct of quantized floats', (t) => {
+    function createTest_<T> (
+        t_:tape.Test,
+        schema:MuSchema<T>,
+    ) : (base:MuSchema<T>['identity'], target:MuSchema<T>['identity']) => void {
+        return (base, target) => {
+            const out = new MuWriteStream(1);
+            if (schema.diff(base, target, out)) {
+                t_.notDeepEqual(base, target, 'diff() implied values are not identical');
+                t_.true(out.offset > 0, 'at least one byte should be written to stream');
+                const inp = new MuReadStream(out.bytes());
+                t_.true(schema.equal(schema.patch(base, inp), target), 'patched value should be identical to target');
+                t_.equal(inp.offset, inp.length, 'patch() should consume all bytes on stream');
+            } else {
+                t_.deepEqual(base, target, 'diff() implied values are identical');
+                t_.equal(out.offset, 0, 'no bytes should be written to stream');
+            }
+        };
+    }
+
+    function createTestPair<T extends {[prop:string]:MuSchema<any>}> (
+        t_:tape.Test,
+        schema:MuStruct<T>,
+    ) : (a:MuStruct<T>['identity'], b:MuStruct<T>['identity']) => void {
+        const test = createTest_(t_, schema);
+        return (a, b) => {
+            test(a, a);
+            test(b, b);
+            test(a, b);
+            test(b, a);
+            test(schema.alloc(), a);
+            test(schema.alloc(), b);
+        };
+    }
+
+    function createStruct (schema:MuStruct<any>) {
+        const s = schema.alloc();
+        Object.keys(s).forEach((k) => {
+            s[k] = schema.muData[k].clone(randFloat32());
+        });
+        return s;
+    }
+
+    const structSchema = new MuStruct({
+        lowPrecision: new MuQuantizedFloat(1 / 16),
+        mediumPrecision: new MuQuantizedFloat(1 / 256),
+        highPrecision: new MuQuantizedFloat(1 / 4096),
+    });
+    const testPair = createTestPair(t, structSchema);
+
+    for (let i = 0; i < 200; i++) {
+        testPair(createStruct(structSchema), createStruct(structSchema));
     }
     t.end();
 });

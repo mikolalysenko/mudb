@@ -23,6 +23,7 @@ import { MuUint16 } from './uint16';
 import { MuUint32 } from './uint32';
 import { MuVarint } from './varint';
 import { MuRelativeVarint } from './rvarint';
+import { MuQuantizedFloat } from './quantized-float';
 
 // functors
 import { MuArray } from './array';
@@ -58,6 +59,7 @@ export {
     MuUint32,
     MuVarint,
     MuRelativeVarint,
+    MuQuantizedFloat,
 
     MuArray,
     MuOption,
