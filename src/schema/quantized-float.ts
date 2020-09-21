@@ -32,7 +32,7 @@ export class MuQuantizedFloat implements MuSchema<number> {
         identity?:number) {
         this.invPrecision = 1 / this.precision;
         if (identity) {
-            this.identity = this.precision * (Math.round(this.invPrecision * identity) >> 0);
+            this.identity = this.precision * ((this.invPrecision * identity) >> 0);
         }
         this.json = this.muData = {
             type: 'quantized-float',
@@ -42,11 +42,11 @@ export class MuQuantizedFloat implements MuSchema<number> {
     }
 
     public assign(x:number, y:number) {
-        return (Math.round(this.invPrecision * y) >> 0) * this.precision;
+        return ((this.invPrecision * y) >> 0) * this.precision;
     }
 
     public clone (y:number) {
-        return (Math.round(this.invPrecision * y) >> 0) * this.precision;
+        return ((this.invPrecision * y) >> 0) * this.precision;
     }
 
     public alloc () {
@@ -56,7 +56,7 @@ export class MuQuantizedFloat implements MuSchema<number> {
     public free () {}
 
     public toJSON (x:number) {
-        return this.precision * (Math.round(this.invPrecision * x) >> 0);
+        return this.precision * ((this.invPrecision * x) >> 0);
     }
 
     public fromJSON (x:any) {
@@ -68,13 +68,13 @@ export class MuQuantizedFloat implements MuSchema<number> {
 
     public equal (x:number, y:number) {
         const sf = this.invPrecision;
-        return (Math.round(sf * x) >> 0) === (Math.round(sf * y) >> 0);
+        return ((sf * x) >> 0) === ((sf * y) >> 0);
     }
 
     public diff (base:number, target:number, stream:MuWriteStream) {
         const sf = this.invPrecision;
-        const b = Math.round(sf * base) >> 0;
-        const t = Math.round(sf * target) >> 0;
+        const b = (sf * base) >> 0;
+        const t = (sf * target) >> 0;
         if (b === t) {
             return false;
         }
@@ -84,7 +84,7 @@ export class MuQuantizedFloat implements MuSchema<number> {
     }
 
     public patch (base:number, stream:MuReadStream) {
-        const b = Math.round(this.invPrecision * base) >> 0;
+        const b = (this.invPrecision * base) >> 0;
         const d = readSchroeppel(stream);
         return (b + d) * this.precision;
     }

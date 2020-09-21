@@ -2,7 +2,7 @@ import { MuSchema } from './schema';
 import { MuWriteStream, MuReadStream } from '../stream';
 
 const muPrimitiveSize = {
-    boolean: 1,
+    boolean: 0,
     uint8: 1,
     uint16: 2,
     uint32: 4,
@@ -13,6 +13,7 @@ const muPrimitiveSize = {
     float64: 8,
     varint: 5,
     rvarint: 5,
+    'quantized-float': 5,
 };
 
 const muType2ReadMethod = {
@@ -170,8 +171,6 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             const type = types[i];
             switch (type.muType) {
                 case 'boolean':
-                case 'float32':
-                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -181,6 +180,12 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'varint':
                 case 'rvarint':
                     prolog.append(`this[${pr}]=${type.identity};`);
+                    break;
+                case 'float32':
+                case 'float64':
+                case 'quantized-float':
+                    // ensure prop is initialized to float to mitigate perf issue caused by V8 migration
+                    prolog.append(`this[${pr}]=0.5;this[${pr}]=${type.identity};`);
                     break;
                 case 'ascii':
                 case 'fixed-ascii':
@@ -211,6 +216,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint32':
                 case 'varint':
                 case 'rvarint':
+                case 'quantized-float':
                     break;
                 default:
                     prolog.append(`${identityRef}[${pr}]=${typeRefs[i]}.clone(${inject(type.identity)});`);
@@ -237,6 +243,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint32':
                 case 'varint':
                 case 'rvarint':
+                case 'quantized-float':
                     break;
                 default:
                     methods.alloc.append(`s[${pr}]=${typeRefs[i]}.alloc();`);
@@ -264,6 +271,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'uint32':
                 case 'varint':
                 case 'rvarint':
+                case 'quantized-float':
                     break;
                 default:
                     methods.free.append(`${typeRefs[i]}.free(s[${pr}]);`);
@@ -291,6 +299,9 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'varint':
                 case 'rvarint':
                     methods.equal.append(`if(a[${pr}]!==b[${pr}]){return false}`);
+                    break;
+                case 'quantized-float':
+                    methods.equal.append(`if(((${(<any>type).invPrecision}*a[${pr}])>>0)!==((${(<any>type).invPrecision}*b[${pr}])>>0)){return false}`);
                     break;
                 default:
                     methods.equal.append(`if(!${typeRefs[i]}.equal(a[${pr}],b[${pr}])){return false}`);
@@ -320,7 +331,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     methods.clone.append(`c[${pr}]=s[${pr}];`);
                     break;
                 case 'quantized-float':
-                    methods.clone.append(`c[${pr}]=(Math.round(${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
+                    methods.clone.append(`c[${pr}]=((${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
                     break;
                 default:
                     methods.clone.append(`c[${pr}]=${typeRefs[i]}.clone(s[${pr}]);`);
@@ -350,7 +361,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     methods.assign.append(`d[${pr}]=s[${pr}];`);
                     break;
                 case 'quantized-float':
-                    methods.assign.append(`d[${pr}]=(Math.round(${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
+                    methods.assign.append(`d[${pr}]=((${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
                     break;
                 default:
                     methods.assign.append(`d[${pr}]=${typeRefs[i]}.assign(d[${pr}],s[${pr}]);`);
@@ -395,6 +406,11 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     break;
                 case 'ascii':
                     methods.diff.append(`if(b[${pr}]!==t[${pr}]){s.grow(5+t[${pr}].length);s.writeVarint(t[${pr}].length);s.writeASCII(t[${pr}]);++np;tr|=${1 << (i & 7)}}`);
+                    break;
+                case 'quantized-float':
+                    const br = methods.diff.def(`(${(<any>types[i]).invPrecision}*b[${pr}])>>0`);
+                    const tr = methods.diff.def(`(${(<any>types[i]).invPrecision}*t[${pr}])>>0`);
+                    methods.diff.append(`if(${br}!==${tr}){s.writeVarint((0xAAAAAAAA+(${tr}-${br})^0xAAAAAAAA)>>>0);++np;tr|=${1 << (i & 7)};}`);
                     break;
                 default:
                     methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],s)){++np;tr|=${1 << (i & 7)}}`);
@@ -443,7 +459,7 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
                     break;
                 case 'quantized-float':
-                    methods.patch.append(`((Math.round(${(<any>type).invPrecision}*b[${pr}])>>0)+(((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0))*${(<any>type).precision}:b[${pr}];`);
+                    methods.patch.append(`(((${(<any>type).invPrecision}*b[${pr}])>>0)+(((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0))*${(<any>type).precision}:b[${pr}];`);
                     break;
                 default:
                     methods.patch.append(`${typeRefs[i]}.patch(b[${pr}],s):${typeRefs[i]}.clone(b[${pr}]);`);
