@@ -171,8 +171,6 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
             const type = types[i];
             switch (type.muType) {
                 case 'boolean':
-                case 'float32':
-                case 'float64':
                 case 'int8':
                 case 'int16':
                 case 'int32':
@@ -183,7 +181,10 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'rvarint':
                     prolog.append(`this[${pr}]=${type.identity};`);
                     break;
+                case 'float32':
+                case 'float64':
                 case 'quantized-float':
+                    // ensure prop is initialized to float to mitigate perf issue caused by V8 migration
                     prolog.append(`this[${pr}]=0.5;this[${pr}]=${type.identity};`);
                     break;
                 case 'ascii':
