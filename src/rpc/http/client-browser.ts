@@ -54,13 +54,13 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                 if (completed) {
                     return;
                 }
-                reject('aborted');
+                reject(`request aborted [mudb/rpc]`);
             };
             xhr.onerror = () => {
                 if (completed) {
                     return;
                 }
-                reject('error');
+                reject(`error during request [mudb/rpc]`);
             };
             xhr.send(body);
         });

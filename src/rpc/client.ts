@@ -30,7 +30,11 @@ export class MuRPCClient<Protocol extends MuRPCProtocol<any>> {
             const rpc = this.schemas.argSchema.alloc();
             rpc.type = method;
             rpc.data = arg;
-            return this.transport.send(this.schemas, rpc).then(this._handleResponse);
+            return this.transport.send(this.schemas, rpc).then(
+                this._handleResponse,
+                (reason) => {
+                    this.logger.exception(reason);
+                });
         };
     }
 
