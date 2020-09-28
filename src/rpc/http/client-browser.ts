@@ -35,9 +35,14 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                     completed = true;
                     const responseText = xhr.responseText;
                     try {
-                        let json:any = void 0;
+                        let json:any;
                         if (0 < responseText.length) {
                             json = JSON.parse(responseText);
+                        } else {
+                            json = {
+                                type: 'error',
+                                data: 'empty response',
+                            };
                         }
                         return resolve(schemas.responseSchema.fromJSON(json));
                     } catch (e) {
@@ -49,13 +54,13 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                 if (completed) {
                     return;
                 }
-                reject('aborted');
+                reject(`request aborted [mudb/rpc]`);
             };
             xhr.onerror = () => {
                 if (completed) {
                     return;
                 }
-                reject('error');
+                reject(`error during request [mudb/rpc]`);
             };
             xhr.send(body);
         });
