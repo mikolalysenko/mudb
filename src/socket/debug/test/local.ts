@@ -30,7 +30,7 @@ test('LocalSocket - simulating network latency on client side', (t) => {
             ping: (client, data) => {
                 if (data === PING_OPCODE) {
                     const delay = Date.now() - timestamp;
-                    t.ok(delay > upstreamLatency, `server should receive opcode after >${upstreamLatency} ms`);
+                    t.ok(delay >= upstreamLatency, `server should receive opcode after >=${upstreamLatency} ms`);
 
                     client.message.pong(PONG_OPCODE);
                 }
@@ -59,7 +59,7 @@ test('LocalSocket - simulating network latency on client side', (t) => {
                         const latency = upstreamLatency + downstreamLatency;
 
                         t.equal(data, PONG_OPCODE);
-                        t.ok(delay > latency, `client should receive opcode after >${latency} ms`);
+                        t.ok(delay >= latency, `client should receive opcode after >=${latency} ms`);
                     },
                 },
             });
@@ -96,7 +96,7 @@ test('LocalSocket - simulating network latency on server side', (t) => {
             ping: (client, data) => {
                 if (data === PING_OPCODE) {
                     const delay = Date.now() - timestamp;
-                    t.ok(delay > upstreamLatency, `server should receive opcode after >${upstreamLatency}`);
+                    t.ok(delay >= upstreamLatency, `server should receive opcode after >=${upstreamLatency}`);
 
                     client.message.pong(PONG_OPCODE);
                 }
@@ -120,7 +120,7 @@ test('LocalSocket - simulating network latency on server side', (t) => {
                         const latency = upstreamLatency + downstreamLatency;
 
                         t.equal(data, PONG_OPCODE);
-                        t.ok(delay > latency, `client should receive opcode after >${latency} ms`);
+                        t.ok(delay >= latency, `client should receive opcode after >=${latency} ms`);
                     },
                 },
             });
@@ -157,7 +157,7 @@ test('LocalSocket - simulating network latency on both sides', (t) => {
             ping: (client, data) => {
                 if (data === PING_OPCODE) {
                     const delay = Date.now() - timestamp;
-                    t.ok(delay > 2 * upstreamLatency, `server should receive opcode after >${2 * upstreamLatency} ms`);
+                    t.ok(delay >= 2 * upstreamLatency, `server should receive opcode after >=${2 * upstreamLatency} ms`);
 
                     client.message.pong(PONG_OPCODE);
                 }
@@ -186,7 +186,7 @@ test('LocalSocket - simulating network latency on both sides', (t) => {
                         const latency = upstreamLatency + downstreamLatency;
 
                         t.equal(data, PONG_OPCODE);
-                        t.ok(delay > 2 * latency, `client should receive opcode after >${2 * latency} ms`);
+                        t.ok(delay >= 2 * latency, `client should receive opcode after >=${2 * latency} ms`);
                     },
                 },
             });

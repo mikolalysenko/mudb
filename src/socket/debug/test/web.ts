@@ -65,7 +65,7 @@ findPort((port) => {
                     const latency = upstreamLatency + downstreamLatency;
 
                     t.equal(data, PONG_OPCODE);
-                    t.ok(delay > latency, `client should receive opcode after >${latency} ms`);
+                    t.ok(delay >= latency, `client should receive opcode after >=${latency} ms`);
                 },
             },
         });
