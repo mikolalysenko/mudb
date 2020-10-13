@@ -44,6 +44,7 @@
   "license": "MIT",
   "dependencies": {
     "content-type": "^1.0.4",
+    "gl-matrix": "^3.3.0",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v18.3.0",
     "ws": "^7.3.1"
   },
