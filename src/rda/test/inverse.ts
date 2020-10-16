@@ -14,12 +14,6 @@ function testInverse<
     t.deepEqual(store.state(rda, rda.stateSchema.alloc()), origin, msg);
 }
 
-test('inverse - constant', (t) => {
-    const store = new MuRDAConstant(new MuInt8()).createStore(0);
-    t.equal(store.inverse.toString(), 'function () { }', 'should be noop');
-    t.end();
-});
-
 test('inverse - register', (t) => {
     const Uint32Reg = new MuRDARegister(new MuUint32());
     const Uint32RegStore = Uint32Reg.createStore(-54321);
