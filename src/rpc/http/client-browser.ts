@@ -22,7 +22,6 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
             xhr.timeout = this._timeout;
         }
         xhr.withCredentials = true;
-        xhr.open('POST', this._url + '/' + schemas.protocol.name, true);
         const body = JSON.stringify(schemas.argSchema.toJSON(arg));
         return new Promise<MuRPCSchemas<Protocol>['responseSchema']['identity']>((resolve, reject) => {
             let completed = false;
@@ -62,6 +61,7 @@ export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
                 }
                 reject(`error during request [mudb/rpc]`);
             };
+            xhr.open('POST', this._url + '/' + schemas.protocol.name, true);
             xhr.send(body);
         });
     }
