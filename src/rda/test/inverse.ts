@@ -6,20 +6,13 @@ import { MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '
 
 function testInverse<
     RDA extends MuRDA<any, any, any, any>,
-    Store extends MuRDAStore<RDA>> (t, store:Store, rda:RDA, action:MuRDATypes<RDA>['action'], msg:string) {
+    Store extends MuRDAStore<RDA>> (t:test.Test, store:Store, rda:RDA, action:MuRDATypes<RDA>['action'], msg:string) {
     const origin = store.state(rda, rda.stateSchema.alloc());
     const inverse = store.inverse(rda, action);
     store.apply(rda, action);
     store.apply(rda, inverse);
     t.deepEqual(store.state(rda, rda.stateSchema.alloc()), origin, msg);
-    console.log(JSON.stringify(inverse));
 }
-
-test('inverse - constant', (t) => {
-    const store = new MuRDAConstant(new MuInt8()).createStore(0);
-    t.equal(store.inverse.toString(), 'function () { }', 'should be noop');
-    t.end();
-});
 
 test('inverse - register', (t) => {
     const Uint32Reg = new MuRDARegister(new MuUint32());

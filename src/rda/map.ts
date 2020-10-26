@@ -192,10 +192,13 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         }
 
         // remove from list
-        const { next, prev } = element;
+        const { next, prev, sequence } = element;
         if (this.keyIndex[element.key] === element) {
             if (next) {
                 this.keyIndex[element.key] = next;
+                if (next.sequence >= sequence) {
+                    next.deleted = false;
+                }
             } else {
                 delete this.keyIndex[element.key];
             }
@@ -221,6 +224,7 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
             if (compareStoreElements(head, element) < 0) {
                 element.next = head;
                 head.prev = element;
+                head.deleted = true;
                 this.keyIndex[key] = element;
             } else {
                 let prev = head;
@@ -615,6 +619,8 @@ export class MuRDAMap<
                 const target = this._savedStore.keyIndex[to];
                 if (target) {
                     moveAction.sequence = target.sequence + 1;
+                } else if (prev.next) {
+                    moveAction.sequence = prev.next.sequence + 1;
                 } else {
                     moveAction.sequence = 1;
                 }
@@ -926,7 +932,17 @@ export class MuRDAMap<
     }
 
     public createStore (initialState:MuRDAMapTypes<KeySchema, ValueRDA>['state']) {
-        const keys = Object.keys(initialState);
+        const keys:string[]|number[] = Object.keys(initialState);
+        if (typeof this.keySchema.identity === 'number') {
+            for (let i = 0; i < keys.length; ++i) {
+                const k:any = +keys[i];
+                if (k !== k) {
+                    throw new Error(`invalid key ${keys[i]}`);
+                }
+                keys[i] = k;
+            }
+        }
+
         const elements:MuRDAMapStoreElement<this>[] = new Array(keys.length);
         let idCounter = 1;
         for (let i = 0; i < keys.length; ++i) {
