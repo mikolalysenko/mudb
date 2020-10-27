@@ -23,7 +23,6 @@ import { MuUint16 } from './uint16';
 import { MuUint32 } from './uint32';
 import { MuVarint } from './varint';
 import { MuRelativeVarint } from './rvarint';
-import { MuQuantizedFloat } from './quantized-float';
 
 // functors
 import { MuArray } from './array';
@@ -36,6 +35,25 @@ import { MuUnion } from './union';
 import { MuBytes } from './bytes';
 import { MuDictionary } from './dictionary';
 import { MuVector } from './vector';
+
+// math
+import {
+    MuVec2,
+    MuVec3,
+    MuVec4,
+    MuQuat,
+    MuMat2,
+    MuMat3,
+    MuMat4,
+} from './math';
+
+// quantized
+import { MuQuantizedFloat } from './quantized-float';
+import {
+    MuQuantizedVec2,
+    MuQuantizedVec3,
+    MuQuantizedVec4,
+} from './quantized-vector';
 
 // misc. types
 import { MuDate } from './date';
@@ -59,7 +77,6 @@ export {
     MuUint32,
     MuVarint,
     MuRelativeVarint,
-    MuQuantizedFloat,
 
     MuArray,
     MuOption,
@@ -70,6 +87,19 @@ export {
     MuBytes,
     MuVector,
     MuDictionary,
+
+    MuVec2,
+    MuVec3,
+    MuVec4,
+    MuQuat,
+    MuMat2,
+    MuMat3,
+    MuMat4,
+
+    MuQuantizedFloat,
+    MuQuantizedVec2,
+    MuQuantizedVec3,
+    MuQuantizedVec4,
 
     MuDate,
     MuJSON,

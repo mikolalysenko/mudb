@@ -303,6 +303,22 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'quantized-float':
                     methods.equal.append(`if(((${(<any>type).invPrecision}*a[${pr}])>>0)!==((${(<any>type).invPrecision}*b[${pr}])>>0)){return false}`);
                     break;
+                case 'quantized-vec2':
+                case 'quantized-vec3':
+                case 'quantized-vec4':
+                    const ip = inject(`${(<any>type).invPrecision}`);
+                    const qva = methods.equal.def(`a[${pr}]`);
+                    const qvb = methods.equal.def(`b[${pr}]`);
+                    methods.equal.append(`if(`);
+                    for (let idx = 0; idx < type.identity.length; idx++) {
+                        let code = `(${ip}*${qva}[${idx}]>>0)!==(${ip}*${qvb}[${idx}]>>0)`;
+                        if (idx !== 0) {
+                            code = '||' + code;
+                        }
+                        methods.equal.append(code);
+                    }
+                    methods.equal.append(`){return false}`);
+                    break;
                 default:
                     methods.equal.append(`if(!${typeRefs[i]}.equal(a[${pr}],b[${pr}])){return false}`);
             }
@@ -332,6 +348,11 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     break;
                 case 'quantized-float':
                     methods.clone.append(`c[${pr}]=((${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
+                    break;
+                case 'quantized-vec2':
+                case 'quantized-vec3':
+                case 'quantized-vec4':
+                    methods.clone.append(`c[${pr}]=${typeRefs[i]}.assign(${typeRefs[i]}.alloc(),s[${pr}]);`);
                     break;
                 default:
                     methods.clone.append(`c[${pr}]=${typeRefs[i]}.clone(s[${pr}]);`);
@@ -363,6 +384,15 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                 case 'quantized-float':
                     methods.assign.append(`d[${pr}]=((${(<any>type).invPrecision}*s[${pr}])>>0)*${(<any>type).precision};`);
                     break;
+                case 'quantized-vec2':
+                case 'quantized-vec3':
+                case 'quantized-vec4':
+                    const ip = inject((<any>type).invPrecision);
+                    const p = inject((<any>type).precision);
+                    for (let idx = 0; idx < type.identity.length; idx++) {
+                        methods.assign.append(`d[${pr}][${idx}]=((${ip}*s[${pr}][${idx}])>>0)*${p};`);
+                    }
+                    break;
                 default:
                     methods.assign.append(`d[${pr}]=${typeRefs[i]}.assign(d[${pr}],s[${pr}]);`);
             }
@@ -384,7 +414,8 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
 
         methods.diff.append(`var head=s.offset;var tr=0;var np=0;s.grow(${baseSize});s.offset+=${trackerBytes};`);
         propRefs.forEach((pr, i) => {
-            const muType = types[i].muType;
+            const type = types[i];
+            const muType = type.muType;
             switch (muType) {
                 case 'boolean':
                     methods.diff.append(`if(b[${pr}]!==t[${pr}]){++np;tr|=${1 << (i & 7)}}`);
@@ -412,6 +443,74 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
                     const tr = methods.diff.def(`(${(<any>types[i]).invPrecision}*t[${pr}])>>0`);
                     methods.diff.append(`if(${br}!==${tr}){s.writeVarint((0xAAAAAAAA+(${tr}-${br})^0xAAAAAAAA)>>>0);++np;tr|=${1 << (i & 7)};}`);
                     break;
+                case 'quantized-vec2':
+                case 'quantized-vec3':
+                case 'quantized-vec4':
+                    const length = type.identity.length;
+                    const numPrefixBits = length + 1;
+                    const numPackedBits = 8 - numPrefixBits;
+
+                    const writeVarintWithPrefix = func('wvwp', ['pp', 'x', 's']);
+                    writeVarintWithPrefix.append(
+                        `var x0=x&${(1 << numPackedBits) - 1};`,
+                        `var x1=x>>>${numPackedBits};`,
+                        `var pr=(x1?${1 << length}:0)|pp;`,
+                        `s.writeUint8((pr<<${numPackedBits})|x0);`,
+                        `if(x1){s.writeVarint(x1)}`,
+                    );
+                    const wvwp = inject(Function(writeVarintWithPrefix.toString()));
+
+                    const sch = inject(0xAAAAAAAA);
+                    const ip = inject((<any>type).invPrecision);
+
+                    const qvb = methods.diff.def(`b[${pr}]`);
+                    const qvt = methods.diff.def(`t[${pr}]`);
+
+                    const bx = methods.diff.def(`(${ip}*${qvb}[0])>>0`);
+                    const tx = methods.diff.def(`(${ip}*${qvt}[0])>>0`);
+                    const by = methods.diff.def(`(${ip}*${qvb}[1])>>0`);
+                    const ty = methods.diff.def(`(${ip}*${qvt}[1])>>0`);
+                    let bz;
+                    let tz;
+                    let bw;
+                    let tw;
+                    if (length > 2) {
+                        bz = methods.diff.def(`(${ip}*${qvb}[2])>>0`);
+                        tz = methods.diff.def(`(${ip}*${qvt}[2])>>0`);
+                    }
+                    if (length > 3) {
+                        bw = methods.diff.def(`(${ip}*${qvb}[3])>>0`);
+                        tw = methods.diff.def(`(${ip}*${qvt}[3])>>0`);
+                    }
+
+                    const dx = methods.diff.def(0);
+                    const dy = methods.diff.def(0);
+                    let dz;
+                    let dw;
+                    (length > 2) && (dz = methods.diff.def(0));
+                    (length > 3) && (dw = methods.diff.def(0));
+
+                    methods.diff.append(`if(${bx}!==${tx}||${by}!==${ty}`);
+                    (length > 2) && methods.diff.append(`||${bz}!==${tz}`);
+                    (length > 3) && methods.diff.append(`||${bw}!==${tw}`);
+                    methods.diff.append(`){++np;tr|=${1 << (i & 7)};${dx}=(${sch}+(${tx}-${bx})^${sch})>>>0;${dy}=(${sch}+(${ty}-${by})^${sch})>>>0;`);
+                    (length > 2) && methods.diff.append(`${dz}=(${sch}+(${tz}-${bz})^${sch})>>>0;`);
+                    (length > 3) && methods.diff.append(`${dw}=(${sch}+(${tw}-${bw})^${sch})>>>0;`);
+
+                    const pp = methods.diff.def(0);
+                    methods.diff.append(`${pp}=(${dx}?1:0)|(${dy}?2:0)`);
+                    (length > 2) && methods.diff.append(`|(${dz}?4:0)`);
+                    (length > 3) && methods.diff.append(`|(${dw}?8:0)`);
+                    methods.diff.append(`;s.grow(21);`);
+
+                    methods.diff.append(`if(${dx}){${wvwp}(${pp},${dx},s);${dy}&&s.writeVarint(${dy});`);
+                    (length > 2) && methods.diff.append(`${dz}&&s.writeVarint(${dz});`);
+                    (length > 3) && methods.diff.append(`${dw}&&s.writeVarint(${dw});`);
+                    (length === 3) && methods.diff.append(`}else if(${dy}){${wvwp}(${pp},${dy},s);${dz}&&s.writeVarint(${dz});`);
+                    (length === 4) && methods.diff.append(`}else if(${dy}){${wvwp}(${pp},${dy},s);${dz}&&s.writeVarint(${dz});${dw}&&s.writeVarint(${dw});}else if(${dz}){${wvwp}(${pp},${dz},s);${dw}&&s.writeVarint(${dw});`);
+                    methods.diff.append(`}else{${wvwp}(${pp},${length === 2 ? dy : length === 3 ? dz : dw},s)}`);
+                    methods.diff.append(`}`);
+                    break;
                 default:
                     methods.diff.append(`if(${typeRefs[i]}.diff(b[${pr}],t[${pr}],s)){++np;tr|=${1 << (i & 7)}}`);
             }
@@ -435,34 +534,83 @@ export class MuStruct<Spec extends { [prop:string]:MuSchema<any> }> implements M
 
             const type = types[i];
             const muType = type.muType;
-            methods.patch.append(`;t[${pr}]=(tr&${1 << (i & 7)})?`);
-            switch (muType) {
-                case 'boolean':
-                    methods.patch.append(`!b[${pr}]:b[${pr}];`);
-                    break;
-                case 'float32':
-                case 'float64':
-                case 'int8':
-                case 'int16':
-                case 'int32':
-                case 'uint8':
-                case 'uint16':
-                case 'uint32':
-                case 'utf8':
-                case 'varint':
-                    methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${pr}];`);
-                    break;
-                case 'rvarint':
-                    methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}];`);
-                    break;
-                case 'ascii':
-                    methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
-                    break;
-                case 'quantized-float':
-                    methods.patch.append(`(((${(<any>type).invPrecision}*b[${pr}])>>0)+(((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0))*${(<any>type).precision}:b[${pr}];`);
-                    break;
-                default:
-                    methods.patch.append(`${typeRefs[i]}.patch(b[${pr}],s):${typeRefs[i]}.clone(b[${pr}]);`);
+            if (muType === 'quantized-vec2' || muType === 'quantized-vec3' || muType === 'quantized-vec4') {
+                const length = type.identity.length;
+                const numPrefixBits = length + 1;
+                const numPackedBits = 8 - numPrefixBits;
+
+                const readShroeppel = func('rs', ['s']);
+                readShroeppel.append(`return ((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0;`);
+                const rs = inject(Function(readShroeppel.toString()));
+
+                const readShroeppelWithPrefix = func('rswp', ['p', 's']);
+                readShroeppelWithPrefix.append(
+                    `var x=p&${(1 << numPackedBits) - 1};`,
+                    `if(p&128){x+=s.readVarint()<<${numPackedBits};}`,
+                    `return (0xAAAAAAAA^x)-0xAAAAAAAA>>0;`,
+                );
+                const rswp = inject(Function(readShroeppelWithPrefix.toString()));
+
+                const ip = inject((<any>type).invPrecision);
+                const p = inject((<any>type).precision);
+
+                const pfx = methods.patch.def(0);
+                methods.patch.append(`if(tr&${1 << (i & 7)}){${pfx}=s.readUint8();`);
+
+                const dx = methods.patch.def(0);
+                const dy = methods.patch.def(0);
+                let dz;
+                let dw;
+                (length > 2) && (dz = methods.patch.def(0));
+                (length > 3) && (dw = methods.patch.def(0));
+
+                methods.patch.append(`if(${pfx}&${1 << numPackedBits}){${dx}=${rswp}(${pfx},s);(${pfx}&${1 << (numPackedBits + 1)})&&(${dy}=${rs}(s));`);
+                (length > 2) && methods.patch.append(`(${pfx}&${1 << (numPackedBits + 2)})&&(${dz}=${rs}(s));`);
+                (length > 3) && methods.patch.append(`(${pfx}&${1 << (numPackedBits + 3)})&&(${dw}=${rs}(s));`);
+                (length > 2) && methods.patch.append(`}else if(${pfx}&${1 << (numPackedBits + 1)}){${dy}=${rswp}(${pfx},s);(${pfx}&${1 << (numPackedBits + 2)})&&(${dz}=${rs}(s));`);
+                (length > 3) && methods.patch.append(`(${pfx}&${1 << (numPackedBits + 3)})&&(${dw}=${rs}(s));}else if(${pfx}&${1 << (numPackedBits + 2)}){${dz}=${rswp}(${pfx},s);(${pfx}&${1 << (numPackedBits + 3)})&&(${dw}=${rs}(s));`);
+                methods.patch.append(`}else{${length === 2 ? dy : length === 3 ? dz : dw}=${rswp}(${pfx},s)}`);
+
+                const qv = methods.patch.def(null);
+                methods.patch.append(
+                    `${qv}=${typeRefs[i]}.alloc();`,
+                    `${qv}[0]=${p}*(((${ip}*b[${pr}][0])>>0)+${dx});`,
+                    `${qv}[1]=${p}*(((${ip}*b[${pr}][1])>>0)+${dy});`,
+                );
+                (length > 2) && methods.patch.append(`${qv}[2]=${p}*(((${ip}*b[${pr}][2])>>0)+${dz});`);
+                (length > 3) && methods.patch.append(`${qv}[3]=${p}*(((${ip}*b[${pr}][3])>>0)+${dw});`);
+                methods.patch.append(`t[${pr}]=${qv};`);
+                methods.patch.append(`}else{t[${pr}]=${typeRefs[i]}.clone(b[${pr}])}`);
+            } else {
+                methods.patch.append(`;t[${pr}]=(tr&${1 << (i & 7)})?`);
+                switch (muType) {
+                    case 'boolean':
+                        methods.patch.append(`!b[${pr}]:b[${pr}];`);
+                        break;
+                    case 'float32':
+                    case 'float64':
+                    case 'int8':
+                    case 'int16':
+                    case 'int32':
+                    case 'uint8':
+                    case 'uint16':
+                    case 'uint32':
+                    case 'utf8':
+                    case 'varint':
+                        methods.patch.append(`s.${muType2ReadMethod[muType]}():b[${pr}];`);
+                        break;
+                    case 'rvarint':
+                        methods.patch.append(`b[${pr}]+((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA>>0):b[${pr}];`);
+                        break;
+                    case 'ascii':
+                        methods.patch.append(`s.readASCII(s.readVarint()):b[${pr}];`);
+                        break;
+                    case 'quantized-float':
+                        methods.patch.append(`(((${(<any>type).invPrecision}*b[${pr}])>>0)+(((0xAAAAAAAA^s.readVarint())-0xAAAAAAAA)>>0))*${(<any>type).precision}:b[${pr}];`);
+                        break;
+                    default:
+                        methods.patch.append(`${typeRefs[i]}.patch(b[${pr}],s):${typeRefs[i]}.clone(b[${pr}]);`);
+                }
             }
         });
         methods.patch.append(`return t;`);
