@@ -137,7 +137,6 @@ export class MuUWSSocketConnection {
                 }
             }
         } else {
-            this._lastReliablePing = Date.now();
             this._reliableSocket.send(data, isBinary);
         }
     }
