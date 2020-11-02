@@ -63,6 +63,12 @@ export class MuWebSocket implements MuSocket {
         const self = this;
         function openSocket () {
             const socket = new WS(`${self._url}?sid=${encodeURIComponent(self.sessionId)}`);
+
+            socket.onerror = function (ev) {
+                console.error('WebSocket error', ev);
+                self._logger.error(`WebSocket error ${ev}`);
+            };
+
             socket.binaryType = 'arraybuffer';
 
             socket.onopen = function () {
