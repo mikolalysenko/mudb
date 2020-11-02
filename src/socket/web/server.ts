@@ -74,8 +74,6 @@ export class MuWebSocketConnection {
         this.serverClose = serverClose;
         this._logger = logger;
 
-        this.lastReliablePing = Date.now();
-
         this.reliableSocket.onmessage = ({ data }) => {
             if (this.closed) {
                 return;
@@ -109,7 +107,11 @@ export class MuWebSocketConnection {
             }
         };
         this.reliableSocket.onclose = () => {
-            this._logger.log(`closing websocket connection for ${this.sessionId}`);
+            if (!this.closed) {
+                this._logger.log(`unexpectedly closed websocket connection for ${this.sessionId}`);
+            } else {
+                this._logger.log(`closing websocket connection for ${this.sessionId}`);
+            }
             this.closed = true;
 
             for (let i = 0; i < this.unreliableSockets.length; ++i) {
@@ -121,6 +123,9 @@ export class MuWebSocketConnection {
             // remove connection from server
             this.serverClose();
         };
+        this.reliableSocket.onerror = (e) => {
+            this._logger.error(`error on reliable socket ${this.sessionId}. reason ${e} ${e.stack ? e.stack : ''}`);
+        };
     }
 
     public addUnreliableSocket (socket:WSSocket) {
@@ -129,7 +134,7 @@ export class MuWebSocketConnection {
         }
 
         this.unreliableSockets.push(socket);
-        this.lastUnreliablePing.push(Date.now());
+        this.lastUnreliablePing.push(0);
 
         socket.onmessage = ({ data }) => {
             if (this.closed) {
@@ -165,6 +170,9 @@ export class MuWebSocketConnection {
                 this._logger.error(`unreliable socket closed unexpectedly: ${this.sessionId}`);
             }
         };
+        socket.onerror = (e) => {
+            this._logger.error(`unreliable socket ${this.sessionId} error: ${e} ${e.stack ? e.stack : ''}`);
+        };
     }
 
     public send (data:Uint8Array, unreliable:boolean) {
@@ -198,7 +206,6 @@ export class MuWebSocketConnection {
                 }
             }
         } else {
-            this.lastReliablePing = Date.now();
             this.reliableSocket.send(data);
         }
     }
@@ -398,7 +405,9 @@ export class MuWebSocketServer implements MuSocketServer {
                     }
 
                     socket.binaryType = 'fragments';
-                    socket.onerror = (e) => this._logger.exception(e);
+                    socket.onerror = (e) => {
+                        this._logger.error(`socket error in opening state: ${e}`);
+                    };
                     socket.onopen = () => this._logger.log('socket opened');
 
                     let connection = this._findConnection(sessionId);
@@ -429,7 +438,9 @@ export class MuWebSocketServer implements MuSocketServer {
                         spec.connection(client);
                     }
                 })
-                .on('error', (e) => this._logger.exception(e))
+                .on('error', (e) => {
+                    this._logger.error(`internal websocket error ${e}.  ${e.stack ? e.stack : ''}`);
+                })
                 .on('listening', () => this._logger.log(`muwebsocket server listening: ${JSON.stringify(this._wsServer.address())}`))
                 .on('close', () => {
                     if (this._pingIntervalId) {
