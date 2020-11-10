@@ -47,7 +47,7 @@
     "content-type": "1.0.4",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v18.3.0",
     "utf-8-validate": "5.0.3",
-    "ws": "7.3.1"
+    "ws": "7.4.0"
   },
   "devDependencies": {
     "@types/node": "^8.10.38",
