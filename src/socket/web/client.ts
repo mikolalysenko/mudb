@@ -231,4 +231,20 @@ export class MuWebSocket implements MuSocket {
         }
         this._unreliableSockets.length = 0;
     }
+
+    public reliableBufferedAmount () {
+        if (this._reliableSocket) {
+            return this._reliableSocket.bufferedAmount;
+        } else {
+            return Infinity;
+        }
+    }
+
+    public unreliableBufferedAmount () {
+        let amount = Infinity;
+        for (let i = 0; i < this._unreliableSockets.length; ++i) {
+            amount = Math.min(amount, this._unreliableSockets[i].bufferedAmount);
+        }
+        return amount;
+    }
 }

@@ -198,7 +198,7 @@ export class MuWebSocketConnection {
                 // only send packet if socket is not blocked
                 if (bufferedAmount < this.bufferLimit) {
                     // send data
-                    socket.send(data);
+                    socket.send(typeof data === 'string' ? data : new Uint8Array(data));
 
                     // move socket to back of queue
                     sockets.splice(idx, 1);
@@ -206,7 +206,7 @@ export class MuWebSocketConnection {
                 }
             }
         } else {
-            this.reliableSocket.send(data);
+            this.reliableSocket.send(typeof data === 'string' ? data : new Uint8Array(data));
         }
     }
 
@@ -308,6 +308,18 @@ export class MuWebSocketClient implements MuSocket {
             this._state = MuSocketState.CLOSED;
             this._connection.close();
         }
+    }
+
+    public reliableBufferedAmount () {
+        return this._connection.reliableSocket.bufferedAmount;
+    }
+
+    public unreliableBufferedAmount () {
+        let amount = Infinity;
+        for (let i = 0; i < this._connection.unreliableSockets.length; ++i) {
+            amount = Math.min(amount, this._connection.unreliableSockets[i].bufferedAmount);
+        }
+        return amount;
     }
 }
 
