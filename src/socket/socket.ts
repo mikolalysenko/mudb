@@ -33,6 +33,8 @@ export interface MuSocket {
     open(spec:MuSocketSpec);
     send(data:MuData, unreliable?:boolean);
     close();
+    reliableBufferedAmount() : number;
+    unreliableBufferedAmount() : number;
 }
 
 export enum MuSocketServerState {

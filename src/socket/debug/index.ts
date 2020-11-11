@@ -181,6 +181,14 @@ export class MuDebugSocket implements MuSocket {
     public close () {
         this.socket.close();
     }
+
+    public reliableBufferedAmount () {
+        return this.socket.reliableBufferedAmount();
+    }
+
+    public unreliableBufferedAmount () {
+        return this.socket.unreliableBufferedAmount();
+    }
 }
 
 export class MuDebugServer implements MuSocketServer {

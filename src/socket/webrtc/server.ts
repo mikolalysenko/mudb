@@ -202,6 +202,14 @@ export class MuRTCSocketClient implements MuSocket {
         this._onClose();
         this._serverClose();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }
 
 export class MuRTCSocketServer implements MuSocketServer {

@@ -93,6 +93,14 @@ export class MuWorkerSocket implements MuSocket {
         this._socket.terminate();
         this._onclose();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }
 
 export function createWorkerSocket (spec:{

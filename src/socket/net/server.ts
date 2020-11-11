@@ -132,6 +132,14 @@ class MuNetSocketClient implements MuSocket {
         this._state = MuSocketState.CLOSED;
         this._reliableSocket.end();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }
 
 export class MuNetSocketServer implements MuSocketServer {

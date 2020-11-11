@@ -148,4 +148,12 @@ export class MuNetSocket implements MuSocket {
         this._reliableSocket.end();
         this._unreliableSocket.close();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }

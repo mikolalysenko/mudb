@@ -224,4 +224,12 @@ export class MuRTCSocket implements MuSocket {
         this._pc = <any>null;
         this._onClose();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }

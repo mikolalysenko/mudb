@@ -91,6 +91,14 @@ class MuWorkerServerSocket implements MuSocket {
         this._socket.close();
         this._onclose();
     }
+
+    public reliableBufferedAmount () {
+        return 0;
+    }
+
+    public unreliableBufferedAmount () {
+        return 0;
+    }
 }
 
 export class MuWorkerSocketServer implements MuSocketServer {

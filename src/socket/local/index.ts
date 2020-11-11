@@ -174,6 +174,14 @@ export class MuLocalSocket implements MuSocket {
         this._onClose();
         this._duplex.close();
     }
+
+    public reliableBufferedAmount() {
+        return 0;
+    }
+
+    public unreliableBufferedAmount() {
+        return 0;
+    }
 }
 
 function removeIfExists (array, element) {
