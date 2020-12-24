@@ -1,5 +1,5 @@
-import http = require('http');
-import tape = require('tape');
+import * as http from 'http';
+import * as tape from 'tape';
 import { MuRPCHttpServerTransport } from '../http/server';
 import { MuUTF8, MuVoid, MuStruct, MuFloat64 } from '../../schema';
 import { MuRPCServer } from '../server';

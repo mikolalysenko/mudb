@@ -1,6 +1,6 @@
-import test = require('tape');
+import * as test from 'tape';
 
-import { MuInt8, MuFloat64, MuASCII, MuStruct, MuUint32, MuUTF8 } from '../../schema';
+import { MuFloat64, MuASCII, MuStruct, MuUint32, MuUTF8 } from '../../schema';
 import { MuRDA, MuRDAStore, MuRDATypes } from '../index';
 import { MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '../index';
 

@@ -1,5 +1,5 @@
-import tcp = require('net');
-import udp = require('dgram');
+import * as tcp from 'net';
+import * as udp from 'dgram';
 
 import {
     MuSocket,
@@ -115,11 +115,19 @@ export class MuNetSocket implements MuSocket {
                         });
 
                         const socketInfo = this._unreliableSocket.address();
-                        this._reliableSocket.write(JSON.stringify({
-                            i: this.sessionId,
-                            p: socketInfo.port,
-                            a: socketInfo.address,
-                        }));
+                        if (typeof socketInfo === 'string') {
+                            this._reliableSocket.write(JSON.stringify({
+                                i: this.sessionId,
+                                p: socketInfo,
+                                a: socketInfo,
+                            }));
+                        } else {
+                            this._reliableSocket.write(JSON.stringify({
+                                i: this.sessionId,
+                                p: socketInfo.port,
+                                a: socketInfo.address,
+                            }));
+                        }
                     },
                 );
             },

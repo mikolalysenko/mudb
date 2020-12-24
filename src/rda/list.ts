@@ -380,10 +380,10 @@ export class MuRDAList<ValueRDA extends MuRDA<any, any, any, any>>
 
     public readonly emptyStore:MuRDAListStore<this>;
 
-    private _savedStore:MuRDAListStore<this>;
-    private _savedElement:ValueRDA['emptyStore'];
-    private _savedAction:MuRDAListTypes<ValueRDA>['actionSchema']['identity'];
-    private _savedUpdate:MuRDAListTypes<ValueRDA>['updateActionSchema']['identity'];
+    private _savedStore:MuRDAListStore<this> = <any>null;
+    private _savedElement:ValueRDA['emptyStore'] = <any>null;
+    private _savedAction:MuRDAListTypes<ValueRDA>['actionSchema']['identity'] = <any>null;
+    private _savedUpdate:MuRDAListTypes<ValueRDA>['updateActionSchema']['identity'] = <any>null;
     private _updateDispatcher;
     private _noopDispatcher;
 

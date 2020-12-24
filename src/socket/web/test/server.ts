@@ -130,7 +130,12 @@ test('when a client connects', (t) => {
     });
 
     server.listen(() => {
-        url = `ws://127.0.0.1:${server.address().port}`;
+        const addr = server.address();
+        if (typeof addr === 'string') {
+            url = `ws://${addr}`;
+        } else {
+            url = `ws://127.0.0.1:${addr.port}`;
+        }
     });
 });
 

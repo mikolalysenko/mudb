@@ -1,6 +1,6 @@
 const seen:object[] = [];
 
-export = function stringify (x_) {
+export function stableStringify (x_) {
     const x = x_ && x_.toJSON && typeof x_.toJSON === 'function' ? x_.toJSON() : x_;
     if (x === undefined) { return; }
     if (x === true) { return 'true'; }
@@ -13,10 +13,10 @@ export = function stringify (x_) {
         let str = '[';
         const tail = x.length - 1;
         for (let i = 0; i < tail; ++i) {
-            str += (stringify(x[i]) || 'null') + ',';
+            str += (stableStringify(x[i]) || 'null') + ',';
         }
         if (tail >= 0) {
-            str += stringify(x[tail]) || 'null';
+            str += stableStringify(x[tail]) || 'null';
         }
         return str + ']';
     } else {
@@ -29,7 +29,7 @@ export = function stringify (x_) {
         const keys = Object.keys(x).sort();
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
-            const val = stringify(x[key]);
+            const val = stableStringify(x[key]);
             if (val !== undefined) {
                 if (str) { str += ','; }
                 str += `${JSON.stringify(key)}:${val}`;

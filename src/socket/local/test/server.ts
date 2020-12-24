@@ -1,4 +1,4 @@
-import test = require('tape');
+import * as test from 'tape';
 import { createLocalSocket, createLocalSocketServer } from '../';
 import { MuLocalSocket } from '../';
 import { MuSocketState, MuSocketServerState } from '../../socket';

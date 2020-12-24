@@ -1,5 +1,5 @@
-import http = require('http');
-import zlib = require('zlib');
+import * as http from 'http';
+import * as zlib from 'zlib';
 
 function decodeStream (req:http.IncomingMessage) {
     const encoding = req.headers['content-encoding'];
@@ -52,7 +52,11 @@ export function getRawBody (req:http.IncomingMessage, length:number) : Promise<B
                     stream.pause();
                     reject(error);
                 } else {
-                    resolve(buf);
+                    if (buf) {
+                        resolve(buf);
+                    } else {
+                        reject(new Error('invalid buffer'));
+                    }
                 }
             });
         }

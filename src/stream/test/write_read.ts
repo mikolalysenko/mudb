@@ -1,5 +1,5 @@
-import test = require('tape');
-import { MuWriteStream, MuReadStream, allocBuffer } from '../';
+import * as test from 'tape';
+import { MuWriteStream, MuReadStream } from '../';
 
 test('new MuWriteStream()', (t) => {
     t.equal(new MuWriteStream(0).buffer.uint8.byteLength, 2);

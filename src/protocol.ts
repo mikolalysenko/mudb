@@ -2,7 +2,7 @@ import { MuSchema } from './schema/schema';
 import { MuWriteStream, MuReadStream } from './stream';
 import { MuSocket, MuData } from './socket/socket';
 import { MuLogger } from './logger';
-import stableStringify = require('./util/stringify');
+import { stableStringify } from './util/stringify';
 
 export type MuAnySchema = MuSchema<any>;
 export type MuMessageType = MuAnySchema;
@@ -47,9 +47,7 @@ export class MuMessageFactory {
     public messageNames:string[];
     public jsonStr:string;
 
-    public idBase:number;
-
-    constructor (schema:MuAnyMessageTable) {
+    constructor (schema:MuAnyMessageTable, private idBase:number) {
         this.messageNames = Object.keys(schema).sort();
         this.schemas = new Array(this.messageNames.length);
         this.messageNames.forEach((name, id) => {
@@ -145,8 +143,7 @@ export class MuProtocolFactory {
     constructor (protocolSchemas:MuAnyMessageTable[]) {
         let counter = 0;
         for (let i = 0; i < protocolSchemas.length; ++i) {
-            const factory = new MuMessageFactory(protocolSchemas[i]);
-            factory.idBase = counter;
+            const factory = new MuMessageFactory(protocolSchemas[i], counter);
             this.protocolFactories.push(factory);
             counter += factory.messageNames.length + 1;
         }
