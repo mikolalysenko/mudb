@@ -199,14 +199,10 @@ export class MuLocalSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;
     public state () { return this._state; }
 
-    private _onConnection:MuConnectionHandler;
-    private _onClose:MuCloseHandler;
+    private _onConnection:MuConnectionHandler = noop;
+    private _onClose:MuCloseHandler = noop;
 
-    public scheduler:MuScheduler;
-
-    constructor (scheduler:MuScheduler) {
-        this.scheduler = scheduler;
-    }
+    constructor (public scheduler:MuScheduler) {}
 
     // should only be used inside the module
     public _handleConnection (socket) {
