@@ -1,8 +1,7 @@
-import ws = require('ws');
-
-import http = require('http');
-import https = require('https');
-import url = require('url');
+import * as ws from 'ws';
+import * as http from 'http';
+import * as https from 'https';
+import * as url from 'url';
 
 import {
     MuSessionId, MuSocket, MuSocketState, MuSocketSpec,
@@ -12,7 +11,7 @@ import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 
 import { MuLogger, MuDefaultLogger } from '../../logger';
-import makeError = require('../../util/error');
+import { makeError } from '../../util/error';
 import { allocBuffer, freeBuffer } from '../../stream';
 
 const error = makeError('socket/web/server');
@@ -331,10 +330,10 @@ export class MuWebSocketServer implements MuSocketServer {
     public clients:MuWebSocketClient[] = [];
 
     private _options:object;
-    private _wsServer:ws.Server;
+    private _wsServer;
     private _logger:MuLogger;
 
-    private _onClose:() => void;
+    private _onClose:() => void = noop;
 
     private _pingInterval:number = 10000;
     private _pingIntervalId:any;
@@ -399,7 +398,7 @@ export class MuWebSocketServer implements MuSocketServer {
 
         this.scheduler.setTimeout(
             () => {
-                this._wsServer = new ws.Server(this._options)
+                this._wsServer = new (<any>ws).Server(this._options)
                 .on('connection', (socket, req) => {
                     if (this._state === MuSocketServerState.SHUTDOWN) {
                         this._logger.error('connection attempt from closed socket server');

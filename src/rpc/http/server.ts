@@ -1,6 +1,6 @@
 import { MuRPCServerTransport, MuRPCProtocol, MuRPCSchemas, MuRPCConnection } from '../protocol';
 import { getRawBody } from '../../util/parse-body';
-import http = require('http');
+import * as http from 'http';
 
 export type MuRPCHttpCookieOptions = {
     domain:string;

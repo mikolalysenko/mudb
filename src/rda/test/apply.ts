@@ -1,4 +1,4 @@
-import tape = require('tape');
+import * as tape from 'tape';
 import { MuFloat64, MuStruct, MuUint32, MuUTF8, MuInt8, MuASCII, MuVarint, MuBoolean, MuDate } from '../../schema';
 import { MuRDA, MuRDAStore, MuRDAConstant, MuRDARegister, MuRDAList, MuRDAMap, MuRDAStruct } from '../index';
 

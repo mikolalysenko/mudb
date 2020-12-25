@@ -1,5 +1,5 @@
-import work = require('webworkify');
-import test = require('tape');
+import * as work from 'webworkify';
+import * as test from 'tape';
 import { MuWorkerSocket } from '../../client';
 import { MuSocketState } from '../../../socket';
 

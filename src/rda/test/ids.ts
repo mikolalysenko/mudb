@@ -1,4 +1,4 @@
-import tape = require('tape');
+import * as tape from 'tape';
 import { Id, compareId, allocIds, initialIds, ID_MIN, ID_MAX, searchId } from '../_id';
 
 function idRangeOk (pred:Id, succ:Id, range:Id[]) {

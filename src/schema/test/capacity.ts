@@ -1,4 +1,4 @@
-import test = require('tape');
+import * as test from 'tape';
 import { MuWriteStream, MuReadStream } from '../../stream';
 import {
     MuFloat32,

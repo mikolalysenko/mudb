@@ -1,5 +1,5 @@
-import test = require('tape');
-import stableStringify = require('../stringify');
+import * as test from 'tape';
+import { stableStringify } from '../stringify';
 
 test('toJSON()', (t) => {
     const now = new Date();

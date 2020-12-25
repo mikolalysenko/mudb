@@ -1,4 +1,4 @@
-import test = require('tape');
+import * as test from 'tape';
 
 import { MuServer } from '../../../server';
 import { MuClient } from '../../../client';

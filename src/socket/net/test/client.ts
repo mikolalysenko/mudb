@@ -1,7 +1,7 @@
-import test = require('tape');
+import * as test from 'tape';
 
-import tcp = require('net');
-import udp = require('dgram');
+import * as tcp from 'net';
+import * as udp from 'dgram';
 
 import { findPort } from '../../../util/port';
 import { MuNetSocketServer } from '../server';
@@ -31,8 +31,14 @@ const UDP_HOST_ADDR = '127.0.0.1';
 // run servers
 let tcpServerPort;
 tcpServer.listen(() => {
-    tcpServerPort = tcpServer.address().port;
-    console.log(`TCP server running on ${tcpServer.address().address}:${tcpServer.address().port}`);
+    const addr:any = tcpServer.address();
+    if (typeof addr === 'string') {
+        tcpServerPort = +addr;
+        console.log(`TCP server running on ${addr}`);
+    } else {
+        tcpServerPort = addr.port;
+        console.log(`TCP server running on ${addr.address}:${addr.port}`);
+    }
 });
 findPort((port) => {
     udpServer.bind(
@@ -40,7 +46,7 @@ findPort((port) => {
             port,
             address: UDP_HOST_ADDR,
         },
-        () => console.log(`UDP server running on ${udpServer.address().address}:${udpServer.address().port}`),
+        () => console.log(`UDP server running on ${'' + udpServer.address()}`),
     );
 });
 

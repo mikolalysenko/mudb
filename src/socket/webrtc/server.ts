@@ -3,8 +3,8 @@ import { MuSystemScheduler } from '../../scheduler/system';
 import { MuLogger, MuDefaultLogger } from '../../logger';
 import { MuSocketServer, MuSocketServerState, MuSocketServerSpec, MuSocket, MuSocketState, MuSocketSpec, MuConnectionHandler, MuCloseHandler, MuSessionId, MuData } from '../socket';
 import { MuRTCBinding, MuRTCConfiguration, browserRTC, MuRTCOfferAnswerOptions } from './rtc';
+import { makeError } from '../../util/error';
 
-import makeError = require('../../util/error');
 const error = makeError('socket/webrtc/server');
 
 const isBrowser = typeof self !== undefined && !!self && self['Object'] === Object;

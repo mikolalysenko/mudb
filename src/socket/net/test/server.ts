@@ -1,7 +1,7 @@
-import tcp = require('net');
-import udp = require('dgram');
+import * as tcp from 'net';
+import * as udp from 'dgram';
 
-import test = require('tape');
+import * as test from 'tape';
 
 import { MuNetSocketServer } from '../server';
 import { MuSocketServerState } from '../../socket';

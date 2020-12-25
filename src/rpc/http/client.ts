@@ -1,5 +1,5 @@
 import { MuRPCClientTransport, MuRPCProtocol, MuRPCSchemas } from '../protocol';
-import http = require('http');
+import * as http from 'http';
 
 export class MuRPCHttpClientTransport implements MuRPCClientTransport<any> {
     private _url:string;

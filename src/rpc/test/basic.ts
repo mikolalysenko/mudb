@@ -1,4 +1,4 @@
-import tape = require('tape');
+import * as tape from 'tape';
 import { MuRPCLocalTransport } from '../local';
 import { MuUTF8, MuStruct, MuVarint, MuVoid } from '../../schema';
 import { MuRPCServer } from '../server';

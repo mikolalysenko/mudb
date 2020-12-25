@@ -1,10 +1,10 @@
 import { MuScheduler } from '../../scheduler/scheduler';
 import { MuSystemScheduler } from '../../scheduler/system';
 import { MuLogger, MuDefaultLogger } from '../../logger';
-import { MuSocket, MuSocketState, MuSocketSpec, MuCloseHandler, MuSessionId, MuData } from '../socket';
+import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 import { MuRTCBinding, MuRTCConfiguration, browserRTC, MuRTCOfferAnswerOptions } from './rtc';
+import { makeError } from '../../util/error';
 
-import makeError = require('../../util/error');
 const error = makeError('socket/webrtc/client');
 
 const isBrowser = typeof self !== undefined && !!self && self['Object'] === Object;

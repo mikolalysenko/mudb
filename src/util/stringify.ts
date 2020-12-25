@@ -1,43 +1,82 @@
-const seen:object[] = [];
-
-export = function stringify (x_) {
-    const x = x_ && x_.toJSON && typeof x_.toJSON === 'function' ? x_.toJSON() : x_;
-    if (x === undefined) { return; }
-    if (x === true) { return 'true'; }
-    if (x === false) { return 'false'; }
-    if (typeof x === 'number') { return isFinite(x) ? '' + x : 'null'; }
-    if (typeof x !== 'object') { return JSON.stringify(x); }
-
-    if (x === null) { return 'null'; }
-    if (Array.isArray(x)) {
-        let str = '[';
-        const tail = x.length - 1;
-        for (let i = 0; i < tail; ++i) {
-            str += (stringify(x[i]) || 'null') + ',';
+export function stableStringify (base:any) : string|void {
+    const result:string[] = [];
+    const seen:object[] = [];
+    function stringify (x_:any) : boolean {
+        const x = x_ && x_.toJSON && typeof x_.toJSON === 'function' ? x_.toJSON() : x_;
+        if (x === undefined) {
+            return false;
         }
-        if (tail >= 0) {
-            str += stringify(x[tail]) || 'null';
+        // handle base cases
+        if (x === true) {
+            result.push('true');
+            return true;
         }
-        return str + ']';
-    } else {
-        if (seen.indexOf(x) !== -1) {
+        if (x === false) {
+            result.push('false');
+            return true;
+        }
+        if (typeof x === 'number') {
+            result.push(isFinite(x) ? '' + x : 'null');
+            return true;
+        }
+        if (typeof x !== 'object') {
+            const res = JSON.stringify(x);
+            if (typeof res === 'undefined') {
+                return false;
+            }
+            result.push(res);
+            return true;
+        }
+        if (x === null) {
+            result.push('null');
+            return true;
+        }
+
+        // circular reference check
+        if (seen.indexOf(x) >= 0) {
             throw new TypeError('Converting circular structure to JSON');
         }
-        const idx = seen.push(x) - 1;
+        seen.push(x);
 
-        let str = '';
-        const keys = Object.keys(x).sort();
-        for (let i = 0; i < keys.length; ++i) {
-            const key = keys[i];
-            const val = stringify(x[key]);
-            if (val !== undefined) {
-                if (str) { str += ','; }
-                str += `${JSON.stringify(key)}:${val}`;
+        if (Array.isArray(x)) {
+            result.push('[');
+            for (let i = 0; i < x.length; ++i) {
+                if (!stringify(x[i])) {
+                    result.push('null');
+                }
+                if (i < x.length - 1) {
+                    result.push(',');
+                }
             }
+            result.push(']');
+        } else {
+            result.push('{');
+            const keys = Object.keys(x).sort();
+            let needsComma = false;
+            for (let i = 0; i < keys.length; ++i) {
+                const key = keys[i];
+                if (needsComma) {
+                    result.push(',');
+                    needsComma = false;
+                }
+                result.push(`${JSON.stringify(key)}:`);
+                if (!stringify(x[key])) {
+                    result.pop();
+                } else {
+                    needsComma = true;
+                }
+            }
+            result.push('}');
         }
 
-        seen[idx] = seen[seen.length - 1];
+        // clear circular check
+        seen[seen.indexOf(x)] = seen[seen.length - 1];
         seen.pop();
-        return `{${str}}`;
+
+        return true;
     }
-};
+    if (!stringify(base)) {
+        return void 0;
+    }
+    return result.join('');
+}

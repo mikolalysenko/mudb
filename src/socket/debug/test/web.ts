@@ -1,5 +1,5 @@
-import test = require('tape');
-import http = require('http');
+import * as test from 'tape';
+import * as http from 'http';
 
 import { MuWebSocketServer } from '../../web/server';
 import { MuDebugServer } from '../index';

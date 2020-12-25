@@ -1,6 +1,6 @@
 import { MuSocket, MuSocketState, MuSocketSpec, MuSessionId, MuData } from '../socket';
 
-import makeError = require('../../util/error');
+import { makeError } from '../../util/error';
 import { MuLogger, MuDefaultLogger } from '../../logger';
 const error = makeError('socket/web/client');
 
@@ -13,7 +13,7 @@ if (isBrowser) {
         throw error(`no WebSocket support in browser`);
     }
 } else {
-    WS = require.call(null, 'ws');
+    WS = (<any>require).call(null, 'ws');
 }
 
 export class MuWebSocket implements MuSocket {

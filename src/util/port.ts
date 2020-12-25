@@ -1,12 +1,17 @@
-import tcp = require('net');
+import * as tcp from 'net';
 
 export function findPort (cb:(port:number) => void) {
     const server = tcp.createServer();
     server.on('error', (e) => console.error(e));
     server.unref();
     server.listen(() => {
-        const port = server.address().port;
-        server.close(() => cb(port));
+        const addr = server.address();
+        if (typeof addr === 'string') {
+            server.close(() => cb(+addr));
+        } else {
+            const port = addr.port;
+            server.close(() => cb(port));    
+        }
     });
 }
 

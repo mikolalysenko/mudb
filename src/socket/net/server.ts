@@ -1,5 +1,5 @@
-import tcp = require('net');
-import udp = require('dgram');
+import * as tcp from 'net';
+import * as udp from 'dgram';
 
 import {
     MuSocketServer,
@@ -190,11 +190,18 @@ export class MuNetSocketServer implements MuSocketServer {
                         throw new Error('bad client info');
                     }
 
-                    const udpServerInfo = this._udpServer.address();
-                    socket.write(JSON.stringify({
-                        p: udpServerInfo.port,
-                        a: udpServerInfo.address,
-                    }));
+                    const udpServerInfo:any = this._udpServer.address();
+                    if (typeof udpServerInfo === 'string') {
+                        socket.write(JSON.stringify({
+                            p: '',
+                            a: '' + udpServerInfo,
+                        }));
+                    } else {
+                        socket.write(JSON.stringify({
+                            p: udpServerInfo.port,
+                            a: udpServerInfo.address,
+                        }));
+                    }
 
                     const url = `${clientInfo.a}:${clientInfo.p}`;
                     const client = new MuNetSocketClient(
@@ -232,7 +239,10 @@ export class MuNetSocketServer implements MuSocketServer {
         });
 
         this._udpServer.on('listening', () => {
-            const addr = this._udpServer.address().address;
+            let addr:any = this._udpServer.address();
+            if (typeof addr !== 'string') {
+                addr = addr.address;
+            }
             if (addr === '0.0.0.0' || addr === '::') {
                 console.warn(`mudb/net-socket: UDP server is bound to ${addr}. Are you sure?`);
             }
