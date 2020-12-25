@@ -3,4 +3,4 @@ export function makeError (path:string) {
         const msg = typeof errOrMsg === 'string' ? errOrMsg : errOrMsg.toString();
         return new Error(`${msg} [mudb/${path}]`);
     };
-};
+}

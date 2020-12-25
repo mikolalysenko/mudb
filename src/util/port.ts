@@ -10,7 +10,7 @@ export function findPort (cb:(port:number) => void) {
             server.close(() => cb(+addr));
         } else {
             const port = addr.port;
-            server.close(() => cb(port));    
+            server.close(() => cb(port));
         }
     });
 }
