@@ -114,7 +114,7 @@ export class MuNetSocket implements MuSocket {
                             }
                         });
 
-                        const socketInfo:string|tcp.AddressInfo = this._unreliableSocket.address();
+                        const socketInfo:any = this._unreliableSocket.address();
                         if (typeof socketInfo === 'string') {
                             this._reliableSocket.write(JSON.stringify({
                                 i: this.sessionId,

@@ -190,7 +190,7 @@ export class MuNetSocketServer implements MuSocketServer {
                         throw new Error('bad client info');
                     }
 
-                    const udpServerInfo:string|tcp.AddressInfo = this._udpServer.address();
+                    const udpServerInfo:any = this._udpServer.address();
                     if (typeof udpServerInfo === 'string') {
                         socket.write(JSON.stringify({
                             p: '',
@@ -239,7 +239,7 @@ export class MuNetSocketServer implements MuSocketServer {
         });
 
         this._udpServer.on('listening', () => {
-            let addr:string|tcp.AddressInfo = this._udpServer.address();
+            let addr:any = this._udpServer.address();
             if (typeof addr !== 'string') {
                 addr = addr.address;
             }

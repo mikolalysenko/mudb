@@ -31,7 +31,7 @@ const UDP_HOST_ADDR = '127.0.0.1';
 // run servers
 let tcpServerPort;
 tcpServer.listen(() => {
-    const addr:string|tcp.AddressInfo = tcpServer.address();
+    const addr:any = tcpServer.address();
     if (typeof addr === 'string') {
         tcpServerPort = +addr;
         console.log(`TCP server running on ${addr}`);
