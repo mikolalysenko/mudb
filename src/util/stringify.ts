@@ -1,15 +1,18 @@
-export function stableStringify (base:any) {
-    console.log('stable stringify:', base);
+export function stableStringify (base:any) : string|void {
     const result:string[] = [];
-    const seen = new Set<object>();
+    const seen:object[] = [];
     function stringify (x_:any) : boolean {
         const x = x_ && x_.toJSON && typeof x_.toJSON === 'function' ? x_.toJSON() : x_;
         if (x === undefined) {
             return false;
         }
         // handle base cases
-        if (typeof x === 'boolean') {
-            result.push('' + x)
+        if (x === true) {
+            result.push('true');
+            return true;
+        }
+        if (x === false) {
+            result.push('false');
             return true;
         }
         if (typeof x === 'number') {
@@ -29,7 +32,12 @@ export function stableStringify (base:any) {
             return true;
         }
 
-        // hard cases
+        // circular reference check
+        if (seen.indexOf(x) >= 0) {
+            throw new TypeError('Converting circular structure to JSON');
+        }
+        seen.push(x);
+
         if (Array.isArray(x)) {
             result.push('[');
             for (let i = 0; i < x.length; ++i) {
@@ -41,20 +49,15 @@ export function stableStringify (base:any) {
                 }
             }
             result.push(']');
-            return true;
         } else {
-            if (seen.has(x)) {
-                throw new TypeError('Converting circular structure to JSON');
-            }
-            seen.add(x);
             result.push('{');
-
             const keys = Object.keys(x).sort();
             let needsComma = false;
             for (let i = 0; i < keys.length; ++i) {
                 const key = keys[i];
                 if (needsComma) {
                     result.push(',');
+                    needsComma = false;
                 }
                 result.push(`${JSON.stringify(key)}:`);
                 if (!stringify(x[key])) {
@@ -63,11 +66,17 @@ export function stableStringify (base:any) {
                     needsComma = true;
                 }
             }
-
-            seen.delete(x);
             result.push('}');
-            return true;
         }
+
+        // clear circular check
+        seen[seen.indexOf(x)] = seen[seen.length - 1];
+        seen.pop();
+
+        return true;
     }
-    return stringify(base);
+    if (!stringify(base)) {
+        return void 0;
+    }
+    return result.join('');
 }
