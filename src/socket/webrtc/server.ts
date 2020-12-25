@@ -12,16 +12,18 @@ const isBrowser = typeof self !== undefined && !!self && self['Object'] === Obje
 function noop () { }
 
 export class MuRTCSocketClient implements MuSocket {
+    public readonly sessionId:MuSessionId;
+    
     private _state = MuSocketState.INIT;
     public state () { return this._state; }
-    public readonly sessionId:MuSessionId;
+
     private _pc:RTCPeerConnection;
     private _answerOpts:RTCOfferAnswerOptions;
-    private _signal:(data:object) => void;
 
+    private _signal:(data:object) => void = noop;
     private _onMessage:(data:MuData, unreliable:boolean) => void = noop;
     private _onClose:() => void = noop;
-    private _serverClose:() => void;
+    private _serverClose:() => void = noop;
 
     private _reliableChannel:RTCDataChannel|null = null;
     private _unreliableChannel:RTCDataChannel|null = null;
@@ -215,19 +217,19 @@ export class MuRTCSocketClient implements MuSocket {
 export class MuRTCSocketServer implements MuSocketServer {
     private _state = MuSocketServerState.INIT;
     public state () { return this._state; }
+
     public clients:MuRTCSocketClient[] = [];
 
     public readonly wrtc:MuRTCBinding;
     private _pcConfig:MuRTCConfiguration;
     private _answerOpts:MuRTCOfferAnswerOptions;
     private _signal:(data:object, sessionId:MuSessionId) => void;
-
-    private _onConnection:MuConnectionHandler;
-    private _onClose:MuCloseHandler;
-
     private _scheduler:MuScheduler;
     private _logger:MuLogger;
 
+    private _onConnection:MuConnectionHandler = noop;
+    private _onClose:MuCloseHandler = noop;
+    
     constructor (spec:{
         signal:(data:object, sessionId:MuSessionId) => void,
         wrtc?:MuRTCBinding,
