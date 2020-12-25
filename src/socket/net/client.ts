@@ -118,8 +118,8 @@ export class MuNetSocket implements MuSocket {
                         if (typeof socketInfo === 'string') {
                             this._reliableSocket.write(JSON.stringify({
                                 i: this.sessionId,
-                                p: socketInfo,
-                                a: socketInfo,
+                                p: '',
+                                a: '' + socketInfo,
                             }));
                         } else {
                             this._reliableSocket.write(JSON.stringify({

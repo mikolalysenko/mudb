@@ -193,8 +193,8 @@ export class MuNetSocketServer implements MuSocketServer {
                     const udpServerInfo = this._udpServer.address();
                     if (typeof udpServerInfo === 'string') {
                         socket.write(JSON.stringify({
-                            p: udpServerInfo,
-                            a: udpServerInfo,
+                            p: '',
+                            a: '' + udpServerInfo,
                         }));
                     } else {
                         socket.write(JSON.stringify({
@@ -239,7 +239,7 @@ export class MuNetSocketServer implements MuSocketServer {
         });
 
         this._udpServer.on('listening', () => {
-            let addr = this._udpServer.address();
+            let addr:string|tcp.AddressInfo = this._udpServer.address();
             if (typeof addr !== 'string') {
                 addr = addr.address;
             }

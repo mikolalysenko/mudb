@@ -46,7 +46,7 @@ findPort((port) => {
             port,
             address: UDP_HOST_ADDR,
         },
-        () => console.log(`UDP server running on ${udpServer.address()}`),
+        () => console.log(`UDP server running on ${'' + udpServer.address()}`),
     );
 });
 
