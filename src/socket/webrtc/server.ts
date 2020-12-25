@@ -13,7 +13,7 @@ function noop () { }
 
 export class MuRTCSocketClient implements MuSocket {
     public readonly sessionId:MuSessionId;
-    
+
     private _state = MuSocketState.INIT;
     public state () { return this._state; }
 
@@ -229,7 +229,7 @@ export class MuRTCSocketServer implements MuSocketServer {
 
     private _onConnection:MuConnectionHandler = noop;
     private _onClose:MuCloseHandler = noop;
-    
+
     constructor (spec:{
         signal:(data:object, sessionId:MuSessionId) => void,
         wrtc?:MuRTCBinding,
