@@ -153,11 +153,10 @@ export class MuNetSocketServer implements MuSocketServer {
     private _tcpServer:tcp.Server;
     private _udpServer:udp.Socket;
 
-    private _unreliableMsgHandlers:{ [url:string]:(buf:Buffer) => void } = {};
-
-    private _onclose:MuCloseHandler;
-
     public scheduler:MuScheduler;
+
+    private _unreliableMsgHandlers:{ [url:string]:(buf:Buffer) => void } = {};
+    private _onclose:MuCloseHandler = noop;
 
     constructor (spec:{
         tcpServer:tcp.Server,
