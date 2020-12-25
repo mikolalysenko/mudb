@@ -2,7 +2,7 @@ const seen:object[] = [];
 
 export function stableStringify (x_) {
     const x = x_ && x_.toJSON && typeof x_.toJSON === 'function' ? x_.toJSON() : x_;
-    if (x === undefined) { return; }
+    if (x === undefined) { return ''; }
     if (x === true) { return 'true'; }
     if (x === false) { return 'false'; }
     if (typeof x === 'number') { return isFinite(x) ? '' + x : 'null'; }

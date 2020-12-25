@@ -44,7 +44,7 @@ export class MuLocalSocket implements MuSocket {
 
     // corresponding socket on the other end of the connection
     // should only be used inside the module
-    public _duplex:MuLocalSocket;
+    public _duplex:MuLocalSocket = <any>null;
 
     private _onMessage:MuMessageHandler = noop;
     private _onClose:MuCloseHandler = noop;
