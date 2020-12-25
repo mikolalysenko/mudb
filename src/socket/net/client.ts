@@ -21,11 +21,11 @@ export class MuNetSocket implements MuSocket {
 
     private _reliableSocket:tcp.Socket;
     private _connectOpts:tcp.TcpSocketConnectOpts;
-
     private _unreliableSocket:udp.Socket;
     private _bindOpts:udp.BindOptions;
-    private _remotePort:number;
-    private _remoteAddr:string;
+
+    private _remotePort:number = 0;
+    private _remoteAddr:string = '127.0.0.1';
 
     constructor (spec:{
         sessionId:MuSessionId,
