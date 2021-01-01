@@ -184,6 +184,7 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
             }
         }
         response.statusCode = ret.type === 'success' ? 200 : 400;
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
         const responseStr = JSON.stringify(handler.schemas.responseSchema.toJSON(ret));
         response.end(responseStr);
         handler.schemas.responseSchema.free(ret);
