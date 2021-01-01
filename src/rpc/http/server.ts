@@ -184,9 +184,12 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
             }
         }
         response.statusCode = ret.type === 'success' ? 200 : 400;
+        response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.setHeader('Expires', '0');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Surrogate-Control', 'no-store');
         response.setHeader('Content-Type', 'application/json; charset=utf-8');
-        const responseStr = JSON.stringify(handler.schemas.responseSchema.toJSON(ret));
-        response.end(responseStr);
+        response.end(JSON.stringify(handler.schemas.responseSchema.toJSON(ret)));
         handler.schemas.responseSchema.free(ret);
         return true;
     }
