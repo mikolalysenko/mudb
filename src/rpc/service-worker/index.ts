@@ -1,5 +1,5 @@
 import { decodeUTF8 } from '../../stream';
-import { MuRPCConnection, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
+import { MuRPCConnection, MuRPCProtocol, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
 
 export class MuRPCServiceWorkerConnection implements MuRPCConnection {
     constructor (public fetchEvent:FetchEvent) {}
@@ -10,31 +10,27 @@ export class MuRPCServiceWorkerConnection implements MuRPCConnection {
     }
 }
 
-export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<any, MuRPCServiceWorkerConnection> {
+export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCProtocol<any>, MuRPCServiceWorkerConnection> {
     private _handlers:{
         [name:string]:{
             schemas:MuRPCSchemas<any>;
             auth:(conn:MuRPCServiceWorkerConnection) => Promise<boolean>,
-            recv:(conn:MuRPCServiceWorkerConnection, arg:MuRPCSchemas<any>['argSchema']['identity'], response:MuRPCSchemas<any>['responseSchema']['identity']) =>
-                Promise<void>;
+            recv:(conn:MuRPCServiceWorkerConnection, arg:MuRPCSchemas<any>['argSchema']['identity'], response:MuRPCSchemas<any>['responseSchema']['identity']) => Promise<void>;
         };
     } = {};
     private _routePrefix:string;
 
     constructor (spec:{
-        path:string,
+        url:string,
     }) {
+        this._routePrefix = spec.url;
     }
 
-    public listen (
-        schemas:MuRPCSchemas<any>,
-        auth:(conn:MuRPCServiceWorkerConnection) => Promise<boolean>,
-        recv:(conn:MuRPCServiceWorkerConnection, arg:MuRPCSchemas<any>['argSchema']['identity'], response:MuRPCSchemas<any>['responseSchema']['identity']) => Promise<void>,
-    ) {
+    public listen (schemas:any, auth:any, recv:any) {
         this._handlers[schemas.protocol.name] = {
             schemas,
             auth,
-            recv: <any>recv,
+            recv,
         };
     }
 

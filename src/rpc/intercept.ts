@@ -29,7 +29,7 @@ export class MuRPCIntercept<Protocol extends MuRPCProtocol<any>, Connection exte
     public configure(spec:{
         authorize?:(conn:Connection) => Promise<boolean>,
         handlers:Partial<{
-            [method in Protocol['api']]:
+            [method in keyof Protocol['api']]:
                 (arg:Protocol['api'][method]['arg']['identity']) =>
                     Promise<Protocol['api'][method]['ret']['identity']>
         }>,
