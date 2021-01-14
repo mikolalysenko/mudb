@@ -3,7 +3,7 @@
     "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["dom", "es5", "ES2015", "es6", "es2017", "webworker"],
+    "lib": ["dom", "es5", "ES2015", "es6", "es2017"],
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,

@@ -1,6 +1,13 @@
 import { decodeUTF8 } from '../../stream';
 import { MuRPCConnection, MuRPCProtocol, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
 
+interface FetchEvent extends Event {
+    clientId:string;
+    request:Request;
+    respondWith(response:Promise<Response>|Response) : Promise<Response>;
+    waitUntil(fn:Promise<any>) : void;
+}
+
 export class MuRPCServiceWorkerConnection implements MuRPCConnection {
     constructor (public fetchEvent:FetchEvent) {}
 
