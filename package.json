@@ -14,7 +14,7 @@
   },
   "main": "index.js",
   "browser": {
-    "rpc/http/client": "rpc/http/client-xhr"
+    "rpc/http/client": "rpc/http/client-browser"
   },
   "repository": {
     "type": "git",
