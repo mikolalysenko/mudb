@@ -1,8 +1,9 @@
+import { MuLogger } from '../../logger';
 import { decodeUTF8 } from '../../stream';
 import { MuRPCConnection, MuRPCProtocol, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
 
 interface FetchEvent extends Event {
-    clientId:string;
+    clientId:string|null;
     request:Request;
     respondWith(response:Promise<Response>|Response) : Promise<Response>;
     waitUntil(fn:Promise<any>) : void;
@@ -26,11 +27,16 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
         };
     } = {};
     private _routePrefix:string;
+    private _logger:MuLogger|null = null;
 
     constructor (spec:{
         url:string,
+        logger?:MuLogger,
     }) {
         this._routePrefix = spec.url;
+        if (spec.logger) {
+            this._logger = spec.logger;
+        }
     }
 
     public listen (schemas:any, auth:any, recv:any) {
@@ -148,7 +154,11 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
                     'Content-Type': 'application/json',
                 },
             });
-        })());
+        })()).catch((err) => {
+            if (this._logger) {
+                this._logger.error(err);
+            }
+        });
 
         return true;
     }
