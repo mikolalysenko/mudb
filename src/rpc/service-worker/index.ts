@@ -3,10 +3,9 @@ import { decodeUTF8 } from '../../stream';
 import { MuRPCConnection, MuRPCProtocol, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
 
 interface FetchEvent extends Event {
-    clientId:string|null;
     request:Request;
-    respondWith(response:Promise<Response>|Response) : Promise<Response>;
-    waitUntil(fn:Promise<any>) : void;
+    respondWith(response:Promise<Response>|Response) : any;
+    waitUntil(fn:Promise<any>) : any;
 }
 
 export class MuRPCServiceWorkerConnection implements MuRPCConnection {
@@ -154,11 +153,7 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
                     'Content-Type': 'application/json',
                 },
             });
-        })()).catch((err) => {
-            if (this._logger) {
-                this._logger.error(err);
-            }
-        });
+        })());
 
         return true;
     }
