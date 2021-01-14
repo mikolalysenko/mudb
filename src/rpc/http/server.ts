@@ -111,7 +111,7 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
     }
 
     // call this in your server as a route
-    public handler = (
+    public handler = async (
         request:http.IncomingMessage,
         response:http.ServerResponse,
     ) => {
@@ -128,78 +128,72 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
         if (!handler) {
             return false;
         }
-        (async () => {
-            const ret = handler.schemas.responseSchema.alloc();
-            const length = parseInt(request.headers['content-length'] || '', 10) || 0;
-            if (this._byteLimit < length) {
-                ret.type = 'error';
-                ret.data = 'size limit exceeded';
-            } else {
-                try {
-                    let auth = '';
-                    if (this._useCookie) {
-                        const cookies = request.headers.cookie;
-                        if (cookies) {
-                            if (Array.isArray(cookies)) {
-                                for (let i = 0; i < cookies.length; ++i) {
-                                    const match = cookies[i].match(this._matchCookie);
-                                    if (match && match[1]) {
-                                        auth = decodeURIComponent(match[1]);
-                                        break;
-                                    }
-                                }
-                            } else {
-                                const match = cookies.match(this._matchCookie);
+        const ret = handler.schemas.responseSchema.alloc();
+        const length = parseInt(request.headers['content-length'] || '', 10) || 0;
+        if (this._byteLimit < length) {
+            ret.type = 'error';
+            ret.data = 'size limit exceeded';
+        } else {
+            try {
+                let auth = '';
+                if (this._useCookie) {
+                    const cookies = request.headers.cookie;
+                    if (cookies) {
+                        if (Array.isArray(cookies)) {
+                            for (let i = 0; i < cookies.length; ++i) {
+                                const match = cookies[i].match(this._matchCookie);
                                 if (match && match[1]) {
                                     auth = decodeURIComponent(match[1]);
+                                    break;
                                 }
+                            }
+                        } else {
+                            const match = cookies.match(this._matchCookie);
+                            if (match && match[1]) {
+                                auth = decodeURIComponent(match[1]);
                             }
                         }
                     }
-                    const connection = new MuRPCHttpConnection(
-                        request,
-                        response,
-                        this._useCookie,
-                        this._cookie,
-                        auth,
-                    );
-                    if (!(await handler.auth(connection))) {
-                        ret.type = 'error';
-                        ret.data = 'unauthorized';
-                    } else {
-                        const body = await getRawBody(
-                            request,
-                            length);
-                        const bodyStr = body.toString('utf8');
-                        let bodyJSON:any = void 0;
-                        if (bodyStr.length > 0) {
-                            bodyJSON = JSON.parse(bodyStr);
-                        }
-                        const arg = handler.schemas.argSchema.fromJSON(bodyJSON);
-                        await handler.recv(connection, arg, ret);
-                    }
-                } catch (e) {
+                }
+                const connection = new MuRPCHttpConnection(
+                    request,
+                    response,
+                    this._useCookie,
+                    this._cookie,
+                    auth,
+                );
+                if (!(await handler.auth(connection))) {
                     ret.type = 'error';
-                    if (e instanceof Error && typeof e.stack !== 'undefined') {
-                        ret.data = e.stack;
-                    } else {
-                        ret.data = '' + e;
+                    ret.data = 'unauthorized';
+                } else {
+                    const body = await getRawBody(
+                        request,
+                        length);
+                    const bodyStr = body.toString('utf8');
+                    let bodyJSON:any = void 0;
+                    if (bodyStr.length > 0) {
+                        bodyJSON = JSON.parse(bodyStr);
                     }
+                    const arg = handler.schemas.argSchema.fromJSON(bodyJSON);
+                    await handler.recv(connection, arg, ret);
+                }
+            } catch (e) {
+                ret.type = 'error';
+                if (e instanceof Error && typeof e.stack !== 'undefined') {
+                    ret.data = e.stack;
+                } else {
+                    ret.data = '' + e;
                 }
             }
-            response.statusCode = ret.type === 'success' ? 200 : 400;
-            response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-            response.setHeader('Expires', '0');
-            response.setHeader('Pragma', 'no-cache');
-            response.setHeader('Surrogate-Control', 'no-store');
-            response.setHeader('Content-Type', 'application/json; charset=utf-8');
-            response.end(JSON.stringify(handler.schemas.responseSchema.toJSON(ret)));
-            handler.schemas.responseSchema.free(ret);
-        })().catch((err) => {
-            if (this._logger) {
-                this._logger.error(err);
-            }
-        });
+        }
+        response.statusCode = ret.type === 'success' ? 200 : 400;
+        response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.setHeader('Expires', '0');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Surrogate-Control', 'no-store');
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.end(JSON.stringify(handler.schemas.responseSchema.toJSON(ret)));
+        handler.schemas.responseSchema.free(ret);
         return true;
     }
 
