@@ -3,7 +3,7 @@
     "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["dom", "es5", "ES2015"],
+    "lib": ["dom", "es5", "ES2015", "es6", "es2017"],
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,
@@ -18,13 +18,14 @@
     "sourceMap": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "target": "es5"
+    "target": "es2017"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
   ],
   "exclude": [
     "build",
     "node_modules"
-  ]
+  ],
+  
 }

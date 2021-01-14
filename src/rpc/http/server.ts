@@ -1,6 +1,7 @@
 import { MuRPCServerTransport, MuRPCProtocol, MuRPCSchemas, MuRPCConnection } from '../protocol';
 import { getRawBody } from '../../util/parse-body';
 import * as http from 'http';
+import { MuLogger } from '../../logger';
 
 export type MuRPCHttpCookieOptions = {
     domain:string;
@@ -82,11 +83,13 @@ export class MuRPCHttpServerTransport implements MuRPCServerTransport<any, MuRPC
     private _cookie:string;
     private _matchCookie:RegExp;
     private _byteLimit:number;
+    private _logger?:MuLogger;
 
     constructor (spec:{
         route:string,
         byteLimit:number,
         cookie?:string,
+        logger?:MuLogger,
     }) {
         this._route = spec.route;
         this._byteLimit = spec.byteLimit;
