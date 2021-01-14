@@ -1,6 +1,6 @@
 {
   "name": "mudb",
-  "version": "0.32.0",
+  "version": "1.0.0",
   "description": "Real-time database for multiplayer games",
   "scripts": {
     "build": "tsc",
