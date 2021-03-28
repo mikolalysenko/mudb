@@ -17,6 +17,8 @@ export class MuRDAConstantStore<RDA extends MuRDAConstant<MuSchema<any>>>
     public apply () { return false; }
     public inverse () { }
 
+    public diff () { return []; }
+
     public serialize (rda:RDA, out:MuRDATypes<RDA>['serializedStore']) : MuRDATypes<RDA>['serializedStore'] {
         return rda.storeSchema.assign(out, this.value);
     }

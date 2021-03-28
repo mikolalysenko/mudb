@@ -114,6 +114,27 @@ export class MuRDAStructStore<
         return this.stores[action.type].apply(rda.rdas[action.type], action.data);
     }
 
+    public diff(rda:RDA, other:MuRDAStructStore<Spec, RDA>) {
+        const result:MuRDATypes<RDA>['patch'] = [];
+
+        const ids = Object.keys(this.stores);
+        for (let i = 0; i < ids.length; ++i) {
+            const id = ids[i];
+            const thisStore = this.stores[id];
+            const otherStore = other.stores[id];
+            const storePatch = thisStore.diff(rda.rdas[id], otherStore);
+
+            for (let j = 0; j < storePatch.length; ++j) {
+                const lifted = rda.actionSchema.alloc();
+                lifted.type = id;
+                lifted.data = storePatch[j];
+                result.push(lifted);
+            }
+        }
+
+        return result;
+    }
+
     public inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'] {
         const result = rda.actionSchema.alloc();
         result.type = action.type;

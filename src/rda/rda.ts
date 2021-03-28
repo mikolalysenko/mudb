@@ -10,6 +10,9 @@ export interface MuRDATypes<RDA extends MuRDA<any, any, any, any>> {
     actionSchema:RDA['actionSchema'];
     action:this['actionSchema']['identity'];
 
+    // a patch
+    patch:this['action'][];
+
     // Store serialization schemas
     serializedStoreSchema:RDA['storeSchema'];
     serializedStore:this['serializedStoreSchema']['identity'];
@@ -46,6 +49,9 @@ export interface MuRDAStore<RDA extends MuRDA<any, any, any, any>> {
 
     // apply takes an action and either appends it or moves it to the end of the queue
     apply(rda:RDA, action:MuRDATypes<RDA>['action']) : boolean;
+
+    // diffs the store relative to another store
+    diff(rda:RDA, other:this) : MuRDATypes<RDA>['patch'];
 
     // removes an action from the queue
     inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'];

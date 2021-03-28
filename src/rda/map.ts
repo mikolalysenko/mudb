@@ -458,6 +458,62 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
         return <any>result;
     }
 
+    public diff (rda:MapRDA, other:MuRDAMapStore<MapRDA>) : MuRDATypes<MapRDA>['patch'] {
+        const result:MuRDATypes<MapRDA>['patch'] = [];
+
+        const aKeys = Object.keys(this.keyIndex);
+        for (let i = 0; i < aKeys.length; ++i) {
+            const k = aKeys[i];
+            const aNode = this.keyIndex[k];
+            if (aNode.deleted) {
+                continue;
+            }
+            const bNode = other.keyIndex[k];
+            if (bNode && !bNode.deleted) {
+                // patch actions
+                const patch = aNode.value.diff(rda.valueRDA, bNode.value);
+                for (let j = 0; j < patch.length; ++j) {
+                    const action = rda.actionSchema.alloc();
+                    action.type = 'update';
+                    const payload = action.data = rda.updateActionSchema.alloc();
+                    payload.id = aNode.id;
+                    rda.updateActionSchema.muData.action.free(payload.action);
+                    payload.action = patch[j];
+                    result.push(action);
+                }
+            } else {
+                // push a delete operation
+                result.push(rda.action(this).remove(k));
+            }
+        }
+
+        const bKeys = Object.keys(other.keyIndex);
+        for (let i = 0; i < bKeys.length; ++i) {
+            const k = bKeys[i];
+            const bNode = other.keyIndex[k];
+            if (bNode.deleted) {
+                continue;
+            }
+            const aNode = this.keyIndex[k];
+            if (!aNode || aNode.deleted) {
+                // add upsert
+                const action = rda.upsertActionSchema.alloc();
+                action.deleted = false;
+                action.id = bNode.id;
+                action.key = bNode.key;
+                action.sequence = bNode.sequence;
+                action.value = bNode.value.serialize(rda.valueRDA, action.value);
+
+                const wrapper = rda.actionSchema.alloc();
+                wrapper.type = 'upsert';
+                wrapper.data = action;
+                result.push(wrapper);
+            }
+        }
+
+        return result;
+    }
+
     public serialize (rda:MapRDA, result:MuRDATypes<MapRDA>['serializedStore']) : MuRDATypes<MapRDA>['serializedStore'] {
         const idIndex = this.idIndex;
         const ids = Object.keys(idIndex);

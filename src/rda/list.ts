@@ -202,6 +202,69 @@ export class MuRDAListStore<ListRDA extends MuRDAList<any>> implements MuRDAStor
         return true;
     }
 
+    public diff(rda:ListRDA, other:this) : ListRDA['actionSchema']['identity'][] {
+        const action = rda.actionSchema.alloc();
+
+        const aIds = Object.keys(this.idIndex);
+        for (let i = 0; i < aIds.length; ++i) {
+            const id = aIds[i];
+            const aNode = this.idIndex[id];
+            if (!aNode || aNode.deleted) {
+                continue;
+            }
+            const bNode = other.idIndex[id];
+            if (bNode && !bNode.deleted) {
+                const patch = aNode.value.diff(rda.valueRDA, bNode.value);
+                for (let j = 0; j < patch.length; ++j) {
+                    const update = rda.updateActionSchema.alloc();
+                    update.id = aNode.id;
+                    rda.updateActionSchema.muData.action.free(update.action);
+                    update.action = patch[j];
+                    action.updates.push(update);
+                }
+                if (aNode.key !== bNode.key) {
+                    const move = rda.moveActionSchema.alloc();
+                    move.id = bNode.id;
+                    move.key = bNode.key;
+                    action.moves.push(move);
+                }
+            } else {
+                action.deletes.push(aNode.id);
+            }
+        }
+
+        const bIds = Object.keys(other.idIndex);
+        for (let i = 0; i < bIds.length; ++i) {
+            const id = bIds[i];
+            const bNode = other.idIndex[id];
+            if (!bNode || bNode.deleted) {
+                continue;
+            }
+            const aNode = this.idIndex[id];
+            if (!aNode || !aNode.deleted) {
+                // upsert action
+                const upsert = rda.storeElementSchema.alloc();
+                upsert.id = bNode.id;
+                upsert.deleted = false;
+                upsert.key = bNode.key;
+                upsert.value = bNode.value.serialize(rda.valueRDA, upsert.value);
+                action.upserts.push(upsert);
+            }
+        }
+
+        const result:ListRDA['actionSchema']['identity'][] = [];
+        if (action.deletes.length > 0 ||
+            action.moves.length > 0 ||
+            action.undeletes.length > 0 ||
+            action.updates.length > 0 ||
+            action.upserts.length > 0) {
+            result.push(action);
+        } else {
+            rda.actionSchema.free(action);
+        }
+        return result;
+    }
+
     public inverse (rda:ListRDA, action:ListRDA['actionSchema']['identity']) : MuRDATypes<ListRDA>['action'] {
         const result = rda.actionSchema.alloc();
         const {

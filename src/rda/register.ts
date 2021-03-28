@@ -12,6 +12,14 @@ export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDA
     public inverse (rda:RDA) { return rda.actionSchema.clone(this.value); }
     public free (rda:RDA) { rda.stateSchema.free(this.value); }
 
+    public diff (rda:RDA, other:MuRDARegisterStore<RDA>) {
+        const result:MuRDATypes<RDA>['patch'] = [];
+        if (!rda.stateSchema.equals(this.value, other.value)) {
+            result.push(rda.action(other.value));
+        }
+        return result;
+    }
+
     public apply (rda:RDA, action:MuRDATypes<RDA>['action']) {
         this.value = rda.stateSchema.assign(this.value, rda.constrain(action));
         return true;
