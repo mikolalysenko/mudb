@@ -20,6 +20,10 @@ export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDA
         return result;
     }
 
+    public conflicts (rda:RDA, f:MuRDATypes<RDA>['patch'], g:MuRDATypes<RDA>['patch']) {
+        
+    }
+
     public apply (rda:RDA, action:MuRDATypes<RDA>['action']) {
         this.value = rda.stateSchema.assign(this.value, rda.constrain(action));
         return true;

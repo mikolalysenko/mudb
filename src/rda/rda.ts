@@ -1,5 +1,12 @@
 import { MuSchema } from '../schema/schema';
 
+export class MuRDAConflicts<RDA extends MuRDA<any, any, any, any>> {
+    constructor (
+        public commutator:RDA['actionSchema']['identity'][],
+        public conflicts:RDA['actionSchema']['identity'][][],
+    ) {}
+}
+
 // Typescript helpers
 export interface MuRDATypes<RDA extends MuRDA<any, any, any, any>> {
     // Type of an RDA's state schema and state object
@@ -52,6 +59,9 @@ export interface MuRDAStore<RDA extends MuRDA<any, any, any, any>> {
 
     // diffs the store relative to another store
     diff(rda:RDA, other:this) : MuRDATypes<RDA>['patch'];
+
+    // find conflicts between two diffs
+    conflicts(rda:RDA, f:MuRDATypes<RDA>['patch'], g:MuRDATypes<RDA>['patch']) : MuRDAConflicts<RDA>;
 
     // removes an action from the queue
     inverse(rda:RDA, action:MuRDATypes<RDA>['action']) : MuRDATypes<RDA>['action'];

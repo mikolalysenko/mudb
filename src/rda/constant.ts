@@ -1,6 +1,6 @@
 import { MuSchema } from '../schema/schema';
 import { MuVoid } from '../schema/void';
-import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
+import { MuRDA, MuRDAConflicts, MuRDAStore, MuRDATypes } from './rda';
 
 export class MuRDAConstantStore<RDA extends MuRDAConstant<MuSchema<any>>>
     implements MuRDAStore<RDA> {
@@ -18,6 +18,10 @@ export class MuRDAConstantStore<RDA extends MuRDAConstant<MuSchema<any>>>
     public inverse () { }
 
     public diff () { return []; }
+
+    public conflicts () {
+        return new MuRDAConflicts<RDA>([], []);
+    }
 
     public serialize (rda:RDA, out:MuRDATypes<RDA>['serializedStore']) : MuRDATypes<RDA>['serializedStore'] {
         return rda.storeSchema.assign(out, this.value);
