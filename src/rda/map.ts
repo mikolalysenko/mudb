@@ -6,7 +6,7 @@ import { MuSortedArray } from '../schema/sorted-array';
 import { MuVoid } from '../schema/void';
 import { MuVarint } from '../schema/varint';
 import { MuBoolean } from '../schema/boolean';
-import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAStore, MuRDATypes } from './rda';
+import { MuRDA, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAConflicts, MuRDAStore, MuRDATypes } from './rda';
 import { MuArray } from '../schema';
 
 function compareKey (a:string, b:string) {
@@ -510,6 +510,164 @@ export class MuRDAMapStore<MapRDA extends MuRDAMap<any, any>> implements MuRDASt
                 result.push(wrapper);
             }
         }
+
+        return result;
+    }
+
+    public conflicts (rda:MapRDA, f:MuRDATypes<MapRDA>['patch'], g:MuRDATypes<MapRDA>['patch']) : MuRDAConflicts<MapRDA> {
+        type LoweredElement = {
+            deleted:boolean;
+            sequence:number;
+            key:string;
+            actions:MuRDATypes<MapRDA['valueRDA']>['patch'];
+            store:MuRDATypes<MapRDA['valueRDA']>['store'];
+            reset?:MapRDA['valueRDA']['storeSchema']['identity'];
+        };
+
+        const lowerPatch = (patch:MuRDATypes<MapRDA>['patch']) => {
+            const lowered:{ [id:number]:LoweredElement } = {};
+
+            const getNode = (id:number) : LoweredElement => {
+                if (id in lowered) {
+                    return lowered[id];
+                }
+                const baseNode = this.idIndex[id];
+                if (baseNode) {
+                    const n = lowered[id] = {
+                        deleted: baseNode.deleted,
+                        sequence: baseNode.sequence,
+                        key: baseNode.key,
+                        actions:<MuRDATypes<MapRDA['valueRDA']>['patch']>[],
+                        store: baseNode.value,
+                    };
+                    return n;
+                } else {
+                    const n = lowered[id] = {
+                        deleted: true,
+                        sequence: 0,
+                        key: '',
+                        actions:<MuRDATypes<MapRDA['valueRDA']>['patch']>[],
+                        store: rda.valueRDA.createStore(rda.valueRDA.stateSchema.identity),
+                        reset: rda.valueRDA.storeSchema.clone(rda.valueRDA.stateSchema.identity),
+                    };
+                    return n;
+                }
+            };
+
+            function handleUpsert (upsertAction:MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['upsertAction']['data']) {
+                const node = getNode(upsertAction.id);
+                node.deleted = upsertAction.deleted;
+                node.key = upsertAction.key;
+                node.sequence = upsertAction.sequence;
+
+                // clear actions
+                node.actions.forEach((subAction) => rda.valueRDA.actionSchema.free(subAction));
+                node.actions.length = 0;
+
+                // copy store
+                if ('reset' in node) {
+                    node.reset = rda.valueRDA.storeSchema.assign(node.reset, upsertAction.value);
+                } else {
+                    node.reset = rda.valueRDA.storeSchema.clone(upsertAction.value);
+                }
+            }
+
+            for (let i = 0; i < patch.length; ++i) {
+                const action = patch[i];
+                if (action.type === 'move') {
+                    const moveAction = <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['moveAction']>action;
+                    const node = getNode(moveAction.data.id);
+                    node.key = moveAction.data.key;
+                    node.sequence = moveAction.data.sequence;
+                } else if (action.type === 'setDeleted') {
+                    const setDeletedAction = <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['setDeletedAction']>action;
+                    const node = getNode(setDeletedAction.data.id);
+                    node.deleted = setDeletedAction.data.deleted;
+                    node.sequence = setDeletedAction.data.sequence;
+                } else if (action.type === 'update') {
+                    const updateAction = <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['updateAction']>action;
+                    const node = getNode(updateAction.data.id);
+                    node.actions.push(rda.valueRDA.actionSchema.clone(updateAction.data.action));
+                } else if (action.type === 'upsert') {
+                    handleUpsert(<any>action.data);
+                } else if (action.type === 'reset') {
+                    const resetAction = <MuRDAMapTypes<MapRDA['keySchema'], MapRDA['valueRDA']>['resetAction']>action;
+                    resetAction.data.deletes.forEach((id) => {
+                        getNode(id).deleted = true;
+                    });
+                    resetAction.data.undeletes.forEach((id) => {
+                        getNode(id).deleted = false;
+                    });
+                    resetAction.data.sequenceIds.forEach((id, idx) => {
+                        getNode(id).sequence = resetAction.data.sequenceVals[idx];
+                    });
+                    resetAction.data.upserts.forEach(handleUpsert);
+                }
+            }
+
+            return lowered;
+        };
+
+        const result = new MuRDAConflicts<MapRDA>([], []);
+
+        function raisePatch (id:number, patch:MuRDATypes<MapRDA['valueRDA']>['patch']) : MuRDATypes<MapRDA>['patch'] {
+            return patch.map((action) => {
+                const wrapped = rda.actionSchema.alloc();
+                wrapped.type = 'update';
+                wrapped.data = rda.updateActionSchema.alloc();
+                wrapped.data.id = id;
+                wrapped.data.action = action;
+                return wrapped;
+            });
+        }
+
+        const handleConflict = (id:number, fl:LoweredElement, gl:LoweredElement) => {
+            const cur = this.idIndex[id];
+
+            if (!cur) {
+                // check if upserts from gl and fl consistent
+
+            } else {
+                // check what has changed
+            }
+
+            // handle action delta here
+            const actionDelta = rda.valueRDA.conflicts(rda.valueRDA, fl, gl);
+            result.commutator.push.apply(result.commutator, raisePatch(id, actionDelta.commutator));
+            actionDelta.conflicts.forEach((c) => {
+                result.conflicts.push([ <any>raisePatch(id, c[0]), <any>raisePatch(id, c[1]) ]);
+            });
+        };
+
+        const pushNode = (id:number, x:LoweredElement) => {
+        };
+
+        const freeLowered = (x:LoweredElement) => {
+            x.actions.forEach((a) => {
+                rda.valueRDA.actionSchema.free(a);
+            });
+            if (x.reset) {
+                rda.valueRDA.storeSchema.free(x.reset);
+            }
+        };
+
+        const flow = lowerPatch(f);
+        const glow = lowerPatch(g);
+
+        Object.keys(flow).forEach((id) => {
+            if (id in glow) {
+                handleConflict(+id, flow[id], glow[id]);
+            } else {
+                pushNode(+id, flow[id]);
+            }
+            freeLowered(flow[id]);
+        });
+        Object.keys(glow).forEach((id) => {
+            if (!(id in flow)) {
+                pushNode(+id, glow[id]);
+            }
+            freeLowered(glow[id]);
+        });
 
         return result;
     }

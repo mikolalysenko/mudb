@@ -1,6 +1,7 @@
 import { MuStruct } from '../schema/struct';
 import { MuUnion } from '../schema/union';
-import { MuRDA, MuRDAStore, MuRDATypes, MuRDAActionMeta, MuRDABindableActionMeta } from './rda';
+import { MuRDA, MuRDAStore, MuRDATypes, MuRDAActionMeta, MuRDABindableActionMeta, MuRDAConflicts } from './rda';
+import { clonePatch } from './_util';
 
 export type MuRDAStructSpec = {
     [prop:string]:MuRDA<any, any, any, any>;
@@ -131,6 +132,47 @@ export class MuRDAStructStore<
                 result.push(lifted);
             }
         }
+
+        return result;
+    }
+
+    public conflicts (rda:RDA, f:MuRDATypes<RDA>['patch'], g:MuRDATypes<RDA>['patch']) : MuRDAConflicts<RDA> {
+        function lowerPatch (patch:MuRDATypes<RDA>['patch']) : { [member in keyof Spec]:MuRDATypes<Spec[member]>['patch']; } {
+            const lowered:{ [member in keyof Spec]:MuRDATypes<Spec[member]>['patch']; } = <any>{};
+            Object.keys(rda.rdas).forEach((m) => {
+                (<any>lowered)[m] = [];
+            });
+            for (let i = 0; i < patch.length; ++i) {
+                const action = patch[i];
+                lowered[action.type].push(rda.rdas[action.type].actionSchema.clone(action.data));
+            }
+            return lowered;
+        }
+
+        function raisePatch<MemberType extends keyof Spec> (memberType:MemberType, patch:MuRDATypes<Spec[MemberType]>['patch']) : MuRDATypes<RDA>['patch'] {
+            return patch.map((action) => {
+                const raised = rda.actionSchema.alloc();
+                raised.type = memberType;
+                raised.data = action;
+                return raised;
+            });
+        }
+
+        const result = new MuRDAConflicts<RDA>([], []);
+
+        const flow = lowerPatch(f);
+        const glow = lowerPatch(g);
+
+        Object.keys(flow).forEach((member) => {
+            const fpatch = flow[member];
+            const gpatch = glow[member];
+
+            const conflictLow = this.stores[member].conflicts(rda.rdas[member], fpatch, gpatch);
+            result.commutator.push.apply(result.commutator, raisePatch(member, conflictLow.commutator));
+            conflictLow.conflicts.forEach(([ fcon, gcon ]) => {
+                result.conflicts.push(<any>[ raisePatch(<any>member, fcon), raisePatch(<any>member, gcon)]);
+            });
+        });
 
         return result;
     }

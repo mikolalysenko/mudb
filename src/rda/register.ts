@@ -1,5 +1,6 @@
 import { MuSchema } from '../schema/schema';
-import { MuRDA, MuRDAStore, MuRDATypes } from './rda';
+import { MuRDA, MuRDAConflicts, MuRDAStore, MuRDATypes } from './rda';
+import { clonePatch } from './_util';
 
 function identity<T> (x:T) : T { return x; }
 
@@ -21,7 +22,20 @@ export class MuRDARegisterStore<RDA extends MuRDARegister<any>> implements MuRDA
     }
 
     public conflicts (rda:RDA, f:MuRDATypes<RDA>['patch'], g:MuRDATypes<RDA>['patch']) {
-        
+        if (f.length === 0) {
+            return new MuRDAConflicts<RDA>(clonePatch(rda, g), []);
+        } else if (g.length === 0) {
+            return new MuRDAConflicts<RDA>(clonePatch(rda, f), []);
+        }
+        const fhead = f[f.length - 1];
+        const ghead = g[g.length - 1];
+        if (rda.actionSchema.equals(fhead, ghead)) {
+            return new MuRDAConflicts<RDA>([ rda.actionSchema.clone(fhead) ], []);
+        }
+        return new MuRDAConflicts<RDA>([], [
+            rda.actionSchema.clone(fhead),
+            rda.actionSchema.clone(ghead),
+        ]);
     }
 
     public apply (rda:RDA, action:MuRDATypes<RDA>['action']) {
