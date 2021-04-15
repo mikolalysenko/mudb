@@ -135,7 +135,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
                     out.offset += 4;
                     if (schema.diff(schema.identity, targetItem, out)) {
                         emitOp();
-                        // out.offset -= 4;
+                        out.offset -= 4;
                         opPtr = prevOffset;
                         opCode = SortedOp.INSERT;
                         opCount = 1;
