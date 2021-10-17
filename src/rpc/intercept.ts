@@ -30,17 +30,17 @@ export class MuRPCIntercept<Protocol extends MuRPCProtocol<any>, Connection exte
         authorize?:(conn:Connection) => Promise<boolean>,
         handlers:Partial<{
             [method in keyof Protocol['api']]:
-                (arg:Protocol['api'][method]['arg']['identity']) =>
+                (conn:Connection, arg:Protocol['api'][method]['arg']['identity']) =>
                     Promise<Protocol['api'][method]['ret']['identity']>
         }>,
     }) {
         const handlers:any = {};
-        const methods = Object.keys(this.protocol);
+        const methods = Object.keys(this.protocol.api);
         for (let i = 0; i < methods.length; ++i) {
             if (methods[i] in spec.handlers) {
                 handlers[methods[i]] = spec.handlers[methods[i]];
             } else {
-                handlers[methods[i]] = this.remote.api[methods[i]];
+                handlers[methods[i]] = (conn, arg) => this.remote.api[methods[i]](arg);
             }
         }
         this._server = new MuRPCServer({
