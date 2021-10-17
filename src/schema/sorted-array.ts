@@ -31,6 +31,11 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
     public readonly compare:(a:ValueSchema['identity'], b:ValueSchema['identity']) => number;
     public readonly capacity:number;
 
+    private _arraySchema:MuArray<ValueSchema>;
+    public stats() {
+        return this._arraySchema.stats();
+    }
+
     constructor (
         schema:ValueSchema,
         capacity:number,
@@ -41,7 +46,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         this.capacity = capacity;
         this.compare = compare || defaultCompare;
 
-        const arraySchema = new MuArray(schema, capacity, identity);
+        const arraySchema = this._arraySchema = new MuArray(schema, capacity, identity);
         this.identity = arraySchema.identity.sort(this.compare);
         this.json = {
             type: 'sorted-array',
@@ -256,6 +261,7 @@ export class MuSortedArray<ValueSchema extends MuSchema<any>>
         base:ValueSchema['identity'][],
         inp:MuReadStream,
     ) : ValueSchema['identity'][] {
+        this._arraySchema.allocCount += 1;
         const schema = this.muData;
         const result = this.alloc();
         const numOps = inp.readUint32();

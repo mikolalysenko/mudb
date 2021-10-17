@@ -56,6 +56,18 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     public readonly json:object;
     public readonly capacity:number;
 
+    private _isPrimitive:boolean = false;
+
+    public allocCount:number = 0;
+    public freeCount:number = 0;
+    public stats() {
+        return {
+            allocCount: this.allocCount,
+            freeCount: this.freeCount,
+            poolSize: 0,
+        };
+    }
+
     constructor (
         schema:ValueSchema,
         capacity:number,
@@ -77,7 +89,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             identity: JSON.stringify(this.identity),
         };
 
-        if (isMuPrimitiveType(schema.muType)) {
+        if (this._isPrimitive) {
             this.assign = assignPrimitive;
         } else {
             this.assign = assignGeneric(schema);
@@ -85,14 +97,18 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public alloc () : Dictionary<ValueSchema> {
+        this.allocCount += 1;
         return {};
     }
 
     public free (dict:Dictionary<ValueSchema>) : void {
-        const props = Object.keys(dict);
-        const schema = this.muData;
-        for (let i = 0; i < props.length; ++i) {
-            schema.free(dict[props[i]]);
+        this.freeCount += 1;
+        if (!this._isPrimitive) {
+            const props = Object.keys(dict);
+            const schema = this.muData;
+            for (let i = 0; i < props.length; ++i) {
+                schema.free(dict[props[i]]);
+            }
         }
     }
 
@@ -123,14 +139,19 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public clone (dict:Dictionary<ValueSchema>) : Dictionary<ValueSchema> {
-        const copy = {};
-        const keys = Object.keys(dict);
-        const schema = this.muData;
-        for (let i = 0; i < keys.length; ++i) {
-            const k = keys[i];
-            copy[k] = schema.clone(dict[k]);
+        this.allocCount += 1;
+        if (this._isPrimitive) {
+            return { ...dict };
+        } else {
+            const copy = {};
+            const keys = Object.keys(dict);
+            const schema = this.muData;
+            for (let i = 0; i < keys.length; ++i) {
+                const k = keys[i];
+                copy[k] = schema.clone(dict[k]);
+            }
+            return copy;
         }
-        return copy;
     }
 
     public assign:(dst:Dictionary<ValueSchema>, src:Dictionary<ValueSchema>) => Dictionary<ValueSchema>;
@@ -273,6 +294,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
             }
         }
 
+        this.allocCount += 1;
         return result;
     }
 
@@ -289,6 +311,7 @@ export class MuDictionary<ValueSchema extends MuSchema<any>>
     }
 
     public fromJSON (x:Dictionary<any>) : Dictionary<ValueSchema> {
+        this.allocCount += 1;
         if (Object.prototype.toString.call(x) === '[object Object]') {
             const dict = {};
             const keys = Object.keys(x);

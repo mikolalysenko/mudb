@@ -67,7 +67,17 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
     public readonly dimension:D;
     public readonly TypedArray:any;
 
-    private _pool:Vec<T, D>[] = [];
+    public allocCount:number = 0;
+    public freeCount:number = 0;
+    public pool:Vec<T, D>[] = [];
+
+    public stats() {
+        return {
+            allocCount: this.allocCount,
+            freeCount: this.freeCount,
+            poolSize: this.pool.length,
+        };
+    }
 
     constructor (schema:MuNumber<T>, dimension:D) {
         this.muData = schema;
@@ -90,11 +100,13 @@ export class MuVector<T extends MuNumericType, D extends number> implements MuSc
     }
 
     public alloc () : Vec<T, D> {
-        return this._pool.pop() || new this.TypedArray(this.dimension);
+        this.allocCount++;
+        return this.pool.pop() || new this.TypedArray(this.dimension);
     }
 
     public free (vec:Vec<T, D>) : void {
-        this._pool.push(vec);
+        this.freeCount++;
+        this.pool.push(vec);
     }
 
     public equal (a:Vec<T, D>, b:Vec<T, D>) : boolean {
