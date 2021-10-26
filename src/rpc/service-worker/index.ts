@@ -1,5 +1,4 @@
 import { MuLogger } from '../../logger';
-import { decodeUTF8 } from '../../stream';
 import { MuRPCConnection, MuRPCProtocol, MuRPCSchemas, MuRPCServerTransport } from '../protocol';
 
 interface FetchEvent extends Event {
@@ -55,7 +54,8 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
             return false;
         }
 
-        const suffix = event.request.url.substr(this._routePrefix.length);
+        const suffix = event.request.url.substr(this._routePrefix.length + 1);
+
         const handler = this._handlers[suffix];
         if (!handler) {
             return false;
@@ -77,41 +77,9 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
                         },
                     });
                 } else {
-                    if (!event.request.body) {
+                    const result = await event.request.text();
+                    if (!result) {
                         throw new Error('Missing body');
-                    }
-
-                    // read all the chunks out of the webstream
-                    const buffers:Uint8Array[] = [];
-                    const reader = event.request.body.getReader();
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (value) {
-                            buffers.push(value);
-                        }
-                        if (done) {
-                            break;
-                        }
-                    }
-
-                    // concatenate chunks
-                    let result:string;
-                    if (buffers.length === 1) {
-                        result = decodeUTF8(buffers[0]);
-                    } else if (buffers.length === 0) {
-                        result = '';
-                    } else {
-                        let byteCount = 0;
-                        for (let i = 0; i < buffers.length; ++i) {
-                            byteCount += buffers[i].length;
-                        }
-                        const buf = new Uint8Array(byteCount);
-                        let offset = 0;
-                        for (let i = 0; i < buffers.length; ++i) {
-                            buf.set(buffers[i], offset);
-                            offset += buffers[i].length;
-                        }
-                        result = decodeUTF8(buf);
                     }
 
                     // call the handler, generate JSON response
@@ -122,7 +90,7 @@ export class MuRPCServiceWorkerTransport implements MuRPCServerTransport<MuRPCPr
                     handler.schemas.responseSchema.free(res);
 
                     return new Response(jsonResponse, {
-                        status: 400,
+                        status: 200,
                         statusText: 'OK',
                         headers: {
                             'Content-Type': 'application/json',

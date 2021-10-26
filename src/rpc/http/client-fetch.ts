@@ -17,6 +17,7 @@ export class MuRPCFetchClientTransport implements MuRPCClientTransport<any> {
             method: 'POST',
             mode: 'same-origin',
             cache: 'no-cache',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
