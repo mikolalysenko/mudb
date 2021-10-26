@@ -28,6 +28,7 @@ import { MuQuantizedFloat } from './quantized-float';
 // functors
 import { MuArray } from './array';
 import { MuOption } from './option';
+import { MuNullable } from './nullable';
 import { MuSortedArray } from './sorted-array';
 import { MuStruct } from './struct';
 import { MuUnion } from './union';
@@ -63,6 +64,7 @@ export {
 
     MuArray,
     MuOption,
+    MuNullable,
     MuSortedArray,
     MuStruct,
     MuUnion,
