@@ -5,7 +5,6 @@ export class MuDate implements MuSchema<Date> {
     public readonly muType = 'date';
     public readonly identity:Date;
     public readonly json;
-    public pool:Date[] = [];
 
     constructor (identity?:Date) {
         this.identity = new Date(0);
@@ -19,11 +18,10 @@ export class MuDate implements MuSchema<Date> {
     }
 
     public alloc () : Date {
-        return this.pool.pop() || new Date();
+        return new Date();
     }
 
     public free (date:Date) : void {
-        this.pool.push(date);
     }
 
     public equal (a:Date, b:Date) : boolean {
@@ -67,12 +65,7 @@ export class MuDate implements MuSchema<Date> {
 
     public fromJSON (x:string) : Date {
         if (typeof x === 'string') {
-            const ms = Date.parse(x);
-            if (ms) {
-                const date = this.alloc();
-                date.setTime(ms);
-                return date;
-            }
+            return new Date(x);
         }
         return this.clone(this.identity);
     }

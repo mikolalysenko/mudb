@@ -16,7 +16,8 @@ function assignPrimitive<T> (dst:T[], src:T[]) : T[] {
     return dst;
 }
 
-function clonePrimitive<T> (src:T[]) : T[] {
+function clonePrimitive<T> (this:MuArray<any>, src:T[]) : T[] {
+    this.allocCount += 1;
     return src.slice();
 }
 
@@ -39,7 +40,7 @@ function toJSONPrimitive<T> (a:T[]) : T[] {
 }
 
 function assignGeneric<T> (schema:MuSchema<T>) {
-    return (dst:T[], src:T[]) => {
+    return function (this:MuArray<any>, dst:T[], src:T[]) {
         const N = src.length;
         const M = dst.length;
         const L = Math.min(M, N);
@@ -58,7 +59,8 @@ function assignGeneric<T> (schema:MuSchema<T>) {
 }
 
 function cloneGeneric<T> (schema:MuSchema<T>) {
-    return (src:T[]) => {
+    return function (this:MuArray<any>, src:T[]) {
+        this.allocCount += 1;
         const result = src.slice();
         for (let i = 0; i < result.length; ++i) {
             result[i] = schema.clone(result[i]);
@@ -68,7 +70,8 @@ function cloneGeneric<T> (schema:MuSchema<T>) {
 }
 
 function freeGeneric<T> (schema:MuSchema<T>) {
-    return (src:T[]) => {
+    return function (this:MuArray<any>, src:T[]) {
+        this.freeCount += 1;
         for (let i = 0; i < src.length; ++i) {
             schema.free(src[i]);
         }
@@ -77,7 +80,7 @@ function freeGeneric<T> (schema:MuSchema<T>) {
 }
 
 function equalGeneric<T> (schema:MuSchema<T>) {
-    return (a:T[], b:T[]) => {
+    return function (a:T[], b:T[]) {
         const N = a.length;
         const M = b.length;
         if (N !== M) {
@@ -93,7 +96,7 @@ function equalGeneric<T> (schema:MuSchema<T>) {
 }
 
 function toJSONGeneric<T> (schema:MuSchema<T>) {
-    return (arr:T[]) : any[] => {
+    return function (arr:T[]) : any[] {
         const result = new Array(arr.length);
         for (let i = 0; i < arr.length; ++i) {
             result[i] = schema.toJSON(arr[i]);
@@ -115,6 +118,16 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     public clone:(src:ValueSchema['identity'][]) => ValueSchema['identity'][];
     public equal:(a:ValueSchema['identity'][], b:ValueSchema['identity'][]) => boolean;
     public toJSON:(src:ValueSchema['identity'][]) => any;
+
+    public allocCount = 0;
+    public freeCount = 0;
+    public stats() {
+        return {
+            allocCount: this.allocCount,
+            freeCount: this.freeCount,
+            poolSize: 0,
+        };
+    }
 
     constructor (
         schema:ValueSchema,
@@ -139,7 +152,10 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         if (isMuPrimitiveType(schema.muType)) {
             this.assign = assignPrimitive;
             this.clone = clonePrimitive;
-            this.free = (x) => x.length = 0;
+            this.free = function (x) {
+                this.freeCount += 1;
+                x.length = 0;
+            }
             this.equal = equalPrimitive;
             this.toJSON = toJSONPrimitive;
         } else {
@@ -152,6 +168,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
     }
 
     public alloc () : ValueSchema['identity'][] {
+        this.allocCount += 1;
         return [];
     }
 
@@ -221,6 +238,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
         let trackerOffset = inp.offset;
         inp.offset += numTrackers;
 
+        this.allocCount += 1;
         const result = base.slice();
         const schema = this.muData;
         result.length = L;
@@ -258,6 +276,7 @@ export class MuArray<ValueSchema extends MuSchema<any>>
             for (let i = 0; i < x.length; ++i) {
                 arr[i] = schema.fromJSON(x[i]);
             }
+            this.allocCount += 1;
             return arr;
         }
         return this.clone(this.identity);
